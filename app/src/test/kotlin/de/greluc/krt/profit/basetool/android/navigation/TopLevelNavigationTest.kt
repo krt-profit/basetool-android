@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.dashboard.QuickAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -46,13 +47,19 @@ class TopLevelNavigationTest {
 
     private lateinit var nav: NavHostController
 
-    /** Builds the two-route stand-in for the shell's graph, with Übersicht as the start. */
-    private fun setUpGraph() {
+    /**
+     * Builds the stand-in for the shell's graph, with Übersicht as the start.
+     *
+     * @param extraRoutes destinations to register beside [HOME] and [INVENTORY]; the quick-action
+     *   walk passes the real enum's routes so the test cannot drift from what the dashboard offers.
+     */
+    private fun setUpGraph(extraRoutes: List<String> = emptyList()) {
+        val routes = (listOf(INVENTORY) + extraRoutes).distinct()
         composeRule.setContent {
             nav = rememberNavController()
             NavHost(navController = nav, startDestination = HOME) {
                 composable(HOME) { Text("home") }
-                composable(INVENTORY) { Text("inventory") }
+                routes.forEach { route -> composable(route) { Text(route) } }
             }
         }
         composeRule.waitForIdle()
@@ -137,6 +144,40 @@ class TopLevelNavigationTest {
                 offenders.joinToString(),
             offenders.isEmpty(),
         )
+    }
+
+    /**
+     * Every Schnellaktion on the dashboard, not just the one that was reported.
+     *
+     * The four tiles share a single handler, so one fix covers all of them — but "shares a handler"
+     * is a claim about today's code, and the reported defect was that a member could not get back.
+     * This walks each destination the dashboard offers and comes back, so the promise is checked per
+     * tile rather than argued from the handler.
+     *
+     * Note `Exchange` takes a different route home than the other three: it is a "Mehr" destination,
+     * not a navigation-bar tab, so the bar shows „Mehr" as selected while the member is on it. That
+     * asymmetry is exactly why it is walked rather than assumed.
+     */
+    @Test
+    fun `every dashboard shortcut can be left again`() {
+        val routes = QuickAction.entries.map { it.destination.route }
+        setUpGraph(routes)
+
+        QuickAction.entries.forEach { action ->
+            val route = action.destination.route
+
+            composeRule.runOnUiThread { nav.navigateToTopLevel(route) }
+            composeRule.waitForIdle()
+            assertEquals("$action should open ${action.destination}", route, nav.currentRoute())
+
+            composeRule.runOnUiThread { nav.navigateToTopLevel(HOME) }
+            composeRule.waitForIdle()
+            assertEquals(
+                "after $action, Übersicht must lead back to the dashboard",
+                HOME,
+                nav.currentRoute(),
+            )
+        }
     }
 
     private fun NavHostController.currentRoute(): String? = currentDestination?.route
