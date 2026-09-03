@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankDirectOutcome
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestPage
@@ -82,6 +83,57 @@ class BankStaffViewModelTest {
             assertEquals("5000", sent.amount)
             // The sheet closes on success; the dashboard is re-read rather than patched.
             assertNull(model.state.value.direct)
+        }
+
+    /**
+     * A `202` closes the sheet like a booking and must not read like one.
+     *
+     * Over the KRT employee ceiling the server files the attempt as an approval request instead of
+     * booking it (REQ-BANK-047, ADR-0109). The balance does not move, so a member who is told
+     * nothing finds the old figure and reads it as a fault — the one outcome on this screen that
+     * looks like success and is not.
+     */
+    @Test
+    fun `a filed withdrawal raises the notice that nothing was booked`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            source.directAnswer = ApiResult.Success(BankDirectOutcome.REQUEST_FILED)
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit {
+                it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "5000000", holderId = "h1")
+            }
+            model.directBooking.confirm(null)
+            advanceUntilIdle()
+
+            assertNull("the sheet still closes — it was accepted", model.state.value.direct)
+            assertTrue("but the screen has to say it was only filed", model.state.value.filed)
+
+            model.directBooking.acknowledgeFiled()
+            assertFalse(model.state.value.filed)
+        }
+
+    /** An ordinary booking raises no such notice; the balance speaks for itself. */
+    @Test
+    fun `a booked withdrawal raises no notice`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            source.directAnswer = ApiResult.Success(BankDirectOutcome.BOOKED)
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit {
+                it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "5000", holderId = "h1")
+            }
+            model.directBooking.confirm(null)
+            advanceUntilIdle()
+
+            assertFalse(model.state.value.filed)
         }
 
     @Test
@@ -303,9 +355,10 @@ class BankStaffViewModelTest {
         }
 
         val directBookings = mutableListOf<DirectBooking>()
-        var directAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+        var directAnswer: ApiResult<BankDirectOutcome> =
+            ApiResult.Success(BankDirectOutcome.BOOKED)
 
-        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome> {
             directBookings.add(booking)
             return directAnswer
         }

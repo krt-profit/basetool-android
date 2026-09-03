@@ -1610,10 +1610,19 @@ class MissionStructureRepository(
         unitId: String,
         crewId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(
-            missionId,
-            reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId", MissionDto.serializer()),
-        )
+        // The slim pair again, and here the legacy half was the one being sent: the full-DTO
+        // `DELETE …/crew/{crewId}` is `@ApiDeprecation`-marked with a sunset, and its replacement
+        // answers 204 rather than the whole Einsatz. So the answer cannot be folded — the Einsatz
+        // is re-read instead, on a path the caller has just been reading anyway.
+        when (val removed = reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId/slim")) {
+            is ApiResult.Failure -> {
+                removed
+            }
+
+            is ApiResult.Success -> {
+                oneMission(missionId, reader.get(missionPath(missionId), MissionDto.serializer()))
+            }
+        }
 }
 
 /**

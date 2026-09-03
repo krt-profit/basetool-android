@@ -714,12 +714,26 @@ The read is open to anyone who may see the order, and the **owners are redacted*
 requesting-side viewer (`canSeeJobOrderInventoryOwners`) — which is why the owner is left out of the
 row rather than drawn as an empty field.
 
-**Two writes, both gated `LOGISTICIAN | OFFICER | ADMIN` plus edit scope:**
+**Three writes behind one gate, which is the order's own `canEdit`:**
 
 - **Lieferstatus** — `PATCH /inventory/{id}/delivered`, echoing the **row's own** version, so a
   concurrent stock change is a 409 rather than a silent overwrite.
 - **Verknüpfung lösen** — `DELETE /orders/{id}/inventory/{entryId}/unlink` for a stock row, and
   `DELETE /orders/{id}/materials/{materialId}` for a required material nothing covers.
+
+`JobOrderDto.canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`, resolved server-side per
+order — the identical expression the two unlink endpoints carry in their own `@PreAuthorize`. The
+screen reads it off the order it already loads, so the controls agree with the server by
+construction rather than by a rule written twice. An **absent** flag closes the screen: it is absent
+only from a server too old to send it, and all three writes remove work.
+
+> [!warning] Corrected 2026-09-03 — this section said all three carry the same gate, and the
+> delivered PATCH does not
+> `PATCH /inventory/{id}/delivered` is gated by `canEditInventoryItem` — the **row's** rule, not the
+> order's. A Logistician editing an order whose linked stock belongs to another unit is refused
+> there with a 403, which the screen shows. The single screen-wide gate is kept deliberately: the
+> collection row carries no per-row permission on the wire, so the alternative is a client that
+> hides a control the server would have allowed. An honest 403 beats a silent absence.
 
 **Only a link with an amount behind it asks first.** The unlink removes the earmark and leaves the
 stock alone, so a row that promised nothing has nothing to warn about — and asking anyway teaches
@@ -730,6 +744,14 @@ assignment) and what stays (the stock).
 Materialien (ohne Bestand)" is the order's required materials minus the materials the linked rows
 cover.
 
+> [!danger] Wired 2026-09-03 — until then the screen sent **none** of its three writes
+> `OrderCollectionState.allowed` defaulted to `false` and the only function that set it had no
+> caller, so every control was disabled for every role, on every account. The three underlying 404s
+> from the API vhost — none of these four paths was on its allow-list — were invisible behind that,
+> which is why the audit filed the gate and the allow-list rules as one change: repairing either
+> half alone turns two harmless unreachable calls into visible errors. Both landed together
+> (runbook phase N).
+
 > [!warning] Besitzer and Standort are **not** editable here, deliberately
 > The web's two inline selects post to `/inventory/{id}/transfer`, which is a proxy onto the
 > backend's **book-out** — that is moving stock, not editing a field. The app offers exactly that in
@@ -739,10 +761,11 @@ cover.
 
 **Acceptance**
 
-- [ ] A required material no linked row covers appears in the second section
-- [ ] A row with an earmark asks before unlinking and names the amount; one without does not ask
-- [ ] The delivered flag echoes the row's own version
-- [ ] Every write re-reads the page, because each moves a figure the server computes
+- [x] A required material no linked row covers appears in the second section
+- [x] A row with an earmark asks before unlinking and names the amount; one without does not ask
+- [x] The delivered flag echoes the row's own version
+- [x] Every write re-reads the page, because each moves a figure the server computes
+- [x] The controls are offered iff the order's `canEdit` says so, and an absent flag closes them
 
 **Enforced by:** `OrderCollectionTest`.
 

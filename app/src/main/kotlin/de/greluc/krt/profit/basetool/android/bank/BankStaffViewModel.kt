@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankDirectOutcome
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
@@ -247,6 +248,10 @@ data class DirectBookingState(
  * @property queue the undecided requests, in the order the server returned them. The same read
  *   the per-account counter is aggregated from, so the badge cannot disagree with the list.
  * @property holders the unit's holders, which a confirmation has to name one of.
+ * @property filed set when a direct booking came back **filed** rather than booked — over
+ *   the KRT employee ceiling the server raises an approval request instead (REQ-BANK-047,
+ *   ADR-0109) and answers 202. The balance has not moved, so the screen has to say so;
+ *   closing the sheet on it in silence is how a member reads an unchanged figure as a bug.
  * @property confirming the open confirmation sheet, or `null`.
  * @property rejecting the open refusal dialog, or `null`.
  * @property busyId the request a decision is currently in flight for.
@@ -261,6 +266,7 @@ data class BankStaffState(
     val rows: List<BankStaffRow> = emptyList(),
     val totals: BankStaffTotals? = null,
     val management: Boolean = false,
+    val filed: Boolean = false,
     val openRequestTotal: Int = 0,
     val countsPartial: Boolean = false,
     val phase: BankPhase = BankPhase.Loading,
@@ -345,6 +351,16 @@ class BankStaffViewModel(
         }
 
         /**
+         * Acknowledges the notice that the last attempt was filed rather than booked.
+         *
+         * Its own action rather than a timeout: the notice says the money has **not** moved, and a
+         * message that disappears on its own is one a member can miss entirely.
+         */
+        fun acknowledgeFiled() {
+            mutableState.value = mutableState.value.copy(filed = false)
+        }
+
+        /**
          * Changes what the sheet holds.
          *
          * @param edit what to change.
@@ -385,7 +401,11 @@ class BankStaffViewModel(
                     )
                 when (val result = source.bookDirectly(booking)) {
                     is ApiResult.Success -> {
-                        mutableState.value = mutableState.value.copy(direct = null)
+                        mutableState.value =
+                            mutableState.value.copy(
+                                direct = null,
+                                filed = result.value == BankDirectOutcome.REQUEST_FILED,
+                            )
                         reload(keepContent = true)
                     }
 
@@ -470,6 +490,12 @@ class BankStaffViewModel(
                             phase = BankPhase.Ready,
                             queue = counts.rows,
                             holders = mutableState.value.holders,
+                            // Carried across the rebuild, like the holders above. A direct
+                            // booking triggers this reload itself, so a fresh object would
+                            // drop the very notice that write raised — and the notice is the
+                            // only thing telling the member the balance below it is correct
+                            // and their withdrawal is merely filed.
+                            filed = mutableState.value.filed,
                         )
                     readHolders()
                 }

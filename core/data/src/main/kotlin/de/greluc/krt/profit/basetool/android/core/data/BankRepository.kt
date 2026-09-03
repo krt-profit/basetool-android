@@ -1150,6 +1150,28 @@ interface BankGrantSource {
     suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>>
 }
 
+/**
+ * What a direct booking actually did.
+ *
+ * Two answers, because the server has two. `POST /bank/withdrawals` and `/bank/transfers` answer
+ * `201` with the booked transaction — **unless** the amount is over the KRT employee ceiling, and
+ * then the attempt is not refused but **filed** as a band-routed approval request and answered
+ * `202` with a `pendingRequest` instead (REQ-BANK-047, ADR-0109). A deposit has no ceiling and is
+ * always booked.
+ *
+ * The distinction has to reach the screen. Both are 2xx, so a client that only asks "did it
+ * succeed" closes the sheet on a withdrawal that has **not** moved the balance and tells nobody —
+ * and the member's next look at the account shows the old figure with no explanation. The web
+ * says so out loud; this is how the app can.
+ */
+enum class BankDirectOutcome {
+    /** The ledger moved. */
+    BOOKED,
+
+    /** Over the ceiling: filed for approval, nothing booked yet. */
+    REQUEST_FILED,
+}
+
 /** Which of the three direct bookings the Verwaltung is making. */
 enum class DirectBookingKind {
     /** Money comes in. */
@@ -1294,10 +1316,13 @@ interface BankStaffSource {
      * account the amount leaves — which is the same distinction the sheet's segment draws.
      *
      * @param booking what to book.
-     * @return nothing on success, or the classified failure. `403` is ordinary: direct booking
-     *   needs the bank-management grant, which `/users/me` reports as `canManageBank`.
+     * @return whether it was booked or only filed ([BankDirectOutcome]), or the classified
+     *   failure. `403` is ordinary and says nothing about Bank-Management: the endpoints ask for
+     *   `hasRole('BANK_EMPLOYEE')` plus a **per-account** grant (`canDeposit` / `canWithdraw` /
+     *   `canTransfer`), which is a fact about the account picked inside the sheet and cannot be
+     *   known before the write.
      */
-    suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit>
+    suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome>
 
     /**
      * Refuses a pending request. No money moves.

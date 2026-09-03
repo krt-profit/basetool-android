@@ -1884,6 +1884,8 @@
     </plurals>
     <!-- Direktbuchung der Verwaltung (Design Kap. 12, Artboard 9) -->
     <string name="bank_direct_title">Direktbuchung</string>
+    <string name="bank_direct_filed_title">Zur Freigabe eingereicht</string>
+    <string name="bank_direct_filed_message">Der Betrag liegt über deinem Direktbuchungs-Limit. Nichts wurde gebucht — die Buchung steht jetzt als Antrag in der Freigabe. Der Kontostand ändert sich erst nach der Freigabe.</string>
     <string name="bank_direct_deposit">Einzahlung</string>
     <string name="bank_direct_withdrawal">Auszahlung</string>
     <string name="bank_direct_transfer">Umbuchung</string>

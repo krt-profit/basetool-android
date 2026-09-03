@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.bank
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankDirectOutcome
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankHolderBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankHolderBookingPage
@@ -108,9 +109,10 @@ class BankHolderViewModelTest {
         ): ApiResult<BankBookingRequest> = ApiResult.Failure(ApiError.Forbidden())
 
         val directBookings = mutableListOf<DirectBooking>()
-        var directAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+        var directAnswer: ApiResult<BankDirectOutcome> =
+            ApiResult.Success(BankDirectOutcome.BOOKED)
 
-        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome> {
             directBookings.add(booking)
             return directAnswer
         }

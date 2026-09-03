@@ -1852,6 +1852,8 @@
     </plurals>
     <!-- The Verwaltung's direct booking (design ch. 12, artboard 9) -->
     <string name="bank_direct_title">Direct booking</string>
+    <string name="bank_direct_filed_title">Filed for approval</string>
+    <string name="bank_direct_filed_message">The amount is over your direct-booking ceiling. Nothing was booked — it is now an approval request. The balance changes only once it is approved.</string>
     <string name="bank_direct_deposit">Deposit</string>
     <string name="bank_direct_withdrawal">Withdrawal</string>
     <string name="bank_direct_transfer">Transfer</string>

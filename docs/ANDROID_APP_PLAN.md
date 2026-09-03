@@ -289,11 +289,13 @@ would have refused them:**
   "Persönlich" switch were built, walked on a device and then removed; `personal-rebook` stays in
   the contract set for the `my-inventory` slice that would make it reachable
   ([`docs/specs/inventory.md`](specs/inventory.md), REQ-APP-INV-008).
-- **Bank *booking requests + owner approvals*.** Every booking path — deposits, withdrawals,
-  transfers, the request queue — is `hasRole(BANK_EMPLOYEE)`: that is the bank-employee surface, and
-  REQ-APP-BANK-001 keeps the app on the member-facing one. What a member actually owns on the bank
-  is their **account's settings**, and that is what slice 7 shipped
-  ([`docs/specs/bank.md`](specs/bank.md), REQ-APP-BANK-006/007).
+- ~~**Bank *booking requests + owner approvals*.**~~ **Superseded 2026-09-03.** It read: „Every
+  booking path — deposits, withdrawals, transfers, the request queue — is `hasRole(BANK_EMPLOYEE)`:
+  that is the bank-employee surface, and REQ-APP-BANK-001 keeps the app on the member-facing one."
+  The app has carried the bank-employee surface since `REQ-APP-BANK-007` (2026-08-27) and its
+  direct booking since `REQ-APP-BANK-016`. The role gate was never the argument it was used as:
+  `hasRole(BANK_EMPLOYEE)` says who may call the endpoint, not which client may
+  ([`docs/specs/bank.md`](specs/bank.md); main-repo ADR-0156).
 
 **Ordered by ascending risk** (owner decision, 2026-08-23), so the write plumbing — request verbs,
 version echo, conflict dialog, offline rule — is built where a mistake reaches nobody but the member
