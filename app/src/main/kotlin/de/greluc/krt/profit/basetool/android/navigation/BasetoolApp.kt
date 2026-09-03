@@ -80,6 +80,7 @@ import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderFormMode
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.orgunit.switcherLabel
@@ -163,7 +164,7 @@ fun BasetoolApp(
     materialProfit: () -> ProfitViewModel,
     refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
-    orderEdit: (String) -> OrderCreateViewModel,
+    orderEdit: (String, OrderFormMode) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,

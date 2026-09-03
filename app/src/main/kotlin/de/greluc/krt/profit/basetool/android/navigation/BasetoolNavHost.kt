@@ -84,6 +84,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrderCreateRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderFormMode
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewRoute
@@ -176,7 +177,7 @@ fun BasetoolNavHost(
     materialProfit: () -> ProfitViewModel,
     refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
-    orderEdit: (String) -> OrderCreateViewModel,
+    orderEdit: (String, OrderFormMode) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
@@ -587,7 +588,12 @@ private fun listDetailDestination(
                             LaunchedEffect(id) { detailModel.load() }
                             OrderDetailRoute(
                                 viewModel = detailModel,
-                                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                                onEditOrder = {
+                                    edited,
+                                    mode,
+                                    ->
+                                    navController.navigate(orderEditRoute(edited, mode.name))
+                                },
                                 onOpenCollection = {
                                     navController.navigate(orderCollectionRoute(it))
                                 },
@@ -852,7 +858,7 @@ private fun PushedDestination(
     material: MaterialBindings,
     refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
-    orderEdit: (String) -> OrderCreateViewModel,
+    orderEdit: (String, OrderFormMode) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
@@ -916,7 +922,7 @@ private fun PushedDestination(
             LaunchedEffect(orderId) { viewModel.load() }
             OrderDetailRoute(
                 viewModel = viewModel,
-                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                onEditOrder = { id, mode -> navController.navigate(orderEditRoute(id, mode.name)) },
                 onOpenCollection = { navController.navigate(orderCollectionRoute(it)) },
             )
         }
@@ -1103,7 +1109,7 @@ private fun CreateFormDestination(
     navController: NavHostController,
     refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
-    orderEdit: (String) -> OrderCreateViewModel,
+    orderEdit: (String, OrderFormMode) -> OrderCreateViewModel,
     operationForm: (String?) -> OperationFormViewModel,
 ) {
     when (destination) {
@@ -1127,7 +1133,17 @@ private fun CreateFormDestination(
             // The same screen as the create, so it lands in the same destination — design ch. 10
             // artboard 10 is explicit that there is no second layout.
             val editedId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
-            OrderCreateDestination(navController = navController, build = { orderEdit(editedId) })
+            // An unreadable mode falls back to the requester's narrower form rather than the
+            // Logistician's: the narrow one refuses what the caller may not write, the wide one
+            // would offer it and be refused by the server after the member had typed it.
+            val editMode =
+                backStackEntry.arguments?.getString(ORDER_EDIT_MODE_ARG)?.let { raw ->
+                    OrderFormMode.entries.firstOrNull { it.name == raw }
+                } ?: OrderFormMode.EDIT_AS_REQUESTER
+            OrderCreateDestination(
+                navController = navController,
+                build = { orderEdit(editedId, editMode) },
+            )
         }
 
         else -> {

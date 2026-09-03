@@ -128,12 +128,6 @@ internal class RecordingMissionAdmin(
 
 /** The structure seam; this class exercises the screen around it. */
 internal object NoMissionStructure : MissionStructureSource {
-    override suspend fun addFrequency(
-        missionId: String,
-        frequencyTypeId: String,
-        value: String,
-    ): ApiResult<MissionDetail> = error("the structure has its own test")
-
     override suspend fun addCustomFrequency(
         missionId: String,
         current: MissionDetail,

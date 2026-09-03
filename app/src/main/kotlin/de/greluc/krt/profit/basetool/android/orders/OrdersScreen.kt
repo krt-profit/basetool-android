@@ -1569,7 +1569,7 @@ fun OrdersRoute(
 fun OrderDetailRoute(
     viewModel: OrderDetailViewModel,
     modifier: Modifier = Modifier,
-    onEditOrder: (String) -> Unit = {},
+    onEditOrder: (String, OrderFormMode) -> Unit = { _, _ -> },
     onOpenCollection: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -1648,7 +1648,10 @@ fun OrderDetailRoute(
                     )
                 },
                 onRecordItemHandover = viewModel.itemHandover::open,
-                onEditOrder = { onEditOrder(state.orderId) },
+                // The mode the detail screen worked out, carried rather than re-derived. Null
+                // cannot reach here — the control is gated on editing being offered at all —
+                // but a silent no-op beats opening the wrong form.
+                onEditOrder = { state.editMode?.let { mode -> onEditOrder(state.orderId, mode) } },
                 onOpenCollection = { onOpenCollection(state.orderId) },
                 onRecordProduction = { line ->
                     viewModel.production.open(
