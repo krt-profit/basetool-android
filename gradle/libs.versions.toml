@@ -61,8 +61,9 @@ spotless = "8.10.1"
 ktlint = "1.8.0"
 
 # Security floor for the BUILD-TIME transitives pinned from the root build script (ADR-0019).
-# The three BouncyCastle artifacts share one version deliberately: they must move as a set, or
-# bcpkix 1.84 meets bcutil 1.80.2 and the result is a NoSuchMethodError at APK-signing time.
+# The three BouncyCastle artifacts share one version ref deliberately: they must move as a set, or a
+# bumped bcpkix meets an old bcutil and the result is a NoSuchMethodError at APK-signing time. That
+# coupling was exercised on 2026-09-04 and held — one Dependabot bump moved all three to 1.85.
 bouncycastle = "1.85"
 
 [libraries]
@@ -109,9 +110,19 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 # no version for it to bump, and no newer plugin release moves them. The root build script turns
 # each entry below into a dependency *constraint*, which raises a resolution and never lowers one.
 #
-# They are advisory FLOORS, not the newest releases (bcprov 1.85.2 and plexus-utils 4.1.0 exist).
-# That is safe precisely because a constraint only raises: the day AGP or Robolectric ships
-# something higher, the higher version wins instead of being held back.
+# They are advisory FLOORS rather than "always newest". A constraint only raises, so the day AGP or
+# Robolectric ships something higher, the higher version wins instead of being held back — which is
+# why a floor below the newest release is safe.
+#
+# ONE OF THESE IS NOT A CONSTRAINT. `pin-plexus-xml` is ADDED to the buildscript classpath rather
+# than constrained, because it is not in the graph at all and a constraint on an absent module does
+# nothing. plexus-utils 4.0.0 EXTRACTED `org.codehaus.plexus.util.xml.*` into that separate
+# artifact, and Maven 3.9.x's maven-model — which app.cash.licensee pulls — still calls into it.
+# Without it, raising plexus-utils to 4.x fails every Gradle invocation with
+# `NoClassDefFoundError: org/codehaus/plexus/util/xml/pull/XmlPullParserException`. Measured
+# 2026-09-04, first by breaking `main` and then by fixing it properly: with plexus-xml on the
+# classpath, licensee's `artifacts.json` and the shipped `oss_licenses.json` are byte-identical to
+# what 3.6.2 produced.
 #
 # `pin-bcutil` has no advisory of its own and exists solely to keep the BouncyCastle trio in step.
 # Do not delete it as unused.
@@ -121,6 +132,7 @@ pin-bcutil = { group = "org.bouncycastle", name = "bcutil-jdk18on", version.ref 
 pin-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version = "0.9.6" }
 pin-jdom2 = { group = "org.jdom", name = "jdom2", version = "2.0.6.1" }
 pin-plexus-utils = { group = "org.codehaus.plexus", name = "plexus-utils", version = "4.1.0" }
+pin-plexus-xml = { group = "org.codehaus.plexus", name = "plexus-xml", version = "3.0.2" }
 pin-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version = "3.20.0" }
 pin-httpclient = { group = "org.apache.httpcomponents", name = "httpclient", version = "4.5.14" }
 pin-httpmime = { group = "org.apache.httpcomponents", name = "httpmime", version = "4.5.14" }
