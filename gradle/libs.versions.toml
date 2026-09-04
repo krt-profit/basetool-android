@@ -63,7 +63,7 @@ ktlint = "1.8.0"
 # Security floor for the BUILD-TIME transitives pinned from the root build script (ADR-0019).
 # The three BouncyCastle artifacts share one version deliberately: they must move as a set, or
 # bcpkix 1.84 meets bcutil 1.80.2 and the result is a NoSuchMethodError at APK-signing time.
-bouncycastle = "1.84"
+bouncycastle = "1.85"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
