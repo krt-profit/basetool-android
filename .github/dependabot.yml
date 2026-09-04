@@ -57,46 +57,6 @@ updates:
       # ANDROID_APP_DEV_CI.md` § 4 carries the full rationale.
       - dependency-name: "org.robolectric:android-all-instrumented"
 
-      # The ADR-0019 security pins are versions Dependabot can SEE, which means it can also raise
-      # them past what their consumer supports — and the alert a pin closes says nothing about the
-      # API the plugin needs.
-      #
-      # Measured 2026-09-04: it proposed plexus-utils 3.6.2 -> 4.1.0, the bump was merged, and
-      # `main` went red with `NoClassDefFoundError:
-      # org/codehaus/plexus/util/xml/pull/XmlPullParserException`. plexus-utils 4.x dropped the
-      # bundled `org.codehaus.plexus.util.xml.pull` package and app.cash.licensee's
-      # maven-model-builder still calls into it. 3.6.2 already clears GHSA-6fmv-xxpf-w3cw (patched
-      # in 3.6.1), so there is nothing to gain from the major line and a broken build to lose.
-      #
-      # So ALL TEN pins are closed to MAJOR bumps, not just the one that broke. plexus-utils is the
-      # only one measured, but the reasoning is structural rather than specific to it: every pin
-      # here is consumed by a plugin that is pinned independently, and a major line is exactly where
-      # a library drops the API its consumer still calls. Owner decision, 2026-09-04.
-      #
-      # Patch and minor bumps stay automated — those are what these pins exist for, and each still
-      # re-runs the full gate. Only the major line needs a human to check the consumer first.
-      # Revisit plexus-utils when licensee ships a maven-model-builder that works against 4.x.
-      - dependency-name: "org.bouncycastle:bcprov-jdk18on"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.bouncycastle:bcpkix-jdk18on"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.bouncycastle:bcutil-jdk18on"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.bitbucket.b_c:jose4j"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.jdom:jdom2"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.codehaus.plexus:plexus-utils"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.apache.commons:commons-lang3"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.apache.httpcomponents:httpclient"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.apache.httpcomponents:httpmime"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "com.github.jknack:handlebars"
-        update-types: ["version-update:semver-major"]
-
   - package-ecosystem: github-actions
     directory: /
     schedule:

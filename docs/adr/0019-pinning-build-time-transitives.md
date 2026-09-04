@@ -42,9 +42,14 @@ unpatched on the grounds that it is not shipped.
 
 ## Decision
 
-**Ten dependency *constraints* are declared in `gradle/libs.versions.toml` and applied from the
-root `build.gradle.kts`** — to the root buildscript classpath, to each subproject's buildscript,
-and to every declarable project configuration.
+**Ten dependency *constraints* plus one added artifact are declared in `gradle/libs.versions.toml`
+and applied from the root `build.gradle.kts`** — the constraints to the root buildscript classpath,
+to each subproject's buildscript, and to every declarable project configuration.
+
+The eleventh entry, `plexus-xml`, is **added** rather than constrained: plexus-utils 4.x extracted
+`org.codehaus.plexus.util.xml.*` into it, Maven 3.9.x's maven-model still calls into those classes,
+and a constraint on a module absent from the graph does nothing. See the amendment in Consequences
+for how that was learned.
 
 **Constraints, not `force`.** A constraint raises a resolution and never lowers one, so the day AGP
 or Robolectric ships something higher, the higher version wins instead of being dragged back.
@@ -59,8 +64,9 @@ a major bump past what the consumer supports broke the build on the day this lan
 `libs.versions.toml` and would have to hardcode ten versions outside the catalog. That is a rule
 violation with no repair available in that placement.
 
-A tenth entry, `bcutil-jdk18on`, carries no advisory of its own. It exists so the BouncyCastle trio
-moves as a set: bcpkix 1.84 meeting bcutil 1.80.2 is a `NoSuchMethodError` at signing time.
+Two entries carry no advisory of their own. `bcutil-jdk18on` exists so the BouncyCastle trio moves
+as a set — a bumped bcpkix meeting an old bcutil is a `NoSuchMethodError` at signing time — and
+`plexus-xml` exists only to restore what plexus-utils 4.x moved out from under its consumer.
 
 ## Consequences
 
@@ -72,23 +78,38 @@ moves as a set: bcpkix 1.84 meeting bcutil 1.80.2 is a `NoSuchMethodError` at si
 - Ten new catalog entries mean Dependabot will now offer to bump them. Patch and minor bumps
   re-run the same gate, which is the point.
 
-  **Amended 2026-09-04, the day this landed.** The sentence above originally ended "Each bump
-  re-runs the same gate, which is the point", and that was wrong about major bumps in a way that
-  turned `main` red within the hour. Dependabot proposed `plexus-utils` 3.6.2 → **4.1.0**, the bump
-  was merged, and the build failed with `NoClassDefFoundError:
-  org/codehaus/plexus/util/xml/pull/XmlPullParserException` — plexus-utils 4.x dropped the bundled
-  `org.codehaus.plexus.util.xml.pull` package, and app.cash.licensee's maven-model-builder still
-  calls into it.
+  **Amended 2026-09-04, the day this landed, twice.**
 
-  The gate did work; it simply ran after the merge. The real defect was in the reasoning: **a pin
-  closes a security alert and says nothing whatsoever about the API its consumer needs.** Declaring
-  these coordinates made them visible to Dependabot for the first time, and a major line is exactly
-  where a library drops the API a plugin still calls. All ten pins are therefore closed to major
-  bumps in `.github/dependabot.yml` (owner decision, 2026-09-04); patch and minor stay automated.
-  3.6.2 already clears GHSA-6fmv-xxpf-w3cw, so nothing was given up by staying on the 3.x line.
+  The sentence above originally ended "Each bump re-runs the same gate, which is the point", and
+  within the hour Dependabot proposed `plexus-utils` 3.6.2 → **4.1.0**, the bump was merged before
+  CI finished, and `main` went red: `NoClassDefFoundError:
+  org/codehaus/plexus/util/xml/pull/XmlPullParserException`, taking CodeQL's extraction build and
+  the release-signing rehearsal with it.
 
-  The BouncyCastle side of the same event is the counter-example worth keeping: the shared
-  `version.ref` did its job, and one bump moved bcprov, bcpkix and bcutil to 1.85 together.
+  **The first diagnosis was wrong and is recorded here so it is not repeated.** It read "plexus-utils
+  4.x dropped the package, so the major line is unusable", and the first fix reverted to 3.6.2 and
+  closed all ten pins to major bumps. plexus-utils 4.0.0 did not *drop* those classes — it
+  **extracted** them into `org.codehaus.plexus:plexus-xml`, which still carries
+  `XmlPullParserException`, `MXParser` and `Xpp3Dom` in the same packages. Adding that artifact
+  makes 4.1.0 work, verified: licensee's `artifacts.json` (140 entries) and the shipped
+  `oss_licenses.json` are byte-identical to what 3.6.2 produced. The revert and the ignore list were
+  both withdrawn.
+
+  Two things this actually changes:
+
+  - **The mechanism is no longer constraints-only.** `pin-plexus-xml` is *added* to the buildscript
+    classpath, because a constraint on a module that is absent from the graph does nothing. A pin
+    raised across a major boundary may need a companion artifact, and that is a real addition to
+    what this ADR decided.
+  - **The failure was a merge before CI, not a major bump.** The gate caught it; nobody waited for
+    the gate. That belongs in branch protection, not in `.github/dependabot.yml` — no pin carries a
+    `semver-major` ignore, deliberately, so a bump that would break the build still arrives as a
+    red PR rather than never arriving at all.
+
+  The BouncyCastle half of the same round is the counter-example worth keeping: the shared
+  `version.ref` did its job and moved bcprov, bcpkix and bcutil to 1.85 together, which is the drift
+  that would otherwise be a `NoSuchMethodError` at signing time.
+
 - The pins sit below the newest available versions. That is only tenable because Lint's
   `GradleDependency` and `AndroidGradlePluginVersion` checks are disabled in `:app` and every
   `core:*`; re-enabling either turns these floors into a red build.

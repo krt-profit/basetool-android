@@ -54,6 +54,10 @@ buildscript {
         constraints {
             pins.forEach { add("classpath", it) }
         }
+        // plexus-utils 4.x EXTRACTED org.codehaus.plexus.util.xml.* into plexus-xml. Maven
+        // 3.9.x's maven-model still calls into it, so the artifact has to be ADDED (a constraint
+        // would do nothing — it is not in the graph at all).
+        add("classpath", libs.pin.plexus.xml.get().toString())
     }
     extra["securityPins"] = pins
 }
