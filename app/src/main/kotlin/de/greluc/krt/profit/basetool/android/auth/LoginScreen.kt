@@ -335,25 +335,34 @@ private fun Modifier.topBloom(): Modifier =
 /**
  * What the login is doing, as the screen needs to know it.
  *
- * @property messageRes a string to show under the button, or `null`
+ * An interface rather than a sealed class, and not only for consistency with the 46 other sealed
+ * hierarchies in this app. The Compose compiler puts a `$stable` marker field on every class it
+ * touches, so a sealed *class* gets one on the parent and one on each member — which is what
+ * CodeQL reported as `java/field-masks-super-field`. The shadowing is compiler-generated, but the
+ * query was right about the shape: an interface carries no such field. See ADR-0020.
  */
-sealed class LoginUiState(
-    val messageRes: Int?,
-) {
+sealed interface LoginUiState {
+    /** A string to show under the button, or `null` when there is nothing to say. */
+    val messageRes: Int?
+
     /** Nothing has happened yet. */
-    data object Idle : LoginUiState(null)
+    data object Idle : LoginUiState {
+        override val messageRes: Int? = null
+    }
 
     /** The browser is open, or the code is being redeemed. */
-    data object Working : LoginUiState(R.string.login_signing_in)
+    data object Working : LoginUiState {
+        override val messageRes: Int = R.string.login_signing_in
+    }
 
     /**
      * The attempt ended without a session.
      *
-     * @param reason which message to show
+     * @property messageRes which message to show
      */
     class Failed(
-        reason: Int,
-    ) : LoginUiState(reason)
+        override val messageRes: Int,
+    ) : LoginUiState
 }
 
 /**

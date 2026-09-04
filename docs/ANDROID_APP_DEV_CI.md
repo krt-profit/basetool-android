@@ -149,10 +149,14 @@ Baseline posture (all from GitHub's current security docs):
 - **Every third-party action pinned to a full commit SHA** (the only immutable reference —
   tj-actions/changed-files, CVE-2025-30066, is the case study; >23 000 repos hit by tag rewrite).
 - **Gradle dependency verification** (`gradle/verification-metadata.xml`: checksums + PGP where
-  published) gates every resolved build/plugin artifact — the Android-toolchain counterpart of
-  SHA-pinned actions; the `--write-verification-metadata` refresh flow is documented in the
-  contributor docs so a bumped dependency fails loudly instead of resolving silently.
-- **zizmor** (v1.29.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
+  published) is the Android-toolchain counterpart of SHA-pinned actions — **planned, not in
+  place**; it is the open gate in § 5, and this bullet claimed it was live until 2026-09-04.
+- **Executables the workflows fetch themselves are pinned by content, not by version**: actionlint
+  by a `sha256sum -c` against a hardcoded digest, zizmor by `pip --require-hashes` against
+  `.github/requirements/zizmor.txt`. The two differ because zizmor's GitHub release publishes no
+  checksums file while PyPI publishes sha256 as first-class metadata; gitleaks still downloads
+  unverified and is the remaining gap.
+- **zizmor** (v1.30.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
   `cache-poisoning`, `template-injection`, `artipacked`, `unpinned-uses`, `excessive-permissions`
   audits are the checklist.
 - Caches: `gradle/actions/setup-gradle` (v6.3.0) with default branch-scoped cache semantics
@@ -200,10 +204,10 @@ Baseline posture (all from GitHub's current security docs):
 | Workflow | Trigger | Jobs | State |
 |---|---|---|---|
 | `ci.yml` | PR + push to main | `./gradlew build` (assemble all four variants, unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor | **built** |
-| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real uncached `assembleDevDebug`; see the file header for why `none` was abandoned) and on `actions` (`build-mode: none`), wrapper validation | **built** |
+| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real uncached `assembleDevDebug`; see the file header for why `none` was abandoned) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020 | **built** |
 | `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
 | `gitleaks.yml` | PR + dispatch | pinned gitleaks binary, range-scoped to `base..head` on a PR | **built** |
-| `supply-chain.yml` | PR + push + weekly | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning | **built** |
+| `supply-chain.yml` | dependency review on PR; Scorecard daily + dispatch | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning. Scorecard deliberately does **not** run on push: its Binary-Artifacts check excludes the wrapper jar only once `ci.yml` has succeeded for that commit, and a 40 s scan racing a 15 min build never sees that. Daily rather than weekly because the exclusion only looks at the 30 newest `ci.yml` runs | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
 | `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
 | `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip → `assembleProdRelease` → `apksigner verify` (v3 present, v1 absent, one signer, certificate is the generated one) → shred; no secrets, no cache, nothing published | **built** |
@@ -318,8 +322,10 @@ unnecessary gift); QA against staging happens via the dev flavor.
 
 ## 7. Version sources (all fetched live 2026-08-17)
 
-gradle/actions v6.3.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 1.23.8
-(2.0.0 in alpha — pinned to 1.23.x), ktlint 1.8.0, zizmor v1.29.0, actionlint v1.7.12,
+gradle/actions v6.3.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 2.0.0-alpha.6
+(the 1.23 line's embedded IntelliJ library cannot parse the JDK 25 version string and dies with a
+bare `> 25`, so the alpha is the only usable line — this entry said "pinned to 1.23.x" until
+2026-09-04), ktlint 1.8.0, zizmor v1.30.0, actionlint v1.7.12,
 gitleaks v8.30.1, CycloneDX Gradle plugin 3.4.1, dependency-review-action v5, Scorecard action
 v2 — each from the project's GitHub releases API / official docs; CodeQL Kotlin GA status from
 codeql.github.com supported-languages; KVM-on-hosted-runners from the GitHub changelog

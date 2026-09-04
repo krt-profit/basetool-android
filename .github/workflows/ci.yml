@@ -240,12 +240,16 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Hash-pinned rather than version-pinned. A version is not a content hash, so Scorecard's
+      # Pinned-Dependencies check reported the previous `pip install zizmor==1.29.0` as unpinned;
+      # `--require-hashes` satisfies it and, more to the point, makes pip actually verify what it
+      # installs. zizmor has no transitive dependencies, so the file is one entry — the reasoning
+      # and the by-hand bump rule live in .github/requirements/zizmor.txt.
       - name: Install zizmor
-        env:
-          ZIZMOR_VERSION: 1.29.0
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check "zizmor==${ZIZMOR_VERSION}"
+          python -m pip install --disable-pip-version-check \
+            --require-hashes -r .github/requirements/zizmor.txt
           zizmor --version
 
       # The audits that matter for a public repo: unpinned actions, template

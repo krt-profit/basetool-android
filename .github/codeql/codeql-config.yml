@@ -1,0 +1,53 @@
+# CodeQL analysis configuration.
+#
+# This file does nothing on its own. It takes effect only because
+# `.github/workflows/codeql.yml` names it in the init step's `config-file:` input — a file at this
+# path is NOT auto-discovered in advanced setup. A wrong or moved path fails that step loudly
+# (`The configuration file "…" does not exist`); the one silent failure is deleting the input, after
+# which the run stays green and analyses everything. That is the failure mode to watch for.
+#
+# WHY ONE QUERY IS FILTERED OUT
+#
+# `java/local-variable-is-never-read` raised 30 alerts here, and all 30 named a variable that
+# exists nowhere in this repository:
+#
+#     Variable 'Loading tmp0_other_with_cast' is never read.
+#
+# `tmp0_other_with_cast` is the Kotlin compiler's own temporary. Compiling a `data object`
+# synthesises `equals`, and the IR generator names the cast result `tmp<n>_<hint>` with the hint
+# `other_with_cast` (the string lives in
+# org.jetbrains.kotlin.ir.util.DataClassMembersGenerator$MemberFunctionBuilder). A `data object`
+# has no properties, so after the cast there is nothing left to compare and the temporary is
+# written and never read. The extractor runs off that IR, sees a dead local, and reports it at
+# line 1 column 1 — the position an element with no source location gets, and the tell that no
+# human wrote it.
+#
+# All 70 variable names across those 30 alerts matched that shape, and every type named was a
+# `data object`. Data classes carrying properties were never reported, because there the generated
+# `equals` does read the temporary. The rule cannot be satisfied by editing code — only by not
+# declaring `data object`, the idiom 80 declarations in this app are built on. Counting the one
+# alert of this rule that has already closed, it has produced 31 findings here and 31 of them were
+# compiler-generated.
+#
+# WHAT THE EXCLUSION COSTS, HONESTLY
+#
+# A genuinely unused local in hand-written Kotlin now has no gate at all in `core:*`. That cost is
+# real and was measured rather than assumed: under K2, `allWarningsAsErrors` does NOT catch it —
+# a file containing `val x = 42` compiles clean with -Werror, because UNUSED_VARIABLE is an IDE
+# inspection under K2, not a compiler warning. detekt's `style>UnusedVariable` does catch it, but
+# only in the type-resolving tasks, which ADR-0017 gates for `:app` and deliberately not for
+# `core:*`. So this is a narrowing of coverage, not a free removal of noise. ADR-0020 records why
+# it is still the right trade against 30 permanent findings plus one per new screen.
+#
+# REVISIT WHEN the CodeQL Kotlin extractor stops emitting locals with no source range, or when
+# UnreadLocal.ql gains a compiler-generated guard — upstream it excludes catch-clause variables,
+# Kotlin range for-loop variables and try-with-resources, and nothing else. Nothing here will tell
+# you when that changes.
+#
+# `java/field-masks-super-field` is deliberately NOT filtered. It fired once, on the Compose
+# compiler's `$stable` marker, and it had a real one-line source fix: the sealed *class* it
+# reported became a sealed interface, which carries no such field. See ADR-0020.
+
+query-filters:
+  - exclude:
+      id: java/local-variable-is-never-read

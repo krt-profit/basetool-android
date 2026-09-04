@@ -60,6 +60,11 @@ detekt = "2.0.0-alpha.6"
 spotless = "8.10.1"
 ktlint = "1.8.0"
 
+# Security floor for the BUILD-TIME transitives pinned from the root build script (ADR-0019).
+# The three BouncyCastle artifacts share one version deliberately: they must move as a set, or
+# bcpkix 1.84 meets bcutil 1.80.2 and the result is a NoSuchMethodError at APK-signing time.
+bouncycastle = "1.84"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
@@ -95,6 +100,31 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 robolectric-android-all-instrumented = { group = "org.robolectric", name = "android-all-instrumented", version.ref = "robolectricAndroidAll" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+
+# Build-time security pins — see ADR-0019.
+#
+# None of these is a dependency of the app. They are transitive artifacts of the Gradle plugins
+# (AGP, licensee, openapi-generator) and of Robolectric, every one of them carrying an open
+# advisory that Dependabot cannot propose a fix for: the coordinates are undeclared, so there is
+# no version for it to bump, and no newer plugin release moves them. The root build script turns
+# each entry below into a dependency *constraint*, which raises a resolution and never lowers one.
+#
+# They are advisory FLOORS, not the newest releases (bcprov 1.85.2 and plexus-utils 4.1.0 exist).
+# That is safe precisely because a constraint only raises: the day AGP or Robolectric ships
+# something higher, the higher version wins instead of being held back.
+#
+# `pin-bcutil` has no advisory of its own and exists solely to keep the BouncyCastle trio in step.
+# Do not delete it as unused.
+pin-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
+pin-bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
+pin-bcutil = { group = "org.bouncycastle", name = "bcutil-jdk18on", version.ref = "bouncycastle" }
+pin-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version = "0.9.6" }
+pin-jdom2 = { group = "org.jdom", name = "jdom2", version = "2.0.6.1" }
+pin-plexus-utils = { group = "org.codehaus.plexus", name = "plexus-utils", version = "3.6.2" }
+pin-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version = "3.20.0" }
+pin-httpclient = { group = "org.apache.httpcomponents", name = "httpclient", version = "4.5.14" }
+pin-httpmime = { group = "org.apache.httpcomponents", name = "httpmime", version = "4.5.14" }
+pin-handlebars = { group = "com.github.jknack", name = "handlebars", version = "4.5.4" }
 
 [plugins]
 # AGP 9 compiles Kotlin itself — the org.jetbrains.kotlin.android plugin is gone

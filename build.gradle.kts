@@ -14,6 +14,50 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 /** JVM target detekt analyses against; see the comment at the task configuration below. */
 val DETEKT_JVM_TARGET = "17"
 
+/*
+ * Build-time-only security pins — ADR-0019.
+ *
+ * Nine open Dependabot advisories sit on artifacts this project never declares: BouncyCastle,
+ * jose4j, jdom2 and commons-lang3 arrive through AGP, plexus-utils through licensee, handlebars
+ * through the OpenAPI generator, and bcprov 1.81 — the one critical — through Robolectric's
+ * unit-test classpath. Dependabot cannot propose a fix for any of them, because there is no
+ * declared version to bump, and no plugin release moves them: AGP 9.4.0, licensee 1.14.1,
+ * openapi-generator 7.25.0 and Robolectric 4.16.1 are each the newest usable release.
+ * Overriding the resolved graph is therefore the only mechanism left.
+ *
+ * CONSTRAINTS, not `force`. A constraint raises a resolution and never lowers one, so a future
+ * upstream that already ships higher wins instead of being dragged back. `force` would do the
+ * opposite, and an unscoped `force` on project configurations could one day silently DOWNGRADE a
+ * BouncyCastle that had legitimately reached the APK.
+ *
+ * Measured no-op on what ships: the unsigned prodRelease APK is byte-identical (458 entries, none
+ * differing) and the 819 generated OpenAPI sources are unchanged. Nothing here reaches
+ * `prodReleaseRuntimeClasspath`.
+ *
+ * These entries are deleted when AGP, licensee and Robolectric ship patched transitives. Nothing
+ * in the build will tell you when that day comes.
+ */
+buildscript {
+    val pins = listOf(
+        libs.pin.bcprov,
+        libs.pin.bcpkix,
+        libs.pin.bcutil,
+        libs.pin.jose4j,
+        libs.pin.jdom2,
+        libs.pin.plexus.utils,
+        libs.pin.commons.lang3,
+        libs.pin.httpclient,
+        libs.pin.httpmime,
+        libs.pin.handlebars,
+    ).map { it.get().toString() }
+    dependencies {
+        constraints {
+            pins.forEach { add("classpath", it) }
+        }
+    }
+    extra["securityPins"] = pins
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -157,5 +201,41 @@ subprojects {
         // runtime version. This declares the one thing that actually varies about that directory,
         // without hashing a 150 MB jar on every test task.
         inputs.property("robolectricAndroidAll", robolectricSdkVersion)
+    }
+}
+
+/*
+ * The same pins, applied to every other classpath that resolves one of them — ADR-0019.
+ *
+ * The `buildscript` block at the top of this file covers the root project's own plugin classpath.
+ * These two passes cover the rest: each subproject's buildscript, and the project configurations
+ * where the remaining alerted resolutions actually live — `androidLintTool` (commons-lang3,
+ * httpclient) and the unit-test buckets (Robolectric's bcprov).
+ */
+@Suppress("UNCHECKED_CAST")
+val securityPins = extra["securityPins"] as List<String>
+
+// `subprojects`, not `allprojects`: the root project's classpath is already constrained in the
+// buildscript block above, and constraining it a second time throws "Cannot mutate the
+// dependencies of configuration 'classpath' after the configuration was resolved".
+subprojects {
+    val project = this
+    project.buildscript.configurations.configureEach {
+        val configurationName = name
+        securityPins.forEach { project.buildscript.dependencies.constraints.add(configurationName, it) }
+    }
+}
+
+// Deliberately broad. Only `androidLintTool` and the unit-test buckets carry an alerted resolution
+// today, but this is the form that was measured green end to end — `check`, both assemble tasks, a
+// byte-identical release APK and a valid configuration-cache entry. Narrowing it to the two known
+// configurations is an unmeasured optimisation of configuration time, not a correctness fix.
+allprojects {
+    val project = this
+    project.configurations.configureEach {
+        val configurationName = name
+        if (isCanBeDeclared) {
+            securityPins.forEach { project.dependencies.constraints.add(configurationName, it) }
+        }
     }
 }

@@ -22,7 +22,8 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '41 4 * * 1'
+    # Daily, and that cadence is load-bearing rather than tidy — see the Scorecard job below.
+    - cron: '41 4 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -57,9 +58,25 @@ jobs:
           deny-licenses: AGPL-1.0-or-later, AGPL-3.0-or-later, SSPL-1.0, BUSL-1.1
           comment-summary-in-pr: on-failure
 
+  # Schedule and manual dispatch only — never on push, and that is a fix rather than a preference.
+  #
+  # Scorecard's Binary-Artifacts check excludes `gradle/wrapper/gradle-wrapper.jar` only when
+  # `ci.yml` already has a SUCCESSFUL run for the head commit. On a push both workflows start in
+  # the same second; Scorecard finishes in ~40 s and CI in ~15 min, so the exclusion can never
+  # fire and the wrapper jar is reported as an unvalidated binary every single time. Measured
+  # 2026-08-31 on the same commit: the push SARIF carried BinaryArtifactsID, the scheduled SARIF
+  # did not. Both scheduled runs this repo has ever had omit it; all ~60 push runs carry it.
+  #
+  # The DAILY cron above is part of the same fix. Scorecard lists ci.yml's runs without
+  # pagination, so the exclusion only ever sees the 30 newest successful runs across all branches
+  # and events. On a weekly cadence, 30 PR-triggered successes can push the main-HEAD run off that
+  # page and silently reopen the alert.
+  #
+  # Accepted regression: the flapping SASTID alert now takes up to a day to clear instead of
+  # clearing on the next push. The daily cron bounds that.
   scorecard:
     name: OpenSSF Scorecard
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

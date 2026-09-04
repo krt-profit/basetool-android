@@ -1,13 +1,23 @@
 # Dependabot covers both ecosystems this repo has: the Gradle version catalog
 # and the action pins in .github/workflows.
 #
-# The Gradle schedule is **daily**, which is unusual and deliberate. Android
-# Lint runs with `warningsAsErrors = true`, and its dependency checks treat an
-# available newer version as a finding — so a dependency release upstream can
-# turn `main` red without anyone touching this repository. Dependabot is
-# therefore not hygiene here, it is what keeps the build green; a weekly
-# cadence would mean up to a week of red main for a bump nobody had a reason to
-# delay.
+# The Gradle schedule is **daily**, which is unusual and deliberate.
+#
+# Corrected 2026-09-04: this comment used to justify the cadence by claiming that Android Lint
+# runs with `warningsAsErrors = true` and that its dependency checks treat an available newer
+# version as a finding, so an upstream release could turn `main` red on its own. That is no
+# longer true — `GradleDependency` and `AndroidGradlePluginVersion` are both `disable`d in `:app`
+# and in every `core:*` module, so nothing about a stale dependency reddens the build.
+#
+# The daily cadence stays, for the reason that actually applies now: this repo's dependency
+# surface is where its worst realistic compromise lives (see supply-chain.yml), the app ships as a
+# self-signed APK off GitHub Releases with no store review behind it, and a security advisory that
+# lands on a Monday should not wait until the next Monday to be seen. It is hygiene — but hygiene
+# on the shortest path an attacker has into the process that holds the refresh token.
+#
+# The claim above mattered beyond tidiness: while it stood, it made a reader believe Lint would
+# force a version bump, which is exactly the assumption ADR-0019's advisory-floor pins depend on
+# being false.
 #
 # No `labels:` on purpose: Dependabot creates and applies its own
 # `dependencies` label, while a label named here that does not exist in the
