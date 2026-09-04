@@ -50,8 +50,9 @@ and to every declarable project configuration.
 or Robolectric ships something higher, the higher version wins instead of being dragged back.
 `force` does the opposite: an unscoped `force` on project configurations could one day silently
 *downgrade* a BouncyCastle that had legitimately reached the APK. The versions pinned are therefore
-deliberately **advisory floors, not the newest releases** — bcprov 1.85.2 and plexus-utils 4.1.0
-exist — and that is safe only because the mechanism raises.
+deliberately **advisory floors, not the newest releases**, and that is safe only because the
+mechanism raises. It is not safe in the other direction — see the amendment in Consequences, where
+a major bump past what the consumer supports broke the build on the day this landed.
 
 **The root build script, not `settings.gradle.kts`.** A settings-level pin runs at
 `gradle.beforeProject` time, where `VersionCatalogsExtension` does not yet exist, so it cannot read
@@ -68,8 +69,26 @@ moves as a set: bcpkix 1.84 meeting bcutil 1.80.2 is a `NoSuchMethodError` at si
   gated to pushes on `main`, so no PR can show a Dependabot alert closing.
 - **What ships is unchanged, measured rather than argued:** the unsigned `prodRelease` APK is
   byte-identical (458 entries, none differing) and the 819 generated OpenAPI sources are unchanged.
-- Ten new catalog entries mean Dependabot will now offer to bump them. Each bump re-runs the same
-  gate, which is the point.
+- Ten new catalog entries mean Dependabot will now offer to bump them. Patch and minor bumps
+  re-run the same gate, which is the point.
+
+  **Amended 2026-09-04, the day this landed.** The sentence above originally ended "Each bump
+  re-runs the same gate, which is the point", and that was wrong about major bumps in a way that
+  turned `main` red within the hour. Dependabot proposed `plexus-utils` 3.6.2 → **4.1.0**, the bump
+  was merged, and the build failed with `NoClassDefFoundError:
+  org/codehaus/plexus/util/xml/pull/XmlPullParserException` — plexus-utils 4.x dropped the bundled
+  `org.codehaus.plexus.util.xml.pull` package, and app.cash.licensee's maven-model-builder still
+  calls into it.
+
+  The gate did work; it simply ran after the merge. The real defect was in the reasoning: **a pin
+  closes a security alert and says nothing whatsoever about the API its consumer needs.** Declaring
+  these coordinates made them visible to Dependabot for the first time, and a major line is exactly
+  where a library drops the API a plugin still calls. All ten pins are therefore closed to major
+  bumps in `.github/dependabot.yml` (owner decision, 2026-09-04); patch and minor stay automated.
+  3.6.2 already clears GHSA-6fmv-xxpf-w3cw, so nothing was given up by staying on the 3.x line.
+
+  The BouncyCastle side of the same event is the counter-example worth keeping: the shared
+  `version.ref` did its job, and one bump moved bcprov, bcpkix and bcutil to 1.85 together.
 - The pins sit below the newest available versions. That is only tenable because Lint's
   `GradleDependency` and `AndroidGradlePluginVersion` checks are disabled in `:app` and every
   `core:*`; re-enabling either turns these floors into a red build.
