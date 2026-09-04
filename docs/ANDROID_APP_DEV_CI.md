@@ -154,8 +154,10 @@ Baseline posture (all from GitHub's current security docs):
 - **Executables the workflows fetch themselves are pinned by content, not by version**: actionlint
   by a `sha256sum -c` against a hardcoded digest, zizmor by `pip --require-hashes` against
   `.github/requirements/zizmor.txt`. The two differ because zizmor's GitHub release publishes no
-  checksums file while PyPI publishes sha256 as first-class metadata; gitleaks still downloads
-  unverified and is the remaining gap.
+  checksums file while PyPI publishes sha256 as first-class metadata. gitleaks takes the same
+  route as actionlint, with its digest read from the release's own `gitleaks_<ver>_checksums.txt`.
+  None of the three is covered by a Dependabot ecosystem: version and digest are bumped by hand,
+  together, and a mismatch fails loudly rather than silently installing something else.
 - **zizmor** (v1.30.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
   `cache-poisoning`, `template-injection`, `artipacked`, `unpinned-uses`, `excessive-permissions`
   audits are the checklist.
@@ -206,7 +208,7 @@ Baseline posture (all from GitHub's current security docs):
 | `ci.yml` | PR + push to main | `./gradlew build` (assemble all four variants, unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor | **built** |
 | `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real uncached `assembleDevDebug`; see the file header for why `none` was abandoned) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020 | **built** |
 | `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
-| `gitleaks.yml` | PR + dispatch | pinned gitleaks binary, range-scoped to `base..head` on a PR | **built** |
+| `gitleaks.yml` | PR + dispatch | checksum-verified gitleaks binary, range-scoped to `base..head` on a PR | **built** |
 | `supply-chain.yml` | dependency review on PR; Scorecard daily + dispatch | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning. Scorecard deliberately does **not** run on push: its Binary-Artifacts check excludes the wrapper jar only once `ci.yml` has succeeded for that commit, and a 40 s scan racing a 15 min build never sees that. Daily rather than weekly because the exclusion only looks at the 30 newest `ci.yml` runs | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
 | `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
