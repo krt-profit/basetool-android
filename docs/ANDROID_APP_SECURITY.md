@@ -403,37 +403,81 @@ fine — that asymmetry is the tell, because Chrome does not use this config.
 **Before every release**, one check that costs nothing: `./gradlew :app:testDevDebugUnitTest --tests "*NetworkSecurityConfigTest"`.
 It fails if a pin element was lost, if a host lost its pin-set, or if a pin-set lost its expiry.
 
-### 5.2 The 52 Dependabot alerts, and why none of them is in the app (2026-08-24)
+### 5.2 Every Dependabot alert is on a build classpath, and what was done about it
 
-The repository carries a standing set of Dependabot alerts — 2 critical, 21 high at the time of
-writing — and every one of them is on **`settings.gradle.kts`**, the plugin classpath. They are
-transitive dependencies of the OpenAPI generator: `handlebars` is its templating engine, and
-`netty`, `jose4j`, `bouncycastle`, `plexus-utils` and `jdom2` arrive through swagger-parser's HTTP
-and JOSE stack.
+**Corrected 2026-09-04.** This section previously read *"The 52 Dependabot alerts, and why none of
+them is in the app (2026-08-24)"* and stated that all of them were transitive dependencies of the
+OpenAPI generator, arriving "through swagger-parser's HTTP and JOSE stack". The count had gone
+stale (41 alerts auto-closed on 2026-08-24 and 2026-09-01, `netty` and `jackson-databind` among
+them), and the provenance was wrong for eight of the nine that remained. Both are corrected below
+from measured resolution, and the section's conclusion is reversed: the alerts are now **pinned**
+rather than argued away.
 
-**None of them ships.** Verified rather than assumed:
+**Measured provenance** (`:buildEnvironment` and `:dependencies` per configuration, 2026-09-04):
+
+| Coordinate | Arrives through |
+| --- | --- |
+| `bcprov-jdk18on` 1.81 (**critical**, GHSA-574f-3g2m-x479) | **Robolectric 4.16.1**, the unit-test classpath |
+| `bcprov` / `bcpkix` 1.80.2 | AGP 9.4.0 → sdk-common / builder / apkzlib |
+| `jdom2` 2.0.6 | AGP 9.4.0 → jetifier-processor |
+| `jose4j` 0.9.5 | AGP 9.4.0 → bundletool |
+| `commons-lang3` 3.16.0, `httpclient` 4.5.6 | AGP 9.4.0 → lint-gradle / sdklib, in `androidLintTool` |
+| `plexus-utils` 3.6.0 | app.cash.licensee 1.14.1 → maven-model-builder |
+| `handlebars` 4.3.1 | org.openapi.generator 7.25.0 — the only one the old story explained |
+
+Only the last is the generator's, and it is never even executed: the Kotlin generator uses
+jmustache, and `openApiGenerate {}` never sets `engine`.
+
+**None of them ships**, which remains true and is still worth checking rather than assuming:
 
 ```bash
-./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath | grep -icE "netty|handlebars|bouncycastle|jose4j|plexus|jdom"
+./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath   | grep -icE "bouncycastle|plexus|jdom|jose4j|handlebars|httpclient|commons-lang3"
 # 0
 ```
 
-That is worth writing down because a badge saying "2 critical" reads as *the app is vulnerable*, and
-it is not: the exposure is a **build-time** one — a developer machine and a CI runner parsing a
-committed OpenAPI document we wrote ourselves. The runner is ephemeral, the input is not attacker
-controlled, and the actions are SHA-pinned (§ 4 of the DEV_CI doc).
+That matters because a badge saying "1 critical" reads as *the app is vulnerable*, and it is not.
+But **not shipping is not the same as not running**: bcprov signs the release APK through apkzlib,
+commons-lang3 and httpclient run inside Android Lint, and handlebars is loaded by the generator
+that writes 819 files into this repository. Code that executes in CI, in a repository whose release
+job holds a self-managed and unrecoverable signing key, is not code to leave unpatched because it
+is absent from the APK.
+
+So as of 2026-09-04 all nine are **pinned** as raise-only dependency constraints declared in
+`gradle/libs.versions.toml` and applied from the root build script — **ADR-0019**, which carries
+the mechanism, why constraints rather than `force`, and the condition under which the pins are
+deleted again. The measured result is a byte-identical release APK and byte-identical generated
+sources: the pins change what CI runs, and nothing about what members install.
 
 **What would change the answer**, and is therefore what to watch for rather than the count:
 
 - any of these names appearing on `prodReleaseRuntimeClasspath` — the command above is the check;
+- an alert on a configuration the pins do not cover: check `androidLintTool`, the root
+  `:buildEnvironment` and `devDebugUnitTestRuntimeClasspath` as well;
 - a generator that starts fetching a **remote** spec, which would turn the parser into something an
   outsider can feed;
-- an alert on a manifest that is *not* `settings.gradle.kts`.
+- this project starting to apply **KAPT** — see the Kotlin alert below.
 
-The generator is kept current (7.25.0) because a newer one can only help, but the versions are
-upstream's to choose: bumping it did not clear `bcprov-jdk18on`, `jdom2` or `jose4j`, and pinning
-them from here would mean overriding a plugin's own resolved graph to silence a badge for code that
-never runs in the product.
+#### The one alert deliberately left open: kotlin-gradle-plugin
+
+GHSA-r937-wjx7-w2jp / CVE-2026-53914 flags `org.jetbrains.kotlin:kotlin-gradle-plugin < 2.4.20-Beta1`.
+It is left open on purpose, and the generic argument above does **not** cover it — the Kotlin Gradle
+plugin runs on every build. Three specific facts do:
+
+1. Despite the advisory's title ("Kotlin Build Cache"), the upstream patch (KT-86604) touches only
+   `plugins/kapt/kapt-base/`. It is **KAPT's** incremental annotation-processing cache, not Gradle's
+   build cache.
+2. **This project applies no KAPT.** No build script references it, and no
+   `kotlin-annotation-processing*` artifact resolves. Annotation processing here is KSP.
+3. The vulnerable class is **not in the flagged artifact**: the resolved
+   `kotlin-gradle-plugin-2.4.10-gradle813.jar` has 15 093 entries, 162 of them matching "kapt", and
+   zero under `org/jetbrains/kotlin/kapt/base/`.
+
+It is **not dismissed**, because a `not_used` dismissal would not resurface if this project ever
+adopted KAPT — and that is exactly the trigger to watch. Leaving it open costs nothing: no stable
+Kotlin above 2.4.10 exists yet (Maven Central's `<release>` is `2.4.20-RC3`), and the alert
+self-closes the day Dependabot's 2.4.20 bump merges. Shipping a prerelease *compiler* into a
+GitHub-Releases APK with no staged-rollout kill switch would trade real codegen risk for no
+security gain.
 
 ## 6. App/API behavior contracts (security-relevant)
 

@@ -100,12 +100,22 @@ jobs:
           # would build an empty database — green, and analysing nothing.
           cache-disabled: true
 
+      # One query of the security-and-quality suite is filtered out; the config file says which
+      # and why. It has to be named here — a file at that path is not auto-discovered in advanced
+      # setup, and deleting this input leaves the filter silently off while the run stays green.
+      #
+      # `queries:` and the file's `query-filters:` do not fight each other. The action's `queries`
+      # input replaces only the config file's own `queries` key — which is what the documented `+`
+      # prefix opts out of — while every other key of the user config is copied through untouched.
+      # So no `+` is needed, and the file declares no queries of its own. Both matrix legs share
+      # the file harmlessly: a `java/…` id matches nothing in the `actions` pack.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
 
       # One debug variant is enough: every module's Kotlin is compiled by it, and
       # the release variants add R8 output CodeQL has no use for.
