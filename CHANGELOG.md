@@ -2,17 +2,44 @@
 
 ## [Unreleased]
 
+## [0.2.4] — 2026-09-03
+
+> **Diese Version braucht die Freischaltung am API-Zugang.** Alle fünf Punkte unten betreffen Wege, die der
+> API-Zugang bisher gar nicht durchgelassen hat; die Regeln dafür liegen im
+> Haupt-Repo (Runbook-Phasen N, O und P) und werden beim nächsten Einspielen wirksam. Bis dahin
+> meldet die Materialsammelübersicht einen Fehler, wo die Knöpfe vorher nur ausgegraut waren — das
+> ist der einzige Unterschied zum Schlechteren, und keine eingegebene Arbeit geht dabei verloren.
+
 ### Fixed
 
-- **Die Direktbuchung nimmt jetzt alles mit, was das Webtool fragt.** Bisher fehlten fünf Angaben: **Begründung** (bei KRT-, Bank- und Sonderkonten Pflicht — ohne sie hat der Server jede Auszahlung abgelehnt), **Notiz Bankmitarbeiter**, **Einzahler bzw. Empfänger** samt Einheit, und die **Aufteilung auf die Staffelkonten** bei einer Einzahlung. Begründung und Empfänger standen zwar schon in der Übertragung, aber kein Feld konnte sie füllen — die Angabe im Changelog zu 0.2.1 stimmte insofern nicht.
+- **Direkt buchen ging in der App nicht — obwohl es eingebaut war.** Ein-, Aus- und Umbuchen ohne
+  Antrag scheiterte immer am API-Zugang, der die vier Pfade nicht freigab. Dazu zwei Fehler
+  behoben, die sonst genau dann sichtbar geworden wären: der Einstieg verlangte die Rolle
+  **Bank-Management**, obwohl der Server nur **Bankmitarbeiter** plus deine Freigabe auf dem Konto
+  verlangt — wer also auf einem Konto buchen durfte, kam im Webtool durch und in der App nicht. Und
+  lag der Betrag über deinem Direktbuchungs-Limit, schloss das Blatt wie bei einer erledigten
+  Buchung: gebucht war nichts, die Buchung stand als Antrag in der Freigabe, und die App sagte es
+  nicht. Jetzt sagt sie „Zur Freigabe eingereicht".
 
-- **Die Freigabe-Limits eines Kontos ließen sich nicht speichern.** „Setzen" und „Entfernen" scheiterten am API-Zugang, während die aktuellen Werte korrekt angezeigt wurden — weshalb es aussah, als würde nichts passieren. Freigegeben mit Runbook-Phase P im Haupt-Repo.
+- **Die Direktbuchung nimmt jetzt alles mit, was das Webtool fragt.** Bisher fehlten fünf Angaben:
+  **Begründung** (bei KRT-Konto, Bank-Konto und Sonderkonten Pflicht — ohne sie nimmt der Server
+  die Buchung nicht an), **Notiz Bankmitarbeiter**, **Einzahler bzw. Empfänger** samt Einheit, und
+  die **Aufteilung auf die Staffelkonten** bei einer Einzahlung. Begründung und Empfänger standen
+  zwar schon in der Übertragung, aber kein Feld konnte sie füllen — die Angabe im Changelog zu
+  0.2.1 stimmte insofern nicht.
 
-- **Direkt buchen ging in der App nicht — obwohl es eingebaut war.** Ein-, Aus- und Umbuchen ohne Antrag scheiterte immer am API-Zugang, der die vier Pfade nicht freigab. Sie sind jetzt frei (Haupt-Repo, Runbook-Phase O). Dazu zwei Fehler behoben: der Einstieg verlangte die Rolle **Bank-Management**, obwohl der Server nur **Bankmitarbeiter** plus deine Freigabe auf dem Konto verlangt — wer also auf einem Konto buchen durfte, kam im Webtool durch und in der App nicht. Und lag der Betrag über deinem Direktbuchungs-Limit, schloss das Blatt wie bei einer erledigten Buchung: gebucht war nichts, die Buchung stand als Antrag in der Freigabe, und die App sagte es nicht. Jetzt sagt sie „Zur Freigabe eingereicht".
+- **Die Materialsammelübersicht war für jede Rolle schreibgesperrt.** Lieferstatus, „Verknüpfung
+  lösen" und das Entfernen eines Materials ohne Bestand waren ausgegraut — bei jedem Konto, auch
+  mit Logistiker-Rolle. Die App fragt jetzt den Auftrag, ob du ihn bearbeiten darfst, und schaltet
+  die drei Aktionen entsprechend frei.
 
-- **Die Materialsammelübersicht war für jede Rolle schreibgesperrt.** Lieferstatus, „Verknüpfung lösen" und das Entfernen eines Materials ohne Bestand waren ausgegraut — bei jedem Konto, auch mit Logistiker-Rolle. Die App fragt jetzt den Auftrag, ob du ihn bearbeiten darfst, und schaltet die drei Aktionen entsprechend frei. **Braucht die Freischaltung am API-Zugang** (Haupt-Repo, Runbook-Phase N).
+- **Jemanden aus einer Einheit zu entfernen schlug immer fehl.** „Konnte nicht gespeichert
+  werden." — die App benutzte einen Pfad, den der Server als veraltet markiert hat und den der
+  API-Zugang nicht freigibt. Sie benutzt jetzt den vorgesehenen und lädt den Einsatz danach neu.
 
-- **Jemanden aus einer Einheit zu entfernen schlug immer fehl.** „Konnte nicht gespeichert werden." — die App benutzte einen Pfad, den der Server als veraltet markiert hat und den der API-Zugang nicht freigibt. Sie benutzt jetzt den vorgesehenen und lädt den Einsatz danach neu. **Braucht ebenfalls die Freischaltung am API-Zugang.**
+- **Die Freigabe-Limits eines Kontos ließen sich nicht speichern.** „Setzen" und „Entfernen"
+  scheiterten am API-Zugang, während die aktuellen Werte korrekt angezeigt wurden — weshalb es
+  aussah, als würde nichts passieren.
 
 ## [0.2.3] — 2026-09-03
 
