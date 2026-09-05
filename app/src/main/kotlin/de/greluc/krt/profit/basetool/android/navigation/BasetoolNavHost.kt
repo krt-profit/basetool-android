@@ -962,6 +962,7 @@ private fun PushedDestination(
                 preferences = settings.preferences,
                 onPayout = settings.onPayout,
                 onSharing = settings.onSharing,
+                onRetryPreferences = settings.onRetryPreferences,
                 language = settings.language,
                 onLanguageChange = settings.onLanguageChange,
                 appLockEnabled = settings.appLockEnabled,
@@ -1062,6 +1063,7 @@ data class BlueprintOverviewBindings(
  * @property preferences the two standing choices that live on the server.
  * @property onPayout sets where the member's share goes by default.
  * @property onSharing shares or unshares the member's blueprints with the organisation.
+ * @property onRetryPreferences re-reads the two account values after a failed read.
  */
 @Immutable
 data class SettingsBindings(
@@ -1085,6 +1087,7 @@ data class SettingsBindings(
     val preferences: MemberPreferencesState,
     val onPayout: (PayoutPreference) -> Unit,
     val onSharing: (Boolean) -> Unit,
+    val onRetryPreferences: () -> Unit,
 )
 
 /**

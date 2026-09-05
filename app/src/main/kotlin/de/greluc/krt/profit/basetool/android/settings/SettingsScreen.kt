@@ -41,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHair
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
@@ -92,6 +93,7 @@ fun SettingsScreen(
     preferences: MemberPreferencesState,
     onPayout: (PayoutPreference) -> Unit,
     onSharing: (Boolean) -> Unit,
+    onRetryPreferences: () -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -116,6 +118,7 @@ fun SettingsScreen(
             preferences = preferences,
             onPayout = onPayout,
             onSharing = onSharing,
+            onRetryPreferences = onRetryPreferences,
             language = language,
             onLanguageChange = onLanguageChange,
             appLockEnabled = appLockEnabled,
@@ -174,6 +177,7 @@ private fun SettingsColumn(
     preferences: MemberPreferencesState,
     onPayout: (PayoutPreference) -> Unit,
     onSharing: (Boolean) -> Unit,
+    onRetryPreferences: () -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -198,63 +202,15 @@ private fun SettingsColumn(
                 .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
     ) {
-        if (accountName != null) {
-            SettingsGroup(stringResource(R.string.settings_section_account)) {
-                KrtSettingRow(
-                    title = accountName,
-                    tone = KrtPalette.White,
-                    leadingIcon = DesignR.drawable.ic_krt_user,
-                )
-                KrtHairlineRule(color = KrtPalette.SurfaceInput)
-                // The same scope the top bar's chip names, in the place a member goes looking for a
-                // setting. It opens the very sheet the chip opens — one switcher, two doors, and no
-                // second copy of the state to disagree with the header (design ch. 13, artboard 2).
-                KrtSettingRow(
-                    title = stringResource(R.string.settings_active_org_unit),
-                    leadingIcon = DesignR.drawable.ic_krt_users,
-                    onClick = onSwitchOrgUnit,
-                ) {
-                    SettingValue(orgUnitName)
-                    KrtIcon(
-                        id = DesignR.drawable.ic_krt_chevron_right,
-                        contentDescription = null,
-                        tint = KrtPalette.TextMuted,
-                    )
-                }
-                KrtHairlineRule(color = KrtPalette.SurfaceInput)
-                // The standing answer a sign-up starts from. It is a server value with a version, not a
-                // device preference: the same member can change it in a browser, so an unread row shows
-                // nothing rather than guessing „Auszahlung an mich" — which is a decision, not a default.
-                KrtSettingRow(
-                    title = stringResource(R.string.settings_payout_preference),
-                    subtitle =
-                        stringResource(
-                            when (preferences.payout) {
-                                PayoutPreference.PAYOUT -> R.string.mission_detail_payout_self
-                                PayoutPreference.DONATE -> R.string.mission_detail_payout_org
-                                null -> R.string.settings_payout_unset
-                            },
-                        ),
-                    leadingIcon = DesignR.drawable.ic_krt_bank,
-                    enabled = preferences.payout != null && !preferences.saving,
-                    onClick = {
-                        onPayout(
-                            if (preferences.payout == PayoutPreference.DONATE) {
-                                PayoutPreference.PAYOUT
-                            } else {
-                                PayoutPreference.DONATE
-                            },
-                        )
-                    },
-                ) {
-                    KrtIcon(
-                        id = DesignR.drawable.ic_krt_chevron_right,
-                        contentDescription = null,
-                        tint = KrtPalette.TextMuted,
-                    )
-                }
-            }
-        }
+        AccountGroup(
+            accountName = accountName,
+            orgUnitName = orgUnitName,
+            onSwitchOrgUnit = onSwitchOrgUnit,
+            preferences = preferences,
+            onPayout = onPayout,
+            onSharing = onSharing,
+            onRetryPreferences = onRetryPreferences,
+        )
 
         SettingsGroup(stringResource(R.string.settings_section_app)) {
             KrtSettingRow(
@@ -305,21 +261,6 @@ private fun SettingsColumn(
                 onClick = { onScreenCaptureChange(!screenCaptureAllowed) },
             ) {
                 KrtToggle(checked = screenCaptureAllowed)
-            }
-            KrtHairlineRule(color = KrtPalette.SurfaceInput)
-            // Also a server value with a version. Unread reads as NOT sharing: the safe reading of
-            // a flag that did not arrive is that nothing of the member's is being published.
-            KrtSettingRow(
-                title = stringResource(R.string.settings_blueprint_sharing),
-                subtitle = stringResource(R.string.settings_blueprint_sharing_hint),
-                leadingIcon = DesignR.drawable.ic_krt_blueprint,
-                enabled = preferences.sharing != null && !preferences.saving,
-                onClick = { onSharing(preferences.sharing != true) },
-            ) {
-                KrtToggle(
-                    checked = preferences.sharing == true,
-                    enabled = preferences.sharing != null && !preferences.saving,
-                )
             }
         }
 
@@ -378,6 +319,182 @@ private fun SettingsColumn(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s12),
         )
+    }
+}
+
+/**
+ * Why the two account rows above are shut, when they are.
+ *
+ * Both are drawn `enabled` only once their value has arrived, and that is deliberate: a write
+ * echoes the optimistic-lock version the read returned, so acting without one would either be
+ * refused by the server or — on a row that happens to still be at version `0` — succeed by
+ * accident. Keeping them shut is right; keeping them shut **silently** was not.
+ *
+ * From the first release until 2026-09-05 the reads were refused at the API vhost, which admitted
+ * neither path. The failure was logged and nowhere else: both rows sat greyed out, looking exactly
+ * like a value nobody had set yet. This is the difference made visible, with the retry that the
+ * state could always have driven.
+ *
+ * A refused **write** is shown here too, for the same reason — it had no place on the screen
+ * either.
+ *
+ * @param preferences the two rows' state.
+ * @param onRetry re-read both values.
+ */
+@Composable
+private fun PreferencesNotice(
+    preferences: MemberPreferencesState,
+    onRetry: () -> Unit,
+) {
+    val readError = preferences.readError
+    val writeError = preferences.error
+    if (readError == null && writeError == null) {
+        return
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+    ) {
+        Text(
+            text =
+                stringResource(
+                    if (readError != null) {
+                        R.string.settings_prefs_read_failed
+                    } else {
+                        R.string.settings_prefs_write_failed
+                    },
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        if (readError != null) {
+            KrtOutlineButton(
+                text = stringResource(R.string.settings_prefs_retry),
+                onClick = onRetry,
+                enabled = !preferences.reading,
+                iconRes = DesignR.drawable.ic_krt_reset,
+            )
+        }
+    }
+}
+
+/**
+ * The KONTO group — who the member is, which scope they are in, and their two server-side settings.
+ *
+ * Its own composable because it outgrew its caller: `SettingsColumn` crossed detekt's cyclomatic
+ * ceiling when this group gained its second condition, and the group is the one part of the screen
+ * with real branching. Everything below it is a flat list of device rows.
+ *
+ * **Everything here belongs to the account rather than the device** — it is written to the server,
+ * it is visible to the organisation or decided by it, and it follows the member to any device they
+ * sign in on. That is the line between this group and APP, and it is why „Blueprints mit Org
+ * teilen" moved here (ADR-0021).
+ *
+ * @param accountName the signed-in member's username, or `null` while unknown.
+ * @param orgUnitName the active scope's name, or `null` while unknown.
+ * @param onSwitchOrgUnit open the scope switcher.
+ * @param preferences the two server-side rows.
+ * @param onPayout set where the member's share goes by default.
+ * @param onSharing share or unshare the member's blueprints.
+ * @param onRetryPreferences re-read both values after a failed read.
+ */
+@Composable
+@Suppress("LongParameterList")
+private fun AccountGroup(
+    accountName: String?,
+    orgUnitName: String?,
+    onSwitchOrgUnit: () -> Unit,
+    preferences: MemberPreferencesState,
+    onPayout: (PayoutPreference) -> Unit,
+    onSharing: (Boolean) -> Unit,
+    onRetryPreferences: () -> Unit,
+) {
+    // The group appears when it has ANYTHING to show, not only when the name has resolved.
+    // It used to hinge on the name alone, which was harmless while it held one row — and stops
+    // being harmless now that it holds the two account settings and the notice explaining why
+    // they are shut: a member whose username has not arrived would lose the explanation in
+    // exactly the state it exists for. The name is one row in this group, not its precondition.
+    if (accountName != null || preferences.readError != null || preferences.error != null) {
+        SettingsGroup(stringResource(R.string.settings_section_account)) {
+            if (accountName != null) {
+                KrtSettingRow(
+                    title = accountName,
+                    tone = KrtPalette.White,
+                    leadingIcon = DesignR.drawable.ic_krt_user,
+                )
+                KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            }
+            // The same scope the top bar's chip names, in the place a member goes looking for a
+            // setting. It opens the very sheet the chip opens — one switcher, two doors, and no
+            // second copy of the state to disagree with the header (design ch. 13, artboard 2).
+            KrtSettingRow(
+                title = stringResource(R.string.settings_active_org_unit),
+                leadingIcon = DesignR.drawable.ic_krt_users,
+                onClick = onSwitchOrgUnit,
+            ) {
+                SettingValue(orgUnitName)
+                KrtIcon(
+                    id = DesignR.drawable.ic_krt_chevron_right,
+                    contentDescription = null,
+                    tint = KrtPalette.TextMuted,
+                )
+            }
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            // The standing answer a sign-up starts from. It is a server value with a version, not a
+            // device preference: the same member can change it in a browser, so an unread row shows
+            // nothing rather than guessing „Auszahlung an mich" — which is a decision, not a default.
+            KrtSettingRow(
+                title = stringResource(R.string.settings_payout_preference),
+                subtitle =
+                    stringResource(
+                        when (preferences.payout) {
+                            PayoutPreference.PAYOUT -> R.string.mission_detail_payout_self
+                            PayoutPreference.DONATE -> R.string.mission_detail_payout_org
+                            null -> R.string.settings_payout_unset
+                        },
+                    ),
+                leadingIcon = DesignR.drawable.ic_krt_bank,
+                enabled = preferences.payout != null && !preferences.saving,
+                onClick = {
+                    onPayout(
+                        if (preferences.payout == PayoutPreference.DONATE) {
+                            PayoutPreference.PAYOUT
+                        } else {
+                            PayoutPreference.DONATE
+                        },
+                    )
+                },
+            ) {
+                KrtIcon(
+                    id = DesignR.drawable.ic_krt_chevron_right,
+                    contentDescription = null,
+                    tint = KrtPalette.TextMuted,
+                )
+            }
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            // Moved out of „App" on 2026-09-05, by owner decision. Design chapter 13 draws it
+            // there, and the drawing groups by where a value LIVES on the device — but this one
+            // does not live on the device at all: it is a column of the member's account, it
+            // shares an optimistic-lock version with the payout preference directly above, and
+            // the two are refused or accepted by the server together. „App" holds the settings
+            // that survive a logout; these two do not.
+            //
+            // Unread reads as NOT sharing: the safe reading of a flag that did not arrive is
+            // that nothing of the member's is being published.
+            KrtSettingRow(
+                title = stringResource(R.string.settings_blueprint_sharing),
+                subtitle = stringResource(R.string.settings_blueprint_sharing_hint),
+                leadingIcon = DesignR.drawable.ic_krt_blueprint,
+                enabled = preferences.sharing != null && !preferences.saving,
+                onClick = { onSharing(preferences.sharing != true) },
+            ) {
+                KrtToggle(
+                    checked = preferences.sharing == true,
+                    enabled = preferences.sharing != null && !preferences.saving,
+                )
+            }
+            PreferencesNotice(preferences = preferences, onRetry = onRetryPreferences)
+        }
     }
 }
 
@@ -508,6 +625,7 @@ private fun SettingsPreview() {
                         version = 1,
                     ),
                 onPayout = {},
+                onRetryPreferences = {},
                 onSharing = {},
                 onOpenImprint = {},
                 onOpenTerms = {},

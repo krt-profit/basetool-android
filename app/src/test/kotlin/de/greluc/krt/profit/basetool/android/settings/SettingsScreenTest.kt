@@ -57,6 +57,7 @@ class SettingsScreenTest {
                     onAppLockChange = {},
                     screenCaptureAllowed = false,
                     onScreenCaptureChange = {},
+                    onRetryPreferences = {},
                     onOpenPrivacy = {},
                     onOpenImprint = {},
                     onOpenTerms = {},

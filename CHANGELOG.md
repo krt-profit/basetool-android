@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **In den Einstellungen waren „Auszahlungspräferenz" und „Blueprints mit Org teilen" ausgegraut — auf jedem Konto, seit der ersten Version.** Beide Werte liegen auf dem Server, und die App durfte sie gar nicht erst abrufen; die Zeilen blieben deshalb gesperrt und sahen aus, als wäre einfach nichts gesetzt. Die Pfade sind jetzt freigegeben (Haupt-Repo, Runbook-Phase Q). Scheitert der Abruf künftig doch, sagt der Bildschirm es jetzt und bietet „Erneut versuchen" an, statt beide Zeilen stumm zu sperren — dasselbe gilt für eine abgelehnte Änderung.
+
+- **„UNGELESEN" kam beim Aushang immer wieder zurück.** Als gelesen markieren wurde ebenfalls abgewiesen, das Band sprang zurück und war beim nächsten Laden der Übersicht wieder da. Derselbe Weg, dieselbe Freischaltung.
+
+### Changed
+
+- **„Blueprints mit Org teilen" steht jetzt unter „Konto", nicht mehr unter „App".** Der Schalter gehört zu deinem Konto, nicht zum Gerät: Er wird auf dem Server gespeichert, gilt für die Organisation und begleitet dich auf jedes Gerät — und er teilt sich seine Sperre mit der Auszahlungspräferenz direkt darüber.
+
 ## [0.2.4] — 2026-09-03
 
 > **Diese Version braucht die Freischaltung am API-Zugang.** Alle fünf Punkte unten betreffen Wege, die der

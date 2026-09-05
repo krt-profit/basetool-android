@@ -128,6 +128,9 @@
     <string name="settings_active_org_unit">Aktive Org-Einheit</string>
     <string name="settings_payout_preference">Auszahlungspräferenz</string>
     <string name="settings_payout_unset">Noch nicht gewählt</string>
+    <string name="settings_prefs_read_failed">Diese beiden Werte konnten nicht geladen werden. Sie liegen auf dem Server, nicht auf dem Gerät — bis sie da sind, bleiben beide Zeilen gesperrt.</string>
+    <string name="settings_prefs_write_failed">Die Änderung wurde nicht gespeichert. Die Zeile zeigt weiterhin, was der Server zuletzt bestätigt hat.</string>
+    <string name="settings_prefs_retry">Erneut versuchen</string>
     <string name="settings_blueprint_sharing">Blueprints mit Org teilen</string>
     <string name="settings_blueprint_sharing_hint">Sichtbar in der Verfügbarkeits-Übersicht</string>
     <string name="settings_language">Sprache</string>

@@ -22,9 +22,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The two Einstellungen rows that live on the server.
@@ -36,6 +41,13 @@ import org.junit.Test
  * with `expected=1 persisted=2` forever.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+// Robolectric, and the reason is worth keeping: `refresh()`'s failure branches call KrtLog,
+// which reaches `android.util.Log`. A plain JVM unit test does not stub it (this module sets
+// no `returnDefaultValues`), so the call throws inside `viewModelScope` — where the exception
+// is swallowed and the only symptom is a coroutine that never finishes. Every test here
+// predates the first failing READ, which is why it never came up.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MemberPreferencesViewModelTest {
     private companion object {
         /** An arbitrary version the row is already at, to prove nothing resets it to zero. */
@@ -49,6 +61,9 @@ class MemberPreferencesViewModelTest {
 
         /** What the first `loadOnce` did pick up in that test. */
         const val FIRST_VERSION = 5L
+
+        /** One pass reads both values — the retry has to be a real second pass, not a redraw. */
+        const val READS_PER_PASS = 2
     }
 
     private val dispatcher = StandardTestDispatcher()
@@ -100,6 +115,36 @@ class MemberPreferencesViewModelTest {
         }
     }
 
+    /**
+     * A backend that refuses both reads, which is what the API vhost did for months.
+     *
+     * The writes are never reached in these tests — a row whose value did not arrive stays shut —
+     * so they answer the same refusal rather than pretending to work.
+     */
+    private class UnreadableRow : MemberPreferencesSource {
+        var reads = 0
+
+        override suspend fun payoutPreference(): ApiResult<PayoutSetting> {
+            reads += 1
+            return ApiResult.Failure(ApiError.NotFound())
+        }
+
+        override suspend fun setPayoutPreference(
+            preference: PayoutPreference,
+            version: Long,
+        ): ApiResult<PayoutSetting> = ApiResult.Failure(ApiError.NotFound())
+
+        override suspend fun blueprintSharing(): ApiResult<BlueprintSharing> {
+            reads += 1
+            return ApiResult.Failure(ApiError.NotFound())
+        }
+
+        override suspend fun setBlueprintSharing(
+            sharing: Boolean,
+            version: Long,
+        ): ApiResult<BlueprintSharing> = ApiResult.Failure(ApiError.NotFound())
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -109,6 +154,65 @@ class MemberPreferencesViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    /**
+     * The state the screen could not see for months.
+     *
+     * A refused read left both values `null`, which is exactly what a never-set value looks like —
+     * so both rows sat greyed out on „Noch nicht gewählt" and the reason lived only in the log.
+     * The failure is now its own field, and the values stay `null` beside it: they really are
+     * unknown, and pretending otherwise would put a figure on screen the server never confirmed.
+     */
+    @Test
+    fun `a refused read is distinguishable from a value nobody has set`() =
+        runTest(dispatcher) {
+            val model = MemberPreferencesViewModel(UnreadableRow())
+
+            model.loadOnce()
+            advanceUntilIdle()
+
+            assertNotNull("the failure has to reach the screen", model.state.value.readError)
+            assertNull(model.state.value.payout)
+            assertNull(model.state.value.sharing)
+            assertFalse(model.state.value.reading)
+        }
+
+    /** A read that lands leaves no failure behind. */
+    @Test
+    fun `a successful read carries no failure`() =
+        runTest(dispatcher) {
+            val model = MemberPreferencesViewModel(SharedRow(version = STORED_VERSION))
+
+            model.loadOnce()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.readError)
+            assertFalse(model.state.value.reading)
+        }
+
+    /**
+     * The retry clears the old message before it starts.
+     *
+     * A stale failure standing beside a running attempt reads as a fresh one, which is how a
+     * retry that is working looks like a retry that keeps failing.
+     */
+    @Test
+    fun `retrying clears the previous failure and re-reads both values`() =
+        runTest(dispatcher) {
+            val source = UnreadableRow()
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+            assertNotNull(model.state.value.readError)
+            assertEquals(READS_PER_PASS, source.reads)
+
+            model.refresh()
+            advanceUntilIdle()
+
+            // Both values are asked for again — the retry is a real second pass, not a redraw.
+            assertEquals(READS_PER_PASS * 2, source.reads)
+            assertNotNull("still refused, so the message stands", model.state.value.readError)
+        }
 
     @Test
     fun `both values arrive on one read pass`() =

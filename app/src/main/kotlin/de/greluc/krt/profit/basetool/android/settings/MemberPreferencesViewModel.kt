@@ -35,7 +35,14 @@ import kotlinx.coroutines.launch
  *   this one value.
  * @property saving whether a write is in flight — both rows disable together, because a second
  *   write while the first is unanswered would send a version that is already stale.
- * @property error the last refusal, kept until the next attempt.
+ * @property error the last refusal of a **write**, kept until the next attempt.
+ * @property readError why the two values could not be read, or `null` when they arrived. Its own
+ *   field rather than a `null` value, because the two states are not the same thing and the screen
+ *   must not draw them alike: a value that has not been set yet is an ordinary state a member can
+ *   act on, and a value that could not be READ is one where every control has to stay shut — a
+ *   write echoes the version the read returned, and without one it would send `0` and be refused
+ *   by the server, or worse, silently succeed against a row that happens to still be at `0`.
+ * @property reading whether a read is in flight, so a retry can say it is doing something.
  */
 data class MemberPreferencesState(
     val payout: PayoutPreference? = null,
@@ -43,6 +50,8 @@ data class MemberPreferencesState(
     val version: Long = 0L,
     val saving: Boolean = false,
     val error: ApiError? = null,
+    val readError: ApiError? = null,
+    val reading: Boolean = false,
 )
 
 /**
@@ -56,6 +65,13 @@ data class MemberPreferencesState(
  *
  * The reads are **not** blocking: a row whose value has not arrived renders as unset rather than as
  * a spinner, because the rest of the screen is device-local and works either way.
+ *
+ * **A read that FAILS is a different state, and it used to be invisible.** Both rows are drawn
+ * `enabled` only once their value has arrived, so a refused read left them greyed out for good —
+ * indistinguishable from „not set yet", with the reason only in the log. That is how they sat from
+ * the first release until 2026-09-05: the API vhost admitted neither path, so the reads answered
+ * `404`, and the settings screen reported it to nobody. The failure is now carried in the state and
+ * said on the screen, with a retry.
  *
  * @property source the me-scoped preference endpoints.
  */
@@ -83,11 +99,18 @@ class MemberPreferencesViewModel(
         refresh()
     }
 
-    /** Re-reads both values, whatever has been read before. */
+    /**
+     * Re-reads both values, whatever has been read before.
+     *
+     * Also the retry the screen offers, which is why it clears [MemberPreferencesState.readError]
+     * before it starts: a stale message beside a running attempt reads as a fresh failure.
+     */
     fun refresh() {
+        mutableState.value = mutableState.value.copy(reading = true, readError = null)
         // Sequential, not concurrent: the two reads return the same entity's version, and a race
         // between them would leave whichever answered second in charge of it for no reason.
         viewModelScope.launch {
+            var failure: ApiError? = null
             when (val result = source.payoutPreference()) {
                 is ApiResult.Success -> {
                     mutableState.value =
@@ -99,6 +122,7 @@ class MemberPreferencesViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the payout preference could not be read: ${result.error}" }
+                    failure = result.error
                 }
             }
             when (val result = source.blueprintSharing()) {
@@ -112,8 +136,12 @@ class MemberPreferencesViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the blueprint-sharing flag could not be read: ${result.error}" }
+                    // The FIRST failure is kept: the two calls share a cause far more often than
+                    // not, and the earlier one is the one that describes it.
+                    failure = failure ?: result.error
                 }
             }
+            mutableState.value = mutableState.value.copy(reading = false, readError = failure)
         }
     }
 

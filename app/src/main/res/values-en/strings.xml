@@ -110,6 +110,9 @@
     <string name="settings_active_org_unit">Active org unit</string>
     <string name="settings_payout_preference">Payout preference</string>
     <string name="settings_payout_unset">Not chosen yet</string>
+    <string name="settings_prefs_read_failed">These two values could not be loaded. They live on the server, not on the device — both rows stay locked until they arrive.</string>
+    <string name="settings_prefs_write_failed">The change was not saved. The row still shows what the server last confirmed.</string>
+    <string name="settings_prefs_retry">Try again</string>
     <string name="settings_blueprint_sharing">Share blueprints with the org</string>
     <string name="settings_blueprint_sharing_hint">Visible in the availability overview</string>
     <string name="settings_language">Language</string>

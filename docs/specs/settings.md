@@ -15,7 +15,14 @@ here; Beförderung reads evaluations from the backend and lands with the live-pa
 Einstellungen carries the settings the **app** owns: the language, the app lock, the legal texts,
 the open-source notice, the version, and sign-out. The chapter also draws the member's rank and
 squadron, the active org unit, the payout preference and a blueprint-sharing switch — every one of
-those is a value the **backend** owns, and none of those endpoints is consumed yet.
+those is a value the **backend** owns.
+
+> [!warning] Corrected 2026-09-05 — this sentence ended „and none of those endpoints is
+> consumed yet" while the acceptance box below already ticked the opposite
+> Three of them have been consumed since `REQ-APP-SET-010` landed: the active org unit, the
+> payout preference and the blueprint-sharing switch. The rank is the one that stays out, for
+> the reason its own box gives. The prose was not moved when the requirement landed, so the
+> screen's own spec described a state it had already left.
 
 They are left out rather than drawn from placeholder data. A settings screen showing a rank nobody
 set is not an unfinished feature, it is a wrong statement about the member, and the one place a
@@ -56,6 +63,20 @@ here" is worth answering.
 Design ch. 13, artboard 2 puts three things in **KONTO** beyond the member's name. Two of them are
 server values; the third is the scope the top bar already shows.
 
+> [!important] The artboard drew two, not three — settled 2026-09-05 in this requirement's favour
+> This sentence has said „three" since the requirement was written, and artboard 2 draws only
+> „Aktive Org-Einheit" and „Auszahlungspräferenz" under KONTO, with „Blueprints mit Org teilen"
+> under **APP** beside „Sprache". The app followed the artboard, which is the right default — the
+> handoff outranks prose — and nobody caught the difference, because the sentence reads as a
+> *description* of the drawing rather than a rule.
+>
+> The owner moved the row to KONTO on 2026-09-05 ([ADR-0021](../adr/0021-blueprint-sharing-belongs-to-the-account-not-the-app.md)):
+> **APP holds what lives on the device and survives a logout; KONTO holds what lives on the
+> account.** Blueprint sharing is written to the server, is visible to the organisation and follows
+> the member to any device — and it shares its optimistic-lock version with the row directly above,
+> so the two fail together and their retry is one action. Filed for the design side as round 17 § D1.
+> The sentence is dated here rather than rewritten, because it was never true of the drawing.
+
 **„Aktive Org-Einheit" opens the switcher the chip opens.** It shows the same value the chip shows
 and holds no copy of it — one switcher behind two doors, so the header and the settings row cannot
 disagree about the scope every request carries.
@@ -75,13 +96,39 @@ successful write adopts the one it gets back.
 **A refused write leaves the row showing what the server confirmed**, not what was tapped. A
 settings row that displays the member's rejected choice is lying about the state of their account.
 
-**An unread row shows nothing rather than a default.** „Auszahlung an mich" is a decision, not the
-absence of one, so a row whose value has not arrived reads „Noch nicht gewählt".
+**An unread row shows nothing rather than a default** — for the payout row. „Auszahlung an mich"
+is a decision, not the absence of one, so a row whose value has not arrived reads „Noch nicht
+gewählt".
+
+**The sharing toggle cannot do that**, and the spec should not pretend otherwise: a switch has two
+positions and no third, so an unread one is drawn **off**. That is the safe reading — nothing of the
+member's is being published — but it *is* a default, which is why the row stays disabled until the
+value arrives, and why the failed-read notice matters more here than for its neighbour.
+
+**A row whose value could not be READ is a third state, and it used to be invisible.** Both rows are
+drawn `enabled` only once their value has arrived — correct, because a write echoes the version the
+read returned, and acting without one is either a refusal or, on a row still at version `0`, a write
+that succeeds by accident. But a failed read rendered *identically* to an unset value.
+
+> [!danger] Both rows were greyed out on every account from the first release until 2026-09-05
+> The API vhost admitted neither path, so both reads answered `404`. The app logged it and told
+> nobody: the rows sat disabled on „Noch nicht gewählt", which is exactly what a never-set value
+> looks like. Not a defect a member can report — two settings simply appeared to have no value and
+> no way to acquire one. Admitted by the main repo's runbook **phase Q**, which had to open the
+> `GET` and the `PUT` **together**: they share one version, so a client that could write but not
+> read would echo `0`.
+
+The failure is now carried in the state (`readError`, distinct from a `null` value) and said on the
+screen, below the two rows, with a **„Erneut versuchen"**. A refused **write** is shown there too —
+it had no place on the screen either.
 
 **Acceptance**
 
 - [x] Writing one setting leaves the other writable — the regression above, pinned by a fake that
   models one version for both (`MemberPreferencesViewModelTest`).
+- [x] „Blueprints mit Org teilen" sits under **KONTO**, below „Auszahlungspräferenz" (ADR-0021).
+- [x] A failed read is distinguishable from an unset value: both rows stay shut, and the screen says
+  why and offers a retry (`MemberPreferencesViewModelTest`).
 - [x] A refusal is shown and the row keeps the confirmed value; setting a value to what it already
   is writes nothing (`MemberPreferencesViewModelTest`).
 - [x] Verified on a device against the test stack: both writes landed in one session, the entity's
