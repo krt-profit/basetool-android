@@ -19,7 +19,7 @@ those is a value the **backend** owns.
 
 > [!warning] Corrected 2026-09-05 — this sentence ended „and none of those endpoints is
 > consumed yet" while the acceptance box below already ticked the opposite
-> Three of them have been consumed since `REQ-APP-SET-010` landed: the active org unit, the
+> Three of them have been consumed since `REQ-APP-SET-011` landed: the active org unit, the
 > payout preference and the blueprint-sharing switch. The rank is the one that stays out, for
 > the reason its own box gives. The prose was not moved when the requirement landed, so the
 > screen's own spec described a state it had already left.
@@ -43,7 +43,7 @@ here" is worth answering.
   Impressum, Nutzungsbedingungen, Open-Source-Lizenzen), the Fan Kit band, sign-out and the version
   are rendered; nothing else is.
 - [x] No value on the screen comes from a placeholder constant.
-- [x] Active org unit, payout preference and blueprint sharing (`REQ-APP-SET-010`).
+- [x] Active org unit, payout preference and blueprint sharing (`REQ-APP-SET-011`).
 - [ ] **Rank.** Open, and it will stay open: `UserDto.rank` is an integer and the only place that
   turns one into „Specialist" is `/promotion/*`, which is not in this app (owner decision,
   2026-08-25). The KONTO row therefore names the member and nothing else.
@@ -58,7 +58,14 @@ here" is worth answering.
   to the backend, and the app has no health signal to read them from. An always-green dot would be
   decoration that reads as a diagnosis.
 
-### REQ-APP-SET-010 — Three account rows, and the one version two of them share
+### REQ-APP-SET-011 — Three account rows, and the one version two of them share
+
+> [!note] Renumbered 2026-09-05 — this requirement was written as `REQ-APP-SET-010`, which was
+> already taken
+> `REQ-APP-SET-010` is „Sign-out asks before it wipes" further down this file, and has been since
+> ADR-0012 introduced it; both that ADR and [`auth.md`](auth.md) point at 010 meaning sign-out. Two
+> requirements answered to one id, and the registry advertised the range as ending at 010, so the
+> duplicate was invisible from the index. Nothing outside this repository referenced either.
 
 Design ch. 13, artboard 2 puts three things in **KONTO** beyond the member's name. Two of them are
 server values; the third is the scope the top bar already shows.

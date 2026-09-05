@@ -25,7 +25,7 @@ overruling a known state rather than a guess.
 
 **The two documents disagreed, and had since the screen was built.**
 
-- `REQ-APP-SET-010` is titled *„Three account rows, and the one version two of them share"* and
+- `REQ-APP-SET-011` is titled *„Three account rows, and the one version two of them share"* and
   opens: *„Design ch. 13, artboard 2 puts three things in KONTO beyond the member's name. Two of
   them are server values; the third is the scope the top bar already shows."*
 - **Artboard 2 draws two.** KONTO holds „Aktive Org-Einheit" and „Auszahlungspräferenz"; „Blueprints

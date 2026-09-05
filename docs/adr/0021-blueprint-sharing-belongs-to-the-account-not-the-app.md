@@ -4,7 +4,7 @@
 - **Date:** 2026-09-05
 - **Deciders:** @greluc
 - **Related:** ADR-0010 (the precedent for deciding which section a settings row sits in),
-  `REQ-APP-SET-010`, design ch. 13 artboard 2,
+  `REQ-APP-SET-011`, design ch. 13 artboard 2,
   `docs/design/android/MISSING_ARTBOARD_PROMPTS_17.md` § D1,
   main repo `docs/API_VHOST_ROLLOUT_RUNBOOK.md` § Phase Q
 
@@ -17,7 +17,7 @@ the backend's `User` entity, read and written over the API, sharing one optimist
 The two documents that govern the screen disagreed about where the second one goes, and had done
 since it was built:
 
-- **`REQ-APP-SET-010`** is titled *„Three account rows, and the one version two of them share"* and
+- **`REQ-APP-SET-011`** is titled *„Three account rows, and the one version two of them share"* and
   opens: *„Design ch. 13, artboard 2 puts three things in KONTO beyond the member's name. Two of
   them are server values; the third is the scope the top bar already shows."* The two server values
   are the payout preference and blueprint sharing.
@@ -35,7 +35,7 @@ from were refused at the API vhost, so both sat greyed out on every account).
 ## Decision
 
 **„Blueprints mit Org teilen" moves to KONTO, directly below „Auszahlungspräferenz".** Artboard 2 is
-overruled on this point; `REQ-APP-SET-010` was right and needs no change to its rule.
+overruled on this point; `REQ-APP-SET-011` was right and needs no change to its rule.
 
 ## Consequences
 
