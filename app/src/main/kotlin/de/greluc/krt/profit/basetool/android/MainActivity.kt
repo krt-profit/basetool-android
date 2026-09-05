@@ -547,6 +547,7 @@ class MainActivity : AppCompatActivity() {
                                             preferences = memberPreferences,
                                             onPayout = memberPreferencesViewModel::onPayout,
                                             onSharing = memberPreferencesViewModel::onSharing,
+                                            onRetryPreferences = memberPreferencesViewModel::refresh,
                                         ),
                                 )
                             }

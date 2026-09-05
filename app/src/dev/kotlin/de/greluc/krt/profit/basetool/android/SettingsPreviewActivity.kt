@@ -83,6 +83,7 @@ class SettingsPreviewActivity : AppCompatActivity() {
                         onSwitchOrgUnit = {},
                         preferences = MemberPreferencesState(),
                         onPayout = {},
+                        onRetryPreferences = {},
                         onSharing = {},
                         accountName = "GrafRotz",
                         language = language,
