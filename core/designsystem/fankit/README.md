@@ -25,7 +25,7 @@ verified against is recorded here rather than assumed:
 | Kit | `Fankit_2025_11_19` |
 | Agreement | `06_Fankit_Agreement_2025_11_19.pdf` — clause 2(g) |
 | Guidelines | `08_Fankit_Guidelines.pdf` — §2, §2a, §2b, §2c, §3 |
-| Checked | 2026-08-27 |
+| Checked | 2026-08-27; re-checked 2026-09-04 against the same kit — why both notices stay is written into `REQ-APP-SET-007` |
 
 The Agreement's 2(g) sentence is **byte-identical across the three archived kits**
 (2024-04-25, 2025-06-03, 2025-11-19) — same SHA-256 of the extracted sentence. The Guidelines

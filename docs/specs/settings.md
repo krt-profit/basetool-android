@@ -292,6 +292,19 @@ parameter, and the placement stays the login screen and Einstellungen — nowher
 Both notices are prescribed legal wording: verbatim English in every locale,
 `translatable="false"`, and never typographically "corrected".
 
+> [!note] Why the marks are named twice — checked 04.09.2026
+> The owner asked whether the §2b line is redundant next to the 2(g) paragraph. It is not, by the
+> letter of both documents, re-checked for this app against `Fankit_2025_11_19`. The 2(g)
+> paragraph carries the *meaning* of the §2b line — it attributes the same marks, plus
+> Squadron 42® — but not its *string*: 2(g) adds Squadron 42® and an Oxford comma and has no space
+> before any ®, where §2b has one before its third. §2 requires the §2b line whenever the logo is
+> shown, and the logo is not optional: §2a's text alternative ("This is an unofficial Star Citizen
+> Fan Site") needs prior approval by CIG's legal department. Neither document mentions the other's
+> notice or offers itself as a substitute, so the overlap is CIG's. Dropping the §2b line would
+> satisfy the Agreement and the Guidelines only in substance — a low-risk deviation, but a
+> deviation, and this requirement is amended first if it is ever taken. Same finding and same
+> date in the web app's `REQ-UI-018`.
+
 > [!warning] The two notices differ in details that look like mistakes, and both are right
 > The §2b line carries a space before its **third** ®, because CIG's §2b prose writes it that way;
 > clause 2(g) carries **none** before any of its four, writes `Ltd..` with two full stops and
