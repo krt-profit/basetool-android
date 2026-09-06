@@ -51,6 +51,8 @@
     <string name="gate_checking">Zugang wird geprüft …</string>
     <string name="gate_pending_title">Freigabe ausstehend</string>
     <string name="gate_pending_body">Dein Zugang wartet auf Freigabe durch die Administration. Sobald dein Konto freigeschaltet ist, geht es hier weiter.</string>
+    <string name="gate_no_role_title">Keine Rolle vergeben</string>
+    <string name="gate_no_role_body">Dein Konto ist freigegeben, hat aber noch keine Rolle. Die Administration vergibt sie — danach geht es hier weiter.</string>
     <string name="gate_rejected_title">Zugang abgelehnt</string>
     <string name="gate_rejected_body">Dein Zugang wurde nicht freigegeben. Wende dich an die Administration, wenn du das für einen Irrtum hältst.</string>
     <string name="gate_account">Konto</string>

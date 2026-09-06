@@ -10,15 +10,15 @@ package de.greluc.krt.profit.basetool.android.core.data
 import java.time.Instant
 
 /**
- * One member (or guest) signed up for an Einsatz.
+ * One participant of an Einsatz — a member, or an external person recorded by the leadership.
  *
  * @property id the participant row's id
- * @property userId which member this row belongs to, or `null` for a guest sign-up and for an
- *   outsider read the server redacted. It is the only thing that says whether a row is the
- *   caller's — a name cannot decide it, since the server sends `displayName` when a member set one
- *   and `username` otherwise
- * @property name what to show: the member's effective name, else the guest's name, else empty —
- *   the server redacts identity for outsiders, so an anonymous read can legitimately yield neither
+ * @property userId which member this row belongs to, or `null` for an external row. It is the only
+ *   thing that says whether a row is the caller's — a name cannot decide it, since the server sends
+ *   `displayName` when a member set one and `username` otherwise
+ * @property name what to show: the member's effective name, else the external person's name, else
+ *   empty — the server redacts a peer's identity below Logistician (main repo REQ-SEC-007), so a
+ *   legitimate read can yield neither
  * @property role the planned job, falling back to the desired one when nothing is assigned yet
  * @property orgUnitNames which Staffeln or Spezialkommandos they belong to, shorthand first — the
  *   roster row's second line („Staffel 1", „SK Vanguard"). Empty for a read the server redacted

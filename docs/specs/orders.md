@@ -150,7 +150,12 @@ a question they did not ask.
 
 `GET /api/v1/orders` and `/orders/{id}` are in the `REQ-API-009` contract set and the vhost
 allow-list. The queue path is exact and the vhost's read-only guard covers the family, because the
-**same path** answers a `POST` that is `permitAll` by design — the public request form.
+**same path** answers a `POST` the app must not be able to send by accident.
+
+> **Corrected 2026-09-06.** The sentence used to end "…a `POST` that is `permitAll` by design — the
+> public request form". That had been wrong since main repo ADR-0149 took the order create behind
+> a login, and it is doubly wrong after ADR-0159: there is no public request form and no anonymous
+> write anywhere. The read-only guard is unchanged — it never depended on why the `POST` existed.
 
 The five writes phase 3 adds are named exceptions to that guard:
 `POST`/`DELETE /orders/{id}/assignees/{userId}`, `PUT`/`DELETE` on its `/note`, and

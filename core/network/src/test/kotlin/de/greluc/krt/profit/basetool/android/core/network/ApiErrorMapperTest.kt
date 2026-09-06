@@ -76,6 +76,14 @@ class ApiErrorMapperTest {
     }
 
     @Test
+    fun `a role-less account is its own state, not a generic forbidden`() {
+        val error = mapper.map(response(status = 403, body = problemBody(ProblemDetail.CODE_NO_ROLE)))
+
+        assertTrue(error is ApiError.NoRole)
+        assertEquals("corr-9", error.problem?.correlationId)
+    }
+
+    @Test
     fun `an unaccepted terms version is its own state, not a generic forbidden`() {
         val error = mapper.map(response(status = 403, body = problemBody(ProblemDetail.CODE_TERMS_ACCEPTANCE_REQUIRED)))
 

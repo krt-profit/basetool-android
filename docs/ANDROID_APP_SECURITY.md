@@ -80,25 +80,28 @@ The exposure package (one PR series):
    browser-based client remains deliberately impossible.
 7. Edge software watch: NPM 2.15.1 carries an unpatched CVE watch item (CVE-2026-40519, memory).
    The new vhost raises the value of fast NPM bumps — keep the Dependabot merge cadence.
-8. **Anonymous-surface stance: default-deny allowlist (explicit, Phase 0).** The backend
-   deliberately permits anonymous endpoints (master-data reads, redacted mission browsing, guest
-   participant editing, anonymous order creation). The new vhost would make these
-   internet-reachable on day one. (An earlier revision tied this to the app's guest mode shipping;
-   that mode is now dropped — see below.) Stance: the API vhost is a **default-deny allowlist** — it proxies only the
-   endpoint families the app consumes and 404s everything else, rather than blocklisting
-   known-anonymous paths. Two reasons: the anonymous surface is branchy (the `/slim` twins, the
-   guest participant mutations across PUT/DELETE/check-in/out/payout, `POST /api/v1/orders/items`
-   with its table-wide pessimistic lock — a DoS lever), so a blocklist misses paths; and any
-   *future* `permitAll` endpoint added for the web app would otherwise become internet-reachable
-   the day it merges. The anonymous read surface joins the allowlist only where the app needs it
-   pre-login (master data); **the anonymous-write and guest paths never join** — guest mode was
-   dropped (owner decision 2026-08-18, Q8 in the master plan) and every user of the app signs in,
-   so nothing on the app side will ever call them from the public vhost. That is a permanent
-   reduction of the exposed surface rather than a deferral: the endpoints keep serving the web
-   frontend on the internal network. The
-   terms/consent endpoints (`/api/v1/terms/**`) and the registration-status read MUST be on the
-   allowlist from day one — the app's terms gate and `PENDING_APPROVAL` handling depend on them.
-   Each opened anonymous path gets its own rate budget and an abuse counter/alert.
+8. **Anonymous-surface stance: default-deny allowlist (explicit, Phase 0).** The API vhost is a
+   **default-deny allowlist** — it proxies only the endpoint families the app consumes and 404s
+   everything else, rather than blocklisting paths that happen to be open today. The reason has
+   outlived the situation that produced it: a blocklist has to be re-derived every time the backend
+   matrix moves, and any *future* endpoint added for the web app would otherwise become
+   internet-reachable the day it merges. The allowlist is unaffected by what the backend permits,
+   which is exactly the property being bought.
+
+   **Since the members-only change (main repo ADR-0159 / REQ-SEC-052) there is no anonymous surface
+   left to reason about.** Every allow-listed path now requires a bearer; the two exceptions are
+   `GET /api/v1/app/version-policy` and `GET /api/v1/terms/document`, both of which the app reads
+   before it can hold a session. Each keeps its own rate budget and abuse counter.
+
+   > **Corrected 2026-09-06.** This item used to describe the backend as deliberately permitting
+   > master-data reads, redacted mission browsing, guest participant editing and anonymous order
+   > creation, and said the anonymous read surface joins the allowlist "only where the app needs it
+   > pre-login". Two of those were already stale — the order create went behind a login with main
+   > repo ADR-0149 — and the rest are gone with ADR-0159. The app never called an anonymous write
+   > (guest mode was dropped by owner decision 2026-08-18, Q8 in the master plan), so nothing on
+   > the app side changes; only the description of the server does. The terms and
+   > registration-status reads are still on the allowlist and still load-bearing for the app's
+   > terms gate and its `PENDING_APPROVAL` / `NO_ROLE` handling.
 9. **Per-subject quotas (Phase 0 work item, not just an aspiration).** Extend the backend
    Bucket4j configuration with per-`sub` budgets on the write endpoints the app uses (the ingest
    module's enforceable per-subject limiter is the model), so CGNAT users don't share one IP

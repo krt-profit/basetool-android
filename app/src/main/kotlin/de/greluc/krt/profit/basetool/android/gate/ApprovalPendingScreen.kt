@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +51,65 @@ private val COLUMN_MAX_WIDTH = 480.dp
 
 /** Size of the status glyph above the headline. */
 private val STATUS_ICON = 40.dp
+
+/**
+ * What the gate says and shows for one held state.
+ *
+ * Resolved once per render rather than by three parallel conditionals, so a fourth state cannot
+ * ship with its icon taken from one branch and its headline from another.
+ *
+ * @property titleRes the headline, rendered uppercase
+ * @property bodyRes the explanation under it
+ * @property iconRes the glyph above the headline
+ * @property tint the glyph's colour — danger only where the state is terminal
+ */
+private data class GateCopy(
+    val titleRes: Int,
+    val bodyRes: Int,
+    val iconRes: Int,
+    val tint: Color,
+)
+
+/**
+ * Picks the copy for a held state.
+ *
+ * [ApprovalStatus.ACTIVE] never reaches this screen — the gate routes a cleared member into the
+ * app — and [ApprovalStatus.UNKNOWN] is deliberately shown as the pending state: an unrecognised
+ * server status means "not cleared", and the waiting copy is the one that does not claim more than
+ * that.
+ *
+ * @param status why the member is being held
+ * @return the strings and glyph for it
+ */
+private fun copyFor(status: ApprovalStatus): GateCopy =
+    when (status) {
+        ApprovalStatus.REJECTED -> {
+            GateCopy(
+                R.string.gate_rejected_title,
+                R.string.gate_rejected_body,
+                DesignR.drawable.ic_krt_warning,
+                KrtPalette.DangerText,
+            )
+        }
+
+        ApprovalStatus.NO_ROLE -> {
+            GateCopy(
+                R.string.gate_no_role_title,
+                R.string.gate_no_role_body,
+                DesignR.drawable.ic_krt_user_plus,
+                KrtPalette.Orange,
+            )
+        }
+
+        else -> {
+            GateCopy(
+                R.string.gate_pending_title,
+                R.string.gate_pending_body,
+                DesignR.drawable.ic_krt_user_plus,
+                KrtPalette.Orange,
+            )
+        }
+    }
 
 /**
  * The wall a member meets between signing in and being let into the app.
@@ -89,9 +149,7 @@ fun ApprovalPendingScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val rejected = status == ApprovalStatus.REJECTED
-    val titleRes = if (rejected) R.string.gate_rejected_title else R.string.gate_pending_title
-    val bodyRes = if (rejected) R.string.gate_rejected_body else R.string.gate_pending_body
+    val copy = copyFor(status)
 
     Box(
         modifier =
@@ -116,24 +174,24 @@ fun ApprovalPendingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     KrtIcon(
-                        id = if (rejected) DesignR.drawable.ic_krt_warning else DesignR.drawable.ic_krt_user_plus,
+                        id = copy.iconRes,
                         contentDescription = null,
                         size = STATUS_ICON,
-                        tint = if (rejected) KrtPalette.DangerText else KrtPalette.Orange,
+                        tint = copy.tint,
                     )
                     Spacer(Modifier.height(KrtSpacing.s12))
                     // Uppercase, as chapter 04 sets every gate heading. The source strings stay
                     // sentence case so a screen reader is not handed shouting, and
                     // `krtUppercase` folds with the device's locale rather than the JVM default.
                     Text(
-                        text = stringResource(titleRes).krtUppercase(),
+                        text = stringResource(copy.titleRes).krtUppercase(),
                         style = MaterialTheme.typography.titleLarge,
                         color = KrtPalette.White,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(KrtSpacing.s12))
                     Text(
-                        text = stringResource(bodyRes),
+                        text = stringResource(copy.bodyRes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = KrtPalette.Gray1,
                         textAlign = TextAlign.Center,
@@ -210,6 +268,23 @@ private fun ApprovalPendingPreview() {
     KrtTheme {
         ApprovalPendingScreen(
             status = ApprovalStatus.PENDING,
+            accountName = "GrafRotz",
+            refreshing = false,
+            onRefresh = {},
+            onLogout = {},
+        )
+    }
+}
+
+/**
+ * Preview of the role-less state — the account is through approval and still held.
+ */
+@Preview(name = "Gate — no role", showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun ApprovalNoRolePreview() {
+    KrtTheme {
+        ApprovalPendingScreen(
+            status = ApprovalStatus.NO_ROLE,
             accountName = "GrafRotz",
             refreshing = false,
             onRefresh = {},

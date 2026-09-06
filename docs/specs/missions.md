@@ -209,9 +209,14 @@ the seven tabs cannot disagree with each other about the same Einsatz.
 **The Finanzen tab is fetched lazily, when it is first opened**, and it is two calls — the totals
 summary and the entries. Three reasons it is not folded into the first read:
 
-- It is **differently guarded**. `/missions/{id}` is anonymous-with-redaction; the Finanzen reads
-  require `isAuthenticated() and isMemberOrAbove() and canSeeMission` (main repo REQ-SEC-037). A
-  member may legitimately see the Einsatz and be refused its books.
+- It is **differently guarded**. Seeing an Einsatz and seeing its books are two permissions: the
+  Finanzen reads require `isMemberOrAbove() and canSeeMission` on top of authentication (main repo
+  REQ-SEC-037), and a member may legitimately hold the first and be refused the second.
+
+  > Until the members-only change (main repo ADR-0159 / REQ-SEC-052) this bullet read
+  > "`/missions/{id}` is anonymous-with-redaction". That is no longer true — the Einsatz read
+  > requires a login like everything else — but the reason for the lazy fetch is unchanged, because
+  > it never rested on the anonymous half.
 - Fetching it up-front would therefore turn an ordinary lack of permission into an error on a
   screen that is otherwise perfectly fine.
 - Most members opening an Einsatz never look at it, and it would cost two requests every time.
@@ -234,9 +239,16 @@ blank total, reads as data rather than as the partial answer it is.
 
 ### REQ-APP-MIS-009 — The redacted answer is a smaller Einsatz, not a broken one
 
-The backend redacts the detail for anonymous and role-less callers (main repo ADR-0034): no
-description, no owner, no managers, participants without their payout preference or comment. An
-**internal** or **terminal** Einsatz is refused outright with 403.
+The backend redacts what a caller below Logistician may not see (main repo REQ-SEC-007): a
+participant's e-mail address and real name are absent from a peer's answer. An **internal** or
+**terminal** Einsatz the member may not see is refused outright with 403.
+
+> **Corrected 2026-09-06.** This requirement used to describe a second, wider tier — the *outsider*
+> redaction of main repo ADR-0034, which stripped description, owner, managers, payout preference
+> and comment for a caller with no account. That tier is gone with the anonymous surface itself
+> (ADR-0159); ADR-0034 is superseded. What survives is the member-peer tier above, and the app's
+> behaviour does not change: it already treats every one of those fields as legitimately absent,
+> which is the property that matters and the reason nothing here had to be rewritten in code.
 
 Every one of those fields is therefore **legitimately absent**, and the app treats it as such. An
 app that required any of them would show "Signal Lost" on an Einsatz the server served without

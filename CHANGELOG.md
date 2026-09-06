@@ -12,6 +12,10 @@
 
 - **„UNGELESEN" kam beim Aushang immer wieder zurück.** Als gelesen markieren wurde ebenfalls abgewiesen, das Band sprang zurück und war beim nächsten Laden der Übersicht wieder da. Derselbe Weg, dieselbe Freischaltung.
 
+### Added
+
+- **Ein Konto ohne Rolle bekommt jetzt seinen eigenen Hinweis.** Wer freigegeben ist, aber noch keine Rolle hat, las bisher „Freigabe ausstehend“ — eine Freigabe, die längst erteilt war. Jetzt steht dort, dass die Rolle fehlt und die Administration sie vergibt.
+
 ### Changed
 
 - **„Blueprints mit Org teilen" steht jetzt unter „Konto", nicht mehr unter „App".** Der Schalter gehört zu deinem Konto, nicht zum Gerät: Er wird auf dem Server gespeichert, gilt für die Organisation und begleitet dich auf jedes Gerät — und er teilt sich seine Sperre mit der Auszahlungspräferenz direkt darüber.

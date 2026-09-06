@@ -38,6 +38,8 @@
     <string name="gate_checking">Checking access …</string>
     <string name="gate_pending_title">Approval pending</string>
     <string name="gate_pending_body">Your access is waiting for an administrator. You will continue here as soon as the account is approved.</string>
+    <string name="gate_no_role_title">No role assigned</string>
+    <string name="gate_no_role_body">Your account is approved but carries no role yet. An administrator grants one — you continue here afterwards.</string>
     <string name="gate_rejected_title">Access refused</string>
     <string name="gate_rejected_body">Your access was not approved. Contact the administration if you believe this is a mistake.</string>
     <string name="gate_account">Account</string>

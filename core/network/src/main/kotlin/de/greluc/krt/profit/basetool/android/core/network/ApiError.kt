@@ -43,6 +43,19 @@ sealed interface ApiError {
     ) : ApiError
 
     /**
+     * The account is authenticated and approved but holds no role.
+     *
+     * Its own variant rather than a [Forbidden]: a plain 403 is "you may not do *this*", and the
+     * app answers it in place with a toast. This one refuses every call the app can make, so the
+     * only honest response is the gate — which cannot be reached from a per-request toast.
+     *
+     * @property problem the parsed body, if any
+     */
+    data class NoRole(
+        override val problem: ProblemDetail? = null,
+    ) : ApiError
+
+    /**
      * The Terms of Use in force must be accepted before the API answers.
      *
      * @property problem the parsed body, if any
