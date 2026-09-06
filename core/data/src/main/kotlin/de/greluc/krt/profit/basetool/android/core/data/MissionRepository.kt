@@ -952,16 +952,13 @@ class MissionRepository(
         missionId: String,
         userId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(
-            missionId,
-            reader.post("${missionPath(missionId)}/managers/$userId", MissionDto.serializer()),
-        )
+        rereadMission(reader, missionId, reader.postAccepted("${missionPath(missionId)}/managers/$userId/slim"))
 
     override suspend fun removeManager(
         missionId: String,
         userId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(missionId, reader.delete("${missionPath(missionId)}/managers/$userId", MissionDto.serializer()))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId/slim"))
 
     override suspend fun addParticipant(
         missionId: String,
@@ -1507,10 +1504,7 @@ class MissionStructureRepository(
         missionId: String,
         frequencyId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(
-            missionId,
-            reader.delete("${missionPath(missionId)}/frequencies/$frequencyId", MissionDto.serializer()),
-        )
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/frequencies/$frequencyId/slim"))
 
     override suspend fun addUnit(
         missionId: String,
@@ -1518,10 +1512,11 @@ class MissionStructureRepository(
         highValue: Boolean,
         fields: MissionUnitFields,
     ): ApiResult<MissionDetail> =
-        oneMission(
+        rereadMission(
+            reader,
             missionId,
-            reader.post(
-                "${missionPath(missionId)}/units",
+            reader.postAccepted(
+                "${missionPath(missionId)}/units/slim",
                 AddUnitRequest(
                     name = name,
                     highValueUnit = highValue,
@@ -1532,7 +1527,6 @@ class MissionStructureRepository(
                     note = fields.note,
                 ),
                 AddUnitRequest.serializer(),
-                MissionDto.serializer(),
             ),
         )
 
@@ -1544,10 +1538,11 @@ class MissionStructureRepository(
         version: Long,
         fields: MissionUnitFields,
     ): ApiResult<MissionDetail> =
-        oneMission(
+        rereadMission(
+            reader,
             missionId,
-            reader.put(
-                "${missionPath(missionId)}/units/$unitId",
+            reader.putAccepted(
+                "${missionPath(missionId)}/units/$unitId/slim",
                 // The version is echoed, not omitted. `UpdateUnitRequest` makes it nullable and the
                 // server treats an absent one as "do not check" — which turns a concurrent rename
                 // into a silent overwrite instead of the 409 the counter exists to raise.
@@ -1562,7 +1557,6 @@ class MissionStructureRepository(
                     note = fields.note,
                 ),
                 UpdateUnitRequest.serializer(),
-                MissionDto.serializer(),
             ),
         )
 
@@ -1573,13 +1567,13 @@ class MissionStructureRepository(
         jobTypeIds: Set<String>,
         version: Long,
     ): ApiResult<MissionDetail> =
-        oneMission(
+        rereadMission(
+            reader,
             missionId,
-            reader.put(
-                "${missionPath(missionId)}/units/$unitId/crew/$crewId",
+            reader.putAccepted(
+                "${missionPath(missionId)}/units/$unitId/crew/$crewId/slim",
                 UpdateCrewRequest(jobTypeIds = jobTypeIds, version = version),
                 UpdateCrewRequest.serializer(),
-                MissionDto.serializer(),
             ),
         )
 
@@ -1587,7 +1581,7 @@ class MissionStructureRepository(
         missionId: String,
         unitId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(missionId, reader.delete("${missionPath(missionId)}/units/$unitId", MissionDto.serializer()))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId/slim"))
 
     override suspend fun addCrew(
         missionId: String,
@@ -1595,13 +1589,13 @@ class MissionStructureRepository(
         participantId: String,
         jobTypeIds: Set<String>,
     ): ApiResult<MissionDetail> =
-        oneMission(
+        rereadMission(
+            reader,
             missionId,
-            reader.post(
-                "${missionPath(missionId)}/units/$unitId/crew",
+            reader.postAccepted(
+                "${missionPath(missionId)}/units/$unitId/crew/slim",
                 AddCrewRequest(participantId = participantId, jobTypeIds = jobTypeIds),
                 AddCrewRequest.serializer(),
-                MissionDto.serializer(),
             ),
         )
 
@@ -1610,19 +1604,7 @@ class MissionStructureRepository(
         unitId: String,
         crewId: String,
     ): ApiResult<MissionDetail> =
-        // The slim pair again, and here the legacy half was the one being sent: the full-DTO
-        // `DELETE …/crew/{crewId}` is `@ApiDeprecation`-marked with a sunset, and its replacement
-        // answers 204 rather than the whole Einsatz. So the answer cannot be folded — the Einsatz
-        // is re-read instead, on a path the caller has just been reading anyway.
-        when (val removed = reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId/slim")) {
-            is ApiResult.Failure -> {
-                removed
-            }
-
-            is ApiResult.Success -> {
-                oneMission(missionId, reader.get(missionPath(missionId), MissionDto.serializer()))
-            }
-        }
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId/slim"))
 }
 
 /**
@@ -1646,6 +1628,38 @@ private fun oneMission(
     when (result) {
         is ApiResult.Failure -> result
         is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
+    }
+
+/**
+ * Re-reads the Einsatz after a write that answered with less than the whole of it.
+ *
+ * Every `/slim` write answers with the part it touched — one unit, one crew row, a manager list, or
+ * `204` and nothing at all — rather than the whole Einsatz its deprecated twin returned. That is
+ * the point of them: renaming one Einheit no longer ships every participant, every step and every
+ * objective back over a mobile connection. It also means the answer cannot be folded into the
+ * screen's model, so the Einsatz is re-read on a path the caller has just been reading anyway.
+ *
+ * At file scope beside [oneMission] and for the same reason: both repositories here make these
+ * writes, and two copies would be two places for the re-read to drift.
+ *
+ * @param reader the API seam to re-read through.
+ * @param missionId the Einsatz.
+ * @param written what the write answered; only whether it succeeded matters here.
+ * @return the Einsatz as it now stands, or the write's failure unchanged.
+ */
+private suspend fun rereadMission(
+    reader: ApiReader,
+    missionId: String,
+    written: ApiResult<*>,
+): ApiResult<MissionDetail> =
+    when (written) {
+        is ApiResult.Failure -> {
+            written
+        }
+
+        is ApiResult.Success -> {
+            oneMission(missionId, reader.get(missionPath(missionId), MissionDto.serializer()))
+        }
     }
 
 /**

@@ -828,22 +828,44 @@ clears the other. The app therefore always sends both, and echoes the unit's own
 > Omitting it turns a concurrent rename into a silent overwrite rather than the `409` the counter
 > exists to raise. It MUST be sent.
 
-`PUT …/units/{unitId}/crew/{crewId}` is the same shape for the roles: the whole `jobTypeIds` set
-goes over the wire, so dropping one id revokes exactly that role, and the crew row's own `version`
-is echoed.
+`PUT …/units/{unitId}/crew/{crewId}/slim` is the same shape for the roles: the whole `jobTypeIds`
+set goes over the wire, so dropping one id revokes exactly that role, and the crew row's own
+`version` is echoed.
 
-**Taking somebody off an Einheit is the `/slim` DELETE.** `DELETE …/units/{unitId}/crew/{crewId}`
-and `…/crew/{crewId}/slim` both exist; the first is `@ApiDeprecation`-marked with a sunset, and the
-app sends the second. It answers `204`, so there is no Einsatz to fold out of the answer and the
-screen **re-reads** the Einsatz instead — one extra GET on a path the member has just been reading,
-in exchange for a write that is not on a clock.
+**Every Einheiten and Verwaltung write goes to its `/slim` twin.** Eight of them did not, until
+2026-09-06. Each answers with the part it touched — one unit, one crew row, a manager list, or
+`204` and nothing at all — rather than the whole Einsatz, so there is nothing to fold out of the
+answer and the screen **re-reads** the Einsatz instead: one extra GET on a path the member has just
+been reading, in exchange for a write that is not on a clock and no longer ships every participant,
+step and objective back over a mobile connection.
 
-> [!danger] Corrected 2026-09-03 — the app had been sending the deprecated path, and the API vhost
-> admitted neither
-> Every removal was a `404` at the edge, rendered as „Konnte nicht gespeichert werden.". Switching
-> to `/slim` alone would have traded one 404 for another: the replacement was not on the allow-list
-> either. Both moved together (main repo, runbook phase N). The **adding** half
-> (`POST …/units/{unitId}/crew`) is still refused at the edge and is not part of that change.
+|                What                 |                    Path                     |
+|-------------------------------------|---------------------------------------------|
+| Einheit anlegen                     | `POST …/units/slim`                          |
+| Einheit bearbeiten / entfernen      | `PUT`/`DELETE …/units/{unitId}/slim`         |
+| Jemanden an Bord nehmen             | `POST …/units/{unitId}/crew/slim`            |
+| Funktionen an einem Crew-Slot       | `PUT …/crew/{crewId}/slim`                   |
+| Jemanden von Bord nehmen            | `DELETE …/crew/{crewId}/slim`                |
+| Frequenz entfernen                  | `DELETE …/frequencies/{frequencyId}/slim`    |
+| Verwalter hinzufügen / entfernen    | `POST`/`DELETE …/managers/{userId}/slim`     |
+
+> [!danger] Corrected 2026-09-03 and again 2026-09-06 — the app had been sending deprecated paths
+> the API vhost did not admit either
+> The first correction moved the crew **removal** alone: every removal was a `404` at the edge,
+> rendered as „Konnte nicht gespeichert werden.“, and switching to `/slim` by itself would have
+> traded one 404 for another because the replacement was not on the allow-list. Both moved together
+> (main repo, runbook phase N).
+>
+> The second correction moved the other seven, after the backend's sunset for the deprecated twins
+> turned out to be **2026-10-20**: allow-listing paths that expire in six weeks would have been
+> work with an end date. Six of the seven stay refused at the edge until the Einsatz planning set
+> lands there — no worse than before, and correct when it does.
+>
+> **One of them repairs on this change alone.** `PUT …/crew/{crewId}/slim` has been admitted since
+> phase N, because the removal needed the same path. The audit had filed the roles write as a
+> *latent* defect — the chips were never drawn, since `GET /api/v1/job-types` was refused — and
+> runbook phase S admits that catalogue. So the chips are drawn and, from this change on, saving
+> them works.
 
 **The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
 two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
@@ -857,6 +879,7 @@ the tab says so in a sentence.
 - [ ] A rename sends the name, the HVU flag and the unit's version.
 - [ ] Toggling one role sends the whole remaining set plus the crew row's version.
 - [x] A removal sends `DELETE …/crew/{crewId}/slim` and re-reads the Einsatz afterwards.
+- [x] Every other Einheiten/Verwaltung write sends its `/slim` twin and re-reads the Einsatz.
 - [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
 - [ ] An empty catalogue renders a sentence, not an empty row.
 

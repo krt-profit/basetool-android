@@ -658,8 +658,9 @@ class MissionRepositoryTest {
         }
 
     @Test
-    fun `adding an Einheit sends its name and its HVU mark`() =
+    fun `adding an Einheit sends its name and its HVU mark on the slim path`() =
         runTest {
+            respond("""[]""")
             respond("""{"id":"m1","name":"Lyria"}""")
             val structure = MissionStructureRepository(reader = reader())
 
@@ -667,9 +668,11 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
+            assertTrue("the deprecated twin sunsets 2026-10-20", request.target.endsWith("/units/slim"))
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einheit Alpha""""))
             assertTrue(body.contains(""""highValueUnit":true"""))
+            assertEquals("GET", server.takeRequest().method)
         }
 
     /**
@@ -679,16 +682,21 @@ class MissionRepositoryTest {
     @Test
     fun `crew is assigned by participant id`() =
         runTest {
+            respond("""[]""")
             respond("""{"id":"m1","name":"Lyria"}""")
             val structure = MissionStructureRepository(reader = reader())
 
             structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
 
             val request = server.takeRequest()
-            // The PLAIN endpoint, not /slim: the slim one answers with the narrow object and the
-            // plain one with the whole Einsatz, which is what the screen swaps.
-            assertTrue(request.target.endsWith("/units/u1/crew"))
+            // The slim endpoint. This test used to assert the plain one and say so: the plain one
+            // answers with the whole Einsatz, which is what the screen swaps. That reasoning was
+            // right about the answer and wrong about the path — the plain one is
+            // `@ApiDeprecation`-marked with a sunset of 2026-10-20, and the edge admits neither.
+            // The Einsatz is re-read instead.
+            assertTrue(request.target.endsWith("/units/u1/crew/slim"))
             assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
+            assertEquals("GET", server.takeRequest().method)
         }
 
     /**
@@ -737,13 +745,45 @@ class MissionRepositoryTest {
     @Test
     fun `adding a manager names the member in the path`() =
         runTest {
+            respond("""[]""")
             respond("""{"id":"m1","name":"Lyria"}""")
 
             repository.addManager("m1", userId = "u9")
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue(request.target.endsWith("/managers/u9"))
+            assertTrue(request.target.endsWith("/managers/u9/slim"))
+            assertEquals("no body: the member is named in the path", "", request.body?.utf8().orEmpty())
+            assertEquals("GET", server.takeRequest().method)
+        }
+
+    /**
+     * The Funktions-Chips on a Crew-Slot, which are the reason this switch was worth making on its
+     * own.
+     *
+     * The audit filed `PUT …/crew/{crewId}` as a **latent** defect: the chips were never drawn,
+     * because the catalogue behind them (`GET /api/v1/job-types`) was refused at the edge. Runbook
+     * phase S admits that catalogue, which draws the chips and makes this write reachable — and it
+     * was still pointed at the deprecated path. Its `/slim` twin has been admitted since phase N,
+     * so unlike the other seven this one starts working on the app change alone.
+     */
+    @Test
+    fun `setting the Funktionen on a Crew-Slot uses the admitted slim path`() =
+        runTest {
+            respond("""{}""")
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.setCrewRoles("m1", unitId = "u1", crewId = "c1", jobTypeIds = setOf("j1"), version = 3)
+
+            val request = server.takeRequest()
+            assertEquals("PUT", request.method)
+            assertTrue(request.target.endsWith("/units/u1/crew/c1/slim"))
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""jobTypeIds":["j1"]"""))
+            // Echoed, not omitted: the crew row carries its own optimistic lock.
+            assertTrue(body.contains(""""version":3"""))
+            assertEquals("GET", server.takeRequest().method)
         }
 
     /**

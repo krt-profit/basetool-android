@@ -286,6 +286,21 @@ class ApiReader(
         )
 
     /**
+     * Sends a `POST` that carries no body and ignores what comes back.
+     *
+     * The pairing of [post] and [postAccepted] one level up, for the writes that are addressed
+     * entirely by their path — "put this member on this Einsatz" names both in the URL. The `/slim`
+     * writes answer with the part they touched, and a caller that re-reads the aggregate anyway has
+     * no use for it: parsing it would let a field the app never touches fail a write that in fact
+     * succeeded.
+     *
+     * @param path the API path, beginning with a slash
+     * @return success, or the classified failure
+     */
+    suspend fun postAccepted(path: String): ApiResult<Unit> =
+        withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).post(EMPTY_BODY))
+
+    /**
      * Deletes a row.
      *
      * Separate from the three above because the answer is `204 No Content`: there is no body to
