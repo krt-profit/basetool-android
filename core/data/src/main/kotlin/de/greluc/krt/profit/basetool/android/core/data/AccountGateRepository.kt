@@ -37,7 +37,7 @@ import java.io.IOException
  */
 fun interface AccountGateSource {
     /**
-     * Reads the calling member's position in the approval queue.
+     * Reads whether the signed-in member is cleared, and if not, what is holding them.
      *
      * @return the status, or a failure the caller can show
      */
@@ -48,10 +48,11 @@ fun interface AccountGateSource {
  * Reads the answers that decide whether a signed-in member reaches the app at all.
  *
  * A valid token is not admission. The backend gates every other endpoint behind an approved
- * registration and an accepted Terms-of-Use version, and answers **403 for both** with the stable
- * codes `PENDING_APPROVAL` / `TERMS_ACCEPTANCE_REQUIRED` (main repo REQ-SEC-017 / REQ-SEC-028). The
- * app therefore asks up front rather than waiting to be refused: the alternative is a first screen
- * that loads, fails, and then has to guess which of three unrelated 403s it just received.
+ * registration, an assigned role and an accepted Terms-of-Use version, and answers **403 for all
+ * three** with the stable codes `PENDING_APPROVAL` / `NO_ROLE` / `TERMS_ACCEPTANCE_REQUIRED` (main
+ * repo REQ-SEC-017 / REQ-SEC-053 / REQ-SEC-028). The app therefore asks up front rather than
+ * waiting to be refused: the alternative is a first screen that loads, fails, and then has to guess
+ * which of four unrelated 403s it just received.
  *
  * The endpoint is deliberately reachable while its own gate is closed — that is what makes the call
  * possible for a pending caller, and it is a property of the server the app depends on rather than
@@ -85,6 +86,12 @@ class AccountGateRepository(
      * Treating one of them as a failure would show a connectivity screen to a member whose account
      * is simply waiting for an administrator.
      *
+     * A `NO_ROLE` refusal is folded the same way, and it can only arrive as one: the backend
+     * refuses a role-less account on every API path except this one and the two anonymous reads
+     * (main repo REQ-SEC-053), so there is no successful body that could carry the state.
+     * Left as a failure it would reach the member as "Command did not respond" — a connectivity
+     * screen for an account that is perfectly connected and simply has no role yet.
+     *
      * @return the status, or a failure the caller can show
      */
     override suspend fun registrationStatus(): ApiResult<ApprovalStatus> =
@@ -94,10 +101,10 @@ class AccountGateRepository(
             }
 
             is ApiResult.Failure -> {
-                if (result.error is ApiError.PendingApproval) {
-                    ApiResult.Success(ApprovalStatus.PENDING)
-                } else {
-                    result
+                when (result.error) {
+                    is ApiError.PendingApproval -> ApiResult.Success(ApprovalStatus.PENDING)
+                    is ApiError.NoRole -> ApiResult.Success(ApprovalStatus.NO_ROLE)
+                    else -> result
                 }
             }
         }

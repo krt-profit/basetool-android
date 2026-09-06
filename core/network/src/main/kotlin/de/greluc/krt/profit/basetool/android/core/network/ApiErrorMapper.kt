@@ -48,6 +48,10 @@ class ApiErrorMapper(
                 ApiError.PendingApproval(problem)
             }
 
+            ProblemDetail.CODE_NO_ROLE -> {
+                ApiError.NoRole(problem)
+            }
+
             ProblemDetail.CODE_TERMS_ACCEPTANCE_REQUIRED -> {
                 ApiError.TermsAcceptanceRequired(problem)
             }

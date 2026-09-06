@@ -141,6 +141,47 @@ class AccountGateRepositoryTest {
         }
 
     /**
+     * The refusal that is the only way this state can arrive.
+     *
+     * A role-less account is refused on every API path (main repo REQ-SEC-053), so there is no
+     * successful body that could carry the state — it exists only as this 403. Left as a
+     * failure it would reach the member as a connectivity screen for a perfectly healthy
+     * connection.
+     */
+    @Test
+    fun `a NO_ROLE refusal is the answer, not an error`() =
+        runTest {
+            server.enqueue(
+                MockResponse
+                    .Builder()
+                    .code(HTTP_FORBIDDEN)
+                    .setHeader("Content-Type", "application/problem+json")
+                    .body("""{"status":403,"code":"NO_ROLE","title":"Keine Rolle"}""")
+                    .build(),
+            )
+
+            val result = repository.registrationStatus()
+
+            assertEquals(ApiResult.Success(ApprovalStatus.NO_ROLE), result)
+            assertTrue(!ApprovalStatus.NO_ROLE.isCleared)
+        }
+
+    /**
+     * `NO_ROLE` is derived from a refusal and must never be readable off the wire.
+     *
+     * The server never names it in `approvalStatus`; a build that let it through `fromWire` would
+     * invent a state the server did not claim the moment somebody added the value upstream for an
+     * unrelated reason.
+     */
+    @Test
+    fun `NO_ROLE is not a wire value`() =
+        runTest {
+            server.enqueue(json("""{"approvalStatus":"NO_ROLE"}"""))
+
+            assertEquals(ApiResult.Success(ApprovalStatus.UNKNOWN), repository.registrationStatus())
+        }
+
+    /**
      * A genuine authorisation failure stays a failure.
      *
      * This is the counterpart to the case above and the reason the fold is written against the

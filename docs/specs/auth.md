@@ -365,6 +365,18 @@ parsed as a string, an unknown one becomes `ApprovalStatus.UNKNOWN`, and `UNKNOW
 refused depends on the deployment's filter order, and both outcomes mean the same thing. Reporting
 one of them as a failure would show a connectivity screen to a member who is merely waiting.
 
+**A `NO_ROLE` refusal is the answer too, and it is the only way that state can arrive.** The backend
+refuses an account that holds no application role on every `/api/**` path except the status read and
+the two anonymous ones (main repo REQ-SEC-053), so `approvalStatus` can never carry it — it exists
+only as the 403. `ApprovalStatus.NO_ROLE` is therefore folded in from the error and is deliberately
+**not** a wire value: `fromWire` names the three constants the server can send rather than excluding
+`UNKNOWN` alone, so an upstream value of that name could never invent the state.
+
+It gets its own copy rather than the waiting copy, because the two instructions are opposites. A
+pending member waits for a decision that has been asked for. A role-less member has already been
+approved and is waiting for a role nobody has been asked to grant — telling them their approval is
+pending points them at an administrator who has already acted, and the wait has no end.
+
 **A failed re-read keeps the last known state.** Replacing the waiting screen with an error the
 moment a poll misses would make a lost minute of connectivity look like the account had been reset.
 Only a *first* read with nothing behind it surfaces as unreadable — and that state says the question
@@ -389,6 +401,9 @@ it renders while every gated endpoint refuses.
   (`AccountGateRepositoryTest`, `AccountGateViewModelTest`).
 - [x] An unknown status, and a body with no status field at all, keep the gate closed.
 - [x] A `PENDING_APPROVAL` problem body reads as pending; a plain `FORBIDDEN` 403 stays a failure.
+- [x] A `NO_ROLE` problem body reads as `ApprovalStatus.NO_ROLE` and shows the role-less copy, not
+  the waiting copy (`ApiErrorMapperTest`, `AccountGateRepositoryTest`, `ApprovalPendingScreenTest`).
+- [x] `NO_ROLE` cannot be read off the wire: an `approvalStatus` of that name stays `UNKNOWN`.
 - [x] An unreadable 200 body is reported as a server fault, not as a network one — telling a member
   to check their connection when the server answered is advice that cannot help.
 - [x] The poll stops once the member is cleared, and a second `start()` does not add a competing

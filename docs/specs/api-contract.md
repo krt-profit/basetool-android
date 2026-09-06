@@ -16,9 +16,11 @@ that conversation honest are requirements, not conventions.
 interceptor (`MandatoryHeadersInterceptor`), never per call site. Three of the four fail **silently**
 when missing, which is why they are centralised:
 
-- **`Authorization`** — omitted entirely when there is no session, rather than sent empty. An
-  anonymous endpoint treats a malformed `Authorization` as a failed authentication and answers 401,
-  turning a guest read into a login prompt.
+- **`Authorization`** — omitted entirely when there is no session, rather than sent empty. The two
+  endpoints that answer without a token — `GET /api/v1/app/version-policy` and
+  `GET /api/v1/terms/document` (main repo REQ-SEC-052) — treat a malformed `Authorization` as a
+  failed authentication and answer 401, which would turn the forced-update check on a cold start
+  into a login prompt the app cannot yet satisfy.
 - **`X-Active-Org-Unit-Id`** — the org-unit pin (main repo `REQ-ORG-*`). Omitted when nothing is
   pinned; the backend then falls back to the member's default, which is correct on a fresh install
   and wrong the moment the member switches context — a missing header shows another squadron's data

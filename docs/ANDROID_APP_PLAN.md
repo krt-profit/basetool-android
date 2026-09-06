@@ -497,8 +497,10 @@ Consequences folded into this plan: the roadmap keeps its phase structure, but t
 release gate moves behind Phase 4 + Phase 5** (Q6); the Phase-4 "push channel" item is dropped
 (Q2); release signing uses a **self-managed key** (offline-generated, offline backup, APK
 Signature Scheme v3.1 rotation lineage from day one — unrecoverable if lost, see DEV_CI doc)
-because there is no Play App Signing without Play (Q1); the guest mode ships with the MVP, so
-the anonymous-path block at the API vhost (security doc §2.8) lifts at release, not later.
+because there is no Play App Signing without Play (Q1). An earlier revision of this paragraph said
+the guest mode ships with the MVP and that the anonymous-path block at the API vhost (security doc
+§2.8) therefore lifts at release — **that was wrong and contradicted Q8 above**, which dropped guest
+mode on 2026-08-18. Corrected 2026-09-06: every user of the app signs in, and the block never lifts.
 
 **Secondary decisions** (lower stakes; default applies unless overridden, listed here so nothing
 hides in the sub-documents): FLAG_SECURE user-relax toggle (default: strict, no toggle) ·

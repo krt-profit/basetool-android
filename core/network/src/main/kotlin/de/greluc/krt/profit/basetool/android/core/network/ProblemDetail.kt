@@ -92,6 +92,17 @@ data class ProblemDetail(
         /** The account exists but is not approved yet (main repo REQ-SEC-017). */
         const val CODE_PENDING_APPROVAL: String = "PENDING_APPROVAL"
 
+        /**
+         * The token is valid but carries no application role (main repo REQ-SEC-053).
+         *
+         * Distinct from [CODE_PENDING_APPROVAL]: that account is known and queued, this one is
+         * approved and simply holds nothing an administrator has granted yet. Both are 403 and
+         * both end at the gate, but only one of them is waiting for a decision that has already
+         * been asked for, and telling a member to "wait for approval" when nobody is going to
+         * approve anything is the wrong instruction.
+         */
+        const val CODE_NO_ROLE: String = "NO_ROLE"
+
         /** The Terms of Use in force have not been accepted (REQ-SEC-028). */
         const val CODE_TERMS_ACCEPTANCE_REQUIRED: String = "TERMS_ACCEPTANCE_REQUIRED"
 
