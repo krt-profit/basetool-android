@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **Die Funktionen an einem Crew-Slot ließen sich nicht speichern.** Die Chips waren bisher gar nicht gezeichnet, weil der Funktionen-Katalog abgewiesen wurde; jetzt sind sie da — und die App schickte das Speichern noch an einen veralteten Pfad. Umgestellt, und damit funktioniert es.
+
+- **Acht Schreibvorgänge am Einsatz gingen an veraltete Pfade.** Einheit anlegen, bearbeiten und entfernen, jemanden an oder von Bord nehmen, Funktionen setzen, Frequenz entfernen, Verwalter hinzufügen und entfernen: alle laufen jetzt über die schlanken Endpunkte, die der Server als Ersatz vorsieht — die alten werden am 20.10.2026 abgeschaltet. Nebenbei sparen sie Daten: die Antwort trägt nur noch den geänderten Teil statt des ganzen Einsatzes.
+
 - **In den Einstellungen waren „Auszahlungspräferenz" und „Blueprints mit Org teilen" ausgegraut — auf jedem Konto, seit der ersten Version.** Beide Werte liegen auf dem Server, und die App durfte sie gar nicht erst abrufen; die Zeilen blieben deshalb gesperrt und sahen aus, als wäre einfach nichts gesetzt. Die Pfade sind jetzt freigegeben (Haupt-Repo, Runbook-Phase Q). Scheitert der Abruf künftig doch, sagt der Bildschirm es jetzt und bietet „Erneut versuchen" an, statt beide Zeilen stumm zu sperren — dasselbe gilt für eine abgelehnte Änderung.
 
 - **„UNGELESEN" kam beim Aushang immer wieder zurück.** Als gelesen markieren wurde ebenfalls abgewiesen, das Band sprang zurück und war beim nächsten Laden der Übersicht wieder da. Derselbe Weg, dieselbe Freischaltung.
