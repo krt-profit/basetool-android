@@ -858,7 +858,7 @@ set goes over the wire, so dropping one id revokes exactly that role, and the cr
 `version` is echoed.
 
 **Every Einheiten and Verwaltung write goes to its `/slim` twin.** Eight of them did not, until
-2026-09-06. Each answers with the part it touched — one unit, one crew row, a manager list, or
+2026-09-06, and a ninth until 2026-09-07. Each answers with the part it touched — one unit, one crew row, a manager list, or
 `204` and nothing at all — rather than the whole Einsatz, so there is nothing to fold out of the
 answer and the screen **re-reads** the Einsatz instead: one extra GET on a path the member has just
 been reading, in exchange for a write that is not on a clock and no longer ships every participant,
@@ -873,6 +873,7 @@ step and objective back over a mobile connection.
 | Jemanden von Bord nehmen            | `DELETE …/crew/{crewId}/slim`                |
 | Frequenz entfernen                  | `DELETE …/frequencies/{frequencyId}/slim`    |
 | Verwalter hinzufügen / entfernen    | `POST`/`DELETE …/managers/{userId}/slim`     |
+| Teilnehmer hinzufügen               | `POST …/participants/slim`                   |
 
 > [!danger] Corrected 2026-09-03 and again 2026-09-06 — the app had been sending deprecated paths
 > the API vhost did not admit either
@@ -891,6 +892,17 @@ step and objective back over a mobile connection.
 > *latent* defect — the chips were never drawn, since `GET /api/v1/job-types` was refused — and
 > runbook phase S admits that catalogue. So the chips are drawn and, from this change on, saving
 > them works.
+>
+> **A third correction, 2026-09-07: the sweep of the other eight missed `POST …/participants`**
+> — „Teilnehmer hinzufügen", the same 2026-10-20 sunset. Found while working out what
+> `APP_ANDROID_MINIMUM_VERSION_CODE` would have to be after the deprecated twins are removed, which
+> is a question that only has an answer once you know **which** build is clean. It was not clean.
+>
+> It survived the sweep because **nothing could have failed**: `DeprecationInterceptor` sets
+> `Deprecation` / `Sunset` / `Link` headers and always returns `true`, so a doomed path answers
+> exactly like a healthy one — and this endpoint was the one write in the file with **no test at
+> all**, so no assertion named its path either. Both halves are fixed: the path, and a test that
+> asserts it.
 
 **The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
 two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
@@ -905,6 +917,8 @@ the tab says so in a sentence.
 - [ ] Toggling one role sends the whole remaining set plus the crew row's version.
 - [x] A removal sends `DELETE …/crew/{crewId}/slim` and re-reads the Einsatz afterwards.
 - [x] Every other Einheiten/Verwaltung write sends its `/slim` twin and re-reads the Einsatz.
+- [x] Putting a member on the roster sends `POST …/participants/slim` and re-reads the Einsatz —
+  the answer is the participant list, and `registeredParticipants` is the server's count.
 - [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
 - [ ] An empty catalogue renders a sentence, not an empty row.
 

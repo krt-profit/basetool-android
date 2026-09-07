@@ -11,7 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCustomFrequencyRequest
-import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantPublicRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddUnitRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.JoinMissionRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
@@ -985,17 +985,35 @@ class MissionRepository(
     ): ApiResult<MissionDetail> =
         rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId/slim"))
 
+    /**
+     * The ninth write this Einsatz had on a path that is being switched off.
+     *
+     * `POST …/participants` is deprecated with a sunset of **2026-10-20**, and the sweep that
+     * moved eight of these onto their slim twins missed it — found on 2026-09-07 while working out
+     * what `APP_ANDROID_MINIMUM_VERSION_CODE` would have to be. Nothing announced it: the
+     * deprecation interceptor only sets `Deprecation` / `Sunset` / `Link` headers and never blocks,
+     * so the call keeps working until the method is deleted from the server and then fails with no
+     * warning at all.
+     *
+     * The slim twin answers with the **participant list**, not the whole Einsatz, so the Einsatz is
+     * re-read rather than patched from the answer: `registeredParticipants` is the server's own
+     * count and drives the head's „14 Teilnehmer", and deriving it from the list here would be
+     * inventing a number the server is the authority on. Every other slim write in this file does
+     * the same for the same reason; `addCustomFrequency` gets away with patching only because no
+     * counter hangs off a frequency.
+     */
     override suspend fun addParticipant(
         missionId: String,
         userId: String,
     ): ApiResult<MissionDetail> =
-        oneMission(
+        rereadMission(
+            reader,
             missionId,
             reader.post(
-                "${missionPath(missionId)}/participants",
-                AddParticipantRequest(userId = userId),
-                AddParticipantRequest.serializer(),
-                MissionDto.serializer(),
+                "${missionPath(missionId)}/participants/slim",
+                AddParticipantPublicRequest(userId = userId),
+                AddParticipantPublicRequest.serializer(),
+                ListSerializer(MissionParticipantDto.serializer()),
             ),
         )
 

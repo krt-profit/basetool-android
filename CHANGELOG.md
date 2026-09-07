@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **„Teilnehmer hinzufügen" ging noch an einen Pfad, der abgeschaltet wird.** Der Umbau in
+  0.2.5 hat acht Schreibwege umgestellt und diesen einen übersehen — unauffällig, weil der alte
+  Pfad heute noch funktioniert und erst zum Stichtag ins Leere läuft. Jetzt umgestellt.
+
 ## [0.2.6] — 2026-09-07
 
 ### Added
