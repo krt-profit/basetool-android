@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.7] — 2026-09-07
+
 ### Fixed
 
 - **„Teilnehmer hinzufügen" ging noch an einen Pfad, der abgeschaltet wird.** Der Umbau in
