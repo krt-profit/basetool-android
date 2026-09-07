@@ -758,6 +758,37 @@ class MissionRepositoryTest {
         }
 
     /**
+     * The ninth write on a deprecated path — and the one the sweep of the other eight missed.
+     *
+     * `POST …/participants` carries the same 2026-10-20 sunset. Nothing failed to announce it:
+     * `DeprecationInterceptor` only sets `Deprecation` / `Sunset` / `Link` headers and never blocks,
+     * so a call on a path scheduled for removal is indistinguishable from a healthy one until the
+     * method is deleted server-side. **This endpoint had no test at all**, which is why it survived
+     * the sweep — hence this one, asserting the path rather than only the outcome.
+     *
+     * Two exchanges, not one: the slim twin answers with the participant list, so the Einsatz is
+     * re-read for `registeredParticipants`, which the head's „N Teilnehmer" comes from and which
+     * the server — not the client — counts.
+     */
+    @Test
+    fun `putting a member on the roster uses the slim path`() =
+        runTest {
+            respond("""[]""")
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.addParticipant("m1", userId = "u9")
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertTrue(
+                "the deprecated twin sunsets 2026-10-20",
+                request.target.endsWith("/participants/slim"),
+            )
+            assertTrue(request.body?.utf8().orEmpty().contains(""""userId":"u9""""))
+            assertEquals("GET", server.takeRequest().method)
+        }
+
+    /**
      * The Funktions-Chips on a Crew-Slot, which are the reason this switch was worth making on its
      * own.
      *
