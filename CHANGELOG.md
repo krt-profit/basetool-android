@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-09-07
+
 ### Fixed
 
 - **Die Funktionen an einem Crew-Slot ließen sich nicht speichern.** Die Chips waren bisher gar nicht gezeichnet, weil der Funktionen-Katalog abgewiesen wurde; jetzt sind sie da — und die App schickte das Speichern noch an einen veralteten Pfad. Umgestellt, und damit funktioniert es.
