@@ -1487,6 +1487,11 @@
         <item quantity="other">%1$d eingecheckt</item>
     </plurals>
     <string name="mission_detail_function_label">Funktion an Bord</string>
+    <!-- The row's overflow sheet: the payout, the wish and the assignment, all three in one
+         place. The row itself shows only what is set. -->
+    <string name="mission_role_sheet_title">Funktion und Anteil</string>
+    <string name="mission_role_sheet_no_wish">Kein Wunsch</string>
+    <string name="mission_role_sheet_wish_is_theirs">Den Wunsch setzt das Mitglied selbst.</string>
     <!-- The third gate state: the permission could not be read, so the control locks like a
          refusal but must not claim a missing grant — the member may well hold it. -->
     <string name="gate_unknown">Berechtigung nicht prüfbar</string>

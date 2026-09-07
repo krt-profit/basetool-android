@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -261,11 +262,13 @@ class MissionDetailScreenTest {
         // The sign-up band above the tabs costs a row of height, so the crew line can sit below
         // the fold on a compact screen. That it is drawn is the assertion.
         //
-        // The name and the roles are two nodes now, not one joined string: the roles became the
-        // Funktions-Auswahl, so for a manager the chips ARE the reading of them. Without a CREW
-        // catalogue in hand — which is what a plain member has — the sentence stands in for them.
+        // The name and the roles are two nodes, not one joined string. The row states what this
+        // slot HOLDS, as read chips; the catalogue it was chosen from is behind the row's menu
+        // (owner decision, 2026-09-07), so the empty-catalogue sentence is one the sheet says now
+        // and the row does not.
         compose.onNodeWithText("Dorn").assertExists()
-        compose.onNodeWithText("Keine CREW-Funktionen hinterlegt.").assertExists()
+        compose.onNodeWithText("Turret", ignoreCase = true).assertExists()
+        compose.onAllNodesWithText("Keine CREW-Funktionen hinterlegt.").assertCountEquals(0)
     }
 
     @Test
@@ -394,19 +397,24 @@ class MissionDetailScreenTest {
     }
 
     @Test
-    fun `a donating caller is offered the payout instead, on their own roster row`() {
-        // On the Teilnehmer tab, not under every tab: the choice is made when signing up and lives
-        // afterwards on the one row that is already about how the caller is taking part
-        // (owner decision, 2026-09-07).
+    fun `a donating caller changes their payout in the sheet behind their row's menu`() {
+        // Not under every tab and no longer inline on the row either: Anteil, Wunsch and Funktion
+        // are one subject and share one sheet, one tap from the row (owner decision, 2026-09-07).
         val paid = mutableListOf<Unit>()
         robot.show(readyForMe(mine(donating = true)).copy(tab = MissionTab.PARTICIPANTS), payouts = paid)
 
+        // Closed, the row states the choice and offers no control for it.
+        compose.onAllNodesWithTag(MISSION_PAYOUT_TAG).assertCountEquals(0)
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
+
         // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
         // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
-        compose.onNodeWithText("Org-Kasse", ignoreCase = true).assertIsDisplayed()
-        compose.onNodeWithText("Auszahlung", ignoreCase = true).assertIsDisplayed()
+        // Scoped to the sheet: the row's read chip behind it carries the same two words.
+        compose.onNodeWithTag(MISSION_PAYOUT_TAG).assertIsDisplayed()
+        compose.onNode(inPayoutSheet("Org-Kasse")).assertIsDisplayed()
         // And it still reports: choosing the state the caller is NOT in is what a radio pair is for.
-        compose.onNodeWithText("Auszahlung", ignoreCase = true).performClick()
+        compose.onNode(inPayoutSheet("Auszahlung")).performClick()
 
         assertEquals(1, paid.size)
     }
@@ -434,6 +442,128 @@ class MissionDetailScreenTest {
      * @param donating whether the share is donated.
      * @return the row.
      */
+    @Test
+    fun `a roster row shows the Funktion that was chosen, not the catalogue it came from`() {
+        // The complaint this answers: every row drew every Funktion the organisation has defined,
+        // so on a roster of fourteen the four that were actually assigned were four filled chips
+        // among seventy (owner decision, 2026-09-07).
+        robot.show(
+            readyForMe(assigned()).copy(tab = MissionTab.PARTICIPANTS),
+            canManage = true,
+            jobTypes = catalogue(),
+        )
+
+        compose.onNodeWithText("Turret", ignoreCase = true).assertIsDisplayed()
+        compose.onAllNodesWithText("Pilot", ignoreCase = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Cargo", ignoreCase = true).assertCountEquals(0)
+
+        // And the catalogue is one tap away, not gone: the row's menu is where it went.
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
+
+        compose.onNodeWithText("Pilot", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Cargo", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the caller changes the Funktion they wish for from their own row's sheet`() {
+        // It could only be set at sign-up before: a member who changed their mind had to withdraw
+        // and sign up again. The sheet offers the same catalogue afterwards.
+        val taps = mutableListOf<String>()
+        robot.show(
+            readyForMe(mine()).copy(tab = MissionTab.PARTICIPANTS),
+            rosterTaps = taps,
+            jobTypes = catalogue(),
+        )
+
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
+        // On the caller's own row the sheet draws the catalogue twice — the Wunsch section first,
+        // the Einsatzleitung's assignment below it — so the section, not the word, picks the chip.
+        compose.onAllNodesWithText("Pilot", ignoreCase = true)[0].performClick()
+
+        assertEquals(listOf("wish:j1"), taps)
+    }
+
+    @Test
+    fun `an Einheit's crew row shows the Funktionen held, and the catalogue in its sheet`() {
+        robot.show(
+            readyForMe().copy(detail = robot.detail(units = listOf(alpha())), tab = MissionTab.UNITS),
+            canManage = true,
+            crewJobTypes = catalogue(),
+        )
+
+        compose.onNodeWithText("Turret", ignoreCase = true).assertIsDisplayed()
+        compose.onAllNodesWithText("Pilot", ignoreCase = true).assertCountEquals(0)
+
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktionen an Bord (Crew)", ignoreCase = true).performClick()
+
+        compose.onNodeWithTag(MISSION_CREW_ROLE_SHEET_TAG).assertIsDisplayed()
+        compose.onNodeWithText("Pilot", ignoreCase = true).assertIsDisplayed()
+    }
+
+    /**
+     * One of the payout sheet's radios, told apart from the row's read chip behind it.
+     *
+     * @param label the radio's German label.
+     * @return a matcher for that radio and nothing else.
+     */
+    private fun inPayoutSheet(label: String) =
+        hasText(label, ignoreCase = true) and hasAnyAncestor(hasTestTag(MISSION_PAYOUT_TAG))
+
+    /**
+     * The catalogue both pickers draw from.
+     *
+     * @return three Funktionen, of which a fixture row holds exactly one.
+     */
+    private fun catalogue() =
+        listOf(
+            MissionJobType("j1", "Pilot"),
+            MissionJobType("j2", "Turret"),
+            MissionJobType("j3", "Cargo"),
+        )
+
+    /**
+     * Somebody else's row, with a Funktion already assigned to it.
+     *
+     * @return the participant.
+     */
+    private fun assigned() =
+        MissionParticipant(
+            id = "p2",
+            userId = "u2",
+            name = "Dorn",
+            role = "Turret",
+            checkedIn = false,
+            comment = null,
+            donating = false,
+            plannedJobTypeId = "j2",
+        )
+
+    /**
+     * An Einheit with one crew slot holding one Funktion.
+     *
+     * @return the unit.
+     */
+    private fun alpha() =
+        MissionUnit(
+            id = "u1",
+            name = "Einheit Alpha",
+            shipName = "Carrack Meridian",
+            highValue = false,
+            responsibleName = "Rhea",
+            crew =
+                listOf(
+                    MissionCrewMember(
+                        id = "c1",
+                        name = "Dorn",
+                        roles = listOf("Turret"),
+                        roleIds = listOf("j2"),
+                    ),
+                ),
+        )
+
     private fun mine(
         checkedIn: Boolean = false,
         donating: Boolean? = null,

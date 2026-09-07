@@ -69,6 +69,9 @@ class MissionManagerScreenTest {
      *
      * The catalogue is only loaded for someone who may assign, so an empty one is what a plain
      * member gets — which is why this test hands one in rather than relying on the screen to ask.
+     *
+     * It is drawn in the row's sheet since 2026-09-07, not inline on the row, so the path through
+     * the ⋮ is part of the assertion: a picker nobody can reach is not a picker.
      */
     @Test
     fun `a manager can assign a Funktion from the roster`() {
@@ -83,6 +86,8 @@ class MissionManagerScreenTest {
             jobTypes = listOf(MissionJobType("j2", "Turret")),
         )
 
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
         compose.onNodeWithText("Turret", ignoreCase = true).performClick()
 
         assertEquals(listOf("function:p2:j2"), taps)

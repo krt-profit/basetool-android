@@ -200,18 +200,21 @@ internal class MissionScreenRobot(
      * @param signUps receives the sign-up action.
      * @param checkIns receives the check-in action.
      * @param payouts receives the payout-preference action.
+     * @param rosterTaps receives the wish change, named like the other per-row writes.
      * @return the record the screen takes.
      */
     private fun signUpActions(
         signUps: MutableList<Unit>,
         checkIns: MutableList<Unit>,
         payouts: MutableList<Unit>,
+        rosterTaps: MutableList<String>,
     ) = MissionSignUpActions(
         onToggleSignUp = { signUps.add(Unit) },
         onToggleCheckIn = { checkIns.add(Unit) },
         onTogglePayoutPreference = { payouts.add(Unit) },
         onJoinPayout = {},
         onDesiredFunction = {},
+        onChangeDesiredFunction = { rosterTaps.add("wish:${it.id}") },
         onJoinConfirmed = {},
         onJoinDismissed = {},
     )
@@ -276,7 +279,7 @@ internal class MissionScreenRobot(
                     onRefresh = {},
                     onRetryNow = {},
                     onRetryFinances = {},
-                    actions = signUpActions(signUps, checkIns, payouts),
+                    actions = signUpActions(signUps, checkIns, payouts, rosterTaps),
                     roster = roster,
                     structure = structureActions(canManage, rosterTaps, crewJobTypes),
                     timeline = timelineActions(canManage, rosterTaps),

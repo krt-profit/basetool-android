@@ -116,6 +116,12 @@ class MissionsViewModelTest {
             checkedIn: Boolean,
         ): ApiResult<MissionParticipant> = error("this fake never checks anybody in")
 
+        override suspend fun setDesiredFunction(
+            missionId: String,
+            participant: MissionParticipant,
+            jobTypeId: String?,
+        ): ApiResult<MissionParticipant> = error("this screen never changes a wish")
+
         override suspend fun setPlannedFunction(
             missionId: String,
             participant: MissionParticipant,

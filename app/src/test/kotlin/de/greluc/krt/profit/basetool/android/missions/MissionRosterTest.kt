@@ -47,6 +47,7 @@ class MissionRosterTest {
 
     /** The rows the writes carried, so the echo can be asserted. */
     private val echoed = mutableListOf<MissionParticipant>()
+    private val wished = mutableListOf<Pair<String, String?>>()
 
     /** `(participantId, checkedIn)` per check-in write. */
     private val checkIns = mutableListOf<Pair<String, Boolean>>()
@@ -178,6 +179,34 @@ class MissionRosterTest {
         }
 
     /**
+     * The wish could only be set at sign-up before 2026-09-07: a member who changed their mind had
+     * to withdraw and sign up again. It takes the row directly rather than an id, because it is the
+     * caller's OWN row and `rowToManage` vouches only for rows a manager may write.
+     */
+    @Test
+    fun `the wish can be changed after signing up`() =
+        runTest(dispatcher) {
+            roster(this).wish(row(), MissionJobType("j2", "Turret"))
+            advanceUntilIdle()
+
+            assertEquals(listOf("p2" to "j2"), wished)
+            val sent = echoed.single()
+            assertEquals("the note must travel with it", "bringt Eskorte mit", sent.comment)
+            assertEquals("the version must travel with it", ROW_VERSION, sent.version)
+        }
+
+    /** Tapping the wish already held clears it — without that, „no preference" is unreachable. */
+    @Test
+    fun `tapping the wish already held clears it`() =
+        runTest(dispatcher) {
+            // The fixture row already wishes for j1.
+            roster(this).wish(row(), MissionJobType("j1", "Pilot"))
+            advanceUntilIdle()
+
+            assertEquals(listOf("p2" to null), wished)
+        }
+
+    /**
      * The catalogue is a request most members would never use: their select is locked, and a locked
      * select needs the row's own Funktion, not the list of alternatives.
      */
@@ -270,6 +299,16 @@ class MissionRosterTest {
         ): ApiResult<MissionParticipant> {
             payouts.add(participantId to donating)
             return ApiResult.Success(row())
+        }
+
+        override suspend fun setDesiredFunction(
+            missionId: String,
+            participant: MissionParticipant,
+            jobTypeId: String?,
+        ): ApiResult<MissionParticipant> {
+            wished.add(participant.id to jobTypeId)
+            echoed.add(participant)
+            return ApiResult.Success(participant.copy(desiredJobTypeId = jobTypeId))
         }
 
         override suspend fun setPlannedFunction(

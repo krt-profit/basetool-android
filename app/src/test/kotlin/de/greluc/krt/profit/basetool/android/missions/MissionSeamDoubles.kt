@@ -388,6 +388,12 @@ internal class RecordingSource(
         jobTypeId: String?,
     ): ApiResult<MissionParticipant> = error("the manager's roster has its own test")
 
+    override suspend fun setDesiredFunction(
+        missionId: String,
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant> = error("the wish is a roster write and has its own test")
+
     override suspend fun setDonating(
         missionId: String,
         participantId: String,

@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
@@ -403,6 +406,8 @@ fun CrewRow(
     // way, so the two agree — and a duplicate name would at worst borrow the wrong check-in mark,
     // never write anything.
     val person = roster.firstOrNull { it.name == member.name }
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    var sheetOpen by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
@@ -450,13 +455,75 @@ fun CrewRow(
                 modifier = dim,
                 enabled = structure.enabled,
             )
+            // Opening the picker is not a write, so this ⋮ is neither gated nor locked — the gate
+            // is inside, on the chips themselves, where a refusal can name the role it wants.
+            KrtOverflowMenu(
+                contentDescription = stringResource(R.string.mission_detail_participant_actions),
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                items =
+                    listOf(
+                        KrtMenuItem(
+                            label = stringResource(R.string.mission_crew_roles),
+                            iconRes = DesignR.drawable.ic_krt_user,
+                        ) {
+                            menuOpen = false
+                            sheetOpen = true
+                        },
+                    ),
+            )
         }
-        CrewRoleSelect(
-            unitId = unit.id,
-            member = member,
-            crew = unit.crew,
-            structure = structure,
-        )
+        CrewRolesRead(member)
+    }
+    if (sheetOpen) {
+        KrtBottomSheet(
+            onDismiss = { sheetOpen = false },
+            title = stringResource(R.string.mission_crew_roles),
+            modifier = Modifier.testTag(MISSION_CREW_ROLE_SHEET_TAG),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16)) {
+                Text(
+                    text = member.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+                CrewRoleSelect(
+                    unitId = unit.id,
+                    member = member,
+                    crew = unit.crew,
+                    structure = structure,
+                )
+            }
+        }
+    }
+}
+
+/** Test handle for the crew row's Funktionen sheet. */
+const val MISSION_CREW_ROLE_SHEET_TAG: String = "mission-crew-role-sheet"
+
+/**
+ * What this crew slot actually holds — read chips, and nothing they are not.
+ *
+ * **The row used to draw the whole CREW catalogue** as toggling chips, on every slot of every
+ * Einheit: five Funktionen times six slots times three Einheiten, in which the ones somebody
+ * actually held were four filled chips among ninety (owner decision, 2026-09-07). Assigning is one
+ * tap further away now, in the row's ⋮; reading the Einheit is what the tab is for.
+ *
+ * Nothing is drawn for a slot with no Funktion yet. A row of nothing says it, and the ⋮ that sets
+ * one is on the slot regardless.
+ *
+ * @param member the crew slot.
+ */
+@Composable
+private fun CrewRolesRead(member: MissionCrewMember) {
+    if (member.roles.isEmpty()) {
+        return
+    }
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        member.roles.forEach { role -> KrtChip(text = role, tone = KrtChipTone.Primary) }
     }
 }
 
@@ -585,6 +652,10 @@ fun CrewPickerSheet(
 
 /**
  * One crew slot's Funktionen an Bord: the CREW catalogue as toggling chips.
+ *
+ * **Drawn in the row's sheet, not in the row.** It was inline until 2026-09-07, which put the whole
+ * catalogue on every slot of every Einheit; the row shows what is held ([CrewRolesRead]) and the
+ * catalogue is behind the ⋮, where a picker belongs.
  *
  * > **The second catalogue.** These are `CREW` job types — Pilot, Turret, Cargo, Scan, Medic — and
  * > they share their names with the `MISSION` ones a participant's Funktion comes from. Assigning
@@ -780,7 +851,7 @@ fun StructureRemove(
  * @return the gate, with the role it names.
  */
 @Composable
-private fun missionManagerGate(canManage: Boolean): Gate =
+internal fun missionManagerGate(canManage: Boolean): Gate =
     Gate(
         allowed = canManage,
         reason = stringResource(R.string.gate_role_mission_manager),
