@@ -60,56 +60,46 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
-/** How strongly the band is washed in its status tone (artboard 06-a). */
-private const val BAND_TINT_ALPHA = 0.12f
-
-/** Its border, the same tone at reading strength. */
-private const val BAND_BORDER_ALPHA = 0.55f
-
-/** The separator between the band's two facts. */
-private const val KRT_DOT = " · "
-
-/** Test handle for the badge band's lifecycle action. */
+/** Test handle for the lifecycle action, wherever it is drawn. */
 const val MISSION_LIFECYCLE_TAG: String = "mission-lifecycle-action"
 
 /**
- * The status band: the state, what it costs, and the one action that advances it.
+ * Starting the Einsatz, and finishing it: one action, in the Verwaltung tab.
  *
- * Design ch. 06 (F2). „Starten" used to be a filled CTA inside the Verwaltung form, which is not
- * where anybody looks — the badge is the first thing an Einsatzleitung reads on the screen, so the
- * lifecycle lives there and nowhere else. One surface: no form field, no overflow entry, no second
- * place.
+ * Design ch. 06 (F2) put this on the status badge — one surface, „no form field, no overflow entry,
+ * no second place" — and the badge grew into a tinted band carrying the state, the head count and
+ * this button, drawn on every visit to the screen. **The owner moved it here on 2026-09-07.** The
+ * status is a chip in the head now (where artboard 2 always drew it); what is left is the action,
+ * and it belongs with the other things only a manager may do rather than in front of the fifteen
+ * members who cannot press it.
  *
- * The action is an **outline** button on purpose. The one filled orange on this screen belongs to
- * „Anmelden", which is the primary action for everybody who is not managing; two filled oranges
- * would be exactly the mistake the action hierarchy exists to prevent.
+ * The rule F2 was protecting still holds: this is the ONE place the lifecycle can be advanced. The
+ * Verwaltung form's „Einsatz beenden" is a different write — it stamps the actual END TIME in the
+ * schedule section and does not move the status — and the two sit in the same tab now, which is
+ * where the difference is easiest to read.
  *
- * Without the role the button is **drawn locked** rather than hidden: it keeps its target, wears
- * the lock, and the toast names the role that is missing (ADR-0011).
+ * An **outline** button, not a filled one. The single filled orange on this screen belongs to
+ * „Anmelden"; two of them would be the mistake the action hierarchy exists to prevent.
  *
- * The band is a **card washed in the status's own tone** (artboard 06-a): the state, what it costs
- * and the action are one thing, not a chip with two strangers beside it. It is also the only place
- * the status is drawn — „die EINE Fläche für den Lebenszyklus" — so the top bar carries the org
- * badge alone.
+ * Without the role it is **drawn locked** rather than hidden: it keeps its target, wears the lock,
+ * and the toast names the role that is missing (ADR-0011).
  *
- * @param detail the Einsatz.
- * @param next the status the badge may advance to, or `null` when it is at rest.
+ * @param lifecycle the Einsatz, the step on offer and where a refusal is announced.
  * @param enabled whether a write may run right now.
- * @param denials where a refusal is announced.
  * @param onAsk open the confirmation.
  */
 @Composable
-internal fun MissionLifecycleBand(
-    detail: MissionDetail,
-    next: MissionStatus?,
+internal fun MissionLifecycleAction(
+    lifecycle: MissionLifecycleUi,
     enabled: Boolean,
-    denials: DenialState,
     onAsk: () -> Unit,
 ) {
+    val detail = lifecycle.detail
+    val next = lifecycle.next
+    val denials = lifecycle.denials
     if (next == null) {
         return
     }
-    val tone = detail.statusTone().krtColor()
     val gate =
         Gate(
             allowed = detail.canManage,
@@ -117,73 +107,33 @@ internal fun MissionLifecycleBand(
             detail = stringResource(R.string.gate_role_mission_manager_detail),
         )
     val (dim, click) = rememberGated(gate, onAsk, denials)
-
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8)
-                .background(tone.copy(alpha = BAND_TINT_ALPHA))
-                .border(KrtSpacing.hairline, tone.copy(alpha = BAND_BORDER_ALPHA))
-                .padding(KrtSpacing.s12),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = detail.statusLabel().krtUppercase(),
-                style = MaterialTheme.typography.titleSmall,
-                color = tone,
-            )
-            Text(
-                // „Beginn in 42 Min. · 12 angemeldet" — the state, the time left, and the size of
-                // what starts. The countdown is dropped once there is nothing left to count down
-                // to, rather than printed as a stale or negative span.
-                text =
-                    listOfNotNull(
-                        detail.plannedStartTime
-                            ?.takeIf { next == MissionStatus.ACTIVE && it.isAfter(Instant.now()) }
-                            ?.let { stringResource(R.string.mission_lifecycle_starts_in, it.relativeToNow()) },
-                        pluralStringResource(
-                            R.plurals.mission_lifecycle_registered,
-                            detail.registeredParticipants,
-                            detail.registeredParticipants,
-                        ),
-                    ).joinToString(KRT_DOT),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                modifier = Modifier.padding(top = KrtSpacing.s4),
-            )
-        }
-        KrtOutlineButton(
-            text =
-                stringResource(
-                    if (next == MissionStatus.ACTIVE) {
-                        R.string.mission_lifecycle_start
-                    } else {
-                        R.string.mission_lifecycle_complete
-                    },
-                ),
-            onClick = click,
-            modifier = dim.testTag(MISSION_LIFECYCLE_TAG),
-            // A locked control keeps its target so it can explain itself; only a genuinely busy
-            // screen disables it. Disabling a refused control is the thing the drawn-not-hidden
-            // rule exists to avoid.
-            enabled = if (detail.canManage) enabled else true,
-            iconRes =
-                if (detail.canManage) {
-                    // The artboard gives the action a leading glyph: the enter arrow for starting,
-                    // the tick for finishing — the same two the rest of the app uses for those.
-                    if (next == MissionStatus.ACTIVE) {
-                        DesignR.drawable.ic_krt_login
-                    } else {
-                        DesignR.drawable.ic_krt_check
-                    }
+    KrtOutlineButton(
+        text =
+            stringResource(
+                if (next == MissionStatus.ACTIVE) {
+                    R.string.mission_lifecycle_start
                 } else {
-                    DesignR.drawable.ic_krt_lock
+                    R.string.mission_lifecycle_complete
                 },
-        )
-    }
+            ),
+        onClick = click,
+        modifier = dim.fillMaxWidth().testTag(MISSION_LIFECYCLE_TAG),
+        // A locked control keeps its target so it can explain itself; only a genuinely busy screen
+        // disables it. Disabling a refused control is the thing the drawn-not-hidden rule avoids.
+        enabled = if (detail.canManage) enabled else true,
+        iconRes =
+            if (detail.canManage) {
+                // The enter arrow for starting, the tick for finishing — the same two the rest of
+                // the app uses for those.
+                if (next == MissionStatus.ACTIVE) {
+                    DesignR.drawable.ic_krt_login
+                } else {
+                    DesignR.drawable.ic_krt_check
+                }
+            } else {
+                DesignR.drawable.ic_krt_lock
+            },
+    )
 }
 
 /**
@@ -208,13 +158,17 @@ internal fun MissionDetailHead(detail: MissionDetail) {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
-                    // No status badge here. Design ch. 06 (F2) makes the lifecycle band „die EINE
-                    // Fläche" for it, and artboard 06-a draws this head without one; drawing it in
-                    // both places put the same word on screen twice, a finger apart.
+                    // The status badge is HERE now, beside the org badge — which is what
+                    // artboard 2 draws and what this head omitted only because the lifecycle band
+                    // below it carried the word instead. The band is gone (owner decision,
+                    // 2026-09-07): a tinted box holding one word, one count and one button stood
+                    // permanently between the head and the tabs on every visit, for an action a
+                    // manager takes twice in the life of an Einsatz.
                     //
-                    // Artboard 2 still shows it in the head and has not been corrected — on the
-                    // design gap list, the same way ch. 06's drag handle was pulled into line
-                    // with E8.
+                    // `KrtStatusBadge` rather than the quiet `KrtStatusPill` the list rows use: the
+                    // pill exists so ten rows do not each shout, and the badge is reserved for „the
+                    // one status that describes a whole screen". This is that one.
+                    KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
                     detail.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
                 }
             },

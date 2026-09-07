@@ -233,13 +233,6 @@ fun MissionDetailScreen(
                         OfflineBand()
                     }
                     MissionDetailHead(detail = detail)
-                    MissionLifecycleBand(
-                        detail = detail,
-                        next = state.lifecycleNext,
-                        enabled = state.writable && !state.saving,
-                        denials = roster.denials,
-                        onAsk = admin.onAskLifecycle,
-                    )
                     MissionTabRow(
                         selected = state.tab,
                         detail = state.detail,
@@ -259,6 +252,7 @@ fun MissionDetailScreen(
                             state = state,
                             detail = detail,
                             onRetryFinances = onRetryFinances,
+                            actions = actions,
                             finances = finances,
                             roster = roster,
                             structure = structure,
@@ -499,14 +493,10 @@ private fun SignUpBar(
                 modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             )
         }
-        // The payout preference is a standing SETTING, not an action, and it used to sit in the
-        // action row beside two buttons. Three items in a `KrtBottomCtaBar` — which is an End-aligned
-        // row with no weights of its own — left „ABMELDEN" about one character wide, so it wrapped
-        // to a column of single letters. It is drawn above the bar now, where two German radio
-        // labels have the width they need and the bar is back to being what it is drawn as.
-        if (mine != null) {
-            PayoutPreference(mine = mine, state = state, actions = actions)
-        }
+        // No standing payout row here any more (owner decision, 2026-09-07). The choice is made
+        // in the join sheet when signing up, and a radio pair pinned above the CTA bar for the rest
+        // of the Einsatz redrew that decision on every screen the member opened — a setting
+        // occupying the place the chapter reserves for the action they came for.
         KrtBottomCtaBar {
             SignUpAction(mine = mine, state = state, actions = actions)
             if (mine != null && state.checkInPossible) {
@@ -603,62 +593,6 @@ private fun RowScope.CheckInAction(
             modifier = modifier,
             enabled = state.writable,
         )
-    }
-}
-
-/**
- * Where the caller's share of this Einsatz goes.
- *
- * Two radios, not one toggle. The choice is between two standing states — the payout comes to you,
- * or it goes to the org treasury — and a button labelled with the OTHER state leaves a member
- * reading „Spenden" unsure whether that is what they have chosen or what they are being offered.
- * The component sheet (ch. 02 §6) draws exactly this pair.
- *
- * Drawn on the bar's own ground, directly above it, so the pair reads as belonging to the sign-up
- * rather than to the tab content it sits over — and with a label, because two bare radios above a
- * button bar do not say what they decide.
- *
- * @param mine the caller's own row.
- * @param state the screen.
- * @param actions what it reports back.
- */
-@Composable
-private fun PayoutPreference(
-    mine: MissionParticipant,
-    state: MissionDetailState,
-    actions: MissionSignUpActions,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
-                .testTag(MISSION_PAYOUT_TAG)
-                .writeAlpha(state.writable),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-    ) {
-        Text(
-            text = stringResource(R.string.mission_detail_payout_label),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-        )
-        // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
-        // long enough together that a narrow phone would otherwise clip the second label.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
-            KrtRadioRow(
-                selected = mine.donating != true,
-                onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
-                label = stringResource(R.string.mission_detail_payout_self),
-                enabled = state.writable,
-            )
-            KrtRadioRow(
-                selected = mine.donating == true,
-                onSelect = { if (mine.donating != true) actions.onTogglePayoutPreference() },
-                label = stringResource(R.string.mission_detail_payout_org),
-                enabled = state.writable,
-            )
-        }
     }
 }
 
@@ -773,12 +707,14 @@ private fun MissionTabRow(
  * @param admin what a manager may do to the Einsatz itself.
  * @param timeline what a manager may do to its Ablauf and Ziele.
  * @param members the one picker behind the three member-shaped writes.
+ * @param actions the sign-up's own actions - the Teilnehmer tab carries the caller's payout choice.
  */
 @Composable
 private fun MissionTabContent(
     state: MissionDetailState,
     detail: MissionDetail,
     onRetryFinances: () -> Unit,
+    actions: MissionSignUpActions,
     finances: MissionFinanceActions,
     roster: MissionRosterActions,
     structure: MissionStructureActions,
@@ -792,24 +728,59 @@ private fun MissionTabContent(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         when (state.tab) {
-            MissionTab.OVERVIEW -> overviewTab(detail)
+            MissionTab.OVERVIEW -> {
+                overviewTab(detail)
+            }
 
-            MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp, roster)
+            MissionTab.PARTICIPANTS -> {
+                participantsTab(
+                    detail = detail,
+                    mine = state.mySignUp,
+                    roster = roster,
+                    writable = state.writable,
+                    onTogglePayout = actions.onTogglePayoutPreference,
+                )
+            }
 
-            MissionTab.UNITS -> unitsTab(detail, structure)
+            MissionTab.UNITS -> {
+                unitsTab(detail, structure)
+            }
 
-            MissionTab.STEPS -> stepsTab(detail, timeline)
+            MissionTab.STEPS -> {
+                stepsTab(detail, timeline)
+            }
 
-            MissionTab.OBJECTIVES -> objectivesTab(detail, timeline)
+            MissionTab.OBJECTIVES -> {
+                objectivesTab(detail, timeline)
+            }
 
-            MissionTab.FREQUENCIES -> frequenciesTab(detail, structure)
+            MissionTab.FREQUENCIES -> {
+                frequenciesTab(detail, structure)
+            }
 
-            MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
+            MissionTab.FINANCES -> {
+                financesTab(state, onRetryFinances, finances)
+            }
 
             // The form is filled by `onTabSelected` as the tab is entered, so it is present
             // whenever this tab is. Null-safe rather than forced: a state restored with the tab
             // already selected must draw an empty tab, never crash the screen.
-            MissionTab.ADMIN -> state.adminForm?.let { adminTab(it, state.writable, admin, members) }
+            MissionTab.ADMIN -> {
+                state.adminForm?.let {
+                    adminTab(
+                        form = it,
+                        writable = state.writable,
+                        actions = admin,
+                        members = members,
+                        lifecycle =
+                            MissionLifecycleUi(
+                                detail = detail,
+                                next = state.lifecycleNext,
+                                denials = roster.denials,
+                            ),
+                    )
+                }
+            }
         }
     }
 }

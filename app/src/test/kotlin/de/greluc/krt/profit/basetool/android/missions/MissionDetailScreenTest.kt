@@ -374,19 +374,16 @@ class MissionDetailScreenTest {
     }
 
     @Test
-    fun `a signed-up caller is offered the withdrawal, the check-in and the preference`() {
+    fun `a signed-up caller is offered the withdrawal and the check-in`() {
         val checked = mutableListOf<Unit>()
-        val paid = mutableListOf<Unit>()
-        robot.show(readyForMe(mine()), checkIns = checked, payouts = paid)
+        robot.show(readyForMe(mine()), checkIns = checked)
 
+        // Two actions in the bar, and only two: the payout preference left it on 2026-09-07 and is
+        // asserted on the Teilnehmer tab, where it now lives.
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
-        // The tag now sits on the radio PAIR, so the click goes to the option the caller is not in
-        // — choosing the state they already hold reports nothing, which is the point of a radio.
-        compose.onNodeWithText("Org-Kasse", ignoreCase = true).performClick()
 
         assertEquals(1, checked.size)
-        assertEquals(1, paid.size)
     }
 
     @Test
@@ -397,13 +394,21 @@ class MissionDetailScreenTest {
     }
 
     @Test
-    fun `a donating caller is offered the payout instead`() {
-        robot.show(readyForMe(mine(donating = true)))
+    fun `a donating caller is offered the payout instead, on their own roster row`() {
+        // On the Teilnehmer tab, not under every tab: the choice is made when signing up and lives
+        // afterwards on the one row that is already about how the caller is taking part
+        // (owner decision, 2026-09-07).
+        val paid = mutableListOf<Unit>()
+        robot.show(readyForMe(mine(donating = true)).copy(tab = MissionTab.PARTICIPANTS), payouts = paid)
 
         // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
         // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
         compose.onNodeWithText("Org-Kasse", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithText("Auszahlung", ignoreCase = true).assertIsDisplayed()
+        // And it still reports: choosing the state the caller is NOT in is what a radio pair is for.
+        compose.onNodeWithText("Auszahlung", ignoreCase = true).performClick()
+
+        assertEquals(1, paid.size)
     }
 
     @Test
