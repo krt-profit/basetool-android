@@ -126,4 +126,28 @@ class MissionRoster(
         val next = if (row.plannedJobTypeId == jobType.id) null else jobType.id
         write { source.setPlannedFunction(missionId, row, next) }
     }
+
+    /**
+     * Changes the job a member ASKED for, after they have already signed up.
+     *
+     * Until 2026-09-07 the wish could only be set at sign-up: `join` carried it and nothing else
+     * did, so a member who changed their mind had to withdraw and sign up again — and the
+     * Funktionen sheet would have shown a value nobody could move. The server always accepted it
+     * on the participant update; this is the app catching up.
+     *
+     * The row comes in rather than being looked up by id: this is the **caller's own** row, which
+     * [rowToManage] deliberately does not vouch for. Tapping the job already wished for clears it,
+     * because the wish is optional and a chip pair would otherwise make „no preference"
+     * unreachable after the first tap.
+     *
+     * @param participant the caller's own row, as last read.
+     * @param jobType the job they would like.
+     */
+    fun wish(
+        participant: MissionParticipant,
+        jobType: MissionJobType,
+    ) {
+        val next = jobType.id.takeIf { participant.desiredJobTypeId != jobType.id }
+        write { source.setDesiredFunction(missionId, participant, next) }
+    }
 }

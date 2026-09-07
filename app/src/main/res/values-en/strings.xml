@@ -1457,6 +1457,9 @@
         <item quantity="other">%1$d checked in</item>
     </plurals>
     <string name="mission_detail_function_label">Function on board</string>
+    <string name="mission_role_sheet_title">Function and share</string>
+    <string name="mission_role_sheet_no_wish">No preference</string>
+    <string name="mission_role_sheet_wish_is_theirs">The wish is the member’s own to set.</string>
     <string name="gate_unknown">Permission not checkable</string>
     <string name="gate_unknown_detail">Your permissions could not be loaded. Check the connection and reload.</string>
     <string name="gate_role_logistician">That needs the Logistiker role.</string>

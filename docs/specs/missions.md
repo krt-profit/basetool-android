@@ -585,6 +585,11 @@ an assignment unless something says otherwise. The mission's leadership sets the
 on the participants tab; this records only what was asked for. Tapping the chosen chip again clears
 it: a chip row with no way back makes an optional field compulsory in practice.
 
+> **Amended 2026-09-07.** „Awkward to find afterwards" was, until then, „impossible to change
+> afterwards": the sheet was the only surface that wrote the wish at all. It can now be changed from
+> the member's own roster row (`REQ-APP-MIS-038`). The sheet keeps its job — the two answers still
+> belong to the moment of joining — but it is no longer the last chance to give them.
+
 **Sent through `participants/add`, not `join`.** `POST /missions/{id}/join` takes no body and cannot
 carry either answer. `POST /missions/{id}/participants/add` carries `desiredJobTypeId` and
 `payoutPreference`, and **both endpoints are guarded by `canSeeMission`** — the same permission
@@ -639,6 +644,13 @@ must not claim otherwise.
 **Checking somebody else in follows the same server rule as checking yourself in**: it is refused
 before the Einsatz has actually started, so the app does not offer it before then either.
 
+**Two of the three moved into the row's sheet on 2026-09-07** (`REQ-APP-MIS-037`): the payout and
+the Funktion are reached through the row's `⋮`, and the row itself states their values. Check-in
+stays on the row as the icon button the artboard draws — it is the action a manager takes fourteen
+times in an evening, and the one the roster exists to serve. Everything above still holds: the
+controls are drawn for everyone, locked rather than hidden, and `enabled = false` remains forbidden
+for a missing grant.
+
 **Acceptance**
 
 - [ ] A caller with `canEdit = true` can check another member in, switch their payout and assign
@@ -660,8 +672,9 @@ A request that carried nothing but the new Funktion would therefore wipe the mem
 wish **and** their note **and check them out** — three silent losses, no error, no visible cause,
 discoverable only by the member who typed the note.
 
-So `setPlannedFunction` takes the **row as last read** and echoes back everything it is not
-changing, including the version. That is why `MissionParticipant` keeps `desiredJobTypeId` and
+So `setPlannedFunction` — and, since 2026-09-07, `setDesiredFunction` (`REQ-APP-MIS-038`) —
+takes the **row as last read** and echoes back everything it is not changing, including the
+version. That is why `MissionParticipant` keeps `desiredJobTypeId` and
 `plannedJobTypeId` apart even though `role` collapses them for display, and why it keeps `startTime`
 and `endTime` as the **verbatim wire strings**: they are only ever echoed, and a parse-then-format
 round trip is a chance to change a value for no gain.
@@ -1159,3 +1172,80 @@ list.
 - [ ] Walked on a device: outstanding.
 
 **Code:** the grouping in `missions/MissionsScreen.kt`
+
+### REQ-APP-MIS-037 — A row states what is set; the catalogue it came from lives in the row's sheet
+
+Anteil, Wunschfunktion and the assigned Funktion were drawn **inline on every roster row**, and the
+two Funktionen sections drew the whole catalogue as choice chips. On an Einsatz with fourteen
+participants and five Funktionen that is seventy chips of which four are chosen, so the roster read
+as a wall in which the value a reader came for was indistinguishable from the alternatives. The
+Einheiten tab had the same shape, once per crew slot.
+
+**A row shows only the value.** The payout as a read chip, the assigned Funktion as a read chip, the
+wish as the line beside it — and where nothing is set, nothing is drawn: an empty label repeated
+down fourteen rows says less than its absence does.
+
+**The catalogue is behind the row's `⋮`**, in one sheet per row that carries all three, because they
+are one subject: how this member is taking part. There is one such sheet on the Teilnehmer tab and
+one on each Einheit's crew row.
+
+**The `⋮` entry itself is never gated and never locked.** Opening a sheet is not a write. The lock
+did not disappear with it — **each section carries its own**, which is what lets a single sheet
+serve a manager, a member on their own row, and a member on somebody else's:
+
+- **Anteil** — the member's own choice on their own row, needing no grant; on anybody else's it is
+  the manager's entry, gated and locked exactly as before (`REQ-APP-MIS-020`).
+- **Wunsch** — the member's own, and nobody else's. On a foreign row it is drawn as the plain value
+  with a line saying whose choice it is. It is **not** a locked control: a lock offers the role that
+  would unlock it, and no role lets one member wish on another's behalf, so the toast would name
+  something untrue (`REQ-APP-AUTH-013` covers the locked case, not this one).
+- **Funktion an Bord** — the Einsatzleitung's, locked with the Missions-Manager role for everyone
+  else, drawn and tappable per ADR-0011.
+
+This does not weaken „a control nobody can see is one nobody asks to be given". The control is still
+drawn and still locked; it is one tap deeper, on a surface every row carries.
+
+**Acceptance**
+
+- [x] A roster row shows the Funktion that was assigned and none of the alternatives; the catalogue
+  appears once the row's sheet is open (`MissionDetailScreenTest`).
+- [x] A crew row shows the Funktionen the slot holds and no catalogue (`MissionDetailScreenTest`).
+- [x] A manager assigns a Funktion through the sheet, and the tap reaches the server naming that row
+  (`MissionManagerScreenTest`).
+- [x] The caller's payout is changed from the sheet, not from a strip on the screen
+  (`MissionDetailScreenTest`).
+- [ ] Walked on a device: outstanding — whether one tap to a sheet is findable enough for the
+  payout, which members previously met without looking for it.
+
+**Code:** `missions/MissionRoleSheet.kt`, the row halves in `missions/MissionRosterUi.kt` and
+`missions/MissionStructureUi.kt`
+
+### REQ-APP-MIS-038 — The wish can be changed after signing up
+
+The desired Funktion could only ever be set **at sign-up**: `participants/add` carried it
+(`REQ-APP-MIS-019`) and nothing else did. A member who changed their mind had to withdraw and sign
+up again — and the sheet of `REQ-APP-MIS-037` would otherwise have shown them a value they could
+look at and not move.
+
+The server has always accepted it on the participant update; this is the app catching up (owner
+decision, 2026-09-07). It is the **member's own** write and no manager's: it takes the caller's own
+row directly rather than a participant id, because the roster's `rowToManage` vouches only for rows
+a manager may write.
+
+Tapping the Funktion already wished for clears it, exactly as the sign-up sheet's chips do — the
+wish is optional, and a chip row with no way back makes an optional field compulsory in practice.
+
+The write is a `PUT` on the participant and therefore carries **the whole row**, under the echo
+discipline of `REQ-APP-MIS-021`: getting it wrong here would clear an assignment the Einsatzleitung
+made, drop the member's note, and check them out.
+
+**Acceptance**
+
+- [x] Changing the wish sends `desiredMissionJobTypeId` and echoes the planned Funktion, the note,
+  the times, the payout preference and the version (`MissionRosterTest`).
+- [x] Tapping the wish already held sends a null for it (`MissionRosterTest`).
+- [x] The chip in the sheet reaches that write (`MissionDetailScreenTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `MissionRoster.wish`, `core/data` `MissionRepository.setDesiredFunction`
+

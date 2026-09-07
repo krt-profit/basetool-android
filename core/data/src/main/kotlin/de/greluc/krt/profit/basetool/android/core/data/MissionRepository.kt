@@ -607,6 +607,31 @@ interface MissionSource : MissionFinanceSource {
         participant: MissionParticipant,
         jobTypeId: String?,
     ): ApiResult<MissionParticipant>
+
+    /**
+     * Changes the job a member ASKED for, after they have already signed up.
+     *
+     * The wish was previously settable only at sign-up: `join` carried it, and nothing else did, so
+     * a member who changed their mind had to withdraw and sign up again. The server has always
+     * accepted it on the participant update — this is the app catching up (owner decision,
+     * 2026-09-07), so the Funktionen modal can offer the wish beside the payout rather than showing
+     * a value nobody can change.
+     *
+     * Same echo discipline as [setPlannedFunction], and for the same reason: the `PUT` REPLACES the
+     * row, so everything not being changed is sent back exactly as last read. Getting that wrong
+     * here would clear an assignment a manager made, or check somebody out.
+     *
+     * @param missionId the Einsatz.
+     * @param participant the row as last read; supplies the version and the fields left alone.
+     * @param jobTypeId the job they would like, or `null` to say they have no preference.
+     * @return the row as it now stands, or the classified failure — `409` when the version is
+     *   stale.
+     */
+    suspend fun setDesiredFunction(
+        missionId: String,
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant>
 }
 
 /**
@@ -991,6 +1016,35 @@ class MissionRepository(
                     // the member out. Only payoutPreference survives a null, and it is echoed too
                     // rather than relying on that asymmetry.
                     desiredMissionJobTypeId = participant.desiredJobTypeId,
+                    comment = participant.comment,
+                    startTime = participant.startTime,
+                    endTime = participant.endTime,
+                    payoutPreference =
+                        when (participant.donating) {
+                            true -> UpdateParticipantRequest.PayoutPreference.DONATE
+                            false -> UpdateParticipantRequest.PayoutPreference.PAYOUT
+                            null -> null
+                        },
+                ),
+                UpdateParticipantRequest.serializer(),
+                MissionParticipantDto.serializer(),
+            ),
+        )
+
+    override suspend fun setDesiredFunction(
+        missionId: String,
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant> =
+        oneRow(
+            reader.put(
+                participantPath(missionId, participant.id, null),
+                UpdateParticipantRequest(
+                    version = participant.version,
+                    desiredMissionJobTypeId = jobTypeId,
+                    // Echoed, not chosen — see setPlannedFunction: this PUT replaces the row, and
+                    // an omitted startTime checks the member out.
+                    plannedMissionJobTypeId = participant.plannedJobTypeId,
                     comment = participant.comment,
                     startTime = participant.startTime,
                     endTime = participant.endTime,

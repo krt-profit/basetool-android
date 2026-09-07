@@ -62,15 +62,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param mine the caller's own row, drawn in the brand colour so they can find themselves in a
  *   roster of thirty.
  * @param roster what a manager may do to a row, and what to say when they may not.
- * @param writable whether a write may run right now.
- * @param onTogglePayout the caller switched their own share between paid out and donated.
+ * @param own what the caller may do to their OWN row, from its sheet.
  */
 internal fun LazyListScope.participantsTab(
     detail: MissionDetail,
     mine: MissionParticipant?,
     roster: MissionRosterActions,
-    writable: Boolean,
-    onTogglePayout: () -> Unit,
+    own: MissionOwnRoleActions,
 ) {
     if (detail.participants.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_participants) }
@@ -86,72 +84,11 @@ internal fun LazyListScope.participantsTab(
     item { RosterSummary(detail = detail) }
     items(ordered, key = { it.id }) { participant ->
         val isMine = participant.id == mine?.id
-        ParticipantRow(participant = participant, isMine = isMine, roster = roster)
-        if (isMine) {
-            MyPayoutChoice(mine = participant, writable = writable, onToggle = onTogglePayout)
-        }
+        ParticipantRow(participant = participant, isMine = isMine, roster = roster, own = own)
     }
     // No footnote. Artboard 06-2 ends the tab with a grey paragraph, but it is a **handoff
     // annotation** rather than copy — its second sentence points at „Muster Kap. 09" — and the app
     // does not put chapter references in front of members.
-}
-
-/**
- * Where the caller's share of this Einsatz goes — under their own row, and nowhere else.
- *
- * Two radios, not one toggle. The choice is between two standing states — the payout comes to you,
- * or it goes to the org treasury — and a button labelled with the OTHER state leaves a member
- * reading „Spenden" unsure whether that is what they have chosen or what they are being offered.
- * The component sheet (ch. 02 §6) draws exactly this pair.
- *
- * **It used to be a permanent strip above the CTA bar** on every tab of the Einsatz. The choice is
- * made in the join sheet when signing up, so redrawing it under every screen the member opened was
- * a standing setting occupying the place the chapter reserves for the action they came for (owner
- * decision, 2026-09-07). Changing it afterwards is still possible — here, on the one row that is
- * already about how the caller is taking part, next to whether they are checked in.
- *
- * @param mine the caller's own row.
- * @param writable whether a write may run right now.
- * @param onToggle switch to the other state.
- */
-@Composable
-private fun MyPayoutChoice(
-    mine: MissionParticipant,
-    writable: Boolean,
-    onToggle: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
-                .testTag(MISSION_PAYOUT_TAG)
-                .writeAlpha(writable),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-    ) {
-        Text(
-            text = stringResource(R.string.mission_detail_payout_label),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-        )
-        // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
-        // long enough together that a narrow phone would otherwise clip the second label.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
-            KrtRadioRow(
-                selected = mine.donating != true,
-                onSelect = { if (mine.donating == true) onToggle() },
-                label = stringResource(R.string.mission_detail_payout_self),
-                enabled = writable,
-            )
-            KrtRadioRow(
-                selected = mine.donating == true,
-                onSelect = { if (mine.donating != true) onToggle() },
-                label = stringResource(R.string.mission_detail_payout_org),
-                enabled = writable,
-            )
-        }
-    }
 }
 
 /**
@@ -195,12 +132,14 @@ private fun RosterSummary(detail: MissionDetail) {
  * @param participant the row.
  * @param isMine whether it is the caller's own.
  * @param roster the manager's actions and their gate.
+ * @param own what the caller may do to their own row, for the sheet behind the row's ⋮.
  */
 @Composable
 private fun ParticipantRow(
     participant: MissionParticipant,
     isMine: Boolean,
     roster: MissionRosterActions,
+    own: MissionOwnRoleActions,
 ) {
     // A bordered card, not loose text on the page: artboard 06-2 draws each member as a record with
     // its own frame, which is what lets a roster of thirty be scanned rather than read.
@@ -263,13 +202,12 @@ private fun ParticipantRow(
             }
             // The payout as a **read** chip: it states the member's standing choice. Design ch. 18
             // §3 (E6) keeps the read chip and the choice chip apart on purpose, so this one never
-            // becomes the control.
+            // becomes the control — the control is in the row's sheet.
             //
-            // Not on the CALLER's own row: the radio pair directly beneath it both states and
-            // changes the same value, and drawing the chip as well would put that value on screen
-            // twice, a finger apart. E6 is respected either way — the chip still never becomes a
-            // control; on this one row it simply has nothing left to say.
-            participant.donating?.takeIf { !isMine }?.let { donating ->
+            // On the caller's own row too, now. It was suppressed there while the radio pair was
+            // drawn directly beneath it, which would have stated the same value twice a finger
+            // apart; with that pair moved into the sheet, the chip is the only thing saying it.
+            participant.donating?.let { donating ->
                 KrtChip(
                     text =
                         stringResource(
@@ -283,9 +221,9 @@ private fun ParticipantRow(
                 )
             }
             ParticipantCheckIn(participant, roster)
-            ParticipantOverflow(participant, roster)
+            ParticipantOverflow(participant, isMine, roster, own)
         }
-        ParticipantManagerActions(participant, roster)
+        ParticipantAssignedFunction(participant)
     }
 }
 
@@ -335,130 +273,84 @@ private fun ParticipantCheckIn(
 }
 
 /**
- * The row's manager controls: check the member in or out, switch their payout, assign their job.
+ * The row's ⋮ — one entry, and it opens the row's sheet.
  *
- * All three render for **everyone** and are locked for a caller who may not manage, per the design
- * ("Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast nennt
- * die Rolle"). Hiding them was the rejected alternative: this organisation grants roles by hand,
- * and a control nobody can see is one nobody asks to be given.
+ * **It used to carry the payout toggle directly, and the assignment chips were drawn under every
+ * row** (owner decision, 2026-09-07). The chips were the whole catalogue on every one of fourteen
+ * rows, so the roster read as a wall of chips in which the chosen one was indistinguishable at a
+ * glance. Anteil, Wunsch and Funktion are one subject and now share one surface: [MissionRoleSheet].
  *
- * @param participant the row.
- * @param roster the actions and the gate.
- */
-@Composable
-private fun ParticipantManagerActions(
-    participant: MissionParticipant,
-    roster: MissionRosterActions,
-) {
-    val gate =
-        Gate(
-            allowed = roster.canManage,
-            reason = stringResource(R.string.gate_role_mission_manager),
-            detail = stringResource(R.string.gate_role_mission_manager_detail),
-        )
-    ParticipantFunctionSelect(participant, gate, roster)
-}
-
-/**
- * The row's ⋮ — today it carries one entry: another member's payout preference.
- *
- * Round 14 (S8) placed it here rather than under the row: the roster runs to fourteen rows, and a
- * button on each doubled the list's height for an action a manager takes once. Without the
- * Missions-Manager role the entry is drawn **locked and tappable**, which is the app's own rule for
- * a grant handed out by a person — an entry nobody sees is one nobody asks for.
- *
- * The member's own preference is not changed here; that stays in the sign-up sheet.
+ * The entry itself is never locked and never gated, because opening a sheet is not a write. The
+ * lock did not disappear with it — each of the sheet's three sections carries its own, which is
+ * what lets one sheet serve a manager, a member on their own row, and a member on somebody
+ * else's (ADR-0011: the control is drawn and locked, not hidden).
  *
  * @param participant the row.
- * @param roster the actions and the gate.
+ * @param isMine whether it is the caller's own.
+ * @param roster the manager's actions, the catalogue and the denial sink.
+ * @param own what the caller may do to their own row.
  */
 @Composable
 private fun ParticipantOverflow(
     participant: MissionParticipant,
+    isMine: Boolean,
     roster: MissionRosterActions,
+    own: MissionOwnRoleActions,
 ) {
-    var open by rememberSaveable { mutableStateOf(false) }
-    val gate =
-        Gate(
-            allowed = roster.canManage,
-            reason = stringResource(R.string.gate_role_mission_manager),
-            detail = stringResource(R.string.gate_role_mission_manager_detail),
-        )
-    val label = stringResource(R.string.mission_detail_participant_actions)
-    val payout = stringResource(R.string.mission_detail_payout_row)
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    var sheetOpen by rememberSaveable { mutableStateOf(false) }
     KrtOverflowMenu(
-        contentDescription = label,
-        expanded = open,
-        onExpandedChange = { open = it },
+        contentDescription = stringResource(R.string.mission_detail_participant_actions),
+        expanded = menuOpen,
+        onExpandedChange = { menuOpen = it },
         items =
             listOf(
                 KrtMenuItem(
-                    label = payout,
-                    iconRes = DesignR.drawable.ic_krt_swap,
-                    reason = gate.reason.takeIf { !gate.allowed },
-                    locked = !gate.allowed,
-                    enabled = roster.enabled,
+                    label = stringResource(R.string.mission_role_sheet_title),
+                    iconRes = DesignR.drawable.ic_krt_user,
                 ) {
-                    open = false
-                    if (gate.allowed) {
-                        roster.onPayout(participant.id)
-                    } else {
-                        roster.denials.raise(gate)
-                    }
+                    menuOpen = false
+                    sheetOpen = true
                 },
             ),
     )
+    if (sheetOpen) {
+        MissionRoleSheet(
+            participant = participant,
+            isMine = isMine,
+            roster = roster,
+            own = own,
+            onDismiss = { sheetOpen = false },
+        )
+    }
 }
 
 /**
- * „Funktion an Bord": the chips a manager assigns from.
+ * „Funktion an Bord": what this member was actually assigned, and nothing else.
  *
- * The catalogue is only read for a caller who may assign, so for everyone else this draws the
- * assignment as a single locked chip rather than an empty row — a locked control with nothing in it
- * would say less than the plain text above it already does.
+ * A read chip, not the picker it replaced. The picker drew every Funktion the organisation has
+ * defined on every row of the roster; what a reader of the roster wants from a row is the one that
+ * was chosen. Assigning is still done here — through the row's ⋮, in [MissionRoleSheet], where the
+ * catalogue is the subject rather than the noise around it.
+ *
+ * Nothing is drawn when nobody has been assigned yet: an empty label on fourteen rows says less
+ * than the absence of a chip does, and the ⋮ that would set one is on every row regardless.
  *
  * @param participant the row.
- * @param gate whether the caller may assign, and why not.
- * @param roster the actions and the catalogue.
  */
 @Composable
-private fun ParticipantFunctionSelect(
-    participant: MissionParticipant,
-    gate: Gate,
-    roster: MissionRosterActions,
-) {
-    if (roster.jobTypes.isEmpty()) {
-        return
-    }
-    Text(
-        text = stringResource(R.string.mission_detail_function_label),
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-    )
-    // The same control as the sign-up sheet's, for the same reason it is a FlowRow there: five
-    // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
-    // edge behind a gesture nothing announces.
-    FlowRow(
+private fun ParticipantAssignedFunction(participant: MissionParticipant) {
+    val assigned = participant.role?.takeIf { it.isNotBlank() } ?: return
+    Row(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        roster.jobTypes.forEach { jobType ->
-            val (dim, click) =
-                rememberGated(gate, { roster.onFunction(participant.id, jobType) }, roster.denials)
-            // A choice, not a filter: design ch. 18 §3 (E6) keeps the two chips deliberately
-            // different, and this one IS the value rather than a way of narrowing a list.
-            KrtChoiceChip(
-                text = jobType.name,
-                selected = participant.plannedJobTypeId == jobType.id,
-                onClick = click,
-                modifier = dim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-                // Never `enabled = false`: a chip that cannot be tapped cannot say why it is dim,
-                // which is the whole point of the locked pattern (ADR-0011, artboard 14). Offline
-                // is the one case that does disable it — there the answer is the connection, not a
-                // grant, and the toast would name the wrong thing.
-                enabled = roster.enabled,
-            )
-        }
+        Text(
+            text = stringResource(R.string.mission_detail_function_label),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        KrtChip(text = assigned, tone = KrtChipTone.Primary)
     }
 }
 

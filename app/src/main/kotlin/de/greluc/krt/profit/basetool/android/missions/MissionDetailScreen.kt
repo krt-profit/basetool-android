@@ -421,6 +421,9 @@ data class MissionRosterActions(
  * @property onTogglePayoutPreference they switched their share between paid out and donated.
  * @property onJoinPayout the sign-up sheet's payout choice changed.
  * @property onDesiredFunction a function chip in the sign-up sheet was tapped.
+ * @property onChangeDesiredFunction the caller changed the job they wish for AFTER signing up,
+ *   from their own roster row's sheet. A different call from [onDesiredFunction], which only edits
+ *   the not-yet-sent sign-up draft.
  * @property onJoinConfirmed the sign-up sheet was sent.
  * @property onJoinDismissed the sign-up sheet was closed without signing up.
  */
@@ -430,6 +433,7 @@ data class MissionSignUpActions(
     val onTogglePayoutPreference: () -> Unit,
     val onJoinPayout: (Boolean) -> Unit,
     val onDesiredFunction: (MissionJobType) -> Unit,
+    val onChangeDesiredFunction: (MissionJobType) -> Unit,
     val onJoinConfirmed: () -> Unit,
     val onJoinDismissed: () -> Unit,
 )
@@ -737,8 +741,11 @@ private fun MissionTabContent(
                     detail = detail,
                     mine = state.mySignUp,
                     roster = roster,
-                    writable = state.writable,
-                    onTogglePayout = actions.onTogglePayoutPreference,
+                    own =
+                        MissionOwnRoleActions(
+                            onPayout = actions.onTogglePayoutPreference,
+                            onDesired = actions.onChangeDesiredFunction,
+                        ),
                 )
             }
 
@@ -1175,6 +1182,11 @@ fun MissionDetailRoute(
                 onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
                 onJoinPayout = viewModel::onJoinPayout,
                 onDesiredFunction = viewModel::onDesiredFunction,
+                // Through the roster, like every other write to a participant row — and only
+                // on a row that exists and while a write may run at all.
+                onChangeDesiredFunction = { job ->
+                    state.mySignUp?.takeIf { state.writable }?.let { viewModel.roster.wish(it, job) }
+                },
                 onJoinConfirmed = viewModel::onJoinConfirmed,
                 onJoinDismissed = viewModel::onJoinSheetDismissed,
             ),
