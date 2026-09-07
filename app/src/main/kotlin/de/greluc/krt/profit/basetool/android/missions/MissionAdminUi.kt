@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
@@ -44,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLo
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import java.time.Duration
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -69,7 +72,8 @@ private const val MIN_BRIEFING_LINES = 3
  * @property onChange a field changed, naming the section so its head can say „Geändert".
  * @property onToggle a section was folded open or shut.
  * @property onSave one section is to be saved.
- * @property onAskLifecycle the badge's lifecycle action was pressed — opens the confirmation.
+ * @property onAskLifecycle the tab's lifecycle action was pressed — opens the confirmation. It sat
+ *   on the status badge until 2026-09-07; the confirmation and the write behind it are unchanged.
  * @property onConfirmLifecycle the confirmation was accepted.
  * @property onDismissLifecycle the confirmation was declined.
  * @property onCorrectStart the started time is to be corrected.
@@ -95,6 +99,23 @@ data class MissionAdminActions(
 )
 
 /**
+ * What the lifecycle action needs, as one argument.
+ *
+ * Three separate parameters pushed `adminTab` over detekt's five, and the three are never useful
+ * apart: the step on offer is derived from the Einsatz, and the denial sink exists only to explain
+ * a refusal of the action the step names.
+ *
+ * @property detail the Einsatz.
+ * @property next the status it may advance to, or `null` when it is at rest.
+ * @property denials where a refusal is announced.
+ */
+internal data class MissionLifecycleUi(
+    val detail: MissionDetail,
+    val next: MissionStatus?,
+    val denials: DenialState,
+)
+
+/**
  * Verwaltung: the Einsatz itself, as four folded sections.
  *
  * **Composition ratified 2026-08-29** (design ch. 06 artboards 7–12). It shipped first as a flat
@@ -110,12 +131,14 @@ data class MissionAdminActions(
  * @param writable whether a write may run right now — online, and nothing already in flight.
  * @param actions what the tab can do.
  * @param members the one picker behind the party lead, the managers and „Teilnehmer hinzufügen".
+ * @param lifecycle what the tab's lifecycle action needs to draw and gate itself.
  */
-fun LazyListScope.adminTab(
+internal fun LazyListScope.adminTab(
     form: MissionAdminForm,
     writable: Boolean,
     actions: MissionAdminActions,
     members: MissionMemberActions,
+    lifecycle: MissionLifecycleUi,
 ) {
     item {
         Column(
@@ -127,6 +150,15 @@ fun LazyListScope.adminTab(
             // 10 dp between the cards and a 16 dp screen margin — design ch. 18 §3 (E4).
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
         ) {
+            // First, above the folded sections: starting and finishing the Einsatz moved here from
+            // the status band on 2026-09-07 (owner decision). It is not a section — it saves no
+            // form, it advances the status in one call — so it is not folded into one, and it sits
+            // ahead of them because it is the most consequential thing this tab can do.
+            MissionLifecycleAction(
+                lifecycle = lifecycle,
+                enabled = writable,
+                onAsk = actions.onAskLifecycle,
+            )
             Hint(text = stringResource(R.string.mission_admin_section_hint))
             AdminSection(MissionSection.CORE, form, actions) { CoreFields(form, form.writes(writable, it), actions) }
             AdminSection(MissionSection.SCHEDULE, form, actions) {
@@ -550,9 +582,10 @@ private fun ActualStart(
             )
         }
 
-        // No branch for the unstarted Einsatz: starting it is not this form's action any more.
-        // Design ch. 06 (F2) puts the lifecycle on the status badge — „kein Formular, kein
-        // Overflow-Eintrag, keine zweite Stelle". The line above still says check-in is locked,
+        // No branch for the unstarted Einsatz: starting it is not this SECTION's action. It is
+        // this tab's, drawn once at the top rather than inside the schedule form — F2's „kein
+        // Formular, kein Overflow-Eintrag, keine zweite Stelle" still holds, the one place just
+        // moved off the status badge on 2026-09-07. The line above still says check-in is locked,
         // which is the fact this section is responsible for.
     }
     EndState(form = form, writable = writable, actions = actions)

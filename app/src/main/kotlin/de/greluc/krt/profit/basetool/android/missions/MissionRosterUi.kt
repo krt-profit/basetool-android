@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusDot
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -60,11 +62,15 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param mine the caller's own row, drawn in the brand colour so they can find themselves in a
  *   roster of thirty.
  * @param roster what a manager may do to a row, and what to say when they may not.
+ * @param writable whether a write may run right now.
+ * @param onTogglePayout the caller switched their own share between paid out and donated.
  */
 internal fun LazyListScope.participantsTab(
     detail: MissionDetail,
     mine: MissionParticipant?,
     roster: MissionRosterActions,
+    writable: Boolean,
+    onTogglePayout: () -> Unit,
 ) {
     if (detail.participants.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_participants) }
@@ -79,11 +85,73 @@ internal fun LazyListScope.participantsTab(
         )
     item { RosterSummary(detail = detail) }
     items(ordered, key = { it.id }) { participant ->
-        ParticipantRow(participant = participant, isMine = participant.id == mine?.id, roster = roster)
+        val isMine = participant.id == mine?.id
+        ParticipantRow(participant = participant, isMine = isMine, roster = roster)
+        if (isMine) {
+            MyPayoutChoice(mine = participant, writable = writable, onToggle = onTogglePayout)
+        }
     }
     // No footnote. Artboard 06-2 ends the tab with a grey paragraph, but it is a **handoff
     // annotation** rather than copy — its second sentence points at „Muster Kap. 09" — and the app
     // does not put chapter references in front of members.
+}
+
+/**
+ * Where the caller's share of this Einsatz goes — under their own row, and nowhere else.
+ *
+ * Two radios, not one toggle. The choice is between two standing states — the payout comes to you,
+ * or it goes to the org treasury — and a button labelled with the OTHER state leaves a member
+ * reading „Spenden" unsure whether that is what they have chosen or what they are being offered.
+ * The component sheet (ch. 02 §6) draws exactly this pair.
+ *
+ * **It used to be a permanent strip above the CTA bar** on every tab of the Einsatz. The choice is
+ * made in the join sheet when signing up, so redrawing it under every screen the member opened was
+ * a standing setting occupying the place the chapter reserves for the action they came for (owner
+ * decision, 2026-09-07). Changing it afterwards is still possible — here, on the one row that is
+ * already about how the caller is taking part, next to whether they are checked in.
+ *
+ * @param mine the caller's own row.
+ * @param writable whether a write may run right now.
+ * @param onToggle switch to the other state.
+ */
+@Composable
+private fun MyPayoutChoice(
+    mine: MissionParticipant,
+    writable: Boolean,
+    onToggle: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(KrtPalette.Gray4)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
+                .testTag(MISSION_PAYOUT_TAG)
+                .writeAlpha(writable),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        Text(
+            text = stringResource(R.string.mission_detail_payout_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
+        // long enough together that a narrow phone would otherwise clip the second label.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
+            KrtRadioRow(
+                selected = mine.donating != true,
+                onSelect = { if (mine.donating == true) onToggle() },
+                label = stringResource(R.string.mission_detail_payout_self),
+                enabled = writable,
+            )
+            KrtRadioRow(
+                selected = mine.donating == true,
+                onSelect = { if (mine.donating != true) onToggle() },
+                label = stringResource(R.string.mission_detail_payout_org),
+                enabled = writable,
+            )
+        }
+    }
 }
 
 /**
@@ -195,8 +263,13 @@ private fun ParticipantRow(
             }
             // The payout as a **read** chip: it states the member's standing choice. Design ch. 18
             // §3 (E6) keeps the read chip and the choice chip apart on purpose, so this one never
-            // becomes the control — switching it is the row's ⋮.
-            participant.donating?.let { donating ->
+            // becomes the control.
+            //
+            // Not on the CALLER's own row: the radio pair directly beneath it both states and
+            // changes the same value, and drawing the chip as well would put that value on screen
+            // twice, a finger apart. E6 is respected either way — the chip still never becomes a
+            // control; on this one row it simply has nothing left to say.
+            participant.donating?.takeIf { !isMine }?.let { donating ->
                 KrtChip(
                     text =
                         stringResource(
