@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
-### Geändert
+## [0.2.6] — 2026-09-07
+
+### Added
+
+- **Die Wunschfunktion lässt sich nach der Anmeldung ändern.** Bisher ging das nur beim Anmelden —
+  wer es sich anders überlegte, musste sich abmelden und neu anmelden. Jetzt steht sie im
+  Drei-Punkte-Menü deiner eigenen Zeile; ein zweiter Tipp auf die gewählte Funktion löscht sie
+  wieder.
+
+### Changed
 
 - **Der Einsatz-Bildschirm zeigt nur noch, was du gerade brauchst.** Der grüne Kasten mit Status, Anmeldezahl und „Abschließen" stand bisher auf jedem Aufruf zwischen Kopf und Reitern — für eine Aktion, die die Einsatzleitung zweimal im Leben eines Einsatzes ausführt. Der Status steht jetzt als Chip oben neben der Einheit, und **Starten und Abschließen liegen im Reiter „Verwalten"**, bei den übrigen Dingen, die nur die Leitung tun kann. Es geht nichts verloren: derselbe Knopf, dieselbe Rückfrage, dieselbe Sperre für alle anderen.
 
@@ -12,13 +21,6 @@
   nur noch, was gesetzt ist; die Auswahl liegt im Drei-Punkte-Menü der Zeile — zusammen mit dem
   Anteil und der Wunschfunktion, in einem Fenster. Dasselbe in den Einheiten: der Crew-Slot zeigt
   seine Funktionen, gewählt wird im Menü der Zeile.
-
-### Hinzugefügt
-
-- **Die Wunschfunktion lässt sich nach der Anmeldung ändern.** Bisher ging das nur beim Anmelden —
-  wer es sich anders überlegte, musste sich abmelden und neu anmelden. Jetzt steht sie im
-  Drei-Punkte-Menü deiner eigenen Zeile; ein zweiter Tipp auf die gewählte Funktion löscht sie
-  wieder.
 
 ## [0.2.5] — 2026-09-07
 
