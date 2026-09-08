@@ -2,8 +2,9 @@
 
 Native Android companion app for the **Profit Basetool** — the squadron-management tool of
 the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
-portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
-design.
+portrait-first, tablets landscape-first, minSdk 31 (Android 12), dark-only DAS KARTELL
+design. The floor is 31 rather than 30 so that the lowest version we support is one the
+emulator can actually sign in on ([ADR-0015](docs/adr/0015-minsdk-31-so-the-floor-is-testable.md)).
 
 **Released: [v0.2.8](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
 through Obtainium or straight from the release page — and check what you installed before you do
@@ -13,8 +14,9 @@ A member can do everything the plan set as the bar for a first release: read Üb
 Operationen, Aufträge, Lager, Bank, Hangar, Mein Inventar, Materialbörse, Raffinerie and the
 Posteingang — and write to them. Sign up for an Einsatz and book its money, book stock in and out,
 take an Auftrag and change its status, keep your own ships and blueprints, offer and request on the
-Materialbörse, book a refining yield into the Lager, and clear the inbox. Data updates live while
-the app is in front; on a tablet the list sits beside its detail.
+Materialbörse, book a refining yield into the Lager, and clear the inbox. The Raffinerie lists the
+**unit's** runs rather than only your own, and names each one's owner, as the web has always done.
+Data updates live while the app is in front; on a tablet the list sits beside its detail.
 
 **What it deliberately does not do.** The administration stays in the browser, permanently and by
 decision — roles, members, catalogues, mission planning — as does the bank-employee view. There is
@@ -24,7 +26,13 @@ design chapter, so it is withheld ([#66](https://github.com/krt-profit/basetool-
 [ADR-0009](docs/adr/0009-tablet-settings-ships-without-its-befoerderung-column.md)). The file
 imports of the Desktop-Extractor come later.
 
-The app needs the server side of `basetool` **v1.6.0 or newer**.
+The app needs the server side of `basetool` **v1.6.0 or newer** — and, separately, it needs the
+**API vhost to admit every path it calls**. That allow-list is default-deny and names each path
+individually, so a server that is new enough can still answer `404` to a path nobody admitted; the
+Raffinerie shipped broken in v0.2.8 for exactly that reason. Both live in the main repository:
+the version in its `CHANGELOG.md`, the admitted paths in
+`docs/API_VHOST_ROLLOUT_RUNBOOK.md`. **Check a path against that runbook before making the app
+depend on it**, not before releasing — by then the choice has shaped the screen.
 
 The owner-approved concept lives in [`docs/`](docs/):
 
@@ -34,8 +42,15 @@ The owner-approved concept lives in [`docs/`](docs/):
 | [`ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) | Threat model, API exposure, Keycloak client + DPoP posture, layered abuse prevention, release gate |
 | [`ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md) | GDPR / TDDDG / German-law analysis and the compliance checklist |
 | [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) | Local dev/test environment, hardened GitHub CI, release signing |
-| [`docs/design/android/`](docs/design/android/README.md) | **Binding UI specification** (design handoff, 2026-08-17): chapters 00–14, `artifacts/Theme.kt`, icon export list, fonts. Open `00 Index.dc.html` in a browser. |
-| [`ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md) | Historical: the Claude Design brief that produced the specification above |
+| [`docs/design/android/`](docs/design/android/README.md) | **Binding UI specification** (design handoff): chapters 00–18, `artifacts/Theme.kt`, icon export list, fonts. Open `00 Index.dc.html` in a browser. Delivered as a bundle and replaced wholesale — its own README and `github.md` still say “00–14”, which is the designer's text and not ours to edit. |
+| [`ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md) | Historical: the Claude Design brief that produced the specification above. Its facts are frozen at the briefing — it still says minSdk 30 — and it is read as a record, not as current |
+| [`docs/specs/`](docs/specs/INDEX.md) | The durable requirements (`REQ-APP-<AREA>-NNN`), one file per area. **This is where behaviour is written down**; a change without a matching spec change is incomplete |
+| [`docs/adr/`](docs/adr/README.md) | Architecture and design decisions, including the ones that were later overturned — a superseded ADR stays and says by which |
+| [`OWNER_RUNBOOK.md`](docs/OWNER_RUNBOOK.md) | The owner's procedures: cutting a release, the signing key, the `release` environment, raising the served-version floor |
+
+Also under `docs/`, situational rather than foundational: `DESIGN_PARITY_AUDIT.md`,
+`TENANCY_VERIFICATION.md`, and `GOOGLE_PLAY_DISTRIBUTION_PLAN.md` — the last is explicitly a
+**proposal, not a decision**: Q1 still reads „GitHub Releases APK (+ Obtainium); no Play".
 
 Key properties, decided up front: consumes the existing Basetool backend API only (no own
 business logic) · distribution via **GitHub Releases** (no Google Play) · **zero third-party

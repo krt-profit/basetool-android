@@ -20,7 +20,7 @@ Binding concept documents (until superseded by `docs/specs/`): [`docs/ANDROID_AP
 [`docs/ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md),
 [`docs/ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md).
 The **binding UI specification is the delivered design handoff at
-[`docs/design/android/`](docs/design/android/README.md)** (chapters 00–14 + `artifacts/Theme.kt`;
+[`docs/design/android/`](docs/design/android/README.md)** (chapters 00–18 + `artifacts/Theme.kt`;
 see the UI section below). [`docs/ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md)
 is the historical brief that produced it — do not design against the prompt anymore.
 
