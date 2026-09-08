@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -100,8 +102,18 @@ internal fun MissionRoleSheet(
         title = stringResource(R.string.mission_role_sheet_title),
         modifier = Modifier.testTag(MISSION_ROLE_SHEET_TAG),
     ) {
+        // KrtBottomSheet does NOT scroll its content — it hands the decision to each sheet, and
+        // the long ones (ShipEditor, Booking, Allocation …) bring their own. This one is the
+        // longest of them all on the caller's own row: the catalogue is drawn twice, once as the
+        // wish and once as the assignment, so an organisation with two dozen Funktionen fills more
+        // than a screen. Without this the bottom section was simply cut off (found on a device,
+        // 2026-09-08).
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(KrtSpacing.s16),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
