@@ -1195,6 +1195,8 @@
     <!-- Raffinerie (design ch. 11) -->
     <string name="refinery_title">Raffinerie</string>
     <string name="refinery_order_title">Refinery order</string>
+    <string name="refinery_filter_active">Active</string>
+    <string name="refinery_write_locked_foreign">Only the owner can change this order.</string>
     <string name="refinery_filter_all">All</string>
     <string name="refinery_filter_running">Refining</string>
     <string name="refinery_filter_ready">Ready</string>
@@ -1276,6 +1278,9 @@
     <string name="refinery_stored_notice">Refinery order successfully transferred to the Lager.</string>
     <string name="refinery_empty_title">No orders</string>
     <string name="refinery_empty_message">No Raffinerie order matches this filter.</string>
+    <string name="refinery_empty_active_title">No running orders</string>
+    <string name="refinery_empty_active_message">Nothing refining and nothing ready to collect. Stored orders are behind the “Stored” or “All” chip.</string>
+    <string name="refinery_owner_you">%1$s (you)</string>
     <string name="refinery_error_title">Signal Lost — Raffinerie</string>
     <string name="refinery_error_message">The orders could not be loaded.</string>
     <plurals name="refinery_load_more">

@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
@@ -60,6 +61,19 @@ fun minuteTicker(): Flow<OffsetDateTime> =
 
 /** Which of the member's orders the list shows. */
 enum class RefineryFilter {
+    /**
+     * Still refining **or** waiting to be collected — the runs there is something to do about.
+     *
+     * A compound of two of the others rather than a server status, and the screen's default since
+     * design round 16: stored orders are finished and flood the list as the months pass. The web
+     * has defaulted to the same pair (`OPEN` + `IN_PROGRESS`) all along, so this is the app
+     * catching up rather than a new idea.
+     *
+     * Declared first because the chip row is drawn in declaration order and the artboard puts
+     * „Aktiv" at the head of it.
+     */
+    ACTIVE,
+
     /** Everything, including the booked and the cancelled ones. */
     ALL,
 
@@ -88,7 +102,7 @@ enum class RefineryFilter {
                 emptySet()
             }
 
-            RUNNING, READY -> {
+            ACTIVE, RUNNING, READY -> {
                 setOf(RefineryServerStatus.OPEN, RefineryServerStatus.IN_PROGRESS)
             }
 
@@ -109,9 +123,16 @@ enum class RefineryFilter {
         now: OffsetDateTime,
     ): Boolean =
         when (this) {
+            // The split between RUNNING and READY happens on the device, against a clock, so the
+            // compound has to name both phases rather than lean on the server pair above.
+            ACTIVE -> order.phaseAt(now) in setOf(RefineryPhase.RUNNING, RefineryPhase.READY)
+
             ALL -> true
+
             RUNNING -> order.phaseAt(now) == RefineryPhase.RUNNING
+
             READY -> order.phaseAt(now) == RefineryPhase.READY
+
             STORED -> order.phaseAt(now) == RefineryPhase.STORED
         }
 }
@@ -144,17 +165,20 @@ sealed interface RefineryPhaseState {
  * @property hasMore whether the server has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
+ * @property myUserId the caller's own backend id, or `null` while the identity read is out or has
+ *   failed — the owner line then names everybody plainly, which is wrong about nobody
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property now the clock the countdown and the ready-split are judged against; ticks each minute
  */
 data class RefineryListState(
-    val filter: RefineryFilter = RefineryFilter.ALL,
+    val filter: RefineryFilter = RefineryFilter.ACTIVE,
     val loaded: List<RefineryOrder> = emptyList(),
     val phase: RefineryPhaseState = RefineryPhaseState.Loading,
     val page: Int = 0,
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val myUserId: String? = null,
     val retryIn: Int? = null,
     val now: OffsetDateTime = OffsetDateTime.now(),
 ) {
@@ -179,10 +203,13 @@ data class RefineryListState(
  * run for as long as the screen is open.
  *
  * @property source where the orders come from
+ * @property identity supplies the caller's backend user id, or `null` where a caller cannot be
+ *   resolved at all
  * @property liveSync the shared change stream, or `null` when it is not wired
  */
 class RefineryViewModel(
     private val source: RefinerySource,
+    private val identity: IdentitySource? = null,
     private val liveSync: LiveSyncSource? = null,
     clock: Flow<OffsetDateTime> = minuteTicker(),
 ) : ViewModel() {
@@ -203,6 +230,7 @@ class RefineryViewModel(
         )
 
     init {
+        resolveIdentity()
         observeLiveSync(liveSync, setOf(LiveSyncTopic.REFINERY)) { sections ->
             if (LiveSyncSections.REFINERY_QUEUE in sections) {
                 reload(keepRows = true)
@@ -326,6 +354,28 @@ class RefineryViewModel(
             }
     }
 
+    /**
+     * Reads who the caller is, so a card can say which order is theirs.
+     *
+     * **Never fatal.** The screen's subject is the unit's refinery runs; losing the „ (du)"
+     * suffix is a smaller failure than an error banner over content that loaded fine. A card then
+     * names its owner plainly, which is wrong about nobody.
+     */
+    private fun resolveIdentity() {
+        val reader = identity ?: return
+        viewModelScope.launch {
+            when (val result = reader.myUserId()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "own user id could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
+
     private companion object {
         /** Log subsystem. A member's yield is their business and never reaches the log. */
         const val LOG_TAG = "refinery"
@@ -379,6 +429,7 @@ data class RefineryDetailState(
     val error: ApiError? = null,
     val retryIn: Int? = null,
     val now: OffsetDateTime = OffsetDateTime.now(),
+    val myUserId: String? = null,
     val lines: List<RefineryStoreLine> = emptyList(),
     val memberPicker: RefineryMemberPickerState = RefineryMemberPickerState(),
     val busy: String? = null,
@@ -400,7 +451,18 @@ data class RefineryDetailState(
      * action is drawn locked rather than left out (`REQ-APP-REF-012`).
      */
     val deletable: Boolean
-        get() = order != null && order.status != RefineryServerStatus.COMPLETED
+        get() = order != null && order.status != RefineryServerStatus.COMPLETED && mine
+
+    /**
+     * Whether this run is the caller's own.
+     *
+     * The list shows the **unit's** orders since design round 16, so a member reaches a run they
+     * may read and not write: the server gates every write on `canEditRefineryOrder`, which is
+     * ownership. Unknown identity counts as **not** mine — offering a write that will be refused
+     * is worse than locking one that would have been allowed, and the lock says which it is.
+     */
+    val mine: Boolean
+        get() = myUserId != null && order?.ownerId == myUserId
 }
 
 /**
@@ -409,13 +471,21 @@ data class RefineryDetailState(
  * Bundled rather than passed one by one: the view model already carries the six arguments detekt
  * allows, and a seventh would buy a suppression instead of a smaller constructor.
  *
+ * **`identity` is a read and sits here anyway**, which is why the record no longer says „Writes":
+ * since design round 16 the list shows the unit's orders, so the detail has to know whether this
+ * one is the caller's before it offers a write the server would refuse. It belongs to the same
+ * question as the writes it gates.
+ *
  * @property store books a finished run's yield into the Lager, or `null` where that is not wired.
+ * @property roster who the output may be booked onto, for a Logistician who may choose.
  * @property delete cancels the run, or `null` where the action is not offered.
+ * @property identity the caller's own id, so ownership can gate the two writes above.
  */
-data class RefineryDetailWrites(
+data class RefineryDetailSeams(
     val store: RefineryStoreSource? = null,
     val roster: BookInOptions? = null,
     val delete: RefineryOrderDeleteSource? = null,
+    val identity: IdentitySource? = null,
 )
 
 /**
@@ -430,15 +500,15 @@ data class RefineryDetailWrites(
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  * @property liveSync the shared change stream, or `null` when it is not wired
- * @property writes the two writes this screen performs — the booking and the deletion — each
- *   absent where it is not wired
+ * @property seams the two writes this screen performs — the booking and the deletion — plus the
+ *   identity that gates them, each absent where it is not wired
  */
 class RefineryDetailViewModel(
     private val source: RefinerySource,
     connectivity: Connectivity?,
     orderId: String,
     private val liveSync: LiveSyncSource? = null,
-    private val writes: RefineryDetailWrites = RefineryDetailWrites(),
+    private val seams: RefineryDetailSeams = RefineryDetailSeams(),
     clock: Flow<OffsetDateTime> = minuteTicker(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(RefineryDetailState(orderId = orderId))
@@ -451,7 +521,7 @@ class RefineryDetailViewModel(
      */
     val memberPicker =
         RefineryMemberPicker(
-            roster = writes.roster,
+            roster = seams.roster,
             scope = viewModelScope,
             read = { mutableState.value.memberPicker },
             write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
@@ -469,6 +539,7 @@ class RefineryDetailViewModel(
         )
 
     init {
+        resolveIdentity()
         observeLiveSync(
             liveSync,
             setOf(LiveSyncTopic.refineryOrder(orderId), LiveSyncTopic.REFINERY),
@@ -661,7 +732,7 @@ class RefineryDetailViewModel(
      */
     fun onDeleteConfirmed() {
         val current = mutableState.value
-        val writer = writes.delete
+        val writer = seams.delete
         val id = current.order?.id.takeIf { current.deletable && !current.deleting }
         if (writer == null || id == null) {
             return
@@ -700,7 +771,7 @@ class RefineryDetailViewModel(
     fun onStoreAll() {
         val current = mutableState.value
         val orderId = current.order?.id
-        val writer = writes.store
+        val writer = seams.store
         val sendable = orderId != null && writer != null && current.lines.isNotEmpty()
         if (!sendable || current.busy != null) {
             return
@@ -718,6 +789,28 @@ class RefineryDetailViewModel(
                     KrtLog.w(LOG_TAG) { "storing the run was refused: ${answer.error}" }
                     mutableState.value =
                         mutableState.value.copy(busy = null, error = answer.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads who the caller is, so the writes can be gated on ownership.
+     *
+     * A failure leaves [RefineryDetailState.mine] false and the writes locked with their reason,
+     * which is the safe direction: the server would refuse them anyway, and a lock explains itself
+     * where a `403` toast does not.
+     */
+    private fun resolveIdentity() {
+        val reader = seams.identity ?: return
+        viewModelScope.launch {
+            when (val result = reader.myUserId()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "own user id could not be read: ${result.error}" }
                 }
             }
         }

@@ -484,3 +484,70 @@ refining sat on the last page — the opposite of what the screen is for. The we
       newer orders in the test stack belong to another member and are correctly absent.
 
 **Code:** `core/data/RefineryRepository.kt`
+
+### REQ-APP-REF-014 — The screen lists the unit's orders, and every card names its owner
+
+Design round 16 (chapter 11, artboard 1 + tablet) asks each card to name whose run it is. That only
+means anything once foreign runs are on screen at all — and until 2026-09-08 they were not.
+
+**The list reads `GET /api/v1/refinery-orders/all`, not `/my-orders`.** The web has defaulted to
+that endpoint all along and keeps `/my-orders` behind its „Meine Aufträge" toggle; the app was the
+outlier, and the design note's premise („der Screen listet auch Aufträge anderer Mitglieder") was a
+description of the web rather than of the app. The endpoint is read-only for every authenticated
+caller and the service scopes the rows.
+
+> **This supersedes the wording of REQ-APP-REF-013**, which called the list „the member's own
+> refinery orders". The sort parameter that requirement is about is unchanged and still carried.
+
+**The owner line replaces the bare method line**: `⊙ <Inhaber> · <Methode>`, glyph `ic_krt_user` in
+`TextMuted`, the caller's own row in `Gray1` with the suffix „ (du)" and anybody else's in
+`TextMuted` without one. **The name is what may not be cut** — it is the discriminator, while the
+method can be inferred from the goods below — so the name takes the space it needs and the method
+ellipsises. An unresolved identity produces no suffix at all, which is wrong about nobody.
+
+**Writing stays the owner's.** The server gates every refinery write on `canEditRefineryOrder`,
+which is ownership, so the detail's „Bearbeiten" and „Löschen" are **drawn locked** for a foreign
+run — tappable, with a toast naming the rule, never `enabled = false` and never hidden (ADR-0011).
+An identity that failed to load counts as *not* the owner: offering a write the server will refuse
+is worse than locking one it would have allowed, and the lock says which it is.
+
+The two locks on that menu must stay distinguishable. „Nur der Inhaber kann diesen Auftrag ändern"
+is about **who**; „Der Auftrag ist eingelagert" is about **when**. A member reading the second on
+somebody else's run would go looking for a state they cannot see.
+
+**Acceptance**
+
+- [x] Every card names its owner; the caller's own carries „ (du)" (`RefineryScreenTest`).
+- [x] An unresolved identity claims no order (`RefineryScreenTest`).
+- [x] A foreign run is not deletable and its lock names ownership (`RefineryEditTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/RefineryRepository.kt`, `refinery/RefineryScreen.kt`, `refinery/RefineryViewModel.kt`
+
+### REQ-APP-REF-015 — „Aktiv" is the default filter, and it is a compound
+
+Five chips in declaration order — **Aktiv · Alle · In Arbeit · Abholbereit · Eingelagert** — with
+„Aktiv" preselected on phone **and** tablet. Two silently different defaults for the same surface is
+the failure class design rounds 13/14 record as expensive.
+
+„Aktiv" is `IN_PROGRESS` + `READY_FOR_PICKUP`, which is not a server status: the server keeps a run
+`OPEN`/`IN_PROGRESS` until somebody books it and the end time is what separates the two, so the
+compound asks the server for that pair and splits it on the device against the ticking clock — the
+same split REQ-APP-REF-002 already describes. The web sends the identical default pair.
+
+**Its empty state names what is hidden and the way to it**: „Keine laufenden Aufträge" over
+„Nichts in Arbeit und nichts abholbereit. Eingelagerte Aufträge zeigt der Chip ‚Eingelagert' oder
+‚Alle'." A default filter that hides finished work without saying so is a silent cap (ADR-0104).
+
+**The chip row scrolls horizontally with no visible scrollbar** and no height cost. Compose draws
+none by default, so `Row` + `horizontalScroll` already satisfies this; the artboard's
+`scrollbar-width:none` is a browser fix for a browser-only gutter and needs no counterpart here.
+
+**Acceptance**
+
+- [x] The default is `ACTIVE` and it is the first chip (`RefineryViewModelTest`).
+- [x] „Aktiv" yields exactly the running and the ready ones (`RefineryViewModelTest`).
+- [x] Its empty state names the way out (`RefineryScreenTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `refinery/RefineryViewModel.kt`, `refinery/RefineryScreen.kt`

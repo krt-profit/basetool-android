@@ -225,6 +225,30 @@ class RefineryEditTest {
     }
 
     /**
+     * Somebody else's run is not deletable either, for a different reason.
+     *
+     * The list shows the unit's orders since design round 16, so a member reaches a run they may
+     * read and not write. The server gates every write on ownership; offering one it would refuse
+     * is the failure this prevents.
+     */
+    @Test
+    fun aForeignRunIsNotDeletableAndSaysWhy() {
+        val foreign = detailState(RefineryServerStatus.IN_PROGRESS).copy(myUserId = "u9")
+
+        assertFalse(foreign.mine)
+        assertFalse(foreign.deletable)
+    }
+
+    /** And an identity that never arrived counts as not-mine, which is the safe direction. */
+    @Test
+    fun anUnknownIdentityLocksTheWrites() {
+        val unknown = detailState(RefineryServerStatus.IN_PROGRESS).copy(myUserId = null)
+
+        assertFalse(unknown.mine)
+        assertFalse(unknown.deletable)
+    }
+
+    /**
      * One run as the server would send it back into the form.
      *
      * @return the pre-filled form.
@@ -256,9 +280,14 @@ class RefineryEditTest {
     private fun detailState(status: RefineryServerStatus): RefineryDetailState =
         RefineryDetailState(
             orderId = "r1",
+            // The fixture run belongs to the caller: ownership is what `deletable` now also asks,
+            // and the cases that do NOT own it say so explicitly above.
+            myUserId = "u1",
             order =
                 RefineryOrder(
                     id = "r1",
+                    ownerId = "u1",
+                    ownerName = "Rhea",
                     locationId = "loc1",
                     locationName = "ARC-L1",
                     methodName = "Dinyx Solventation",

@@ -8,6 +8,8 @@
 package de.greluc.krt.profit.basetool.android.refinery
 
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.data.Identity
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncEvent
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
@@ -93,6 +95,8 @@ class RefineryViewModelTest {
         ): RefineryOrder =
             RefineryOrder(
                 id = id,
+                ownerId = "u1",
+                ownerName = "Rhea",
                 locationId = "loc1",
                 locationName = "ARC-L1",
                 methodName = "Dinyx",
@@ -345,6 +349,33 @@ class RefineryViewModelTest {
             )
         }
 
+    /**
+     * „Aktiv" is the screen's default, and it is a compound rather than a server status.
+     *
+     * Stored runs are finished and flood the list as the months pass, so the screen opens on the
+     * ones there is something to do about. The web has defaulted to the same pair all along.
+     */
+    @Test
+    fun `the default filter is Aktiv and it is running plus ready`() {
+        assertEquals(RefineryFilter.ACTIVE, RefineryListState().filter)
+        assertEquals(RefineryFilter.ACTIVE, RefineryFilter.entries.first())
+
+        val running = order("r1", status = RefineryServerStatus.IN_PROGRESS)
+        val stored = order("r2", status = RefineryServerStatus.COMPLETED)
+        val state =
+            RefineryListState(
+                filter = RefineryFilter.ACTIVE,
+                loaded = listOf(running, stored),
+                now = OffsetDateTime.parse("2026-08-17T01:00:00Z"),
+            )
+
+        assertEquals(listOf("r1"), state.orders.map { it.id })
+        assertEquals(
+            listOf("r1", "r2"),
+            state.copy(filter = RefineryFilter.ALL).orders.map { it.id },
+        )
+    }
+
     @Test
     fun `deleting the run reports it once and only for a run that may go`() =
         runTest(dispatcher) {
@@ -355,7 +386,10 @@ class RefineryViewModelTest {
                     source,
                     null,
                     "r1",
-                    writes = RefineryDetailWrites(delete = deletes),
+                    // Deleting is gated on ownership since design round 16, and the fixture run
+                    // is owned by "u1" — without an identity every write would be locked, which is
+                    // the safe default and not what this case is about.
+                    seams = RefineryDetailSeams(delete = deletes, identity = FixedIdentity("u1")),
                     clock = emptyFlow(),
                 )
             advanceUntilIdle()
@@ -385,4 +419,19 @@ class RefineryViewModelTest {
             assertTrue(model.state.value.error is ApiError.OptimisticLock)
             assertFalse(model.state.value.stored)
         }
+}
+
+/**
+ * An identity that is simply known, for the cases whose subject is not the identity read.
+ *
+ * @property id the caller's backend user id.
+ */
+private class FixedIdentity(
+    private val id: String,
+) : IdentitySource {
+    override suspend fun myUserId(): ApiResult<String> = ApiResult.Success(id)
+
+    override suspend fun me(): ApiResult<Identity> = ApiResult.Success(Identity(id, false))
+
+    override fun forget() = Unit
 }

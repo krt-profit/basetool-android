@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- **Die Raffinerie öffnet jetzt auf „Aktiv" statt auf „Alle".** Eingelagerte Aufträge sind
+  abgeschlossen und haben die Liste mit der Zeit geflutet; der Bildschirm zeigt jetzt die, für
+  die es etwas zu tun gibt. Fünf Chips: Aktiv · Alle · In Arbeit · Abholbereit · Eingelagert.
+  Ist unter „Aktiv" nichts da, sagt der Bildschirm, was er ausblendet und welcher Chip es
+  zeigt.
+
+- **Die Raffinerie zeigt die Aufträge der Einheit, nicht mehr nur die eigenen** — wie das
+  Webtool es schon immer tut. **Jede Karte nennt jetzt ihren Inhaber**, die eigene mit
+  „(du)". Ändern und Löschen bleiben dem Inhaber vorbehalten; bei fremden Aufträgen sind sie
+  gesperrt gezeichnet und sagen beim Antippen, warum.
+
 ### Fixed
 
 - **Im Fenster „Funktion und Anteil" war der untere Teil abgeschnitten.** Bei vielen Funktionen

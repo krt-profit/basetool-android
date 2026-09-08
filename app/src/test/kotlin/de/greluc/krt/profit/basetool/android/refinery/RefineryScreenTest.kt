@@ -7,11 +7,13 @@
 
 package de.greluc.krt.profit.basetool.android.refinery
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -54,6 +56,8 @@ class RefineryScreenTest {
         materialId: String? = "m1",
     ) = RefineryOrder(
         id = id,
+        ownerId = "u1",
+        ownerName = "Rhea",
         locationId = "loc1",
         locationName = "ARC-L1 Wide Forest",
         methodName = "Dinyx-Solventierung",
@@ -84,6 +88,8 @@ class RefineryScreenTest {
     private fun list(
         now: OffsetDateTime,
         filter: RefineryFilter = RefineryFilter.ALL,
+        myUserId: String? = null,
+        orders: List<RefineryOrder> = listOf(order()),
     ) {
         compose.setContent {
             KrtTheme {
@@ -91,8 +97,9 @@ class RefineryScreenTest {
                     state =
                         RefineryListState(
                             filter = filter,
-                            loaded = listOf(order()),
+                            loaded = orders,
                             phase = RefineryPhaseState.Ready,
+                            myUserId = myUserId,
                             now = now,
                         ),
                     onFilterChanged = {},
@@ -103,6 +110,58 @@ class RefineryScreenTest {
                 )
             }
         }
+    }
+
+    /**
+     * The screen lists the unit's orders since design round 16, so every card names its owner.
+     *
+     * Until then a member could see an order sitting ready to collect and had no way to tell whose
+     * yield it was or whom to ask about it — the endpoint used to be `/my-orders`, so the question
+     * never came up.
+     */
+    @Test
+    fun `every card names its owner`() {
+        list(now = BEFORE)
+
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        // The method keeps its place on the same line, after the separator.
+        compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
+    }
+
+    /** The caller's own row says so, so finding yourself in a list of fourteen is a glance. */
+    @Test
+    fun `the caller's own order carries the du suffix`() {
+        list(now = BEFORE, myUserId = "u1")
+
+        compose.onNodeWithText("Rhea (du)").assertIsDisplayed()
+    }
+
+    /** And without an identity nobody is claimed — the name stands plain, wrong about nobody. */
+    @Test
+    fun `an unresolved identity claims no order`() {
+        list(now = BEFORE, myUserId = null)
+
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        compose.onAllNodesWithText("Rhea (du)").assertCountEquals(0)
+    }
+
+    /**
+     * „Aktiv" is the default and its empty state names what it is hiding.
+     *
+     * A member whose runs are all booked would otherwise meet „für diesen Filter liegt nichts vor"
+     * on a screen that silently drops everything they have — the no-silent-caps rule applied to a
+     * filter rather than a page.
+     */
+    @Test
+    fun `the active filter's empty state names the way out`() {
+        list(
+            now = AFTER,
+            filter = RefineryFilter.ACTIVE,
+            orders = listOf(order(status = RefineryServerStatus.COMPLETED)),
+        )
+
+        compose.onNodeWithText("Keine laufenden Aufträge").assertIsDisplayed()
+        compose.onNodeWithText("Eingelagert", substring = true).assertIsDisplayed()
     }
 
     @Test

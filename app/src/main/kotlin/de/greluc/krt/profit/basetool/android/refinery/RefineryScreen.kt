@@ -193,10 +193,30 @@ fun RefineryOrdersScreen(
                         FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
                         if (state.orders.isEmpty()) {
                             KrtRefreshableFill {
+                                // „Aktiv" is the default, so its empty state is the one most members
+                                // will ever meet — and „für diesen Filter liegt nichts vor" would
+                                // leave them looking at a screen that hides the rest without saying
+                                // so. It names what is missing and points at the chip that shows
+                                // everything (ADR-0104's no-silent-caps rule, applied to a filter).
+                                val active = state.filter == RefineryFilter.ACTIVE
                                 KrtEmptyState(
                                     iconRes = DesignR.drawable.ic_krt_refinery,
-                                    title = stringResource(R.string.refinery_empty_title),
-                                    message = stringResource(R.string.refinery_empty_message),
+                                    title =
+                                        stringResource(
+                                            if (active) {
+                                                R.string.refinery_empty_active_title
+                                            } else {
+                                                R.string.refinery_empty_title
+                                            },
+                                        ),
+                                    message =
+                                        stringResource(
+                                            if (active) {
+                                                R.string.refinery_empty_active_message
+                                            } else {
+                                                R.string.refinery_empty_message
+                                            },
+                                        ),
                                     modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
@@ -211,6 +231,7 @@ fun RefineryOrdersScreen(
                                     OrderRow(
                                         order = order,
                                         now = state.now,
+                                        isMine = state.myUserId != null && order.ownerId == state.myUserId,
                                         onClick = { onOpenOrder(order.id) },
                                     )
                                     KrtHairlineRule()
@@ -317,11 +338,13 @@ private fun FilterRow(
  * One order row.
  *
  * @param order the order.
+ * @param isMine whether the caller owns it.
  * @param onClick opens it.
  */
 @Composable
 private fun OrderRow(
     order: RefineryOrder,
+    isMine: Boolean,
     now: OffsetDateTime,
     onClick: () -> Unit,
 ) {
@@ -375,13 +398,7 @@ private fun OrderRow(
                 modifier = Modifier.testTag(REFINERY_PHASE_TAG),
             )
         }
-        Text(
-            text = secondLine(order),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        OwnerLine(order = order, isMine = isMine)
         // Design ch. 11 artboard 1 lists the goods ON the card. Without them the card says an order
         // exists at a station and nothing about what is in it — and "what is in it" is the reason a
         // member opens the Raffinerie at all.
@@ -392,6 +409,82 @@ private fun OrderRow(
         CardFooter(order = order, phase = phase, now = now)
     }
 }
+
+/**
+ * Whose run this is, and what it is running — „☉ Rhea · Dinyx Solventation".
+ *
+ * **The screen lists the unit's orders, not only the caller's** (round 16), and until then no card
+ * said whose yield was sitting there ready to collect, or whom to ask about it. The name leads
+ * because that is the question a foreign card raises; the method follows it on the same line
+ * because the two together are one sentence about the run.
+ *
+ * The caller's own row is drawn brighter and suffixed „ (du)", so finding yourself in a list of
+ * fourteen is a glance rather than a read. Without an identity the suffix is simply absent and
+ * every card names its owner plainly — wrong about nobody.
+ *
+ * **The name is what may not be cut.** It is the discriminator; the method is a detail one can
+ * infer from the goods below. So the name takes the space it needs and the method ellipsises,
+ * which is the opposite of what a single joined string would have done.
+ *
+ * @param order the order.
+ * @param isMine whether the caller owns it.
+ */
+@Composable
+private fun OwnerLine(
+    order: RefineryOrder,
+    isMine: Boolean,
+) {
+    val method = secondLine(order)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        // 6 dp in the artboard; the scale has no s6, and s4 keeps the glyph closer to the name
+        // than the name is to the separator, which is the reading order this line wants.
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_user,
+            contentDescription = null,
+            size = OWNER_GLYPH,
+            tint = KrtPalette.TextMuted,
+        )
+        Text(
+            // No deleted-account fallback here, and deliberately: user deletion REASSIGNS refinery
+            // orders to a surviving admin rather than orphaning them (backend REQ-DATA-008,
+            // `REFINERY_ORDERS_REASSIGNED`), so an order without an owner is not a state the server
+            // can produce.
+            text =
+                order.ownerName.let { name ->
+                    if (isMine) stringResource(R.string.refinery_owner_you, name) else name
+                },
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isMine) KrtPalette.Gray1 else KrtPalette.TextMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (method.isNotBlank()) {
+            Text(
+                text = SEPARATOR_DOT,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            Text(
+                text = method,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** The owner glyph, 12 dp on the phone card (design ch. 11, artboard 1). */
+private val OWNER_GLYPH = 12.dp
+
+/** The separator between the owner and the method. */
+private const val SEPARATOR_DOT = "·"
 
 /**
  * One refined good: its name, its quality in brackets, and how much of it there is.
@@ -714,7 +807,11 @@ private fun OrderMenu(
     var open by rememberSaveable { mutableStateOf(false) }
     val edit = stringResource(R.string.refinery_edit_title)
     val delete = stringResource(R.string.refinery_delete_action)
-    val lockedReason = stringResource(R.string.refinery_delete_locked_stored)
+    // Two different locks on the same menu, and they must not be confused: „not yours" is about
+    // WHO, „already booked" about WHEN. A member reading „Der Auftrag ist eingelagert" on somebody
+    // else's run would go looking for a state they cannot see.
+    val foreignReason = stringResource(R.string.refinery_write_locked_foreign)
+    val lockedReason = if (state.mine) stringResource(R.string.refinery_delete_locked_stored) else foreignReason
     KrtOverflowMenu(
         contentDescription = edit,
         expanded = open,
@@ -725,9 +822,15 @@ private fun OrderMenu(
                 KrtMenuItem(
                     label = edit,
                     iconRes = DesignR.drawable.ic_krt_edit,
+                    locked = !state.mine,
+                    reason = foreignReason.takeIf { !state.mine },
                     onClick = {
                         open = false
-                        menu.onEdit()
+                        // Drawn and tappable for everyone (ADR-0011); the row states the reason and
+                        // must not go on to open a form whose save the server refuses.
+                        if (state.mine) {
+                            menu.onEdit()
+                        }
                     },
                 ),
                 KrtMenuItem(
@@ -1079,6 +1182,7 @@ private fun String?.asLocalTimestamp(): String {
  */
 private fun RefineryFilter.labelRes(): Int =
     when (this) {
+        RefineryFilter.ACTIVE -> R.string.refinery_filter_active
         RefineryFilter.ALL -> R.string.refinery_filter_all
         RefineryFilter.RUNNING -> R.string.refinery_filter_running
         RefineryFilter.READY -> R.string.refinery_filter_ready
