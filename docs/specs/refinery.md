@@ -520,7 +520,14 @@ somebody else's run would go looking for a state they cannot see.
 - [x] Every card names its owner; the caller's own carries „ (du)" (`RefineryScreenTest`).
 - [x] An unresolved identity claims no order (`RefineryScreenTest`).
 - [x] A foreign run is not deletable and its lock names ownership (`RefineryEditTest`).
-- [ ] Walked on a device: outstanding.
+- [x] **Walked on the tablet, 2026-09-08** (`KrtTablet`, 2560×1600, `test-admin` against the local
+  test stack): `GET /refinery-orders/all` answers `200` and the list carries a **foreign** run.
+  Every card names its owner — „⊙ Rhea · Electrostarolysis" beside „⊙ test-admin (du) · Dinyx
+  Solventation" — and the caller's own name is visibly the brighter of the two. The foreign run's
+  `⋮` draws **Auftrag bearbeiten** and **Auftrag löschen** locked, each with the lock glyph and
+  „Nur der Inhaber kann diesen Auftrag ändern.", tappable and not hidden.
+- [ ] Walked on the **phone**: outstanding — that AVD has screen capture switched off, so the
+  layout could not be photographed.
 
 **Code:** `core/data/RefineryRepository.kt`, `refinery/RefineryScreen.kt`, `refinery/RefineryViewModel.kt`
 
@@ -548,6 +555,14 @@ none by default, so `Row` + `horizontalScroll` already satisfies this; the artbo
 - [x] The default is `ACTIVE` and it is the first chip (`RefineryViewModelTest`).
 - [x] „Aktiv" yields exactly the running and the ready ones (`RefineryViewModelTest`).
 - [x] Its empty state names the way out (`RefineryScreenTest`).
-- [ ] Walked on a device: outstanding.
+- [x] **Walked on the tablet, 2026-09-08**: five chips in declaration order — Aktiv · Alle · In
+  Arbeit · Abholbereit · Eingelagert — with **Aktiv preselected**. It showed exactly the two
+  running runs and the one ready one and hid the stored one, which „Alle" then also showed as
+  absent for a different reason: the two empty states are distinct and both render („Keine
+  laufenden Aufträge" with its way out, and the generic „Keine Orders").
+- [x] **The chip row scrolls with no bar and no height change**: „Eingelagert" is clipped by the
+  380-dp column's edge at rest and complete after one horizontal swipe, with the row's height
+  unchanged.
+- [ ] Walked on the **phone**: outstanding — same reason as above.
 
 **Code:** `refinery/RefineryViewModel.kt`, `refinery/RefineryScreen.kt`
