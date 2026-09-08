@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **Im Fenster „Funktion und Anteil" war der untere Teil abgeschnitten.** Bei vielen Funktionen
+  ließ sich „Funktion an Bord" nicht mehr erreichen — das Fenster war nicht scrollbar. Ist es
+  jetzt, ebenso das gleichartige Fenster an der Crew-Zeile in den Einheiten.
+
 - **Ein gelöschtes Mitglied stand überall als leere Zeile.** In der Auszahlungstabelle einer
   Operation, in der Teilnehmerliste und an einer Crew-Zeile war einfach nichts zu lesen. Dort
   steht jetzt „Gelöschter Nutzer" — dieselbe Bezeichnung wie im Webtool.

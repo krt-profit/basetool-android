@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -482,7 +484,15 @@ fun CrewRow(
             title = stringResource(R.string.mission_crew_roles),
             modifier = Modifier.testTag(MISSION_CREW_ROLE_SHEET_TAG),
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16)) {
+            // Same reason as [MissionRoleSheet]: the sheet does not scroll on its own, and a
+            // CREW catalogue longer than a screen would be cut off at the bottom.
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(KrtSpacing.s16),
+            ) {
                 Text(
                     text = member.name,
                     style = MaterialTheme.typography.bodySmall,

@@ -1219,10 +1219,24 @@ serve a manager, a member on their own row, and a member on somebody else's:
 This does not weaken „a control nobody can see is one nobody asks to be given". The control is still
 drawn and still locked; it is one tap deeper, on a surface every row carries.
 
+> [!warning] The sheet must bring its own scrolling — found on a device, 2026-09-08
+> `KrtBottomSheet` does **not** scroll its content. That is deliberate (a sheet holding its own
+> `LazyColumn` must not be nested inside a scroller), and every long sheet in the app supplies its
+> own `verticalScroll`. These two did not, and this is the longest sheet there is: on the caller's
+> own row the catalogue is drawn **twice**, once as the wish and once as the assignment, so an
+> organisation with two dozen Funktionen overflows a phone screen and „Funktion an Bord" fell off
+> the bottom with no way to reach it.
+>
+> The regression test asserts `performScrollTo`, which needs a scrollable ancestor and fails
+> without one — an assertion about what is *visible* would only reproduce the defect at some
+> viewport sizes.
+
 **Acceptance**
 
 - [x] A roster row shows the Funktion that was assigned and none of the alternatives; the catalogue
   appears once the row's sheet is open (`MissionDetailScreenTest`).
+- [x] Both sheets scroll, so the last section is reachable at any catalogue size
+  (`MissionDetailScreenTest`).
 - [x] A crew row shows the Funktionen the slot holds and no catalogue (`MissionDetailScreenTest`).
 - [x] A manager assigns a Funktion through the sheet, and the tap reaches the server naming that row
   (`MissionManagerScreenTest`).
