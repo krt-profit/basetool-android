@@ -36,6 +36,12 @@ import kotlinx.coroutines.sync.withLock
  * against [SessionState.SignedOut], and it is the reason the token client separates those states in
  * the first place.
  *
+ * **[SessionState.Stale] is a start-up state.** It is published when the session could not be proven
+ * and there is nothing else to show. Once a session is established, a refresh that fails for those
+ * same transport reasons leaves it standing: the screens handle a failed request themselves, and
+ * demoting the whole app over a blip is how a member who was signed in the entire time gets told
+ * their session is unconfirmed.
+ *
  * @property tokenClient talks to the realm's token endpoint
  * @property refreshTokenStore the encrypted refresh token at rest
  * @property cipher the Keystore-backed cipher; its key is deleted on logout
@@ -74,24 +80,39 @@ class AuthSession(
      * @return the resulting state, also published on [state]
      */
     suspend fun restore(): SessionState =
-        when (val stored = refreshTokenStore.read()) {
-            is StoredRefreshToken.Present -> {
-                publish(
-                    stateFor(tokenClient.refresh(stored.token), previousRefreshToken = stored.token),
-                )
+        refreshMutex.withLock {
+            // Under the same single-flight rule as every other refresh path, which this one used to
+            // sit outside of. An unlock starts this restore while the screens behind the lock start
+            // their loads, so two refreshes of the same token could be in flight at once -- and the
+            // loser publishes its failure over the winner's session.
+            val current = mutableState.value
+            if (current is SessionState.SignedIn && !needsRefresh()) {
+                // Someone established the session while this call waited for the lock. Spending a
+                // second round trip to learn the same thing is what the mutex exists to avoid.
+                return@withLock current
             }
+            when (val stored = refreshTokenStore.read()) {
+                is StoredRefreshToken.Present -> {
+                    publish(
+                        stateFor(
+                            tokenClient.refresh(stored.token),
+                            previousRefreshToken = stored.token,
+                        ),
+                    )
+                }
 
-            StoredRefreshToken.Absent -> {
-                publish(SessionState.SignedOut)
-            }
+                StoredRefreshToken.Absent -> {
+                    publish(SessionState.SignedOut)
+                }
 
-            StoredRefreshToken.Locked -> {
-                // Nothing is decided here, and deliberately nothing is published: the session is
-                // still unread, not ended. The gate calls this again once the member has
-                // authenticated. Reaching this branch means a caller ran ahead of the lock, which
-                // is worth a line because it used to be the silent half of a logout.
-                KrtLog.i(LOG_TAG) { "session cannot be restored while the app lock is closed" }
-                state.value
+                StoredRefreshToken.Locked -> {
+                    // Nothing is decided here, and deliberately nothing is published: the
+                    // session is still unread, not ended. The gate calls this again once the member
+                    // has authenticated. Reaching this branch means a caller ran ahead of the lock,
+                    // which is worth a line because it used to be the silent half of a logout.
+                    KrtLog.i(LOG_TAG) { "session cannot be restored while the app lock is closed" }
+                    mutableState.value
+                }
             }
         }
 
@@ -285,9 +306,20 @@ class AuthSession(
 
             else -> {
                 // Offline, a realm outage, a misconfiguration. The session may well still be
-                // valid, so nothing is cleared and the UI is told it cannot currently tell.
+                // valid, so nothing is cleared.
                 KrtLog.w(LOG_TAG) { "session could not be refreshed: ${result::class.simpleName}" }
-                SessionState.Stale(result)
+                // And an established session is not torn down either. Stale replaces the entire app
+                // with "the session could not be confirmed", which is the right answer at start-up
+                // -- there is nothing else to show -- and the wrong one afterwards. Coming back to a
+                // sleeping phone, the first refresh after the biometric unlock regularly fails while
+                // the radio is still reconnecting, and the next caller's refresh succeeds a second
+                // later: the member watched the whole app turn into an error that repaired itself.
+                //
+                // A failed request is handled per screen everywhere else in this app -- cached
+                // content, the offline rule of design ch. 14, the connectivity retry -- and that is
+                // where a transient token failure belongs too. Only invalid_grant still ends the
+                // session, and it does so above.
+                mutableState.value as? SessionState.SignedIn ?: SessionState.Stale(result)
             }
         }
 
@@ -350,7 +382,11 @@ sealed interface SessionState {
     ) : SessionState
 
     /**
-     * A stored session that could not be refreshed for a reason that is not a refusal.
+     * A stored session that could not be proven **at start-up**, for a reason that is not a refusal.
+     *
+     * Not reachable from [SignedIn]: once the session is established a failed refresh leaves it
+     * alone, because the alternative is replacing a working app with an error over a dropped
+     * connection.
      *
      * @property cause the token-endpoint outcome, typically [TokenResult.Unreachable]
      */

@@ -238,6 +238,29 @@ they wait and then find it done. A refresh that fails because the phone is in a 
 stored token untouched and reports `SessionState.Stale` — the UI shows a retry, not a password
 prompt. Only a refusal from the realm clears the stored token.
 
+**`restore()` is inside that mutex, and was not until v0.2.9.** It is the one refresh a member
+triggers rather than a screen — the app-lock gate calls it after an unlock, and the stale screen's
+retry calls it again — so it is precisely the one that arrives beside the loads every screen starts
+at that same moment. Outside the lock, two refreshes of one token could be in flight together and the
+loser published its failure over the winner's session.
+
+**`Stale` is a start-up state, and does not replace a session that is already established.** It says
+"we could not prove the session and have nothing else to show", which is true before there is a
+session and false afterwards. Unlocking a sleeping phone is where the difference showed: the radio is
+still reconnecting, the first refresh answers `Unreachable`, and the app replaced itself with
+„Sitzung nicht bestätigt" for the second or two until the next caller's refresh succeeded — an error
+that repaired itself, in front of a member who had been signed in the whole time. A transient failure
+now leaves `SignedIn` standing and the individual request fails on its own terms, which is how every
+other failed request in this app is handled (`REQ-APP-SYNC-*`, the per-screen offline rule of design
+ch. 14). `invalid_grant` still ends the session, unchanged.
+
+**The stale screen retries by itself when the network returns.** Its copy has always promised
+„sobald wieder Netz da ist, geht es ohne Passwort weiter"; until v0.2.9 the only way out was the
+button, so a member who put the phone down came back to the same error over a connection that had
+long since returned. It collects `Connectivity.online` — which emits its current value on collection,
+so the first emission is itself a retry — and the mutex above keeps that from racing an in-flight
+refresh.
+
 **That last sentence was true of the session and false of the screen until v0.1.3.** `MainActivity`
 matched `SignedIn` and `Unknown` and sent *everything else* to the login screen, so `Stale` — a
 stored session that simply could not be proven this second — asked for a password anyway, and
@@ -262,6 +285,12 @@ discard the only way back into the session.
   verified to fail when the lock is removed.
 - [x] An unreachable realm leaves the stored token in place and yields `Stale`; `invalid_grant`
   clears it and yields `SignedOut`.
+- [x] A transient refresh failure **after** a session is established leaves `SignedIn` standing
+  rather than publishing `Stale` (`AuthSessionTest`).
+- [x] A second `restore()` against a live session sends no token request — it is inside the same
+  single-flight mutex as every other refresh path (`AuthSessionTest`).
+- [x] The `Stale` screen re-runs `restore()` when connectivity returns, so its promise of an
+  unattended recovery is implemented rather than written.
 - [x] `Stale` renders a retry, never the login screen — it is a separate branch from `SignedOut`
   and not an `else`.
 - [x] A grant without a `refresh_token` keeps the stored one.
