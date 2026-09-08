@@ -34,10 +34,11 @@ mirroring this repo's conventions.
 
 - **Android Studio** (latest stable) + JDK 17+ toolchain; the Gradle wrapper is the only
   sanctioned build/test path (`./gradlew …`), mirroring this repo's rule.
-- **AVDs**: phone at **API 30** (the minSdk floor) *and* at the current API — the two
-  behavioral extremes — plus a tablet (landscape, current API). Testing only the newest image
+- **AVDs**: phone at **API 31** (the minSdk floor since ADR-0015) *and* at the current API — the
+  two behavioral extremes — plus a tablet (landscape, current API). Testing only the newest image
   is how a lock that could not be armed at all on the floor reached main (ADR-0006), so the
-  floor is not optional. Compose `@Preview` variants for
+  floor is not optional. The floor moved from 30 to 31 for this very reason: an API-30 emulator
+  cannot complete the sign-in, so a floor of 30 was a floor nothing could exercise. Compose `@Preview` variants for
   compact/expanded window size classes cover most iteration without an emulator.
 
   **Split the two kinds of check between them, because one image cannot do both.**

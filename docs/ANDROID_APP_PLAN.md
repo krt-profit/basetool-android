@@ -36,7 +36,7 @@ goal is therefore **raise cost → detect → throttle → revoke**, layered as 
 
 | Item | Value | Source |
 |---|---|---|
-| minSdk | **30** (Android 11) — raised from 29; the reach lost is a few percent, the second app-lock key path it removed had already shipped a total failure (ADR-0006) | apilevels.com (Statcounter 04/2026) |
+| minSdk | **31** (Android 12) — 29 → 30 removed a second app-lock key path that had shipped a total failure (ADR-0006); 30 → 31 followed because an API-30 emulator cannot sign in, so the floor was one nothing could test (ADR-0015) | apilevels.com (Statcounter 04/2026) |
 | targetSdk | **37** (Android 17, owner decision 2026-08-17) — exceeds the Play floor (≥ 36 for new apps/updates by 2026-08-31); the API-37 behavior changes below apply from day one | developer.android.com/google/play/requirements/target-sdk |
 | compileSdk | **37** (Android 17; stable-since-June-2026 date via secondary source, officially corroborated by the Android 17 QPR beta cycle) | developer.android.com/about/versions |
 | Kotlin | **2.4.10** (K2 default) | kotlinlang.org/docs/releases.html |
@@ -162,7 +162,7 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
 ### Design specification — delivered 2026-08-17
 
 The Claude Design handoff is in-repo at [`docs/design/android/`](design/android/README.md)
-and is the **binding UI reference** (high-fidelity; 1 mockup px = 1 dp): chapters 00–14
+and is the **binding UI reference** (high-fidelity; 1 mockup px = 1 dp): chapters 00–18
 (foundations, component sheet, navigation, auth, all feature screens, system states +
 adaptive icon), `artifacts/Theme.kt` (drop-in M3 mapping: `secondaryContainer = #E77E23` /
 `onSecondaryContainer = #000` for the selection rule, `surfaceTint = surface` + tonal
