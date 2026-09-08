@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-### Geändert
+## [0.2.8] — 2026-09-08
+
+### Changed
 
 - **Die Raffinerie öffnet jetzt auf „Aktiv" statt auf „Alle".** Eingelagerte Aufträge sind
   abgeschlossen und haben die Liste mit der Zeit geflutet; der Bildschirm zeigt jetzt die, für

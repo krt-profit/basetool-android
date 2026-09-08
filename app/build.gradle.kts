@@ -77,8 +77,8 @@ android {
             libs.versions.targetSdk
                 .get()
                 .toInt()
-        versionCode = 12
-        versionName = "0.2.7"
+        versionCode = 13
+        versionName = "0.2.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // The generator that produced res/raw/oss_licenses.json, named on the report's last line
         // (design ch. 15). Taken from the version catalog rather than typed, so the line cannot
