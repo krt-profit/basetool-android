@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.9] — 2026-09-08
+
 ### Fixed
 
 - **Nach dem Entsperren per Biometrie erschien häufig kurz „Sitzung nicht bestätigt".** Beim
