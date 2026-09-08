@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Nach dem Entsperren per Biometrie erschien häufig kurz „Sitzung nicht bestätigt".** Beim
+  Aufwachen ist die Funkverbindung noch nicht wieder da, der erste Token-Auffrischversuch scheitert
+  — und die App ersetzte sich daraufhin komplett durch diese Meldung, bis Sekunden später der
+  nächste Versuch klappte. Eine bestehende Sitzung bleibt jetzt stehen; die Meldung erscheint nur
+  noch beim Start, wenn es tatsächlich nichts zu zeigen gibt.
+
+- **Und wenn sie erscheint, wartet sie nicht mehr auf einen Tipp.** Der Bildschirm versprach schon
+  immer, dass es ohne Passwort weitergeht, sobald wieder Netz da ist — jetzt versucht er es auch
+  von selbst.
+
 ## [0.2.8] — 2026-09-08
 
 ### Changed

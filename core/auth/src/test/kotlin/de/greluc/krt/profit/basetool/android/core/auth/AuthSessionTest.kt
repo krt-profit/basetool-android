@@ -130,6 +130,46 @@ class AuthSessionTest {
         }
 
     @Test
+    fun `a transient failure leaves an established session standing`() =
+        runTest {
+            // The member unlocks a phone whose radio is still reconnecting. The first refresh
+            // fails, and the app used to replace itself with "the session could not be confirmed"
+            // for the second or two until the next caller's refresh succeeded -- an error that
+            // repaired itself, in front of somebody who was signed in the whole time. Stale is a
+            // start-up state: it says "we have nothing to show you", not "your session is gone".
+            store.write(STORED_REFRESH)
+            server.enqueue(grant())
+            session.restore()
+            server.close()
+
+            val renewed = session.refreshFor("access-value")
+
+            assertNull("a failed refresh hands back no token", renewed)
+            assertTrue(
+                "the session must survive a transient failure, got ${session.state.value}",
+                session.state.value is SessionState.SignedIn,
+            )
+            assertEquals(STORED_REFRESH, store.readTokenOrNull())
+        }
+
+    @Test
+    fun `a second restore does not spend another refresh`() =
+        runTest {
+            // Two callers reach restore around an unlock: the gate's own, and the retry the stale
+            // screen runs when connectivity comes back. Restore used to sit outside the single-
+            // flight mutex, so the second one sent its own token request -- another DPoP proof for
+            // the realm to verify, and another result to publish over the first.
+            store.write(STORED_REFRESH)
+            server.enqueue(grant())
+
+            session.restore()
+            val second = session.restore()
+
+            assertTrue("expected SignedIn, got $second", second is SessionState.SignedIn)
+            assertEquals(1, server.requestCount)
+        }
+
+    @Test
     fun `a refused refresh token is cleared`() =
         runTest {
             // The opposite case: the grant is gone at the realm, so keeping the blob only means

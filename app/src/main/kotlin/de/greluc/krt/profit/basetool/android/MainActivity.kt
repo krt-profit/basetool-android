@@ -567,6 +567,21 @@ class MainActivity : AppCompatActivity() {
                         // still on disk. Asking for a password here throws away a working session
                         // over a dropped connection, and the member has no way to tell that is what
                         // happened: the login screen carries no explanation at all.
+                        //
+                        // The screen promises „sobald wieder Netz da ist, geht es ohne Passwort
+                        // weiter", and this is what makes that true rather than decoration: until
+                        // now the only way out was the button, so a member who put the phone down
+                        // came back to the same error over a connection that had long since
+                        // returned. The flow emits its current value on collection, so the first
+                        // emission is itself a retry; the session's mutex keeps this from racing a
+                        // refresh some other caller already has in flight.
+                        LaunchedEffect(Unit) {
+                            container.connectivity.online.collect { online ->
+                                if (online) {
+                                    container.session.restore()
+                                }
+                            }
+                        }
                         Box(
                             Modifier.fillMaxSize().padding(KrtSpacing.s16),
                             contentAlignment = Alignment.Center,
