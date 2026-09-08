@@ -504,6 +504,61 @@ class MissionDetailScreenTest {
     }
 
     /**
+     * The sheet's last section has to be reachable.
+     *
+     * **Found on a device, 2026-09-08.** `KrtBottomSheet` deliberately does not scroll its content
+     * — it leaves that to each sheet, and the long ones bring their own. This one had none, and it
+     * is the longest sheet in the app on the caller's own row: the catalogue is drawn twice, once
+     * as the wish and once as the assignment, so „Funktion an Bord" fell off the bottom edge with
+     * no way to reach it.
+     *
+     * The assertion is `performScrollTo`, which needs a **scrollable ancestor** and fails without
+     * one. That is the defect itself, and it holds whatever viewport the test runs at — an
+     * assertion about what is visible would only reproduce it at some screen sizes.
+     */
+    @Test
+    fun `the roster sheet's last section can be scrolled to`() {
+        robot.show(
+            readyForMe(mine()).copy(tab = MissionTab.PARTICIPANTS),
+            canManage = true,
+            jobTypes = longCatalogue(),
+        )
+
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
+
+        // Two nodes carry that name: the Wunsch section first, the assignment below it. The second
+        // is the one that used to be unreachable.
+        compose.onAllNodesWithText("Marine 4", ignoreCase = true)[1].performScrollTo().assertIsDisplayed()
+    }
+
+    /** The crew row's sheet has the same shape and had the same defect. */
+    @Test
+    fun `the crew sheet's catalogue can be scrolled to`() {
+        robot.show(
+            readyForMe().copy(detail = robot.detail(units = listOf(alpha())), tab = MissionTab.UNITS),
+            canManage = true,
+            crewJobTypes = longCatalogue(),
+        )
+
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Funktionen an Bord (Crew)", ignoreCase = true).performClick()
+
+        compose.onNodeWithText("Marine 4", ignoreCase = true).performScrollTo().assertIsDisplayed()
+    }
+
+    /**
+     * A catalogue the size a real organisation has — the device report came from one with two
+     * dozen Funktionen, and three would never overflow anything.
+     *
+     * @return twenty-four Funktionen.
+     */
+    private fun longCatalogue() =
+        listOf("Pilot", "Turret", "Cargo", "Scout", "Medic", "Marine")
+            .flatMap { name -> (1..CATALOGUE_VARIANTS).map { "$name $it" } }
+            .mapIndexed { index, name -> MissionJobType("j$index", name) }
+
+    /**
      * One of the payout sheet's radios, told apart from the row's read chip behind it.
      *
      * @param label the radio's German label.
@@ -685,5 +740,15 @@ class MissionDetailScreenTest {
 
         compose.onNodeWithTag(MISSION_FINANCE_SHEET_TAG).assertIsDisplayed()
         compose.onNodeWithText("2500").performScrollTo().assertIsDisplayed()
+    }
+
+    private companion object {
+        /**
+         * How many numbered variants each base Funktion gets in [longCatalogue].
+         *
+         * Six bases times this is twenty-four, which is the size the device report came from and
+         * comfortably more than one phone screen of chips.
+         */
+        const val CATALOGUE_VARIANTS = 4
     }
 }

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Im Fenster „Funktion und Anteil" war der untere Teil abgeschnitten.** Bei vielen Funktionen
+  ließ sich „Funktion an Bord" nicht mehr erreichen — das Fenster war nicht scrollbar. Ist es
+  jetzt, ebenso das gleichartige Fenster an der Crew-Zeile in den Einheiten.
+
 ## [0.2.7] — 2026-09-07
 
 ### Fixed
