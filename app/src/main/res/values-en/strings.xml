@@ -1457,6 +1457,7 @@
         <item quantity="other">%1$d checked in</item>
     </plurals>
     <string name="mission_detail_function_label">Function on board</string>
+    <string name="participant_deleted">Deleted user</string>
     <string name="mission_role_sheet_title">Function and share</string>
     <string name="mission_role_sheet_no_wish">No preference</string>
     <string name="mission_role_sheet_wish_is_theirs">The wish is the member’s own to set.</string>

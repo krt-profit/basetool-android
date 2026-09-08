@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Ein gelöschtes Mitglied stand überall als leere Zeile.** In der Auszahlungstabelle einer
+  Operation, in der Teilnehmerliste und an einer Crew-Zeile war einfach nichts zu lesen. Dort
+  steht jetzt „Gelöschter Nutzer" — dieselbe Bezeichnung wie im Webtool.
+
 ## [0.2.7] — 2026-09-07
 
 ### Fixed

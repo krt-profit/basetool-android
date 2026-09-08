@@ -512,6 +512,25 @@ class MissionDetailScreenTest {
     private fun inPayoutSheet(label: String) =
         hasText(label, ignoreCase = true) and hasAnyAncestor(hasTestTag(MISSION_PAYOUT_TAG))
 
+    @Test
+    fun `a roster row of a deleted account is named, not left blank`() {
+        robot.show(
+            readyForMe(
+                MissionParticipant(
+                    id = "p9",
+                    userId = null,
+                    name = "",
+                    role = null,
+                    checkedIn = false,
+                    comment = null,
+                    donating = null,
+                ),
+            ).copy(tab = MissionTab.PARTICIPANTS),
+        )
+
+        compose.onNodeWithText("Gelöschter Nutzer").assertIsDisplayed()
+    }
+
     /**
      * The catalogue both pickers draw from.
      *

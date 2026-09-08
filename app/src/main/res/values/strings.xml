@@ -1487,6 +1487,9 @@
         <item quantity="other">%1$d eingecheckt</item>
     </plurals>
     <string name="mission_detail_function_label">Funktion an Bord</string>
+    <!-- A hard-deleted account keeps its rows (backend REQ-DATA-008) and the server sends no name
+         for one. Same wording as the web's mission.participant.deleted. -->
+    <string name="participant_deleted">Gelöschter Nutzer</string>
     <!-- The row's overflow sheet: the payout, the wish and the assignment, all three in one
          place. The row itself shows only what is set. -->
     <string name="mission_role_sheet_title">Funktion und Anteil</string>

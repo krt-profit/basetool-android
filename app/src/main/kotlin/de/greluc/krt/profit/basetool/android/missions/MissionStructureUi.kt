@@ -66,6 +66,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.participantLabel
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -434,7 +435,7 @@ fun CrewRow(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = member.name,
+                    text = participantLabel(member.name),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = KrtPalette.White,
                 )
