@@ -6,7 +6,7 @@ portrait-first, tablets landscape-first, minSdk 31 (Android 12), dark-only DAS K
 design. The floor is 31 rather than 30 so that the lowest version we support is one the
 emulator can actually sign in on ([ADR-0015](docs/adr/0015-minsdk-31-so-the-floor-is-testable.md)).
 
-**Released: [v0.2.8](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
+**Released: [v0.2.9](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
 through Obtainium or straight from the release page — and check what you installed before you do
 (see [Installing, and checking what you installed](#installing-and-checking-what-you-installed)).
 
