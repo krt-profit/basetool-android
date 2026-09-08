@@ -13,7 +13,10 @@
   <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
   <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
   <script src="assets/krt-icons-mobile.js"></script>
-  <style>body{background:#000}</style>
+  <style>body{background:#000}
+  /* Android-Chip-Reihen scrollen ohne sichtbaren Balken — sonst frisst der Gutter 10 dp Höhe */
+  .scroll-none{scrollbar-width:none;-ms-overflow-style:none}
+  .scroll-none::-webkit-scrollbar{height:0;width:0;display:none}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
 <div style="max-width:4600px;margin:0 auto">
@@ -36,7 +39,7 @@
             <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Raffinerie</h2>
             <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
           </div>
-          <div style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
+          <div class="scroll-none" style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
             <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
               <button class="chip {{ f.cls }}" style="font-size:10px;flex:none;cursor:pointer;min-height:32px" onClick="{{ f.onTap }}">{{ f.label }}</button>
             </sc-for>
@@ -47,7 +50,12 @@
                 <div style="display:flex;align-items:flex-start;gap:10px">
                   <div style="flex:1;min-width:0">
                     <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ o.lead }}</div>
-                    <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">{{ o.method }}</div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                      <svg class="krt-icon" style="width:12px;height:12px;color:#8A8A8A;flex:none"><use href="#krt-icon-user"></use></svg>
+                      <span style="font:700 11px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.owner }}</span>
+                      <span style="font:300 11px/1.3 Lato,sans-serif;color:#646464;flex:none">·</span>
+                      <span style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.method }}</span>
+                    </div>
                   </div>
                   <span class="status-pill {{ o.statusCls }}" style="font-size:9.5px;flex:none;margin-top:2px">{{ o.status }}</span>
                 </div>
@@ -80,6 +88,8 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — RefineryOrdersScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Status: In Arbeit (info, Restzeit läuft) · Abholbereit (success) · Eingelagert (gray)</li>
+          <li><b style="color:#FFD23F">Runde 16:</b> Jede Karte nennt ihren <b style="color:#fff">Inhaber</b> (Personen-Glyphe + Name, der eigene als „GrafRotz (du)") — der Screen zeigt auch fremde Aufträge der Einheit, und ohne Inhaber war nicht erkennbar, wessen Ertrag da liegt bzw. wen man ansprechen muss. Bearbeiten/Löschen bleiben auf den eigenen beschränkt (gesperrt-antippbar bei fremden)</li>
+          <li><b style="color:#FFD23F">Runde 16:</b> Standardfilter ist <b style="color:#fff">„Aktiv" = In Arbeit + Abholbereit</b> — die Aufträge, für die es etwas zu tun gibt. Eingelagerte sind abgeschlossen und fluten die Liste mit der Zeit; „Alle" bleibt als eigener Chip direkt daneben. Fünf Chips: Aktiv · Alle · In Arbeit · Abholbereit · Eingelagert. <b style="color:#fff">Telefon und Tablet tragen denselben Satz und denselben Standard</b> — die Tablet-Liste zeigt an Stelle der eingelagerten Zeile die Satzzeile, die den ausgeblendeten Rest benennt. Die Chip-Reihe scrollt waagerecht <b style="color:#fff">ohne sichtbaren Balken</b> (Android-Konvention): ein Scrollbalken-Gutter würde 10 dp Höhe fressen und den letzten Chip beschneiden</li>
           <li>Restzeit lokal heruntergezählt, minütlich; Statuswechsel kommt über Poll/Refresh — KEIN Push (Q2: die App hat keinen Push-Kanal; nie eine Benachrichtigung versprechen)</li>
           <li>Kein Extractor-Import auf dem Phone (Entscheidung 27.08.2026, Begründung in Artboard 5) — Raffinerieaufträge entstehen manuell: FAB → Artboards 4–5</li>
           <li>Wert = UEX-Schätzung, als Daten weiß/grün — nie orange</li>
@@ -306,21 +316,18 @@
           </div>
           <div style="width:380px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column">
             <div style="padding:14px 16px;display:flex;gap:6px;border-bottom:1px solid #282828">
-              <span class="chip chip--primary" style="font-size:9.5px">Alle</span><span class="chip" style="font-size:9.5px">In Arbeit</span><span class="chip" style="font-size:9.5px">Abholbereit</span>
+              <span class="chip chip--primary" style="font-size:9.5px">Aktiv</span><span class="chip" style="font-size:9.5px">Alle</span><span class="chip" style="font-size:9.5px">In Arbeit</span><span class="chip" style="font-size:9.5px">Abholbereit</span><span class="chip" style="font-size:9.5px">Eingelagert</span>
             </div>
             <div style="flex:1;overflow:auto">
               <div style="padding:10px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">ARC-L1 · 16.08. 22:41</span><span class="status-pill status-active" style="font-size:9px">Abholbereit</span></div>
-                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">ARC-L1 · 622 SCU · ≈ +96.900</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:3px"><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A;flex:none"><use href="#krt-icon-user"></use></svg><span style="font:700 10.5px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">GrafRotz (du)</span></div><div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">ARC-L1 · 622 SCU · ≈ +96.900</div>
               </div>
               <div style="padding:10px 14px;border-bottom:1px solid #141414">
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">Lorville · heute 09:20</span><span class="status-pill status-planned" style="font-size:9px">In Arbeit</span></div>
-                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Lorville · noch 5 Std. 12 Min.</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:3px"><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A;flex:none"><use href="#krt-icon-user"></use></svg><span style="font:700 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rhea</span></div><div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Lorville · noch 5 Std. 12 Min.</div>
               </div>
-              <div style="padding:10px 14px">
-                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">ARC-L1 · 13.08. 19:05</span><span class="status-pill status-completed" style="font-size:9px">Eingelagert</span></div>
-                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">ARC-L1 · 288 SCU · 14.08.</div>
-              </div>
+              <div style="padding:12px 14px;font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Eingelagerte Aufträge sind im Standardfilter „Aktiv" ausgeblendet — Chip „Eingelagert" oder „Alle" zeigt sie.</div>
             </div>
             <div style="flex:none;padding:12px 14px;border-top:1px solid #282828">
               <button class="btn btn--cta" style="min-height:46px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-plus"></use></svg>Neuer Raffinerieauftrag</button>
@@ -461,19 +468,23 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { filter: 0, booked: false };
+  state = { filter: -1, booked: false };  // -1 = „Aktiv": In Arbeit + Abholbereit (Standard)
   renderVals() {
-    const filterDefs = ['Alle', 'In Arbeit', 'Abholbereit', 'Eingelagert'];
-    const filters = filterDefs.map((label, i) => ({
-      label, cls: this.state.filter === i ? 'chip--primary' : '',
-      onTap: () => this.setState({ filter: i }),
+    // „Aktiv" ist der Standard: die Aufträge, für die es etwas zu tun gibt. Eingelagerte sind
+    // abgeschlossen und würden die Liste mit der Zeit fluten.
+    const filterDefs = [{ label: 'Aktiv', f: -1 }, { label: 'Alle', f: 0 }, { label: 'In Arbeit', f: 1 }, { label: 'Abholbereit', f: 2 }, { label: 'Eingelagert', f: 3 }];
+    const filters = filterDefs.map(d => ({
+      label: d.label, cls: this.state.filter === d.f ? 'chip--primary' : '',
+      onTap: () => this.setState({ filter: d.f }),
     }));
     const all = [
-      { key: 'a', lead: 'ARC-L1 · 16.08. 22:41', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Abholbereit', statusCls: 'status-active', f: 2, time: 'seit 06:41 abholbereit', timeColor: '#2EBC3D', value: '+96.900', yields: [ { mat: 'Quantainium (Q 874)', amt: '442' }, { mat: 'Bexalit (Q 733)', amt: '180' } ] },
-      { key: 'b', lead: 'Lorville · heute 09:20', station: 'Lorville L19', method: 'Ferron-Exchange', status: 'In Arbeit', statusCls: 'status-planned', f: 1, time: 'noch 5 Std. 12 Min.', timeColor: '#6C93EF', value: '+41.200', yields: [ { mat: 'Laranite (Q 655)', amt: '310' } ] },
-      { key: 'c', lead: 'ARC-L1 · 13.08. 19:05', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Eingelagert', statusCls: 'status-completed', f: 3, time: 'eingelagert 14.08.', timeColor: '#8A8A8A', value: '+58.400', yields: [ { mat: 'Agricium (Q 901)', amt: '96' }, { mat: 'Titanium (Q 512)', amt: '192' } ] },
+      { key: 'a', owner: 'GrafRotz (du)', ownerSelf: true, lead: 'ARC-L1 · 16.08. 22:41', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Abholbereit', statusCls: 'status-active', f: 2, time: 'seit 06:41 abholbereit', timeColor: '#2EBC3D', value: '+96.900', yields: [ { mat: 'Quantainium (Q 874)', amt: '442' }, { mat: 'Bexalit (Q 733)', amt: '180' } ] },
+      { key: 'b', owner: 'Rhea', ownerSelf: false, lead: 'Lorville · heute 09:20', station: 'Lorville L19', method: 'Ferron-Exchange', status: 'In Arbeit', statusCls: 'status-planned', f: 1, time: 'noch 5 Std. 12 Min.', timeColor: '#6C93EF', value: '+41.200', yields: [ { mat: 'Laranite (Q 655)', amt: '310' } ] },
+      { key: 'c', owner: 'GrafRotz (du)', ownerSelf: true, lead: 'ARC-L1 · 13.08. 19:05', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Eingelagert', statusCls: 'status-completed', f: 3, time: 'eingelagert 14.08.', timeColor: '#8A8A8A', value: '+58.400', yields: [ { mat: 'Agricium (Q 901)', amt: '96' }, { mat: 'Titanium (Q 512)', amt: '192' } ] },
     ];
-    const orders = this.state.filter === 0 ? all : all.filter(o => o.f === this.state.filter);
+    const orders = this.state.filter === 0 ? all
+      : this.state.filter === -1 ? all.filter(o => o.f === 1 || o.f === 2)
+      : all.filter(o => o.f === this.state.filter);
     const detailYields = [ { mat: 'Quantainium', q: '874', amt: '442' }, { mat: 'Bexalit', q: '733', amt: '180' } ];
     const navDefs = [
       { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },

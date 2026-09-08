@@ -21,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderLi
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefiningMethodDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -118,6 +119,8 @@ enum class RefineryServerStatus {
  */
 data class RefineryOrder(
     val id: String,
+    val ownerId: String?,
+    val ownerName: String,
     val locationId: String?,
     val locationName: String,
     val methodName: String,
@@ -681,7 +684,7 @@ class RefineryRepository(
             }
         return when (
             val result =
-                reader.get(MY_ORDERS_PATH, params, PageResponseRefineryOrderListDto.serializer())
+                reader.get(ALL_ORDERS_PATH, params, PageResponseRefineryOrderListDto.serializer())
         ) {
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
@@ -888,7 +891,19 @@ class RefineryRepository(
         /** Log subsystem. A member's yield is their business and never reaches the log. */
         private const val LOG_TAG = "refinery"
 
-        private const val MY_ORDERS_PATH = "/api/v1/refinery-orders/my-orders"
+        /**
+         * The **squadron-wide** list, which is what the screen is about.
+         *
+         * It read `/my-orders` until 2026-09-08 and therefore showed the caller their own runs and
+         * nothing else. The web has defaulted to this endpoint all along and keeps `/my-orders`
+         * behind its „Meine Aufträge" toggle, so the app was the outlier — and design round 16,
+         * which asks every card to name its owner, only makes sense once foreign orders are on
+         * screen at all.
+         *
+         * Read-only for everyone authenticated; the service scopes the rows. Writing still belongs
+         * to the owner alone, which the detail draws as a lock rather than hiding.
+         */
+        private const val ALL_ORDERS_PATH = "/api/v1/refinery-orders/all"
 
         /** Where a new order is posted. */
         const val ORDERS_PATH = "/api/v1/refinery-orders"
@@ -1072,6 +1087,8 @@ private fun RefineryOrderListDto.toModel(): RefineryOrder? {
     val orderId = id ?: return null
     return buildOrder(
         id = orderId,
+        ownerId = owner?.id,
+        ownerName = owner?.krtName().orEmpty(),
         locationId = location?.id,
         locationName = location?.name,
         methodName = refiningMethod?.name,
@@ -1096,6 +1113,8 @@ private fun RefineryOrderDto.toModel(requestedId: String): RefineryOrder? {
     val orderId = id ?: requestedId.takeIf { it.isNotBlank() } ?: return null
     return buildOrder(
         id = orderId,
+        ownerId = owner?.id,
+        ownerName = owner?.krtName().orEmpty(),
         // Required on the detail DTO and optional on the list one, which is why the two mappings
         // differ here rather than sharing a line.
         locationId = location.id,
@@ -1114,6 +1133,21 @@ private fun RefineryOrderDto.toModel(requestedId: String): RefineryOrder? {
         version = version,
     )
 }
+
+/**
+ * The name to show for an order's owner.
+ *
+ * `effectiveName` is the server's own resolution (display name, else username) and the other two
+ * are its inputs — taken in that order so a member who has set a display name is called by it.
+ * Never empty in practice: deleting a member REASSIGNS their refinery orders to a surviving
+ * admin rather than orphaning them (backend `REQ-DATA-008`), so no row loses its owner.
+ *
+ * @return the name, or the empty string.
+ */
+private fun UserReferenceDto.krtName(): String =
+    effectiveName?.takeIf { it.isNotBlank() }
+        ?: displayName?.takeIf { it.isNotBlank() }
+        ?: username.orEmpty()
 
 /**
  * Assembles the model both responses share, including the phase the server does not have.
@@ -1135,6 +1169,8 @@ private fun RefineryOrderDto.toModel(requestedId: String): RefineryOrder? {
 @Suppress("LongParameterList")
 private fun buildOrder(
     id: String,
+    ownerId: String?,
+    ownerName: String,
     locationId: String?,
     locationName: String?,
     methodName: String?,
@@ -1149,6 +1185,8 @@ private fun buildOrder(
 ): RefineryOrder =
     RefineryOrder(
         id = id,
+        ownerId = ownerId,
+        ownerName = ownerName,
         locationId = locationId,
         locationName = locationName?.takeIf { it.isNotBlank() }.orEmpty(),
         methodName = methodName?.takeIf { it.isNotBlank() }.orEmpty(),

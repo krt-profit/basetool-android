@@ -94,8 +94,8 @@ import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverview
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailSeams
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
-import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailWrites
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
@@ -475,13 +475,14 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
-                                            RefineryDetailWrites(
+                                            RefineryDetailSeams(
                                                 store = container.refinery,
                                                 // The roster behind the receiver picker. Shares
                                                 // /users/search with the Lager's own member
                                                 // picker: one question, one list.
                                                 roster = container.inventory,
                                                 delete = container.refinery,
+                                                identity = container.identity,
                                             ),
                                         )
                                     },
@@ -765,7 +766,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 bankViewModels(container)
                 initializer { OrdersViewModel(container.orders, container.liveSync, container.connectivity) }
-                initializer { RefineryViewModel(container.refinery, container.liveSync) }
+                initializer { RefineryViewModel(container.refinery, container.identity, container.liveSync) }
                 initializer { MaterialsViewModel(container.materialCatalog, container.connectivity) }
                 initializer {
                     MaterialBoardViewModel(

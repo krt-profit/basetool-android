@@ -1223,6 +1223,8 @@
     <!-- Raffinerie (design ch. 11) -->
     <string name="refinery_title">Raffinerie</string>
     <string name="refinery_order_title">Raffinerieauftrag</string>
+    <string name="refinery_filter_active">Aktiv</string>
+    <string name="refinery_write_locked_foreign">Nur der Inhaber kann diesen Auftrag ändern.</string>
     <string name="refinery_filter_all">Alle</string>
     <string name="refinery_filter_running">In Arbeit</string>
     <string name="refinery_filter_ready">Abholbereit</string>
@@ -1306,6 +1308,11 @@
     <string name="refinery_stored_notice">Raffinerieauftrag erfolgreich in das Lager überführt.</string>
     <string name="refinery_empty_title">Keine Orders</string>
     <string name="refinery_empty_message">Für diesen Filter liegt keine Raffinerie-Order vor.</string>
+    <!-- The default filter's own empty state: it names what is hidden and the way to it. -->
+    <string name="refinery_empty_active_title">Keine laufenden Aufträge</string>
+    <string name="refinery_empty_active_message">Nichts in Arbeit und nichts abholbereit. Eingelagerte Aufträge zeigt der Chip „Eingelagert“ oder „Alle“.</string>
+    <!-- %1$s is the owner's name. -->
+    <string name="refinery_owner_you">%1$s (du)</string>
     <string name="refinery_error_title">Signal Lost — Raffinerie</string>
     <string name="refinery_error_message">Die Orders konnten nicht geladen werden.</string>
     <plurals name="refinery_load_more">
