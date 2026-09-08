@@ -407,6 +407,24 @@ class OperationsScreenTest {
         assertEquals(listOf("m2"), opened)
     }
 
+    @Test
+    fun `a payout row of a deleted account is named, not left blank`() {
+        // The server sends NO name for a hard-deleted account, and that emptiness is the contract's
+        // signal for exactly this case: the row is kept on purpose so a settled Operation does not
+        // redistribute its shares (backend REQ-DATA-008). The app drew an empty cell, which reads
+        // as a rendering fault rather than as a fact about the row; the web has said
+        // „Gelöschter Nutzer" here all along.
+        showDetail(
+            OperationDetailState(
+                operationId = "o1",
+                overview = overview(payouts = listOf(payoutRow("deleted_p9", ""))),
+                phase = OperationDetailPhase.Ready,
+            ),
+        )
+
+        compose.onNodeWithText("Gelöschter Nutzer").assertIsDisplayed()
+    }
+
     private fun payoutRow(
         id: String,
         name: String,

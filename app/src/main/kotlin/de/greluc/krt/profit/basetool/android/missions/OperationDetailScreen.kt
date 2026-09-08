@@ -75,6 +75,7 @@ import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
+import de.greluc.krt.profit.basetool.android.ui.participantLabel
 import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -601,7 +602,7 @@ private fun PayoutRow(
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             Text(
-                text = row.participantName,
+                text = participantLabel(row.participantName),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.White,
             )
@@ -808,7 +809,7 @@ private fun PayoutCheckbox(
                 text =
                     stringResource(
                         R.string.operation_detail_payout_undo_body,
-                        row.participantName,
+                        participantLabel(row.participantName),
                         row.payout.orEmpty(),
                     ),
                 style = MaterialTheme.typography.bodyMedium,

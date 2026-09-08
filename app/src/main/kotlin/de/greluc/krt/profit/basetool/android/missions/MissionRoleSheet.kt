@@ -43,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.participantLabel
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 
 /** Test handle for the roster row's Funktionen-und-Anteil sheet. */
@@ -117,7 +118,7 @@ internal fun MissionRoleSheet(
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
-                text = participant.name,
+                text = participantLabel(participant.name),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )

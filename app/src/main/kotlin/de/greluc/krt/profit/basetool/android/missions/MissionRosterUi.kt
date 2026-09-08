@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.participantLabel
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -172,7 +173,7 @@ private fun ParticipantRow(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = participant.name,
+                    text = participantLabel(participant.name),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = if (isMine) MaterialTheme.colorScheme.primary else KrtPalette.White,
                 )
