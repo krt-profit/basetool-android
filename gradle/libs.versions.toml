@@ -57,7 +57,7 @@ licensee = "1.14.1"
 openapiGenerator = "7.25.0"
 
 detekt = "2.0.0-alpha.6"
-spotless = "8.10.1"
+spotless = "8.10.2"
 ktlint = "1.8.0"
 
 # Security floor for the BUILD-TIME transitives pinned from the root build script (ADR-0019).
