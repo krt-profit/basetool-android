@@ -15,6 +15,10 @@ agp = "9.4.0"
 # `java/kotlin-extractor/versions.bzl` in github/codeql tops out there. Building this repo at
 # 2.4.20 therefore does not degrade the analysis, it aborts the Gradle build outright:
 #
+# And the pin bump is not a way out: the runner's toolcache already serves 2.27.0 regardless of the
+# action's own default, so the red runs were ALREADY on the newest bundle (both 34744542737 and the
+# green run that fixed it resolve /opt/hostedtoolcache/CodeQL/2.27.0/x64).
+#
 #     com.semmle.extractor.java.interceptors.KotlinInterceptor$KotlinVersionTooRecentError:
 #     Kotlin version 2.4.20 is too recent. CodeQL currently supports versions below 2.4.20
 #

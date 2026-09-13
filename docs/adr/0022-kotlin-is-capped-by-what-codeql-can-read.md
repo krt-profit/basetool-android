@@ -84,9 +84,15 @@ query filter's justification in the config file.
 ## Alternatives rejected
 
 - **Bump `github/codeql-action` and hope.** The cheapest outcome if it worked, and it was checked
-  first: v4.38.0 moves the bundle from 2.26.4 to 2.27.0, and 2.27.0's extractor list is
-  byte-identical to 2.26.4's where Kotlin is concerned — still ending at 2.4.0. A pin bump alone
-  changes nothing, and shipping it as "the fix" would have produced an identical red run.
+  first: v4.38.0 moves the *default* bundle from 2.26.4 to 2.27.0, and 2.27.0's extractor list is
+  byte-identical to 2.26.4's where Kotlin is concerned — still ending at 2.4.0.
+
+  Then the run logs settled it beyond argument. **The failing runs were already on 2.27.0.** Both
+  the last red run (34744542737) and this fix's green one resolve
+  `/opt/hostedtoolcache/CodeQL/2.27.0/x64`: the `ubuntu-latest` image ships a CodeQL bundle in its
+  toolcache and the action prefers it over its own pinned default. So the pin bump was not merely
+  unavailable — the newest bundle in existence was **already in effect and already failing**, and
+  shipping v4.38.0 as "the fix" would have changed one number in a YAML file and nothing else.
 - **`build-mode: none` for java-kotlin.** Rejected on this repository's own measurement, recorded
   in `codeql.yml`'s header from the first time it was tried: buildless analysis does not extract
   Kotlin, and with no `.java` file anywhere this produces *"CodeQL could not process any code
