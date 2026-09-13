@@ -62,7 +62,10 @@ ktlint = "1.8.0"
 # The three BouncyCastle artifacts share one version ref deliberately: they must move as a set, or a
 # bumped bcpkix meets an old bcutil and the result is a NoSuchMethodError at APK-signing time. That
 # coupling was exercised on 2026-09-04 and held — one Dependabot bump moved all three to 1.85.
-bouncycastle = "1.85.2"
+# 2026-09-13: bcprov published a 1.85.2 point release but bcpkix/bcutil did not — Maven Central has
+# no 1.85.2 for either, so pinning bouncycastle to 1.85.2 breaks buildscript classpath resolution
+# with ModuleVersionNotFoundException. 1.86 is the newest version all three artifacts actually share.
+bouncycastle = "1.86"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
