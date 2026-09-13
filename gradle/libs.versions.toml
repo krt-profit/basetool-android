@@ -15,13 +15,13 @@ targetSdk = "37"
 androidxCore = "1.19.0"
 androidxActivity = "1.13.0"
 androidxLifecycle = "2.11.0"
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 # Adaptive layout + navigation are versioned outside the Compose BOM.
 composeAdaptive = "1.3.0"
-androidxNavigation = "2.10.0"
+androidxNavigation = "2.10.1"
 
 junit = "4.13.2"
-robolectric = "4.16.1"
+robolectric = "4.17"
 # The `android-all` runtime Robolectric loads for `@Config(sdk = [34])`, which every Robolectric
 # test in this repo pins. Robolectric fetches this jar from Maven at TEST EXECUTION time — outside
 # Gradle's dependency resolution and therefore outside CI's Gradle cache — so one bad HTTP request
@@ -62,7 +62,7 @@ ktlint = "1.8.0"
 # The three BouncyCastle artifacts share one version ref deliberately: they must move as a set, or a
 # bumped bcpkix meets an old bcutil and the result is a NoSuchMethodError at APK-signing time. That
 # coupling was exercised on 2026-09-04 and held — one Dependabot bump moved all three to 1.85.
-bouncycastle = "1.85"
+bouncycastle = "1.85.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
