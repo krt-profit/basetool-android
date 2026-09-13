@@ -63,9 +63,24 @@ query filter's justification in the config file.
 
 ## Consequences
 
-- **Full CodeQL coverage is restored today**, on a real extraction build, with no query filtered
-  and no gate relaxed. `assembleDevDebug --no-build-cache` — the exact command the workflow runs —
-  compiles clean at 2.4.10 under `allWarningsAsErrors`, and the whole `check` gate is green.
+- **Full CodeQL coverage is restored, and it was measured rather than inferred from a green check.**
+  The code-scanning API's `rules_count` on the `/language:java-kotlin` analysis reads **239** before
+  the break (`c2d1195`, `cf6f035`, `5115a93`), **0** on every commit during it (`7c37002`,
+  `f12c27a`, `822bf87`, `c56e07f`), and **239** again on both runs of this branch. Same suite, same
+  count. `assembleDevDebug --no-build-cache` — the exact command the workflow runs — also compiles
+  clean at 2.4.10 under `allWarningsAsErrors`, and the whole `check` gate is green.
+
+- **A failed analysis still registers an analysis row, and that is the trap.** Each broken commit
+  has a `/language:java-kotlin` entry with `results_count: 0` — so the Security tab showed a recent,
+  clean-looking analysis throughout, and nothing on the page distinguished "found nothing" from
+  "ran nothing". **`rules_count` is the discriminator, `results_count` is not**, and it is readable
+  after the fact:
+
+  ```
+  gh api "repos/<owner>/<repo>/code-scanning/analyses?ref=refs/heads/main"
+  # then: .[] | select(.category=="/language:java-kotlin") | .rules_count
+  ```
+
 - **CodeQL analyses exactly what ships.** Both the release build and the scanned build are the same
   compiler. That is a property the rejected init-script alternative below would have given up, and
   it matters more for a security scanner than for any other gate.
