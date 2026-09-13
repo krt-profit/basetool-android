@@ -49,8 +49,12 @@ The owner-approved concept lives in [`docs/`](docs/):
 | [`OWNER_RUNBOOK.md`](docs/OWNER_RUNBOOK.md) | The owner's procedures: cutting a release, the signing key, the `release` environment, raising the served-version floor |
 
 Also under `docs/`, situational rather than foundational: `DESIGN_PARITY_AUDIT.md`,
-`TENANCY_VERIFICATION.md`, and `GOOGLE_PLAY_DISTRIBUTION_PLAN.md` — the last is explicitly a
-**proposal, not a decision**: Q1 still reads „GitHub Releases APK (+ Obtainium); no Play".
+`TENANCY_VERIFICATION.md`, `GOOGLE_PLAY_DISTRIBUTION_PLAN.md`, and
+[`APPLE_PLATFORM_FEASIBILITY.md`](docs/APPLE_PLATFORM_FEASIBILITY.md). The last two are explicitly
+**not decisions**: Q1 still reads „GitHub Releases APK (+ Obtainium); no Play", and the Apple
+assessment is an analysis of what an iPhone/iPad port would cost — its finding is that the code is
+portable and the *channel* is not, because Apple's Web Distribution eligibility bar (the only
+Obtainium-shaped route) cannot be met by this project.
 
 Key properties, decided up front: consumes the existing Basetool backend API only (no own
 business logic) · distribution via **GitHub Releases** (no Google Play) · **zero third-party

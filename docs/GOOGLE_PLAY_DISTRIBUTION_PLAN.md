@@ -16,7 +16,7 @@
 ## 0. What this plan settles, and what it does not
 
 It settles the engineering work, the manual work, the order, and the traps this particular app
-walks into. It does not settle whether to go — that is § 1, and it is three decisions, not one.
+walks into. It does not settle whether to go — that is § 1, and it is two decisions, not one.
 
 Two facts frame everything below.
 
@@ -33,7 +33,11 @@ writing, because it is the kind that erodes quietly.
 
 ---
 
-## 1. Three decisions before any work starts
+## 1. Two decisions before any work starts — and a prerequisite that is already met
+
+Until 2026-09-13 this read „three decisions": § 1.3 was one of them and is now satisfied (it was
+never a decision so much as a gap, and the gap is closed). What is left for the owner is **§ 1.1**
+and **§ 1.2**.
 
 ### 1.1 Account type — personal or organization
 
@@ -90,14 +94,29 @@ build ships. Only sensible if the four existing releases are written off deliber
 `applicationId`, two mutually non-updatable installations. Rejected; recorded so nobody
 rediscovers it as an idea.
 
-### 1.3 The Fan Kit disclaimer is a prerequisite
+### 1.3 The Fan Kit disclaimer was a prerequisite — **met since 2026-09-13, nothing to do**
 
-The Fankit Agreement's Ziffer 2(g) notice — the "not endorsed by or affiliated with" disclaimer —
-is **missing from both the app and the web frontend**. On GitHub that is a formality. A Play listing
-is judged against the **Impersonation policy**, which is about precisely that claim, and the listing
-itself becomes a new surface carrying CIG trademarks (§ 5).
+Why the requirement exists at all, because it still frames § 5: a Play listing is judged against the
+**Impersonation policy**, which is about precisely the „not endorsed by or affiliated with" claim,
+and the listing itself becomes a new surface carrying CIG trademarks.
 
-**Close that gap first.** It is independent of this decision and overdue on its own terms.
+**It is satisfied on both surfaces — verified 2026-09-13:**
+
+- **The app** ships the Agreement's Ziffer 2(g) notice together with the Guidelines' § 2b trademark
+  line as **one coupled unit** (`KrtFanKitBand`), on **Login** and **Einstellungen**, pinned per
+  locale by `KrtFanKitBandTest` and `FanKitNoticeParityTest`.
+- **The web frontend** ships it in `templates/fragments/fankit.html`, with the string present in all
+  three `messages*.properties`.
+
+> **Corrected 2026-09-13.** Until this date the section was headed „is a prerequisite" and said the
+> notice was „**missing from both the app and the web frontend**", closing with „close that gap
+> first". That was true when written on 2026-08-27 and became false while the plan sat unexecuted.
+> It is recorded rather than quietly deleted because the next reader would otherwise have done
+> finished work — and because a plan that misstates its own prerequisites is the way a stale plan
+> gets acted on. The § 6 timeline row moved with it.
+>
+> What remains genuinely open is the *listing* copy: § 3 Step 7 and § 5 still require the full
+> description to carry both notices, and that description does not exist yet.
 
 ---
 
@@ -468,7 +487,7 @@ CIG trademarks:
 
 | Phase | Duration | Gate to the next |
 |---|---|---|
-| Fan Kit disclaimer in app + web | days | merged and released |
+| ~~Fan Kit disclaimer in app + web~~ | — | **done 2026-09-13** (§ 1.3) — no longer a phase |
 | Decisions § 1.1–1.2, ADR written | — | owner sign-off |
 | Repo work § 2.1–2.3 | ~2 days | dry run proves a signed `.aab` and the language-split assertion |
 | Account creation + identity verification | 1–5 business days | verified |
