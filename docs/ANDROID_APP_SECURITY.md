@@ -341,8 +341,10 @@ the leaf+backup pin remains the stricter, higher-maintenance option.
 ### 5.1 Pinning as shipped, and how to rotate it (2026-08-24)
 
 **The evaluation §5 called for is done and the CA pin won.** `app/src/main/res/xml/network_security_config.xml`
-pins all three production hosts — `api.profit-base.online`, `keycloak.profit-base.online`,
-`profit-base.online` — to **both** Let's Encrypt roots, with an `expiration` of 2028-08-24.
+pins both production hosts — `api.profit-base.online` and `profit-base.online` — to **both**
+Let's Encrypt roots (a third block for `keycloak.profit-base.online` was retired 2026-09-13 with
+the host itself: identity now answers at `/auth` on the web origin, main repo ADR-0166, and the
+edge has always served one multi-SAN certificate so the digests were identical anyway), with an `expiration` of 2028-08-24.
 
 **Why not the leaf.** A leaf pin has to reach devices *before* the server rotates its key, and
 Let's Encrypt renews every sixty days with a fresh keypair unless the CSR is deliberately reused.

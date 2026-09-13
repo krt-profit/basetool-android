@@ -102,7 +102,10 @@ android {
             // issuer must be the address the app calls, or the ID token's `iss` will not match.
             // Plain HTTP: `start-dev` serves no TLS. Cleartext to this one host is permitted by the
             // dev flavour's network security config and by nothing else.
-            buildConfigField("String", "OIDC_ISSUER", "\"http://127.0.0.1:18080/realms/iri\"")
+            // /auth, because Keycloak serves under that path since the main repo's ADR-0166 —
+            // identity moved onto the web origin so the installable web app's sign-in stays
+            // inside its manifest scope, and the test stack mirrors the path.
+            buildConfigField("String", "OIDC_ISSUER", "\"http://127.0.0.1:18080/auth/realms/iri\"")
             // Registered on the test realm only, per the main repo's
             // scripts/provision-keycloak-mobile-client.py: a custom scheme is claimable by any
             // installed app, and PKCE stops code theft but not the confusion surface.
@@ -126,7 +129,11 @@ android {
         }
         create("prod") {
             dimension = "backend"
-            buildConfigField("String", "OIDC_ISSUER", "\"https://keycloak.profit-base.online/realms/iri\"")
+            // The WEB origin, under /auth — not a Keycloak host of its own, which no longer
+            // exists (main repo ADR-0166). A build pinned to the old issuer cannot
+            // authenticate against the current server at all: there is deliberately no
+            // fallback path, so this value and the server move together.
+            buildConfigField("String", "OIDC_ISSUER", "\"https://profit-base.online/auth/realms/iri\"")
             // A verified App Link: no other app can claim it, because the domain publishes this
             // app's signing-certificate digest in /.well-known/assetlinks.json. The realm registers
             // exactly this one URI in production (provision-keycloak-mobile-client.py).

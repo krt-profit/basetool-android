@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Die Anmeldung läuft über eine neue Adresse.** Keycloak sitzt jetzt unter `/auth` auf
+  `profit-base.online` statt auf einem eigenen Hostnamen — im Web-Basetool wird dadurch die
+  installierte App auf iPhone und iPad beim Login nicht mehr aus ihrem Fenster geworfen.
+  **Diese App-Version ist zwingend nötig:** eine ältere Installation zeigt auf die alte Adresse,
+  die es nicht mehr gibt, und kann sich gar nicht mehr anmelden. Es gibt bewusst keinen
+  Übergangsweg. Nach dem Update einmal neu anmelden.
+
 ## [0.2.9] — 2026-09-08
 
 ### Fixed
