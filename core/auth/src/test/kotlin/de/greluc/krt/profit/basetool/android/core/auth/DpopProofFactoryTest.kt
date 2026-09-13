@@ -137,7 +137,7 @@ class DpopProofFactoryTest {
 
     private companion object {
         /** Keycloak's token endpoint on the production realm. */
-        const val TOKEN_URI = "https://keycloak.profit-base.online/realms/iri/protocol/openid-connect/token"
+        const val TOKEN_URI = "https://profit-base.online/auth/realms/iri/protocol/openid-connect/token"
 
         /** A drift far outside Keycloak's 15 s skew allowance. */
         const val DRIFT_SECONDS = 45L

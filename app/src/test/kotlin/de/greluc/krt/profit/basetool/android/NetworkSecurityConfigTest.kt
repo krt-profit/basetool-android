@@ -71,7 +71,9 @@ class NetworkSecurityConfigTest {
     fun `every production host is pinned to both Let's Encrypt roots`() {
         val xml = read(releaseConfig)
 
-        listOf("api.profit-base.online", "keycloak.profit-base.online", "profit-base.online")
+        // Two hosts, not three, since the main repo's ADR-0166 retired the Keycloak host:
+        // identity is served at /auth on the web origin, under the pin-set below it.
+        listOf("api.profit-base.online", "profit-base.online")
             .forEach { host ->
                 assertTrue(
                     "$host must have a domain-config",
@@ -79,17 +81,17 @@ class NetworkSecurityConfigTest {
                 )
             }
         assertEquals(
-            "each of the three hosts needs its own pin-set",
+            "each of the two hosts needs its own pin-set",
             PINNED_HOSTS,
             Regex("<pin-set").findAll(xml).count(),
         )
         assertEquals(
-            "ISRG Root X1 must be pinned on all three",
+            "ISRG Root X1 must be pinned on both",
             PINNED_HOSTS,
             pinCount(xml, ISRG_X1),
         )
         assertEquals(
-            "ISRG Root X2 must be pinned on all three — it is the ECDSA root, and omitting it " +
+            "ISRG Root X2 must be pinned on both — it is the ECDSA root, and omitting it " +
                 "breaks every chain issued from its intermediates",
             PINNED_HOSTS,
             pinCount(xml, ISRG_X2),
@@ -293,8 +295,14 @@ class NetworkSecurityConfigTest {
          */
         const val ANCHOR_RESOURCE = "basetool_test_ca"
 
-        /** The API host, Keycloak and the web frontend. */
-        const val PINNED_HOSTS = 3
+        /**
+         * The API host and the web frontend.
+         *
+         * Two since 2026-09-13, not three: the Keycloak host was retired into `/auth` on the web
+         * origin (main repo ADR-0166). No trust decision changed with it — the edge has always
+         * served one multi-SAN certificate, so the retired block held these same two digests.
+         */
+        const val PINNED_HOSTS = 2
 
         /**
          * The SPKI pin of ISRG Root X1 (RSA).

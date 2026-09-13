@@ -316,7 +316,7 @@ change; README + docs move with behavior changes — same "incomplete without do
 | Config | dev flavor | prod flavor |
 |---|---|---|
 | API base | `https://10.0.2.2:<test-port>` (or LAN host) | `https://api.profit-base.online` |
-| Keycloak issuer | test-stack realm | `https://keycloak.profit-base.online/realms/iri` |
+| Keycloak issuer | test-stack realm | `https://profit-base.online/auth/realms/iri` |
 | Network security config | debug-overrides trust for test CA | system trust (+ pins in Phase 5) |
 | Logging | verbose, local | warn+, local ring buffer only |
 

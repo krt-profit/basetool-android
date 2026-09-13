@@ -65,21 +65,19 @@
         </pin-set>
     </domain-config>
 
-    <!-- Keycloak: the token endpoint, the JWKS and the login the Custom Tab opens. -->
-    <domain-config>
-        <domain includeSubdomains="false">keycloak.profit-base.online</domain>
-        <pin-set expiration="2028-08-24">
-            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
-            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
-        </pin-set>
-    </domain-config>
-
     <!--
-      The web frontend, which the app opens in a Custom Tab for the three public documents.
+      The web frontend — and, since the main repo's ADR-0166, Keycloak with it.
 
-      Pinned for completeness, and with one limit written down: a Custom Tab runs in the browser's
-      process, so this pin-set governs the app's own connections to the host and not the tab's.
-      Chrome does its own validation there.
+      `keycloak.profit-base.online` had its own block here until 2026-09-13 and is not a host any
+      more: identity moved to /auth on this origin so the installable web app's sign-in stays inside
+      its manifest scope. The pins are untouched by that move, because the edge has always served
+      ONE multi-SAN certificate for all of its hosts — the retired block carried the same two
+      digests this one does, which is why consolidating them changes no trust decision.
+
+      This host now carries real app traffic rather than only Custom Tab links: the token endpoint
+      and the JWKS are reached from the app's own client and ARE governed by this pin-set. The one
+      limit stays worth writing down: the login itself opens in a Custom Tab, which runs in the
+      browser's process, so Chrome validates that connection and this pin-set does not.
     -->
     <domain-config>
         <domain includeSubdomains="false">profit-base.online</domain>
