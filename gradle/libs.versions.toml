@@ -5,7 +5,39 @@
 
 [versions]
 agp = "9.4.0"
-kotlin = "2.4.20"
+
+# HELD BACK ONE RELEASE, ON PURPOSE — ADR-0022. Do NOT bump this to 2.4.20 or later without
+# reading that ADR first; `main` was red for two days the last time it moved.
+#
+# CodeQL's Kotlin extractor hooks the Kotlin compiler, so the compiler version it can parse is a
+# hard ceiling on the whole `java-kotlin` analysis. Every SHIPPED CodeQL bundle up to and including
+# 2.27.0 (2026-09-09, the newest) caps that ceiling at Kotlin 2.4.0 — the extractor's own
+# `java/kotlin-extractor/versions.bzl` in github/codeql tops out there. Building this repo at
+# 2.4.20 therefore does not degrade the analysis, it aborts the Gradle build outright:
+#
+#     com.semmle.extractor.java.interceptors.KotlinInterceptor$KotlinVersionTooRecentError:
+#     Kotlin version 2.4.20 is too recent. CodeQL currently supports versions below 2.4.20
+#
+# `Analyze (java-kotlin)` is a REQUIRED check, so that is not just a lost scan — it is every PR
+# stuck at BLOCKED, on an app whose whole job is moving tokens and member data between a Keystore,
+# a realm and an API.
+#
+# WHEN TO BUMP: support for 2.4.20 is already merged upstream (github/codeql commit 47cc7d81,
+# "Kotlin: use 2.4.20 GA", 2026-09-07) but landed AFTER the 2.27.0 release branch was cut, so it
+# ships in the next CodeQL release. Check the ceiling before bumping, do not guess:
+#
+#     gh api "repos/github/codeql/contents/java/kotlin-extractor/versions.bzl?ref=codeql-cli/vX.Y.Z"
+#         -q .content | base64 -d
+#
+# When that list contains 2.4.20, bump `github/codeql-action` in `.github/workflows/codeql.yml` to
+# a release carrying that bundle, then bump this line and drop the Dependabot ignore in
+# `.github/dependabot.yml`. All three move together.
+#
+# Gradle pairing, checked rather than assumed: KGP 2.4.10 states a tested Gradle ceiling of 9.5.0
+# and this wrapper is 9.7.1, which is the same two-minor gap this repo ran green on from
+# 2026-08-24 (wrapper 9.7.1) to 2026-09-11 (the bump). Not a new risk; not a comfortable one
+# either, and it is the other reason this is temporary.
+kotlin = "2.4.10"
 
 # SDK levels — owner decisions, see docs/ANDROID_APP_PLAN.md
 compileSdk = "37"
