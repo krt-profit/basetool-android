@@ -307,7 +307,27 @@ scope — but never add a new one on top.
 ## Kotlin conventions
 
 - Kotlin 2.x (K2), coroutines + Flow, unidirectional data flow (ViewModel → Repository →
-  API/cache). Constructor injection via **Hilt** only — no service locators, no globals.
+  API/cache).
+- **Constructor injection, wired by hand. There is no DI framework, and that is a decision**
+  (ADR-0001 deferred Hilt: „every class here is constructor-injectable with no framework", and
+  `AuthContainer` says it in its KDoc — a hand-written graph is easier to read than a generated
+  one, and each dependency is worth seeing in one place). Corrected 2026-09-13: this line read
+  „constructor injection via **Hilt** only", which described an intended end state as if it were
+  current practice — Hilt, Dagger and `javax.inject` occur **zero** times in the sources, and the
+  catalog's unused `hilt`/`ksp` entries went with the correction. What holds instead:
+  - A collaborator is a **constructor parameter**, never fetched from a static holder. No service
+    locator, and no global mutable state (a stateless `object` factory such as `KrtHttpClient` or
+    the `KrtLog` facade is not one — ADR-0001 names that carve-out).
+  - **`AuthContainer` is the auth object graph**, `by lazy`, built once per process.
+  - **`BasetoolApplication` owns every DataStore-backed object** (ADR-0014) — not tidiness:
+    DataStore refuses a second instance on the same file, so an activity-owned store killed the
+    process on rotation and again on tapping a notification. `ProcessStoreOwnershipTest` fails the
+    build if a store is opened anywhere else.
+  - **ViewModels are built in `MainActivity`'s `viewModelFactory`**; a screen takes its ViewModel
+    as a composable parameter. Composables never reach for dependencies themselves.
+  - Adopting a framework is an **ADR**, and the choice is no longer purely stylistic: Hilt is
+    Android-only and KMP-hostile, Koin and kotlin-inject are not — see
+    [`docs/APPLE_PLATFORM_FEASIBILITY.md`](docs/APPLE_PLATFORM_FEASIBILITY.md) § 3.
 - Immutable `data class`/`value class` for models; sealed interfaces for UI/domain states;
   no platform types leaking across module boundaries.
 - **KDoc is mandatory on every public API of `core:*` modules** (classes, functions,
