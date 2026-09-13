@@ -17,6 +17,20 @@ name: CodeQL
 #
 # The `actions` pack needs no build and stays on `none`.
 #
+# **The extractor also caps the repository's Kotlin version — ADR-0022.** Because it hooks the
+# compiler, the Kotlin versions CodeQL can analyse are exactly the ones its extractor was built
+# against, listed in `java/kotlin-extractor/versions.bzl` in github/codeql. Building above that
+# ceiling does not degrade the scan, it fails this job at the Gradle step:
+#
+#     com.semmle.extractor.java.interceptors.KotlinInterceptor$KotlinVersionTooRecentError:
+#     Kotlin version 2.4.20 is too recent. CodeQL currently supports versions below 2.4.20
+#
+# That is what merging Dependabot #157 did on 2026-09-11, and `Analyze (java-kotlin)` is a required
+# check, so it blocked every PR until 2026-09-13. `gradle/libs.versions.toml` therefore holds
+# `kotlin` one release back, and `.github/dependabot.yml` ignores the bump. **Bumping the
+# codeql-action pin below and raising that Kotlin version are one change, in this order** — the
+# catalog comment carries the `gh api` one-liner that reads the extractor's current ceiling.
+#
 # Blocking is enforced via branch protection: mark the two matrix check names
 # ("CodeQL / Analyze (java-kotlin)" and "CodeQL / Analyze (actions)") as
 # required AFTER the first run on main, so GitHub knows the names.

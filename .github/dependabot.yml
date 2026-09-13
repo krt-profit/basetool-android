@@ -57,6 +57,28 @@ updates:
       # ANDROID_APP_DEV_CI.md` § 4 carries the full rationale.
       - dependency-name: "org.robolectric:android-all-instrumented"
 
+      # Kotlin is held one release back so CodeQL can still read this repo — ADR-0022.
+      #
+      # CodeQL's Kotlin extractor hooks the compiler, and no shipped bundle (2.27.0 is the newest,
+      # 2026-09-09) parses anything at or above 2.4.20. Merging that bump on 2026-09-11 did not
+      # weaken the scan, it aborted the extraction build, and because `Analyze (java-kotlin)` is a
+      # REQUIRED check it left `main` red and every PR BLOCKED for two days.
+      #
+      # Dependabot re-proposes a bump the moment the version moves back down, so without this the
+      # fix has a shelf life of about a day — and the re-break looks like an ordinary green-labelled
+      # dependency PR, which is exactly how it got merged the first time.
+      #
+      # The range is `>= 2.4.20`, not the single version, because every later Kotlin is equally
+      # unparseable until the extractor catches up; a `2.4.20`-only ignore would just wave 2.4.21
+      # through. Both artifacts carry the catalog's `kotlin` ref, so the wildcard covers the pair
+      # Dependabot named in #157 (`plugin.compose`, `plugin.serialization`) and any third.
+      #
+      # DELETE THIS ENTRY in the same change that raises `kotlin` in the catalog — the ADR says how
+      # to check the extractor's ceiling first. Leaving it behind silently freezes Kotlin forever,
+      # which is the failure mode an ignore block always has.
+      - dependency-name: "org.jetbrains.kotlin.plugin.*"
+        versions: [">= 2.4.20"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
