@@ -225,6 +225,7 @@ jobs:
           subject-path: ${{ steps.verify.outputs.apk }}
 
       - name: Export the dependency SBOM
+        id: sbom
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -237,12 +238,30 @@ jobs:
           # A repository whose graph has never been submitted answers with an almost empty
           # document rather than an error, so the job does not fail on it: an SBOM is evidence to
           # publish, not a gate on shipping a build that is already signed and attested.
-          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" > sbom.json 2>/dev/null; then
-            echo "SBOM exported ($(wc -c < sbom.json) bytes)"
+          #
+          # `--jq .sbom` unwraps the API envelope. The endpoint answers {"sbom": {...}}, so the
+          # raw body is a GitHub response that happens to contain an SBOM, not a document an SPDX
+          # tool can open. The name says the format for the same reason: a consumer should not
+          # have to sniff the file to learn it is SPDX 2.3 and not CycloneDX.
+          SBOM="basetool-android-sbom.spdx.json"
+          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" --jq '.sbom' \
+              > "$SBOM" 2>/dev/null && [ -s "$SBOM" ] && [ "$(head -c 1 "$SBOM")" = "{" ]; then
+            echo "path=$SBOM" >> "$GITHUB_OUTPUT"
+            echo "SBOM exported ($(wc -c < "$SBOM") bytes)"
           else
             echo "::warning::the dependency graph answered no SBOM; the release ships without one"
-            rm -f sbom.json
+            rm -f "$SBOM"
           fi
+
+      # The SBOM is attested for the same reason the APK is: published without provenance it is a
+      # bare file behind a URL, and a consumer cannot tell a real one from a flattering one. The
+      # main repo closed exactly this gap for its four SBOM assets (ADR-0145 / REQ-OPS-023);
+      # attaching this one without provenance would re-open it here.
+      - name: Attest the SBOM provenance
+        if: steps.sbom.outputs.path != ''
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.sbom.outputs.path }}
 
       - name: Publish the draft release
         env:
@@ -250,6 +269,7 @@ jobs:
           APK: ${{ steps.verify.outputs.apk }}
           APK_SHA256: ${{ steps.verify.outputs.sha256 }}
           CERT_SHA256: ${{ steps.cert.outputs.fingerprint }}
+          SBOM: ${{ steps.sbom.outputs.path }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
@@ -298,7 +318,33 @@ jobs:
           \`\`\`
           EOF
 
-          gh release create "$TAG" "$APK" \
+          if [ -n "${SBOM:-}" ]; then
+            cat >> notes.md <<EOF
+
+          ## Stückliste · SBOM
+
+          **DE** — \`$SBOM\` listet jede Abhängigkeit, die in dieser APK steckt (SPDX 2.3). Sie
+          trägt dieselbe Build-Attestierung wie die APK, ist also nicht nur eine Datei neben dem
+          Release, sondern nachweislich in diesem Lauf entstanden.
+
+          **EN** — \`$SBOM\` lists every dependency that went into this APK (SPDX 2.3). It carries
+          the same build attestation as the APK, so it is verifiably a product of this run rather
+          than a file that merely sits next to the release.
+
+          \`\`\`bash
+          gh attestation verify $SBOM --repo ${{ github.repository }}
+          \`\`\`
+          EOF
+          fi
+
+          # Built as an array so a missing SBOM drops the argument entirely rather than passing an
+          # empty string, which gh reads as an asset path and rejects.
+          assets=("$APK")
+          if [ -n "${SBOM:-}" ]; then
+            assets+=("$SBOM")
+          fi
+
+          gh release create "$TAG" "${assets[@]}" \
             --draft \
             --title "$TAG" \
             --notes-file notes.md

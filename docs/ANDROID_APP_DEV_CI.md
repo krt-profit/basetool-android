@@ -214,7 +214,7 @@ Baseline posture (all from GitHub's current security docs):
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
 | `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
 | `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip → `assembleProdRelease` → `apksigner verify` (v3 present, v1 absent, one signer, certificate is the generated one) → shred; no secrets, no cache, nothing published | **built** |
-| `release.yml` | tag `v*` | wrapper validation, build APK, sign, `apksigner verify` against the configured key, provenance attestation, dependency SBOM, **draft** release — **environment `release`** | **built** — cannot run until the owner runbook's §§ 2-3 provide the key and the environment |
+| `release.yml` | tag `v*` | wrapper validation, build APK, sign, `apksigner verify` against the configured key, provenance attestation, dependency SBOM (attached as a release asset and attested), **draft** release — **environment `release`** | **built** — cannot run until the owner runbook's §§ 2-3 provide the key and the environment |
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a
@@ -272,9 +272,28 @@ platform and a documented refresh flow before it can be turned on; see the open 
   Android 13+ by default; `--rotation-min-sdk-version` for older). Should a Play channel ever be
   added, Play App Signing with a resettable upload key comes on top; the release runbook then
   documents both paths.
-- SBOM per release: CycloneDX Gradle plugin 3.4.1 (spec 1.6/1.7) — **verify AGP compatibility in
-  Phase 1** (README is silent on Android); fallback: GitHub dependency-graph SBOM export. Matches
-  this repo's `cyclonedxBom` habit.
+- SBOM per release: **the fallback was taken.** The CycloneDX Gradle plugin's AGP compatibility was
+  never verified (its README is silent on Android), so `release.yml` exports GitHub's own
+  dependency-graph SBOM — no plugin, no way to break the build, and the same resolved graph the
+  `dependency-submission` job on `main` keeps current. It is **SPDX 2.3**, not CycloneDX, which is
+  why the asset is named `basetool-android-sbom.spdx.json` rather than `*-bom.json`: a consumer
+  should not have to sniff the file to learn which parser opens it.
+
+  Two properties are load-bearing and were both missing until 2026-09-14:
+
+  - **It is attached to the release.** The export step existed and wrote the file into the
+    workspace, where the job then discarded it — `gh release create` uploaded the APK alone. An
+    SBOM nobody can download is not evidence, it is a log line.
+  - **It is the document, not the API response.** The endpoint answers `{"sbom": {…}}`, so the raw
+    body is a GitHub envelope that happens to contain an SBOM; `--jq .sbom` unwraps it to a file an
+    SPDX tool can actually open.
+
+  It carries its own `actions/attest-build-provenance` attestation, for the reason the main repo
+  states in ADR-0145 / REQ-OPS-023: published without provenance an SBOM is a bare file behind a
+  URL, indistinguishable from a flattering one. A repository whose dependency graph has never been
+  submitted answers with nothing rather than an error, and the job warns and ships without one
+  instead of failing — an SBOM is evidence to publish, not a gate on a build that is already
+  signed and attested.
 - **Release provenance & user-side verification**: each release publishes build provenance
   (`actions/attest-build-provenance`) and the APK's SHA-256 next to the artifact; the README
   documents the release signing certificate's SHA-256 fingerprint (the same digest served in

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Jedes Release liefert jetzt seine Stückliste (SBOM) mit.** Sie liegt als
+  `basetool-android-sbom.spdx.json` beim Download, listet jede Abhängigkeit der APK auf und trägt
+  dieselbe Herkunftsattestierung wie die APK selbst. Bisher wurde sie zwar erzeugt, aber nie
+  angehängt.
+
 ## [0.3.0] — 2026-09-14
 
 ### Changed
