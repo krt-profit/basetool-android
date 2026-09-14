@@ -164,7 +164,7 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 pin-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 pin-bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
 pin-bcutil = { group = "org.bouncycastle", name = "bcutil-jdk18on", version.ref = "bouncycastle" }
-pin-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version = "0.9.6" }
+pin-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version = "0.9.7" }
 pin-jdom2 = { group = "org.jdom", name = "jdom2", version = "2.0.6.1" }
 pin-plexus-utils = { group = "org.codehaus.plexus", name = "plexus-utils", version = "4.1.0" }
 pin-plexus-xml = { group = "org.codehaus.plexus", name = "plexus-xml", version = "4.2.0" }
