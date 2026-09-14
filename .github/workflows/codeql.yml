@@ -31,6 +31,11 @@ name: CodeQL
 # codeql-action pin below and raising that Kotlin version are one change, in this order** — the
 # catalog comment carries the `gh api` one-liner that reads the extractor's current ceiling.
 #
+# The pin below moved to v4.38.0 (default bundle 2.27.0) on 2026-09-14 — Dependabot #164 and #165 —
+# and that is **not** step 2 of that change: `versions.bzl` at `codeql-cli/v2.27.0` was re-read the
+# same day and still ends at 2.4.0, v4.38.0 is still the newest release, and the runner's toolcache
+# served 2.27.0 under the old pin anyway. The Kotlin hold and the Dependabot ignore stay.
+#
 # Blocking is enforced via branch protection: mark the two matrix check names
 # ("CodeQL / Analyze (java-kotlin)" and "CodeQL / Analyze (actions)") as
 # required AFTER the first run on main, so GitHub knows the names.
@@ -124,7 +129,7 @@ jobs:
       # So no `+` is needed, and the file declares no queries of its own. Both matrix legs share
       # the file harmlessly: a `java/…` id matches nothing in the `actions` pack.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}

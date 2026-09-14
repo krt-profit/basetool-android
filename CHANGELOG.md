@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-14
+
 ### Changed
 
 - **Die Anmeldung läuft über eine neue Adresse.** Keycloak sitzt jetzt unter `/auth` auf

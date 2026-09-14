@@ -26,9 +26,10 @@ Caused by: com.semmle.extractor.java.interceptors.KotlinInterceptor$KotlinVersio
 own; its extractor hooks the Kotlin compiler and reads the IR the compiler produces. So the set of
 Kotlin versions CodeQL can analyse is the set its extractor was built against, enumerated
 literally in `java/kotlin-extractor/versions.bzl` in `github/codeql`. At `codeql-cli/v2.26.4` (the
-bundle our pinned action ships) that list ends at **2.4.0**. At `codeql-cli/v2.27.0` — released
-2026-09-09, the newest bundle in existence — it still ends at **2.4.0**. The ceiling the error
-reports is the next Kotlin *minor* above the highest entry, which is why it reads "below 2.4.20".
+bundle the pin shipped on the day of this decision) that list ends at **2.4.0**. At
+`codeql-cli/v2.27.0` — released 2026-09-09, the newest bundle in existence — it still ends at
+**2.4.0**. The ceiling the error reports is the next Kotlin *minor* above the highest entry, which
+is why it reads "below 2.4.20".
 
 Two facts decide the rest:
 
@@ -56,6 +57,14 @@ The exit is a **single three-part change**, and the parts are not independent:
    `gh api "repos/github/codeql/contents/java/kotlin-extractor/versions.bzl?ref=codeql-cli/vX.Y.Z"`
 2. Bump the `github/codeql-action` SHA pin in `codeql.yml` to a release carrying that bundle.
 3. Raise `kotlin` in the catalog and **delete the Dependabot ignore** in the same commit.
+
+**Update 2026-09-14 — the pin moved, the hold did not.** Dependabot #164 and #165 raised
+`github/codeql-action/init` and `/analyze` in `codeql.yml` from v4.37.9 to v4.38.0 (SHA
+`b96794f`), joining the `upload-sarif` pin #163 had already moved, so all four call sites sit on
+one SHA again. That is **not** step 2 above. `versions.bzl` at `codeql-cli/v2.27.0` was re-read
+that day and still ends at **2.4.0**; v4.38.0 is still the newest codeql-action release, and it is
+the release whose default bundle *is* 2.27.0 — the one the runner's toolcache was already serving
+under the old pin. Steps 1 and 3 remain open and `kotlin` stays at 2.4.10.
 
 Both the catalog and `dependabot.yml` carry that procedure inline, because a pin whose reasoning
 lives only in an ADR is a pin nobody re-checks — the same argument ADR-0020 made for putting the
