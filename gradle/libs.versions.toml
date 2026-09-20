@@ -4,7 +4,7 @@
 #
 
 [versions]
-agp = "9.4.0"
+agp = "9.4.1"
 
 # HELD BACK ONE RELEASE, ON PURPOSE — ADR-0022. Do NOT bump this to 2.4.20 or later without
 # reading that ADR first; `main` was red for two days the last time it moved.
