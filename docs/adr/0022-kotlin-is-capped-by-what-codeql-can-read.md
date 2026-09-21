@@ -66,6 +66,22 @@ that day and still ends at **2.4.0**; v4.38.0 is still the newest codeql-action 
 the release whose default bundle *is* 2.27.0 — the one the runner's toolcache was already serving
 under the old pin. Steps 1 and 3 remain open and `kotlin` stays at 2.4.10.
 
+**Update 2026-09-21 — the pin moved again, the hold still did not.** All four call sites went to
+**v4.38.1** (SHA `1c5b675`) in one commit. Step 1 was re-run that day and returns the same answer:
+`codeql-cli/v2.27.0` is still the newest CLI tag that exists, its `versions.bzl` still ends at
+**2.4.0**, and v4.38.1's `src/defaults.json` still names bundle `codeql-bundle-v2.27.0`. So this is
+again not step 2 — it is patch hygiene on the action, nothing more. Steps 1 and 3 remain open,
+`kotlin` stays at 2.4.10, and the Dependabot ignore stays.
+
+What it did surface is a second way the pin can break, unrelated to Kotlin: **the four call sites
+are one unit.** `analyze` reads the config `init` wrote and rejects a different version of it
+(`Loaded a configuration file for version '4.38.0', but running version '4.38.1'`), while
+Dependabot treats each action path as its own dependency and proposed three PRs — #172
+(`upload-sarif`, green, an uploader stands alone), #174 (`init`) and #175 (`analyze`), the latter
+two each red on both `Analyze` legs. `.github/dependabot.yml` now **groups** `github/codeql-action*`
+so the proposal arrives whole. The group is the mechanism rather than a reminder: nothing in CI
+detects a split pin, because the halves only conflict once they run together.
+
 Both the catalog and `dependabot.yml` carry that procedure inline, because a pin whose reasoning
 lives only in an ADR is a pin nobody re-checks — the same argument ADR-0020 made for putting the
 query filter's justification in the config file.
