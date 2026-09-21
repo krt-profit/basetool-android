@@ -87,3 +87,22 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(actions)"
+    groups:
+      # `github/codeql-action` has four call sites here — `init` and `analyze` in codeql.yml,
+      # `upload-sarif` in ci.yml and supply-chain.yml — and they are not independent: `analyze`
+      # reads the config `init` wrote and rejects a different version of it with
+      #
+      #     Loaded a configuration file for version '4.38.0', but running version '4.38.1'
+      #
+      # Dependabot treats each action *path* as its own dependency, so without this group a patch
+      # release arrives as three PRs — which is what v4.38.1 did on 2026-09-21. #172 moved both
+      # `upload-sarif` sites and was green, because an uploader stands alone. #174 (`init`) and
+      # #175 (`analyze`) each moved one half of the pair, and each failed BOTH `Analyze` legs —
+      # required checks — so neither could merge, and merging either one first would have reddened
+      # `main`. All three were closed for one commit that moved all four call sites together.
+      #
+      # The group is the mechanism, not a reminder: nothing else in CI notices a split pin, because
+      # the halves only conflict once they run together.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
