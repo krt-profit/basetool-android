@@ -80,7 +80,13 @@ updates:
         versions: [">= 2.4.20"]
 
   - package-ecosystem: github-actions
-    directory: /
+    # `/` alone covers .github/workflows and a root action.yml, and nothing else. The pins of
+    # the shared build-environment composite (.github/actions/android-build-env) are only seen
+    # because its directory is listed — without it the six jobs that use it would keep their
+    # setup-java / setup-android / gradle pins forever while every workflow-level pin moved.
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
       interval: weekly
       day: monday

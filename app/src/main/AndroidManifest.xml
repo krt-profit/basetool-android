@@ -29,10 +29,13 @@
       allowBackup is OFF, rather than on-with-exclusions. Both files this app persists — the
       encrypted refresh token and the org-unit pin — are excluded from backup and device transfer
       anyway, so a restore would produce an empty app: backup buys a member nothing here. What it
-      costs is a standing invariant, that every file added in future is remembered in three rule
-      sets, and a class of mistake nobody would notice. The rule files stay, because
-      `dataExtractionRules` still governs device-to-device transfer and because a later re-enable
-      must not start from a blank slate.
+      costs is a standing invariant, that every file added in future is remembered in every rule
+      section, and a class of mistake nobody would notice. `dataExtractionRules` stays, because on
+      Android 12+ allowBackup=false alone does not reliably stop a device-to-device transfer.
+
+      There is no `fullBackupContent`. Only API 30 and lower reads it, the floor is 31 (ADR-0015),
+      and on those old releases allowBackup=false already switches off cloud backup AND device
+      transfer — so the legacy rule file protected nothing at any floor. Removed 2026-09-22.
     -->
     <!-- Package visibility (API 30+): without this declaration PackageManager answers "no
          browser" for every device, and design ch. 15 decides between opening a licence URL and
@@ -50,9 +53,9 @@
       a device running 13 through 15 the back-preview only runs when the app opts in here. The one
       case the flag exists for is therefore also the one a current emulator image cannot show.
 
-      tools:targetApi rather than a blanket ignore: lint is right that the attribute predates
-      minSdk 31, and wrong that this is a problem: being ignored below 33 is what an opt-in flag
-      is for. The marker says which level it starts mattering at instead of silencing the check.
+      tools:targetApi rather than a blanket ignore: lint is right that the attribute is newer than
+      minSdk 31 (it arrived in API 33), and wrong that this is a problem: being ignored below 33
+      is what an opt-in flag is for. The marker says which level it starts mattering at instead of silencing the check.
     -->
     <application
         android:name=".BasetoolApplication"
@@ -60,7 +63,6 @@
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_security_config"

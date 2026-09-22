@@ -291,7 +291,9 @@ scope — but never add a new one on top.
   the generator can produce; contract drift must fail compilation, not runtime.
 - Tokens: access token in memory only; refresh token AES-256-GCM-encrypted via Android
   Keystore, ciphertext in DataStore, excluded from cloud backup **and** device-to-device
-  transfer in all three rule sets. Never log tokens, names, or emails.
+  transfer in both sections of `data_extraction_rules.xml`, with `allowBackup="false"` besides.
+  (Corrected 2026-09-22: this said „in all three rule sets"; the legacy `backup_rules.xml` only
+  API ≤ 30 read is gone — REQ-APP-AUTH-004.) Never log tokens, names, or emails.
 
 ## i18n
 
@@ -307,13 +309,16 @@ scope — but never add a new one on top.
 - **Every new feature ships with tests.** No exceptions. What exists: JUnit 4 +
   kotlinx-coroutines-test unit tests → Robolectric screen tests → MockWebServer contract tests
   against `openapi.json` fixtures, all in `./gradlew check` → a small instrumented suite in
-  `app/src/androidTest` (Keystore contract, main-thread rule, test-stack TLS) run by hand with
-  `connectedDevDebugAndroidTest` on a device, because no CI job runs it → device walks on the three
-  device classes. A property only a device can show needs an instrumented test or a recorded walk.
+  `app/src/androidTest` (Keystore contract, main-thread rule, test-stack TLS), run nightly by
+  `instrumented.yml` on one Gradle Managed Device (`./gradlew :app:atdApi31DevDebugAndroidTest`,
+  `aosp-atd` API 31 — not a required check; the TLS test skips itself there without the test stack)
+  and by hand with `connectedDevDebugAndroidTest` on a device → device walks on the three device
+  classes. A property only a device can show needs an instrumented test or a recorded walk.
   Corrected 2026-09-22: this line promised Turbine, a Gradle Managed Devices suite, screenshot tests
   for `core:designsystem` and a Kover gate (≥ 80 % line on `core:*`) — the plan of
-  `docs/ANDROID_APP_DEV_CI.md` § 3. None of the four is in the build; adding one is a change, not a
-  catch-up.
+  `docs/ANDROID_APP_DEV_CI.md` § 3. Turbine, the screenshot tests and Kover are still not in the
+  build; adding one is a change, not a catch-up. The managed device arrived the same day, with the
+  nightly workflow.
 - **Never use production / real credentials in tests or local stacks.** Only the synthetic
   test-stack artifacts of the main repo (`.env.test`, stripped realm export, throwaway
   keystore). Anything that enters a public worktree, CI log, or screenshot must be assumed

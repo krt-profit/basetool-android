@@ -158,8 +158,8 @@ android {
                 keyAlias = signingEnvironment.getValue("KRT_SIGNING_KEY_ALIAS")
                 keyPassword = signingEnvironment.getValue("KRT_SIGNING_KEY_PASSWORD")
 
-                // v1 is JAR signing, which Android needs only below API 24; the floor is 30
-                // (ADR-0006), so switching it off drops the scheme that Janus (CVE-2017-13156)
+                // v1 is JAR signing, which Android needs only below API 24; the floor is 31
+                // (ADR-0015), so switching it off drops the scheme that Janus (CVE-2017-13156)
                 // attacks and shortens the APK by a signature nothing reads.
                 enableV1Signing = false
                 enableV2Signing = true
@@ -202,6 +202,24 @@ android {
             // default package, every intent filter resolves to nothing, and a test asserting one
             // would fail for a reason that has nothing to do with the manifest.
             isIncludeAndroidResources = true
+        }
+
+        // The emulator `instrumented.yml` runs the androidTest suite on (DEV_CI § 4): the minSdk
+        // floor, because that is the level no developer machine runs by default and the one the
+        // Keystore defects of ADR-0006 lived on. `aosp-atd` is the Automated Test Device image — no
+        // Play services, no launcher, smaller and faster to boot — which these tests do not need.
+        // Run locally with `./gradlew :app:atdApi31DevDebugAndroidTest`.
+        managedDevices {
+            allDevices {
+                register<com.android.build.api.dsl.ManagedVirtualDevice>("atdApi31") {
+                    device = "Pixel 2"
+                    sdkVersion =
+                        libs.versions.minSdk
+                            .get()
+                            .toInt()
+                    systemImageSource = "aosp-atd"
+                }
+            }
         }
     }
 
@@ -265,11 +283,13 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 
-    // The instrumented tests, which exist for the properties the JVM cannot see at all. Two so
+    // The instrumented tests, which exist for the properties the JVM cannot see at all. Three so
     // far: Android applies the network security config to the process, so nothing on the JVM or
-    // under Robolectric can tell whether a TLS handshake with the test stack actually succeeds --
-    // and StrictMode is a runtime facility, so the main-thread rule of REQ-APP-API-008 is
-    // unobservable off a device. It took a device walk and a crash to learn the second one.
+    // under Robolectric can tell whether a TLS handshake with the test stack actually succeeds;
+    // StrictMode is a runtime facility, so the main-thread rule of REQ-APP-API-008 is
+    // unobservable off a device -- it took a device walk and a crash to learn that one; and the
+    // app lock's Keystore contract needs a real Keystore. instrumented.yml runs them on the
+    // managed device declared under testOptions above.
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
@@ -330,8 +350,10 @@ abstract class OssLicensesResource : DefaultTask() {
  * accumulated across the dashboard, the navigation, the notifications and the orders screen before
  * anyone looked.
  *
- * `detektMain` rather than a single variant: it fans out over all four production variants, which
- * is what covers the `src/dev` and `src/prod` flavour source sets as well as `src/main`.
+ * `detektMain` rather than a single variant: it fans out over every enabled production variant —
+ * devDebug, prodDebug and prodRelease since devRelease was disabled below — which is what covers
+ * the `src/dev` and `src/prod` flavour source sets as well as `src/main`. `src/dev` is reached
+ * through devDebug; the disabled variant took no source set with it.
  *
  * Scoped to this module on purpose. `:core:auth` and `:core:network` cannot be gated on a
  * type-resolved run yet: they are kotlinx.serialization code, detekt does not load Kotlin compiler
@@ -344,6 +366,16 @@ abstract class OssLicensesResource : DefaultTask() {
 tasks.named("check") { dependsOn("detektMain") }
 
 androidComponents {
+    // devRelease is switched off: nothing ships it and nothing runs it. The dev flavour exists to
+    // talk to the local test stack with debug trust anchors (DEV_CI § 6), and a minified, signed-
+    // ready build of that is a combination no workflow, device walk or release uses. It still cost
+    // a full R8 pass, a lint run and a type-resolved detekt run on every `./gradlew build` — CI's
+    // gate — for an artifact that was discarded. The three remaining variants keep every source set
+    // covered: src/dev through devDebug, src/prod and the release build type through prodRelease.
+    beforeVariants(selector().withFlavor("backend", "dev").withBuildType("release")) { variant ->
+        variant.enable = false
+    }
+
     onVariants { variant: Variant ->
         val name = variant.name.replaceFirstChar(Char::uppercase)
         val generate =

@@ -23,7 +23,13 @@ import java.time.Duration
  * - **Interceptor order.** [ServerTimeInterceptor] is added first so it observes every response,
  *   including ones a later stage rejects; [TokenRefreshInterceptor] follows, so a token it renews
  *   is in place before the headers are written and again on its retry; [MandatoryHeadersInterceptor]
- *   is last, so the headers it adds sit on the request that actually goes out.
+ *   follows, so the headers it adds sit on the request that actually goes out; and
+ *   [OneShotWriteInterceptor] is last, so no stage after it can rebuild a write with a body OkHttp
+ *   would be allowed to replay.
+ * - **`retryOnConnectionFailure` stays on, but never for a write that may have been sent.** A read
+ *   that hits a stale pooled connection is repeated silently, which is what a member wants. A
+ *   `POST` or `PATCH` is not: its body is marked one-shot, so OkHttp repeats it only when it knows
+ *   the request never left the device (REQ-APP-API-009, ADR-0023).
  *
  * The timeouts are short on purpose. This is a foreground-only app (no push channel, decision Q2),
  * so a request nobody is waiting for does not exist, and a member watching a spinner is better
@@ -52,7 +58,7 @@ object KrtHttpClient {
      * @param refreshAfterRejection renews the token the server answered `401` to and returns a
      *   usable one, or `null` when the session is over; the default gives up, which turns the
      *   rejection into the ordinary "not signed in" state
-     * @return a client with no cache, the three app interceptors and the timeouts above
+     * @return a client with no cache, the four app interceptors and the timeouts above
      */
     fun create(
         serverClock: ServerClock,
@@ -83,7 +89,8 @@ object KrtHttpClient {
                     languageTagProvider = languageTagProvider,
                     activeOrgUnitProvider = activeOrgUnitProvider,
                 ),
-            ).build()
+            ).addInterceptor(OneShotWriteInterceptor())
+            .build()
 
     /**
      * Derives the client used for Keycloak's token, revocation and logout endpoints.
@@ -104,6 +111,11 @@ object KrtHttpClient {
      * client: the clock a DPoP proof must agree with is **Keycloak's**, and this is the only
      * traffic that observes it directly.
      *
+     * [OneShotWriteInterceptor] is re-added for the same reason it sits on the API client, and
+     * with more at stake: every token call is a `POST`, a refresh rotates the refresh token, and
+     * its DPoP proof carries a `jti` Keycloak accepts once. A silent transport replay of a refresh
+     * that already landed can only be refused.
+     *
      * @param api the API client to derive from
      * @param serverClock the same clock instance the proof factory reads
      * @return a client that sends exactly the headers a token request should carry
@@ -116,5 +128,6 @@ object KrtHttpClient {
             .newBuilder()
             .apply { interceptors().clear() }
             .addInterceptor(ServerTimeInterceptor(serverClock))
+            .addInterceptor(OneShotWriteInterceptor())
             .build()
 }
