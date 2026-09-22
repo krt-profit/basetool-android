@@ -95,7 +95,7 @@ explaining either. The web says it out loud (`approvalRequestFiledMessage()`).
 holder, the note and — on a transfer — the second account and holder. The web's modal has five more,
 and a booking made from the app carried less than the same booking made in a browser.
 
-They are built now, because the gap was worse than a missing field: `REQ-APP-BANK-012` and the
+They are built now, because the gap was worse than a missing field: `REQ-APP-BANK-019` (published as `REQ-APP-BANK-012`, renumbered 2026-09-22) and the
 0.2.1 changelog both told members the counterparty and the reason were „now sent". They were on the
 wire and nothing could fill them.
 

@@ -378,8 +378,13 @@ and tapping again adds the rest.
 
 ## Known gaps
 
-- **The blueprint file import** (`/personal-blueprints/import/*`) and the blueprints' own „alle
-  löschen" (`DELETE /personal-blueprints`). Phase 4, with the other file flows. The **multi-add**
+- ~~**The blueprint file import** (`/personal-blueprints/import/*`) and the blueprints' own „alle
+  löschen" (`DELETE /personal-blueprints`).~~ Both shipped on 2026-08-30 with PR #110 (design ch. 18
+  §§ 2–3): „Blueprints importieren" reads the JSON export in two steps — `preview`, then `apply`,
+  with nothing written before the member confirms — and the blueprint list gained a selection mode
+  whose „Alles wählen" is the only way to reach the one-call delete (`PersonalBlueprintsBulk`,
+  `PersonalBlueprintsBulkUi`, `PersonalBlueprintRepository`, `PersonalBlueprintsViewModelTest`).
+  **Neither has a requirement of its own yet — owed.** Corrected 2026-09-22. The **multi-add**
   that once sat here landed 2026-08-30 as `REQ-APP-PI-013`, and the **items'** selection mode and
   bulk delete as `REQ-APP-PI-015`.
 - **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and

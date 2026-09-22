@@ -1,6 +1,10 @@
 # Android App — Master Plan
 
-Doc type: **living plan** (draft, pending approval by @greluc — see [Open decisions](#9-open-decisions)).
+Doc type: **living plan** — its decisions are resolved (see [§ 9](#9-decisions-resolved-by-greluc-2026-08-17)),
+its **roadmap is spent** (phases 0–5 shipped with v0.1.0 on 2026-08-25), and two parts stay
+binding: the decisions Q1–Q8 and the § 7 third-party inventory, which every new dependency extends.
+(Re-checked 2026-09-22: this line read „draft, pending approval by @greluc — see Open decisions",
+a status § 9 had already closed, and linked an anchor that no longer exists.)
 Fact base: repo state on branch `claude/basetool-android-app-concept-6c6ef5` plus live-verified
 external documentation, all checked on **2026-08-17**. Companion documents:
 
@@ -10,8 +14,10 @@ external documentation, all checked on **2026-08-17**. Companion documents:
   and the compliance checklist.
 - [`ANDROID_APP_DEV_CI.md`](ANDROID_APP_DEV_CI.md) — local dev/test environment and hardened
   GitHub CI for a public repository.
-- [`ANDROID_APP_DESIGN_PROMPT.md`](ANDROID_APP_DESIGN_PROMPT.md) — ready-to-use prompt for Claude
-  Design to produce the binding design specification (mockups, components, tokens).
+- [`ANDROID_APP_DESIGN_PROMPT.md`](archive/ANDROID_APP_DESIGN_PROMPT.md) — ready-to-use prompt for Claude
+  Design to produce the binding design specification (mockups, components, tokens). Archived
+  2026-09-22: the specification it asked for was delivered and lives in
+  [`design/android/`](design/android/README.md).
 
 ## 1. Goal & scope
 
@@ -436,6 +442,10 @@ section.
   automatic crash reporting, no push service.
 - **The wiki page — drafted** at `docs/wiki/App.md`, ready to commit into `basetool.wiki` with the
   release.
+  *Superseded 2026-09-22:* the German user handbook is now this repository's own GitHub wiki,
+  <https://github.com/krt-profit/basetool-android/wiki>, maintained in place; the draft was deleted
+  and `basetool.wiki`'s `Android-App` page is a summary that links there
+  ([`OWNER_RUNBOOK.md`](OWNER_RUNBOOK.md) § 7).
 
 **Still outstanding, and all of it the owner's:** the vhost paste, the signing key, the `release`
 environment, the first tag. The four drills § 7 lists — red-team against the exposure package,

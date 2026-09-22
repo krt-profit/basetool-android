@@ -1,6 +1,12 @@
 # ADR-0002 — Keeping the refresh token at rest, and testing that we do
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22, on the evidence of the shipped code; proposed 2026-08-18).
+  `SecretCipher` / `KeystoreSecretCipher` (with `setUnlockedDeviceRequired`) encrypt the refresh
+  token into a Preferences DataStore; `RefreshTokenStoreTest` and `BackupExclusionTest` pin the
+  behaviour, and every release since v0.1.0 (2026-08-25) signs members in through it. Of the two
+  acceptance items this ADR left open, the Keystore half now runs on devices in every release; the
+  restored-backup check is still open (`REQ-APP-AUTH-004`), and `allowBackup` has since been
+  switched off outright.
 - **Date:** 2026-08-18
 - **Related:** [ADR-0001](0001-core-module-split-and-network-layer.md) ·
   [`docs/specs/auth.md`](../specs/auth.md) (`REQ-APP-AUTH-001…005`) ·

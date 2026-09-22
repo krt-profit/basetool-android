@@ -4,9 +4,14 @@
 > **Server contract:** main repo `REQ-API-009` (contract set), `REQ-SEC-035`/`036` (what the app's
 > token carries) · **Related:** [`api-contract.md`](api-contract.md) (`REQ-APP-API-001`, `006`)
 
-The Einsatz list and the Einsatz detail. Everything here is **read-only**; signing up, checking
-in and finance entries are mutations and belong to Phase 3, which is why the detail deliberately
-carries no call to action.
+The Einsatz list and the Einsatz detail — and, since Phase 3, the member's own participation
+(sign-up, check-in, payout preference, the wish) and the Einsatzleitung's management writes in the
+Verwaltung tab and the roster (`REQ-APP-MIS-013` onwards).
+
+> [!note] Corrected 2026-09-22 — this paragraph and the „Known gaps" list described the first build
+> The paragraph read „Everything here is **read-only**; signing up, checking in and finance entries
+> are mutations and belong to Phase 3, which is why the detail deliberately carries no call to
+> action." Phase 3 shipped all three. The Known gaps list below is annotated the same way.
 
 ---
 
@@ -408,18 +413,18 @@ than by relaxing the no-`Double` rule that kept the raw string in the first plac
   `COMPLETED`, `CANCELLED`) and `briefing` appears only as a section heading ("Auftrag"). It is
   therefore treated as mock copy. `KrtStatusTone.Briefing` exists in the design system and is
   deliberately unused. A briefing phase would need a backend change first, not a client-side guess.
-- **The date-range picker is not built.** `MissionQuery` carries `from`/`until` and the repository
-  sends them, but no chip opens a picker yet; only "Vergangene" is exposed. It ships with the
-  bottom-sheet pickers of design ch. 02.
-- **The "Einsatz erstellen" FAB is absent.** It is a mutation (Phase 3) and role-gated on
-  `MISSION_MANAGER`.
+- ~~**The date-range picker is not built.**~~ Closed: the list's range chip opens
+  `KrtDateRangePickerModal` and sends `from`/`until` (`MissionsScreen`). Struck through 2026-09-22.
+- **The "Einsatz erstellen" FAB is absent.** It is a mutation and role-gated on `MISSION_MANAGER`;
+  still absent on 2026-09-22 — mission planning stays in the browser (README).
 - **Tapping a row opens the Einsatz** (ch. 06 §2), on the parameterised route
   `mission/{missionId}` — the only one in the graph, so a notification about one Einsatz can deep
   link straight to it.
-- **The detail carries no call to action.** "Anmelden", "Check-In" and "Finanz-Eintrag hinzufügen"
-  are the design's bottom-anchored CTA and its sheets; all three are mutations and belong to
-  Phase 3.
-- **The Ablauf checklist is read-only.** Ticking a step is a `PATCH`.
+- ~~**The detail carries no call to action.**~~ Closed: „Anmelden", „Check-In" and „Finanz-Eintrag
+  hinzufügen" all shipped with Phase 3 (`REQ-APP-MIS-013` onwards, `REQ-APP-MIS-023`). Struck
+  through 2026-09-22.
+- ~~**The Ablauf checklist is read-only.**~~ Closed: the Ablauf and the Ziele are written with their
+  own section counters (`REQ-APP-MIS-025`). Struck through 2026-09-22.
 
 ## Contract-set dependency (main repo)
 
@@ -427,7 +432,8 @@ than by relaxing the no-`Double` rule that kept the raw string in the first plac
 `ExternalContractTest` entry, and the API vhost's default-deny allow-list before the app can reach
 it in production — the allow-list grows one app phase at a time, and opening a family to the app and
 freezing its shape are the same decision seen from two sides (main repo ADR-0135). Until then the
-list works against the test stack only.
+list works against the test stack only. *(Done — the path is in the main repo's
+`docker/edge/include/api-allowlist.conf`; re-checked 2026-09-22.)*
 
 ---
 

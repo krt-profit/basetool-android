@@ -1,6 +1,11 @@
 # ADR-0005 — The browser round trip: who catches the redirect, and what survives the process
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22, on the evidence of the shipped code; proposed 2026-08-18).
+  The attempt is persisted encrypted and single-use (`PendingAuthorization`,
+  `PendingAuthorizationTest`); a dedicated `singleTask` `AuthRedirectActivity` catches the redirect
+  (`AuthRedirectFilterTest`); production redirects to the App Link
+  `https://profit-base.online/app/callback`, whose `assetlinks.json` the main repo serves
+  (`REQ-SEC-038`). In production since v0.1.0.
 - **Date:** 2026-08-18
 - **Related:** [ADR-0002](0002-refresh-token-at-rest.md) · [ADR-0004](0004-session-model.md) ·
   [`docs/specs/auth.md`](../specs/auth.md) (`REQ-APP-AUTH-007`, `-008`) ·

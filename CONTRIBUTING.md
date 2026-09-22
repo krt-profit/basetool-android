@@ -1,9 +1,8 @@
 # Contributing to Basetool Android
 
 Thank you for considering a contribution! This is the native Android companion app of the
-Profit Basetool. The project is currently in the **concept phase** — the Gradle scaffold and
-CI land with Phase 1 of the [roadmap](docs/ANDROID_APP_PLAN.md#6-phased-roadmap); until then,
-contributions are mostly documentation and review.
+Profit Basetool. It is released (see the [README](README.md) for the current version) and built
+with Gradle; the [README](README.md#build) says how to build it and what CI checks.
 
 This guide is the compact contributor-facing companion to the binding project rules in
 [`CLAUDE.md`](CLAUDE.md) (conventions, lint gates, privacy gate, design system). Where the
@@ -93,10 +92,10 @@ cannot be matched against Your CLA signature.
 `git rebase --signoff main`, then `git push --force-with-lease origin <your-branch>` (never
 force-push `main`).
 
-**Enforcement:** a DCO check workflow (mirroring the main repo's `dco.yml`) becomes a
-required status check on `main` when the Phase-1 CI lands; until then maintainers verify the
-trailers manually before merging. Merge commits and well-known bot commits are exempt; every
-human-authored commit is not.
+**Enforcement:** the DCO check workflow (`.github/workflows/dco.yml`, mirroring the main repo's)
+runs on every pull request and is a required status check on `main` („Verify Signed-off-by on
+every commit"). Merge commits and well-known bot commits are exempt; every human-authored commit is
+not.
 
 ## Commit messages and branches
 
@@ -110,9 +109,9 @@ human-authored commit is not.
 
 The binding rules live in [`CLAUDE.md`](CLAUDE.md): Kotlin conventions, KDoc requirements,
 the DAS KARTELL design system, the privacy gate (no dependency that sends user data off the
-device and Basetool without owner approval), i18n, and testing expectations. Once the Gradle
-scaffold exists: run `./gradlew spotlessApply` and get `./gradlew check` (unit tests, Android
-Lint, detekt, ktlint) green before every push. Every new feature ships with tests.
+device and Basetool without owner approval), i18n, and testing expectations. Run
+`./gradlew spotlessApply` and get `./gradlew check` (unit tests, Android Lint, detekt, ktlint)
+green before every push. Every new feature ships with tests.
 
 ## License
 

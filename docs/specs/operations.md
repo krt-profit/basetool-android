@@ -369,7 +369,7 @@ the app mapped none of them, so a member saw „4 150 Anteil, 4 129,25 Auszahlun
 that nothing on the screen explained, and no way to tell how much of the transfer was their own
 outlay coming back rather than profit. The web app renders all five
 (`operation-detail.html:325/332/333/345`). This is the read-side counterpart of the write-side fee
-disclosure in REQ-APP-BANK-012.
+disclosure in REQ-APP-BANK-019.
 
 `paidOutByName` is a member name: shown, never logged.
 

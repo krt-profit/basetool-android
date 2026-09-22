@@ -126,6 +126,12 @@ read the same figure. `BigDecimal` throughout; no `Double` ever touches money.
 - **No date filter on the ledger.** The endpoint takes `from`/`to`; no control offers them yet, and
   they ship with the shared date-range picker.
 
+> [!note] Re-checked 2026-09-22 — the first two gaps are closed
+> The member's booking requests — the Anträge tab and „Buchung beantragen" — shipped as
+> `REQ-APP-BANK-008` (ADR-0016), including the responsible holder's approval; confirming and
+> rejecting live on the bank-employee surface, `REQ-APP-BANK-007`. The two bullets above describe the first build and are kept as its record. The
+> ledger's date filter was not re-checked.
+
 ## Contract-set dependency (main repo)
 
 `GET /api/v1/org-units/bank/balances`, `/accounts/{id}` and `/accounts/{id}/transactions` are in the
@@ -221,7 +227,7 @@ what the lifecycle and grants writes need. The safety comes from the allow-list 
 
 - [x] `/api/v1/bank/admin/**` is in neither the contract set nor the vhost allow-list, and the
   nightly edge probe asserts it still answers `404` (main repo `ExternalContractTest`,
-  `docs/API_VHOST_ROLLOUT_RUNBOOK.md`, `edge-deny-probe`).
+  `docker/edge/include/api-allowlist.conf`, `edge-deny-probe`).
 - [x] All four direct-booking paths (`/bank/deposits`, `/bank/withdrawals`, `/bank/transfers`,
   `/bank/transfer-fee-rate`) are admitted, frozen and probed at `401` — main-repo runbook
   **phase O**, [ADR-0156](https://github.com/krt-profit/basetool/blob/main/docs/adr/0156-the-app-carries-the-banks-direct-booking.md).
@@ -307,6 +313,11 @@ stack is reached **directly**, with no vhost in front of it — so a full device
 show the gap. The main repo's `API_VHOST_ROLLOUT_RUNBOOK.md` § Phase K adds them, and until that
 block is applied to the host the feature works in development and answers `404` in production.
 The same is true of `/api/v1/users/{id}/memberships`, which the Lager's Umbuchen picker needs.
+
+> [!note] Re-checked 2026-09-22 — applied
+> The block is on the host: every path above, `/users/{id}/memberships` included, is in the main
+> repo's live allow-list `docker/edge/include/api-allowlist.conf`. The rollout runbook is archived
+> at `docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md` and stays the record of why each path went in.
 
 **Code:** `BankRepository` (`BankRequestSource`), `BankRequestsViewModel`, `BankRequestsTab`,
 `BankRequestSheet`
@@ -813,7 +824,9 @@ somebody had set.
 
 ---
 
-### REQ-APP-BANK-012 — The transfer fee is said out loud, and which side of it the amount stands on
+### REQ-APP-BANK-019 — The transfer fee is said out loud, and which side of it the amount stands on
+
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-BANK-012`, an id an earlier requirement in this file already held. The earlier one keeps it.
 
 The in-game transfer fee applies to a **withdrawal** and to a **holder-changing transfer**; a
 deposit and a same-holder transfer are fee-free (ADR-0052). Its default mode is **on top**: the
@@ -890,7 +903,7 @@ sent none of the others; it now carries all of them.
 > [!note] Artboard 9 draws none of these fields
 > The drawing is the four controls the sheet already had. Adding them is a deviation from the
 > handoff, taken deliberately because the web has them and a booking made from the app otherwise
-> carries less than the same booking made in a browser — the gap `REQ-APP-BANK-012` had claimed was
+> carries less than the same booking made in a browser — the gap `REQ-APP-BANK-019` had claimed was
 > already closed. Filed in `MISSING_ARTBOARD_PROMPTS_16.md` for the design side to draw or trim.
 
 **Acceptance**
@@ -910,7 +923,7 @@ sent none of the others; it now carries all of them.
 The ledger row shows `transferFee` when one was charged, and `counterpartyHandle` on the subline.
 
 Both are on the wire and both were dropped, so a member re-reading a transfer saw an amount that
-did not match what left the account and no record of who received it. REQ-APP-BANK-012 states the
+did not match what left the account and no record of who received it. REQ-APP-BANK-019 states the
 fee **before** the transfer is sent; this is the same fact afterwards, and without it the
 disclosure only exists while the sheet is open.
 

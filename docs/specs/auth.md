@@ -353,6 +353,10 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
 - [ ] `/.well-known/assetlinks.json` is served, so the production App Link verifies. **Open** —
   server-side, main repo (exposure plan A7). Until then Android shows a disambiguation dialog
   instead of opening the app.
+  *Re-checked 2026-09-22:* the server half is done — the main repo's `REQ-SEC-038` serves the file
+  anonymously with `200` and `application/json` (`AssetLinksControllerTest`), and a blackbox probe
+  watches `/app/callback`'s fallback from outside. What stays open here is the device half: nobody
+  has recorded Android verifying the link (`adb shell pm get-app-links`) on a production install.
 - [x] The redirect URIs match the ones the realm registers, checked against the main repo's
   `scripts/provision-keycloak-mobile-client.py`: production registers exactly
   `https://profit-base.online/app/callback`, and the test profile adds
@@ -819,7 +823,7 @@ reported in the app's own words.
 **The permission list is a hint, never a gate.** The server remains the only authority — its
 org-unit scoping was measured against a two-of-each fixture on 2026-08-26 and holds, including
 against a spoofed `X-Active-Org-Unit-Id`
-([`docs/TENANCY_VERIFICATION.md`](../TENANCY_VERIFICATION.md)). A screen
+([`docs/archive/TENANCY_VERIFICATION.md`](../archive/TENANCY_VERIFICATION.md)). A screen
 that treats a locally computed permission as sufficient to skip a check, or that hides a refusal it
 did not predict, is a defect. The list is re-read when the app resumes, so a role granted while the
 app is open takes effect without a sign-out.

@@ -4,8 +4,13 @@
 > **Server contract:** main repo `REQ-API-009`, `REQ-ORDERS-023` (the redacted view)
 > **Related:** [`notifications.md`](notifications.md)
 
-The job-order queue and one order in full. **Read-only**: creating an order, reordering priorities,
-taking one on and recording a handover are all mutations and belong to Phase 3.
+The job-order queue and one order in full — and, since Phase 3, creating and editing an order,
+moving it in the queue, taking it on, its status, the Herstellung, the Zusagen and the handover that
+finishes it (`REQ-APP-ORDERS-009` onwards).
+
+> [!note] Corrected 2026-09-22 — this paragraph and the „Known gaps" list described the first build
+> The paragraph read „**Read-only**: creating an order, reordering priorities, taking one on and
+> recording a handover are all mutations and belong to Phase 3." Phase 3 shipped all four.
 
 ---
 
@@ -136,15 +141,16 @@ a question they did not ask.
 
 ## Known gaps, stated rather than omitted
 
-- **No priority drag and no create.** Reordering is a logistician's write; creating an order is the
-  public request form. Both are Phase 3.
-- **No age tint.** The design colours the created date yellow past 30 days and red past 90. The row
-  states the age relatively ("vor 3 Wochen") and does not tint it — the thresholds are a web-side
-  convention worth carrying over deliberately rather than by guess, and colour alone would carry it.
-- **The "Bedarf" tab is absent.** `aggregatedMaterials` is the open demand across every order of the
-  handling unit; it is a second reading of the same numbers and belongs with the Materialbörse
-  slice, where the demand view has its own screen.
-- **No handover capture.** "Übergabe erfassen" is a mutation.
+- ~~**No priority drag and no create.**~~ Closed: creating (`REQ-APP-ORDERS-013`, `-016`) and
+  moving an order without a drag (`REQ-APP-ORDERS-015`).
+- ~~**No age tint.**~~ Closed: the age is counted in days against the operator's 30/90-day
+  thresholds (`REQ-APP-ORDERS-014`).
+- ~~**The "Bedarf" tab is absent.**~~ Closed: the open demand is its own destination,
+  `MaterialDemandScreen` (design ch. 18 §1), pushed from the Auftragsliste's overflow. It has no
+  `REQ-APP-ORDERS-*` of its own yet — owed.
+- ~~**No handover capture.**~~ Closed: `REQ-APP-ORDERS-018` and `-020`.
+
+All four struck through 2026-09-22; the bullets described the first build.
 
 ## Contract-set dependency (main repo)
 
@@ -826,7 +832,9 @@ single line, and without the third there was no tree.
 
 ---
 
-### REQ-APP-ORDERS-019 — A material line starts at the grade the web starts it at, and names its own unit
+### REQ-APP-ORDERS-025 — A material line starts at the grade the web starts it at, and names its own unit
+
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-ORDERS-019`, an id an earlier requirement in this file already held. The earlier one keeps it.
 
 Two differences from the web form, both found 2026-09-01 by reading the two side by side rather
 than by reading either alone.
@@ -861,9 +869,11 @@ materials, only counts.
 
 ---
 
-### REQ-APP-ORDERS-020 — The Übergabe names the position's own unit
+### REQ-APP-ORDERS-026 — The Übergabe names the position's own unit
 
-The same rule as `REQ-APP-ORDERS-019`, on the one screen that finishes an Auftrag: the handover
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-ORDERS-020`, an id an earlier requirement in this file already held. The earlier one keeps it.
+
+The same rule as `REQ-APP-ORDERS-025`, on the one screen that finishes an Auftrag: the handover
 sheet labelled every amount „SCU" and `OrderHandoverDraft` carried no unit for it to do otherwise,
 so handing over eight *pieces* read as eight SCU in the subject line, the field label and the live
 projection („Nach dieser Übergabe 300 / 400 SCU"). The web switches on `quantityType` throughout

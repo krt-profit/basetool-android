@@ -6,7 +6,7 @@
 - **Related:** ADR-0010 (the precedent for deciding which section a settings row sits in),
   `REQ-APP-SET-011`, design ch. 13 artboard 2,
   `docs/design/android/MISSING_ARTBOARD_PROMPTS_17.md` § D1,
-  main repo `docs/API_VHOST_ROLLOUT_RUNBOOK.md` § Phase Q
+  main repo `docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md` § Phase Q (moved 2026-09-22)
 
 ## Context
 

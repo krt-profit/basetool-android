@@ -5,7 +5,10 @@
 > **Related:** [`missions.md`](missions.md), [`notifications.md`](notifications.md)
 
 The app's home screen: greeting, announcement, the Einsätze of the next seven days and a preview of
-what is unread — the last of those through the bell, not a band of its own. **Read-only.**
+what is unread — the last of those through the bell, not a band of its own. One write: marking the
+announcement read (`REQ-APP-DASH-011`); the quick actions only navigate (`REQ-APP-DASH-012`).
+(Corrected 2026-09-22: this paragraph ended „**Read-only.**", and the „Known gaps" below still
+listed both of those as absent.)
 
 ---
 
@@ -241,11 +244,10 @@ freshness on the device; if that is wrong it is wrong in the backend, for the we
 
 ## Known gaps, stated rather than omitted
 
-- **The quick-action row is absent.** Its four entries (Check-In, Einbuchen, Auftrag, Angebot) are
-  all mutations, and three lead to screens Phase 2 does not build. Four buttons that do nothing
-  would be worse than the row arriving with what it promises.
-- **"Als gelesen markieren" on the announcement** is a mutation (Phase 3), so the band cannot be
-  dismissed — only collapsed.
+- ~~**The quick-action row is absent.**~~ Closed: the four tiles shipped and navigate through the
+  shell's top-level helper (`REQ-APP-DASH-012`). Struck through 2026-09-22.
+- ~~**"Als gelesen markieren" on the announcement**~~ Closed: `REQ-APP-DASH-011`. Struck through
+  2026-09-22.
 - **The offline variant of the design (ch. 05, second mock)** — cached content plus an "Offline"
   banner and disabled writes — waits for the read cache, which is its own spec area (`offline.md`).
   Today an offline dashboard shows its failure states.

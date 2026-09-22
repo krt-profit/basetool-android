@@ -4,9 +4,14 @@
 > **Server contract:** main repo `REQ-API-009` (`/hangar/my-ships`, `/hangar/squadron-overview`)
 > **Related:** [`api-contract.md`](api-contract.md)
 
-The member's own ships and the aggregate over their active org unit. **Read-only**: adding,
-editing, deleting, the Fleetview import and the overflow's bulk actions are all mutations and belong
-to Phase 3.
+The member's own ships and the aggregate over their active org unit — and, on the own half, adding,
+editing and deleting ships, the overflow's bulk actions and the Fleetview import
+(`REQ-APP-HANGAR-006`…`012`).
+
+> [!note] Corrected 2026-09-22 — this paragraph still called the screen read-only
+> It read „**Read-only**: adding, editing, deleting, the Fleetview import and the overflow's bulk
+> actions are all mutations and belong to Phase 3." Phase 3 shipped all of them; the sentence
+> described the first build.
 
 ---
 
@@ -263,9 +268,15 @@ missing today. It needs a field on the aggregate in the main repo before it can 
 
 ## Known gaps, stated rather than omitted
 
-- **No FAB, no overflow, no import.** Adding, editing, deleting, "Home-Location setzen", "Hangar
-  leeren" and the Fleetview import are mutations (Phase 3). The design's chapter covers all of them;
-  this build covers the reading half.
+- ~~**No FAB, no overflow, no import.**~~ Closed: adding, editing, deleting, „Home-Location
+  setzen", „Hangar leeren" and the Fleetview import all shipped (`REQ-APP-HANGAR-006`…`012`; the
+  import as the `FleetImport` destination behind the `⋮`, CHANGELOG 0.2.0). Struck through
+  2026-09-22.
+- **The Fleetview import has no requirement of its own.** It is reachable from the overflow that
+  `REQ-APP-HANGAR-010` specifies, and `FleetImportScreen` / `FleetImportViewModel` implement it —
+  JSON file or pasted text, CCU-Game Fleetview, HangarXPLOR shiplist and Fleetyards JSON, and a
+  result naming how many ships were imported, already present and not recognised — but no
+  `REQ-APP-HANGAR-*` states what it must do. Owed; found 2026-09-22.
 - **Manufacturer marks are text, not logos.** The design says so itself: the repo ships white SVGs
   for three makers only and they embed raster data, so the lettermark *is* the spec until clean
   vectors are re-exported.

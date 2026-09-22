@@ -163,6 +163,13 @@ and the registration queue is admin work that stays on the web permanently.
 reacts to nothing is worse than one that does not offer itself — the member repeats the tap and
 concludes the app is broken rather than that the screen does not exist yet.
 
+> [!note] Re-checked 2026-09-22 — two of the three reasons above are out of date, the mapping is not
+> The Materialbörse is in the app, and so is a bank approvals surface (the Bank's
+> „Mitglied | Verwaltung" switch and the member's own requests, both since v0.2.0). The code still
+> maps `BANK_BOOKING_REQUEST`, `MATERIAL_EXCHANGE_OFFER` and `MATERIAL_EXCHANGE_REQUEST` to `null`,
+> so those rows are still unclickable. That is now an open parity gap rather than a missing screen;
+> wiring them is a behaviour change and needs its own requirement.
+
 **Acceptance**
 
 - [x] The mapping is written as one `when` over the entity types, so the next area's slice adds a
@@ -199,9 +206,19 @@ is the main repo's ADR-0104 rule applied to this list.
 
 Design chapter 14 mocks up notifications in the system shade. Without a push channel (plan Q2) that
 cannot mean what it means in most apps, and the honest scope is worth stating rather than implying:
-**this reaches a member whose app is running** — one who switched screens or locked the device — and
-nobody else. When the app is closed there is no FCM and nothing arrives. That is the whole of what
-is available, and it is real: the inbox's own SSE stream is what triggers it.
+**this reaches a member whose app is in the foreground** — on any of its screens, not only the
+inbox — and nobody else. The inbox's own SSE stream is what triggers it, and that stream runs only
+while the app is resumed (`REQ-APP-NOTIF-002`): once the member switches to another app or locks the
+device, `BasetoolApp`'s `LifecycleResumeEffect` calls `onBackground()`, the stream closes, and
+nothing is posted until the app is in front again — at which point the badge is re-read and the
+inbox, not the shade, says what arrived. When the app is closed there is no FCM and nothing arrives
+either. That is the whole of what is available.
+
+> [!note] Corrected 2026-09-22 — this paragraph promised more than the code does
+> It read „this reaches a member whose app is running — one who switched screens or locked the
+> device". Locking the device or switching to another app pauses the activity, and `REQ-APP-NOTIF-002`
+> (and `NotificationsViewModel.onBackground`) stop the stream on pause, so the shade could never
+> reach those two cases. The requirement id is unchanged; its scope is now the one the code has.
 
 It was unbuildable until the ETag fault (main repo #1653) was found, because until then the stream
 delivered no bytes at all and there was nothing to post about.
@@ -219,7 +236,7 @@ object graph, so no caller can thread free text into the shade.
 
 **Two gates before posting**: the runtime permission on API 33+ *and* the member's own switch for
 the app. Checking only the first posts into a void while believing somebody was told. The permission
-is referenced by name, because the constant is API 33 and this app starts at 30.
+is referenced by name, because the constant is API 33 and this app starts at 31.
 
 **And the app has to ASK for it.** It checked the permission and never requested it, so on Android
 13+ — where it is denied until asked — the whole shade half could not work for anybody: the channels
@@ -382,12 +399,16 @@ correctly, documented next to the fix — and repeated in a different file.
 
 ## Known gaps, stated rather than omitted
 
-- **No system notification shade.** Design ch. 14, and the plan's Q2 decision rules out a push
-  channel entirely — the app has no Firebase and will not get one.
-- **The unread preview on the dashboard** is part of the Dashboard slice, which reads this same view
-  model.
+- **No system notification while the app is not in front.** The shade half exists
+  (`REQ-APP-NOTIF-010`), but only for a signal the running, foregrounded app received itself; the
+  plan's Q2 decision rules out a push channel entirely — the app has no Firebase and will not get
+  one. (Corrected 2026-09-22: this line read „No system notification shade", which stopped being
+  true on 2026-08-24.)
+- **The unread preview on the dashboard is gone**, not pending: the dashboard showed one until
+  2026-08-31 and now leaves unread notifications to the bell (`REQ-APP-DASH-006`, withdrawn).
 - **Only `JOB_ORDER` rows open anything.** The Aufträge slice gave that entity type a screen; the
-  other four still lead nowhere and their rows stay unclickable (`REQ-APP-ORDERS-007`).
+  other four still lead nowhere and their rows stay unclickable (`REQ-APP-ORDERS-007`,
+  `REQ-APP-NOTIF-007`).
 - **A member with five browser tabs open can evict the app's stream**, because the server caps
   concurrent streams at five per user and drops the oldest. The poll covers it, which is one of the
   reasons the poll is unconditional.
@@ -451,7 +472,7 @@ first**. The inbox opened on whatever a member received when they joined the org
 notification on the last page. Nothing in the app re-sorted afterwards, so the wrong end was the
 only end a member ever saw. The web app sends `createdAt,desc` for exactly this reason.
 
-The page size stays the web app's fifty (REQ-APP-NOTIF-019's „newest 50" wording already assumed
+The page size stays the web app's fifty (the main repo's REQ-NOTIF-019 „newest 50" wording already assumed
 this order; the code did not deliver it).
 
 **Acceptance**

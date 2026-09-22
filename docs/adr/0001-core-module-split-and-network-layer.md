@@ -1,6 +1,14 @@
 # ADR-0001 — `core:common` and `core:network`, and what the network layer decides
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22, on the evidence of the shipped code; proposed 2026-08-18).
+  `:core:common` and `:core:network` exist as modules; `:core:auth` depends on `:core:network`
+  (`api(project(":core:network"))`) and `AuthSession` implements the synchronous
+  `AccessTokenProvider`; `ServerClock` / `ServerTimeInterceptor` time DPoP proofs; the client
+  configures no HTTP cache; errors are classified by the problem `code` (`REQ-APP-API-002`). Two
+  forward-looking sentences did not come true and are superseded rather than rewritten: **Hilt never
+  arrived** — constructor injection stays hand-wired (`AuthContainer`, `BasetoolApplication`, see
+  `CLAUDE.md` › Kotlin conventions) — and the login was built on a hand-written PKCE + DPoP flow, not
+  AppAuth, which ADR-0003 rejected for lacking DPoP.
 - **Date:** 2026-08-18
 - **Related:** [`docs/specs/api-contract.md`](../specs/api-contract.md) (`REQ-APP-API-001…005`) ·
   [`docs/ANDROID_APP_SECURITY.md`](../ANDROID_APP_SECURITY.md) §4 ·

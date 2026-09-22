@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Release posture: no cleartext, anywhere, ever — and the three production hosts are pinned to the
-  Let's Encrypt roots.
+  Release posture: no cleartext, anywhere, ever — and both production hosts are pinned to the
+  Let's Encrypt roots. (There were three until 2026-09-13; see the second domain-config below.)
 
   Android's default already forbids cleartext at targetSdk 28+, but stating it explicitly is what
   makes it a decision rather than an inherited default — and what keeps a future library that

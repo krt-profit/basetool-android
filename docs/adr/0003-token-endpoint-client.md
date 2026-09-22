@@ -1,6 +1,9 @@
 # ADR-0003 — The token endpoint client: its own HTTP client, and outcomes as states
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22, on the evidence of the shipped code; proposed 2026-08-18).
+  `TokenClient` runs on its own client derived from the API client with only `ServerTimeInterceptor`
+  re-added; endpoints are derived from the issuer (`OidcConfiguration`, which has no `userinfo`
+  property); outcomes are states (`TokenClientTest`). In production since v0.1.0.
 - **Date:** 2026-08-18
 - **Related:** [ADR-0001](0001-core-module-split-and-network-layer.md) ·
   [ADR-0002](0002-refresh-token-at-rest.md) ·

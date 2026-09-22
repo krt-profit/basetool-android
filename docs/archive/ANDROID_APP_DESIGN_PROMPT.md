@@ -1,8 +1,12 @@
+> **Archived 2026-09-22.** Doc type: Historical plan — frozen, kept as a record and no longer updated. The brief was executed in Claude Design on 2026-08-17 and the specification it asked for was delivered; its facts are frozen at the briefing (it still says minSdk 30, which is 31 since ADR-0015).
+>
+> **Current truth:** the design handoff [`docs/design/android/`](../design/android/README.md) (token source of truth `artifacts/Theme.kt`), the UI rules in [`CLAUDE.md`](../../CLAUDE.md), and [`docs/specs/ui.md`](../specs/ui.md). Index of the archive: [`README.md`](README.md).
+
 # Android App — Claude Design Prompt
 
 Doc type: **historical plan** — superseded 2026-08-17. This brief (including the Fan Kit
 amendment below) was executed in Claude Design; the resulting handoff is in-repo at
-[`docs/design/android/`](design/android/README.md) and is the **binding UI reference** now.
+[`docs/design/android/`](../design/android/README.md) and is the **binding UI reference** now.
 Do not design or implement against this prompt anymore — it is kept for provenance only.
 Where prompt and delivered spec differ, the spec wins (notably: fixed copy rules
 „Einsätze"/„Bereich Profit"/„Administration", Fan Kit placements fixed to Login +
