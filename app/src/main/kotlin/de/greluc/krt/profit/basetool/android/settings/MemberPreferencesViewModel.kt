@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -106,18 +107,19 @@ class MemberPreferencesViewModel(
      * before it starts: a stale message beside a running attempt reads as a fresh failure.
      */
     fun refresh() {
-        mutableState.value = mutableState.value.copy(reading = true, readError = null)
+        mutableState.update { it.copy(reading = true, readError = null) }
         // Sequential, not concurrent: the two reads return the same entity's version, and a race
         // between them would leave whichever answered second in charge of it for no reason.
         viewModelScope.launch {
             var failure: ApiError? = null
             when (val result = source.payoutPreference()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             payout = result.value.preference,
                             version = result.value.version,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -127,11 +129,12 @@ class MemberPreferencesViewModel(
             }
             when (val result = source.blueprintSharing()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             sharing = result.value.sharing,
                             version = result.value.version,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -141,7 +144,7 @@ class MemberPreferencesViewModel(
                     failure = failure ?: result.error
                 }
             }
-            mutableState.value = mutableState.value.copy(reading = false, readError = failure)
+            mutableState.update { it.copy(reading = false, readError = failure) }
         }
     }
 
@@ -161,17 +164,17 @@ class MemberPreferencesViewModel(
                 is ApiResult.Success -> {
                     // The new version belongs to BOTH rows: the sibling's next write has to send it
                     // or the server refuses a change the member can see nothing wrong with.
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             payout = result.value.preference,
                             version = result.value.version,
                             saving = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -191,17 +194,17 @@ class MemberPreferencesViewModel(
         viewModelScope.launch {
             when (val result = source.setBlueprintSharing(sharing, current.version)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             sharing = result.value.sharing,
                             version = result.value.version,
                             saving = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }

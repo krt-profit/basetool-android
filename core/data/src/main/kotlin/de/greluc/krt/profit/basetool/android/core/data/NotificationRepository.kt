@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseNot
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.SseStream
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -153,10 +154,8 @@ class NotificationRepository(
                 SIZE_PARAM to pageSize.toString(),
                 SORT_PARAM to NEWEST_FIRST,
             )
-        return when (val result = reader.get(INBOX_PATH, params, PageResponseNotificationDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(INBOX_PATH, params, PageResponseNotificationDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /**
@@ -165,10 +164,8 @@ class NotificationRepository(
      * @return the count, or the classified failure.
      */
     override suspend fun unreadCount(): ApiResult<Long> =
-        when (val result = reader.get(UNREAD_PATH, NotificationUnreadCountDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.count ?: 0L)
-        }
+        reader.get(UNREAD_PATH, NotificationUnreadCountDto.serializer())
+            .map { it.count ?: 0L }
 
     /**
      * Opens the push channel and emits once per `notification` event.
@@ -195,10 +192,8 @@ class NotificationRepository(
      * @return success, or the classified failure.
      */
     override suspend fun markRead(id: String): ApiResult<Unit> =
-        when (val result = reader.post("$INBOX_PATH/$id/read", NotificationDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.post("$INBOX_PATH/$id/read", NotificationDto.serializer())
+            .map { }
 
     /**
      * Marks every unread notification read.
@@ -206,10 +201,8 @@ class NotificationRepository(
      * @return the affected count and the new unread count, or the classified failure.
      */
     override suspend fun markAllRead(): ApiResult<NotificationBulkResult> =
-        when (val result = reader.post(READ_ALL_PATH, NotificationBulkResultDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.post(READ_ALL_PATH, NotificationBulkResultDto.serializer())
+            .map { it.toModel() }
 
     /**
      * Deletes one notification.
@@ -225,10 +218,8 @@ class NotificationRepository(
      * @return the affected count and the new unread count, or the classified failure.
      */
     override suspend fun deleteRead(): ApiResult<NotificationBulkResult> =
-        when (val result = reader.delete(READ_PATH, NotificationBulkResultDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.delete(READ_PATH, NotificationBulkResultDto.serializer())
+            .map { it.toModel() }
 
     companion object {
         /**
@@ -273,7 +264,7 @@ class NotificationRepository(
  */
 private fun PageResponseNotificationDto.toModel(page: Int): NotificationPage =
     NotificationPage(
-        notifications = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

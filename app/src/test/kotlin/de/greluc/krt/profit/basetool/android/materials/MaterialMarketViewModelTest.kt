@@ -273,7 +273,7 @@ class MaterialMarketViewModelTest {
             val cells = pages.getOrElse(page) { emptyList() }
             return ApiResult.Success(
                 MaterialMatrixPage(
-                    cells = cells,
+                    rows = cells,
                     page = page,
                     totalPages = pages.size,
                     totalElements = pages.sumOf { it.size }.toLong(),

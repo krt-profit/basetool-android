@@ -24,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the list has got. */
@@ -184,7 +185,7 @@ class PersonalInventoryViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -200,7 +201,7 @@ class PersonalInventoryViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
     }
@@ -226,7 +227,7 @@ class PersonalInventoryViewModel(
         if (query == mutableState.value.query) {
             return
         }
-        mutableState.value = mutableState.value.copy(query = query)
+        mutableState.update { it.copy(query = query) }
         loadedOnce = true
         loadJob?.cancel()
         loadJob =
@@ -238,7 +239,7 @@ class PersonalInventoryViewModel(
 
     /** Re-reads the first page while keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -255,8 +256,7 @@ class PersonalInventoryViewModel(
 
     /** Opens the editor for a new entry. */
     fun onCreate() {
-        mutableState.value =
-            mutableState.value.copy(editor = EditorState.Open(), locations = LocationSearch())
+        mutableState.update { it.copy(editor = EditorState.Open(), locations = LocationSearch()) }
     }
 
     /**
@@ -268,8 +268,8 @@ class PersonalInventoryViewModel(
      * @param item the row to change.
      */
     fun onEdit(item: PersonalItem) {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 editor =
                     EditorState.Open(
                         editing = item,
@@ -289,12 +289,13 @@ class PersonalInventoryViewModel(
                     ),
                 locations = LocationSearch(),
             )
+        }
     }
 
     /** Closes the editor, discarding what was typed. */
     fun onEditorDismissed() {
         searchJob?.cancel()
-        mutableState.value = mutableState.value.copy(editor = EditorState.Closed)
+        mutableState.update { it.copy(editor = EditorState.Closed) }
     }
 
     /**
@@ -304,7 +305,7 @@ class PersonalInventoryViewModel(
      */
     private fun editor(transform: (EditorState.Open) -> EditorState.Open) {
         val open = mutableState.value.editor as? EditorState.Open ?: return
-        mutableState.value = mutableState.value.copy(editor = transform(open))
+        mutableState.update { it.copy(editor = transform(open)) }
     }
 
     /**
@@ -347,7 +348,7 @@ class PersonalInventoryViewModel(
      */
     fun onLocationChosen(location: PersonalLocation) {
         editor { it.copy(location = location, error = null) }
-        mutableState.value = mutableState.value.copy(locations = LocationSearch())
+        mutableState.update { it.copy(locations = LocationSearch()) }
     }
 
     /**
@@ -356,27 +357,26 @@ class PersonalInventoryViewModel(
      * @param query what the member typed into the picker.
      */
     fun onLocationQueryChanged(query: String) {
-        mutableState.value =
-            mutableState.value.copy(locations = mutableState.value.locations.copy(query = query))
+        mutableState.update { state -> state.copy(locations = state.locations.copy(query = query)) }
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH_LENGTH) {
-            mutableState.value =
-                mutableState.value.copy(
-                    locations = mutableState.value.locations.copy(results = emptyList(), capped = false),
+            mutableState.update { state ->
+                state.copy(
+                    locations = state.locations.copy(results = emptyList(), capped = false),
                 )
+            }
             return
         }
         searchJob =
             viewModelScope.launch {
                 delay(SEARCH_DEBOUNCE_MILLIS)
-                mutableState.value =
-                    mutableState.value.copy(locations = mutableState.value.locations.copy(searching = true))
+                mutableState.update { state -> state.copy(locations = state.locations.copy(searching = true)) }
                 when (val result = repository.locations(query)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update { state ->
+                            state.copy(
                                 locations =
-                                    mutableState.value.locations.copy(
+                                    state.locations.copy(
                                         results = result.value.rows,
                                         searching = false,
                                         // The repository asks for one place more than it renders
@@ -387,19 +387,21 @@ class PersonalInventoryViewModel(
                                         capped = result.value.more,
                                     ),
                             )
+                        }
                     }
 
                     is ApiResult.Failure -> {
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update { state ->
+                            state.copy(
                                 locations =
-                                    mutableState.value.locations.copy(
+                                    state.locations.copy(
                                         results = emptyList(),
                                         searching = false,
                                         capped = false,
                                     ),
                                 lastFailure = result.error,
                             )
+                        }
                     }
                 }
             }
@@ -436,7 +438,7 @@ class PersonalInventoryViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(editor = EditorState.Closed)
+                    mutableState.update { it.copy(editor = EditorState.Closed) }
                     reload(keepRows = true)
                 }
 
@@ -455,12 +457,12 @@ class PersonalInventoryViewModel(
      * @param item the row.
      */
     fun onDeleteRequested(item: PersonalItem) {
-        mutableState.value = mutableState.value.copy(pendingDelete = item)
+        mutableState.update { it.copy(pendingDelete = item) }
     }
 
     /** Abandons the deletion. */
     fun onDeleteDismissed() {
-        mutableState.value = mutableState.value.copy(pendingDelete = null)
+        mutableState.update { it.copy(pendingDelete = null) }
     }
 
     /** Deletes the row the member confirmed. */
@@ -469,22 +471,22 @@ class PersonalInventoryViewModel(
         if (!mutableState.value.online) {
             return
         }
-        mutableState.value = mutableState.value.copy(deleting = true)
+        mutableState.update { it.copy(deleting = true) }
         viewModelScope.launch {
             when (val result = repository.delete(item.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(pendingDelete = null, deleting = false)
+                    mutableState.update { it.copy(pendingDelete = null, deleting = false) }
                     reload(keepRows = true)
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             pendingDelete = null,
                             deleting = false,
                             lastFailure = result.error,
                         )
+                    }
                 }
             }
         }
@@ -500,11 +502,12 @@ class PersonalInventoryViewModel(
      */
     fun onToggleSelected(item: PersonalItem) {
         val current = mutableState.value.selection
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 selection = if (item.id in current) current - item.id else current + item.id,
                 bulkResult = null,
             )
+        }
     }
 
     /**
@@ -516,16 +519,17 @@ class PersonalInventoryViewModel(
      * haben"). Scrolling further and tapping again adds the rest.
      */
     fun onSelectAll() {
-        mutableState.value =
-            mutableState.value.copy(
-                selection = mutableState.value.items.map { it.id }.toSet(),
+        mutableState.update { state ->
+            state.copy(
+                selection = state.items.map { it.id }.toSet(),
                 bulkResult = null,
             )
+        }
     }
 
     /** „Aufheben" — leaves the selection mode. */
     fun onSelectionCleared() {
-        mutableState.value = mutableState.value.copy(selection = emptySet(), bulkResult = null)
+        mutableState.update { it.copy(selection = emptySet(), bulkResult = null) }
     }
 
     /** The bulk deletion was asked for; the confirmation names the count. */
@@ -533,12 +537,12 @@ class PersonalInventoryViewModel(
         if (!mutableState.value.selecting) {
             return
         }
-        mutableState.value = mutableState.value.copy(confirmingBulkDelete = true)
+        mutableState.update { it.copy(confirmingBulkDelete = true) }
     }
 
     /** The confirmation was dismissed. */
     fun onBulkDeleteDismissed() {
-        mutableState.value = mutableState.value.copy(confirmingBulkDelete = false)
+        mutableState.update { it.copy(confirmingBulkDelete = false) }
     }
 
     /**
@@ -553,8 +557,7 @@ class PersonalInventoryViewModel(
         if (ids.isEmpty() || !mutableState.value.online) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(confirmingBulkDelete = false, deleting = true, bulkResult = null)
+        mutableState.update { it.copy(confirmingBulkDelete = false, deleting = true, bulkResult = null) }
         viewModelScope.launch {
             // Collected rather than counted in three `var`s: a tally mutated inside a lambda is
             // invisible to the static analysis that reads this (CodeQL called `deleted > 0`
@@ -563,8 +566,8 @@ class PersonalInventoryViewModel(
             val outcomes = ids.map { id -> id to repository.delete(id) }
             val refused = outcomes.filter { it.second is ApiResult.Failure }.map { it.first }.toSet()
             val deleted = outcomes.size - refused.size
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update { state ->
+                state.copy(
                     deleting = false,
                     selection = refused,
                     bulkResult = PersonalBulkResult(deleted = deleted, skipped = refused.size),
@@ -575,6 +578,7 @@ class PersonalInventoryViewModel(
                             (result as? ApiResult.Failure)?.error
                         },
                 )
+            }
             if (deleted > 0) {
                 reload(keepRows = true)
             }
@@ -583,7 +587,7 @@ class PersonalInventoryViewModel(
 
     /** Acknowledges the last write failure, so its message is shown once. */
     fun onFailureShown() {
-        mutableState.value = mutableState.value.copy(lastFailure = null)
+        mutableState.update { it.copy(lastFailure = null) }
     }
 
     /**
@@ -607,14 +611,14 @@ class PersonalInventoryViewModel(
         keepRows: Boolean,
     ) {
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = PersonalInventoryPhase.Loading)
+            mutableState.update { it.copy(phase = PersonalInventoryPhase.Loading) }
         }
         when (val result = repository.page(query = mutableState.value.query, page = page)) {
             is ApiResult.Success -> {
                 val current = mutableState.value
                 mutableState.value =
                     current.copy(
-                        items = if (page == 0) result.value.items else current.items + result.value.items,
+                        items = if (page == 0) result.value.rows else current.items + result.value.rows,
                         total = result.value.totalElements,
                         hasMore = result.value.hasMore,
                         phase = PersonalInventoryPhase.Ready,
@@ -625,12 +629,13 @@ class PersonalInventoryViewModel(
             }
 
             is ApiResult.Failure -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = PersonalInventoryPhase.Failed(result.error),
                         refreshing = false,
                         loadingMore = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = false)
             }
         }

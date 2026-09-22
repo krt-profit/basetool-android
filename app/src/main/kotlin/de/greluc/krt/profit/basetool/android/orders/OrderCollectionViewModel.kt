@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
@@ -108,13 +109,13 @@ class OrderCollectionViewModel(
 
     /** Reads the rows and the order they belong to. */
     fun load() {
-        mutableState.value = mutableState.value.copy(loading = true, error = null)
+        mutableState.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             val order = (orders.detail(orderId) as? ApiResult.Success)?.value
             when (val result = source.rows(orderId)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             rows = result.value,
                             displayId = order?.displayId.orEmpty(),
                             unbacked = order.krtUnbacked(result.value),
@@ -131,12 +132,12 @@ class OrderCollectionViewModel(
                             allowed = order?.canEdit == true,
                             loading = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the collection could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(loading = false, error = result.error)
+                    mutableState.update { it.copy(loading = false, error = result.error) }
                 }
             }
         }
@@ -172,8 +173,8 @@ class OrderCollectionViewModel(
             write { source.unlinkEntry(orderId, row.entryId) }
             return
         }
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 confirming =
                     UnlinkConfirm(
                         entryId = row.entryId,
@@ -183,17 +184,18 @@ class OrderCollectionViewModel(
                         location = row.location,
                     ),
             )
+        }
     }
 
     /** Backs out of the confirmation. */
     fun onDismissConfirm() {
-        mutableState.value = mutableState.value.copy(confirming = null)
+        mutableState.update { it.copy(confirming = null) }
     }
 
     /** Removes the link the confirmation names. */
     fun onConfirmUnlink() {
         val entryId = mutableState.value.confirming?.entryId ?: return
-        mutableState.value = mutableState.value.copy(confirming = null)
+        mutableState.update { it.copy(confirming = null) }
         write { source.unlinkEntry(orderId, entryId) }
     }
 
@@ -220,18 +222,17 @@ class OrderCollectionViewModel(
         if (mutableState.value.saving) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = call()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(saving = false)
+                    mutableState.update { it.copy(saving = false) }
                     load()
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the collection write was refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }

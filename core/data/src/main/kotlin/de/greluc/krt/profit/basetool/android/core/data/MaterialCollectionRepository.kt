@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialCollect
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateDeliveredRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -156,19 +157,14 @@ class MaterialCollectionRepository(
         delivered: Boolean,
         version: Long,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.send(
-                    "/api/v1/inventory/$entryId/delivered",
-                    "PATCH",
-                    UpdateDeliveredRequest(delivered = delivered, jobOrderId = orderId, version = version),
-                    UpdateDeliveredRequest.serializer(),
-                    InventoryItemDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.send(
+            "/api/v1/inventory/$entryId/delivered",
+            "PATCH",
+            UpdateDeliveredRequest(delivered = delivered, jobOrderId = orderId, version = version),
+            UpdateDeliveredRequest.serializer(),
+            InventoryItemDto.serializer(),
+        )
+            .map { }
 
     override suspend fun unlinkEntry(
         orderId: String,

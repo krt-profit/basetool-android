@@ -169,20 +169,9 @@ data class MaterialMatrixCell(
  * draws it arriving: „Nachladen zeilenweise … die Ladezeile bleibt unten stehen und wird nie durch
  * einen Vollbild-Spinner ersetzt" (ch. 16 artboard 3).
  *
- * @property cells the rows on this page.
- * @property page the zero-based index this page had.
- * @property totalPages how many exist.
- * @property totalElements how many cells the whole matrix holds.
+ * [Page.rows] holds the rows on this page.
  */
-data class MaterialMatrixPage(
-    val cells: List<MaterialMatrixCell>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page follows this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias MaterialMatrixPage = Page<MaterialMatrixCell>
 
 /**
  * One material's profit for one ship, as the server computed it.
@@ -378,7 +367,7 @@ class MaterialCatalogRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     MaterialMatrixPage(
-                        cells =
+                        rows =
                             result.value.content.orEmpty().mapNotNull { dto ->
                                 val materialId = dto.materialId ?: return@mapNotNull null
                                 val terminalId = dto.terminalId ?: return@mapNotNull null

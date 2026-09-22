@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDt
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -711,10 +712,8 @@ class MissionRepository(
                 add(SORT_PARAM to if (query.includePast) PAST_SORT else DEFAULT_SORT)
             }
 
-        return when (val result = reader.get(SEARCH_PATH, params, PageResponseMissionListDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(SEARCH_PATH, params, PageResponseMissionListDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /**
@@ -728,10 +727,8 @@ class MissionRepository(
      * @return the Einsatz, or the classified failure.
      */
     override suspend fun detail(id: String): ApiResult<MissionDetail> =
-        when (val result = reader.get(missionPath(id), MissionDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(id))
-        }
+        reader.get(missionPath(id), MissionDto.serializer())
+            .map { it.toModel(id) }
 
     /**
      * Reads an Einsatz's money.
@@ -774,27 +771,22 @@ class MissionRepository(
         desiredJobTypeId: String?,
         donate: Boolean,
     ): ApiResult<MissionDetail> =
-        when (
-            val result =
-                reader.post(
-                    path = "${missionPath(missionId)}/join",
-                    body =
-                        JoinMissionRequest(
-                            desiredJobTypeId = desiredJobTypeId,
-                            payoutPreference =
-                                if (donate) {
-                                    JoinMissionRequest.PayoutPreference.DONATE
-                                } else {
-                                    JoinMissionRequest.PayoutPreference.PAYOUT
-                                },
-                        ),
-                    bodySerializer = JoinMissionRequest.serializer(),
-                    deserializer = MissionDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
-        }
+        reader.post(
+            path = "${missionPath(missionId)}/join",
+            body =
+                JoinMissionRequest(
+                    desiredJobTypeId = desiredJobTypeId,
+                    payoutPreference =
+                        if (donate) {
+                            JoinMissionRequest.PayoutPreference.DONATE
+                        } else {
+                            JoinMissionRequest.PayoutPreference.PAYOUT
+                        },
+                ),
+            bodySerializer = JoinMissionRequest.serializer(),
+            deserializer = MissionDto.serializer(),
+        )
+            .map { it.toModel(missionId) }
 
     override suspend fun leave(
         missionId: String,
@@ -1145,10 +1137,8 @@ class MissionRepository(
      * @return success or the failure, without the body.
      */
     private fun discarding(result: ApiResult<MissionFinanceEntryDto>): ApiResult<Unit> =
-        when (result) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        result
+            .map { }
 
     /**
      * Turns a slim write's answer into the row.
@@ -1349,7 +1339,7 @@ class MissionRepository(
  */
 private fun PageResponseMissionListDto.toModel(requestedPage: Int): MissionPage =
     MissionPage(
-        missions = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = page ?: requestedPage,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,
@@ -1697,10 +1687,8 @@ private fun oneMission(
     missionId: String,
     result: ApiResult<MissionDto>,
 ): ApiResult<MissionDetail> =
-    when (result) {
-        is ApiResult.Failure -> result
-        is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
-    }
+    result
+        .map { it.toModel(missionId) }
 
 /**
  * Re-reads the Einsatz after a write that answered with less than the whole of it.

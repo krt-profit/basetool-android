@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -189,7 +190,7 @@ class BankViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepContent = false) },
         )
 
@@ -200,7 +201,7 @@ class BankViewModel(
 
     /** Re-reads the accounts, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepContent = true)
     }
@@ -212,7 +213,7 @@ class BankViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = source.balances()) {
@@ -224,11 +225,12 @@ class BankViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "bank accounts could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = BankPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = keepContent)
                 }
             }
@@ -296,7 +298,7 @@ class BankAccountViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(
@@ -340,10 +342,11 @@ class BankAccountViewModel(
             label: String,
             current: String?,
         ) {
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update {
+                it.copy(
                     limitDraft = BankLimitDraft(target = target, label = label, amount = current.orEmpty()),
                 )
+            }
         }
 
         /**
@@ -353,12 +356,12 @@ class BankAccountViewModel(
          */
         fun onAmount(amount: String) {
             val open = mutableState.value.limitDraft ?: return
-            mutableState.value = mutableState.value.copy(limitDraft = open.copy(amount = amount))
+            mutableState.update { it.copy(limitDraft = open.copy(amount = amount)) }
         }
 
         /** Closes whichever of the two sheets is open. */
         fun close() {
-            mutableState.value = mutableState.value.copy(limitDraft = null, limitRemoval = null)
+            mutableState.update { it.copy(limitDraft = null, limitRemoval = null) }
         }
 
         /** Sends „Setzen". */
@@ -384,10 +387,11 @@ class BankAccountViewModel(
             label: String,
             fallback: String?,
         ) {
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update {
+                it.copy(
                     limitRemoval = BankLimitDraft(target = target, label = label, fallback = fallback),
                 )
+            }
         }
 
         /** Sends „Entfernen". */
@@ -410,7 +414,7 @@ class BankAccountViewModel(
 
     /** Re-reads both, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
         readSettings()
     }
@@ -426,7 +430,7 @@ class BankAccountViewModel(
         viewModelScope.launch {
             when (val result = source.settings(accountId)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(settings = result.value)
+                    mutableState.update { it.copy(settings = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -452,7 +456,7 @@ class BankAccountViewModel(
 
     /** Closes it, discarding what was typed. */
     fun onDismissSettings() {
-        mutableState.value = mutableState.value.copy(settingsOpen = false, targetDraft = null, error = null)
+        mutableState.update { it.copy(settingsOpen = false, targetDraft = null, error = null) }
     }
 
     /**
@@ -461,8 +465,7 @@ class BankAccountViewModel(
      * @param value what the member typed, unparsed.
      */
     fun onTargetChanged(value: String) {
-        mutableState.value =
-            mutableState.value.copy(targetDraft = value.filter(Char::isDigit), error = null)
+        mutableState.update { it.copy(targetDraft = value.filter(Char::isDigit), error = null) }
     }
 
     /**
@@ -513,12 +516,12 @@ class BankAccountViewModel(
      * @param request the call.
      */
     private fun write(request: suspend () -> ApiResult<BankAccountSettings>) {
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             settings = result.value,
                             targetDraft =
                                 result.value.balanceTarget
@@ -528,6 +531,7 @@ class BankAccountViewModel(
                             saving = false,
                             error = null,
                         )
+                    }
                     // The settings region lives in the org-unit room, not the account's: it is what
                     // the overview renders, and a peer looking at the list is who needs to know.
                     publishLiveSync(
@@ -539,8 +543,7 @@ class BankAccountViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the account settings could not be written: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -559,7 +562,7 @@ class BankAccountViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            bookings = latest.bookings + result.value.bookings,
+                            bookings = latest.bookings + result.value.rows,
                             bookingTotal = result.value.totalElements,
                             page = result.value.page,
                             hasMore = result.value.hasMore,
@@ -571,7 +574,7 @@ class BankAccountViewModel(
                     // The lines on screen stay: a failed continuation is not a reason to replace a
                     // working ledger with an error.
                     KrtLog.w(LOG_TAG) { "next ledger page failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -584,17 +587,18 @@ class BankAccountViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             when (val account = readAccount()) {
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "bank account could not be read: ${account.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = BankPhase.Failed(account.error),
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Success -> {
@@ -612,10 +616,10 @@ class BankAccountViewModel(
     private suspend fun loadLedger(account: BankAccountDetail) {
         when (val ledger = readLedger(0)) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         account = account,
-                        bookings = ledger.value.bookings,
+                        bookings = ledger.value.rows,
                         bookingTotal = ledger.value.totalElements,
                         page = ledger.value.page,
                         hasMore = ledger.value.hasMore,
@@ -623,15 +627,17 @@ class BankAccountViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "bank ledger could not be read: ${ledger.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = BankPhase.Failed(ledger.error),
                         refreshing = false,
                     )
+                }
             }
         }
     }
@@ -649,12 +655,12 @@ class BankAccountViewModel(
         if (booking.isReversal || booking.transactionId == null) {
             return
         }
-        mutableState.value = mutableState.value.copy(reversal = booking, reversalNote = "", error = null)
+        mutableState.update { it.copy(reversal = booking, reversalNote = "", error = null) }
     }
 
     /** Closes the Storno confirmation without sending it. */
     fun onDismissReversal() {
-        mutableState.value = mutableState.value.copy(reversal = null)
+        mutableState.update { it.copy(reversal = null) }
     }
 
     /**
@@ -663,7 +669,7 @@ class BankAccountViewModel(
      * @param note the text.
      */
     fun onReversalNote(note: String) {
-        mutableState.value = mutableState.value.copy(reversalNote = note)
+        mutableState.update { it.copy(reversalNote = note) }
     }
 
     /** Sends the Storno the confirmation stands for. */
@@ -678,15 +684,13 @@ class BankAccountViewModel(
         viewModelScope.launch {
             when (val result = writer.reverse(transactionId, current.reversalNote)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, reversal = null)
+                    mutableState.update { it.copy(saving = false, reversal = null) }
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "reversal refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -738,7 +742,7 @@ class BankAccountViewModel(
 
     /** Clears the fetched file once the screen has handed it on. */
     fun onReportHandled() {
-        mutableState.value = mutableState.value.copy(report = null)
+        mutableState.update { it.copy(report = null) }
     }
 
     /**
@@ -750,18 +754,16 @@ class BankAccountViewModel(
         if (mutableState.value.downloading) {
             return
         }
-        mutableState.value = mutableState.value.copy(downloading = true, error = null)
+        mutableState.update { it.copy(downloading = true, error = null) }
         viewModelScope.launch {
             when (val result = call()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(downloading = false, report = result.value)
+                    mutableState.update { it.copy(downloading = false, report = result.value) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "a report could not be fetched: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(downloading = false, error = result.error)
+                    mutableState.update { it.copy(downloading = false, error = result.error) }
                 }
             }
         }

@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PromotionEligib
 import de.greluc.krt.profit.basetool.android.core.contract.model.PromotionRequirementCheckResponse
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -112,29 +113,19 @@ class PromotionRepository(
 
     /** {@inheritDoc} */
     override suspend fun evaluations(): ApiResult<List<PromotionEvaluation>> =
-        when (
-            val result =
-                reader.get(
-                    EVALUATIONS_PATH,
-                    ListSerializer(MemberEvaluationResponse.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(
+            EVALUATIONS_PATH,
+            ListSerializer(MemberEvaluationResponse.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     /** {@inheritDoc} */
     override suspend fun standings(): ApiResult<List<PromotionStanding>> =
-        when (
-            val result =
-                reader.get(
-                    ELIGIBILITY_PATH,
-                    ListSerializer(PromotionEligibilityResponse.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.map { it.toModel() })
-        }
+        reader.get(
+            ELIGIBILITY_PATH,
+            ListSerializer(PromotionEligibilityResponse.serializer()),
+        )
+            .map { loaded -> loaded.map { it.toModel() } }
 
     private companion object {
         /** Log subsystem. An evaluation is about a person and its content is never logged. */

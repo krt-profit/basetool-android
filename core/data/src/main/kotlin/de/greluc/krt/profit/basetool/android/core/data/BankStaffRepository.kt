@@ -53,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -95,10 +96,8 @@ class BankStaffRepository(
     )
 
     override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> =
-        when (val result = reader.get(STAFF_DASHBOARD_PATH, BankDashboardDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.get(STAFF_DASHBOARD_PATH, BankDashboardDto.serializer())
+            .map { it.toModel() }
 
     override suspend fun requestQueue(
         statuses: Set<BankRequestStatus>,
@@ -126,7 +125,7 @@ class BankStaffRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     BankRequestPage(
-                        requests = result.value.content.orEmpty().mapNotNull { it.toModel() },
+                        rows = result.value.content.orEmpty().mapNotNull { it.toModel() },
                         page = result.value.page ?: page,
                         totalPages = result.value.totalPages ?: 0,
                         totalElements = result.value.totalElements ?: 0,
@@ -343,17 +342,12 @@ class BankStaffRepository(
         }
 
     override suspend fun grants(accountId: String): ApiResult<List<BankGrant>> =
-        when (
-            val result =
-                reader.get(
-                    STAFF_GRANTS_PATH,
-                    listOf(ACCOUNT_PARAM to accountId),
-                    ListSerializer(BankGrantDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(
+            STAFF_GRANTS_PATH,
+            listOf(ACCOUNT_PARAM to accountId),
+            ListSerializer(BankGrantDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     override suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant> {
         val result =
@@ -399,30 +393,20 @@ class BankStaffRepository(
     }
 
     override suspend fun staffAccount(id: String): ApiResult<BankAccountDetail> =
-        when (
-            val result =
-                reader.get("$STAFF_ACCOUNTS_PATH/$id", BankAccountDetailDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toDetail())
-        }
+        reader.get("$STAFF_ACCOUNTS_PATH/$id", BankAccountDetailDto.serializer())
+            .map { it.toDetail() }
 
     override suspend fun staffBookings(
         id: String,
         page: Int,
         pageSize: Int,
     ): ApiResult<BankBookingPage> =
-        when (
-            val result =
-                reader.get(
-                    "$STAFF_ACCOUNTS_PATH/$id/transactions",
-                    listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
-                    PageResponseBankBookingDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        reader.get(
+            "$STAFF_ACCOUNTS_PATH/$id/transactions",
+            listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
+            PageResponseBankBookingDto.serializer(),
+        )
+            .map { it.toModel(page) }
 
     override suspend fun statement(
         accountId: String,
@@ -447,18 +431,13 @@ class BankStaffRepository(
         transactionId: String,
         note: String?,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.post(
-                    path = "$REVERSAL_PATH/$transactionId/reversal",
-                    body = ReverseBankTransactionRequest(note = note?.takeIf { it.isNotBlank() }),
-                    bodySerializer = ReverseBankTransactionRequest.serializer(),
-                    deserializer = BankTransactionDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.post(
+            path = "$REVERSAL_PATH/$transactionId/reversal",
+            body = ReverseBankTransactionRequest(note = note?.takeIf { it.isNotBlank() }),
+            bodySerializer = ReverseBankTransactionRequest.serializer(),
+            deserializer = BankTransactionDto.serializer(),
+        )
+            .map { }
 
     override suspend fun holder(id: String): ApiResult<BankHolder> =
         holder(reader.get("$STAFF_HOLDERS_PATH/$id", BankHolderDto.serializer()))
@@ -468,17 +447,12 @@ class BankStaffRepository(
         page: Int,
         pageSize: Int,
     ): ApiResult<BankHolderBookingPage> =
-        when (
-            val result =
-                reader.get(
-                    "$STAFF_HOLDERS_PATH/$id/transactions",
-                    listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
-                    PageResponseBankHolderBookingDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        reader.get(
+            "$STAFF_HOLDERS_PATH/$id/transactions",
+            listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
+            PageResponseBankHolderBookingDto.serializer(),
+        )
+            .map { it.toModel(page) }
 
     override suspend fun transferCustody(
         sourceHolderId: String,
@@ -486,30 +460,23 @@ class BankStaffRepository(
         amount: String,
         note: String?,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.post(
-                    path = "$STAFF_HOLDERS_PATH/transfer",
-                    body =
-                        BankHolderTransferRequest(
-                            sourceHolderId = sourceHolderId,
-                            destinationHolderId = destinationHolderId,
-                            amount = KrtDecimal(parseTypedDecimal(amount) ?: BigDecimal.ZERO),
-                            note = note?.takeIf { it.isNotBlank() },
-                        ),
-                    bodySerializer = BankHolderTransferRequest.serializer(),
-                    deserializer = BankTransactionDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.post(
+            path = "$STAFF_HOLDERS_PATH/transfer",
+            body =
+                BankHolderTransferRequest(
+                    sourceHolderId = sourceHolderId,
+                    destinationHolderId = destinationHolderId,
+                    amount = KrtDecimal(parseTypedDecimal(amount) ?: BigDecimal.ZERO),
+                    note = note?.takeIf { it.isNotBlank() },
+                ),
+            bodySerializer = BankHolderTransferRequest.serializer(),
+            deserializer = BankTransactionDto.serializer(),
+        )
+            .map { }
 
     override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
-        when (val result = reader.get(FEE_RATE_PATH, emptyList(), BankTransferFeeRateDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.rate ?: KrtDecimal(java.math.BigDecimal.ZERO))
-        }
+        reader.get(FEE_RATE_PATH, emptyList(), BankTransferFeeRateDto.serializer())
+            .map { it.rate ?: KrtDecimal(java.math.BigDecimal.ZERO) }
 
     override suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>> =
         when (

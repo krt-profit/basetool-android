@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the tree has got. */
@@ -279,7 +280,7 @@ class InventoryViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -291,7 +292,7 @@ class InventoryViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.INVENTORY)) { sections ->
@@ -319,7 +320,7 @@ class InventoryViewModel(
 
     /** Re-reads the first page and drops every loaded group, since their contents may have moved. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true, opened = emptyMap())
+        mutableState.update { it.copy(refreshing = true, opened = emptyMap()) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -330,16 +331,16 @@ class InventoryViewModel(
      * @param enabled whether to hide them.
      */
     fun onWithStockOnlyChanged(enabled: Boolean) {
-        mutableState.value = mutableState.value.copy(withStockOnly = enabled)
+        mutableState.update { it.copy(withStockOnly = enabled) }
     }
 
     fun onToggleGroup(materialId: String) {
         val opened = mutableState.value.opened
         if (materialId in opened) {
-            mutableState.value = mutableState.value.copy(opened = opened - materialId)
+            mutableState.update { it.copy(opened = opened - materialId) }
             return
         }
-        mutableState.value = mutableState.value.copy(opened = opened + (materialId to StackPhase.Loading))
+        mutableState.update { it.copy(opened = opened + (materialId to StackPhase.Loading)) }
         viewModelScope.launch { readStacks(materialId) }
     }
 
@@ -435,8 +436,7 @@ class InventoryViewModel(
             viewModelScope.launch {
                 val released = source.releasedEntryIds(ids)
                 if (released.isNotEmpty()) {
-                    mutableState.value =
-                        mutableState.value.copy(released = mutableState.value.released + released)
+                    mutableState.update { state -> state.copy(released = state.released + released) }
                 }
             }
         }
@@ -471,7 +471,7 @@ class InventoryViewModel(
     private fun reReadOpenPath() {
         val openGroups = mutableState.value.opened.keys.toList()
         val openStacks = mutableState.value.openedStacks.keys.toSet()
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         viewModelScope.launch {
             readFirstPage()
@@ -507,7 +507,7 @@ class InventoryViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            groups = latest.groups + result.value.groups,
+                            groups = latest.groups + result.value.rows,
                             total = result.value.totalElements,
                             page = result.value.page,
                             hasMore = result.value.hasMore,
@@ -517,7 +517,7 @@ class InventoryViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of the Lager failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -535,7 +535,7 @@ class InventoryViewModel(
     fun onToggleSelected(entryId: String) {
         val current = mutableState.value.selection
         val next = if (entryId in current) current - entryId else current + entryId
-        mutableState.value = mutableState.value.copy(selection = next)
+        mutableState.update { it.copy(selection = next) }
     }
 
     /**
@@ -569,12 +569,12 @@ class InventoryViewModel(
         }
         val current = mutableState.value.selection
         val next = if (ids.all { it in current }) current - ids else current + ids
-        mutableState.value = mutableState.value.copy(selection = next)
+        mutableState.update { it.copy(selection = next) }
     }
 
     /** Clears the selection, which leaves selection mode. */
     fun onSelectionCleared() {
-        mutableState.value = mutableState.value.copy(selection = emptySet())
+        mutableState.update { it.copy(selection = emptySet()) }
     }
 
     /**
@@ -586,8 +586,7 @@ class InventoryViewModel(
      * having happened.
      */
     fun onBulkMoveFinished() {
-        mutableState.value =
-            mutableState.value.copy(bulk = null, selection = emptySet(), openedStacks = emptyMap())
+        mutableState.update { it.copy(bulk = null, selection = emptySet(), openedStacks = emptyMap()) }
         reload(keepRows = true)
     }
 
@@ -659,8 +658,7 @@ class InventoryViewModel(
             viewModelScope.launch {
                 when (val result = source.bulkCheckout(ids)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(checkout = open.copy(saving = false, done = true))
+                        mutableState.update { it.copy(checkout = open.copy(saving = false, done = true)) }
                         // The rows are gone from the shared Lager; every other open Lager has to
                         // know.
                         publishLiveSync(
@@ -672,10 +670,11 @@ class InventoryViewModel(
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the bulk checkout was refused: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 checkout = open.copy(saving = false, error = result.error),
                             )
+                        }
                     }
                 }
             }
@@ -700,10 +699,11 @@ class InventoryViewModel(
         viewModelScope.launch {
             when (val result = source.bulkCheckout(ids)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             checkout = open.copy(saving = false, done = true),
                         )
+                    }
                     // The rows are gone from the shared Lager; every other open Lager has to know.
                     publishLiveSync(
                         liveSync,
@@ -714,10 +714,11 @@ class InventoryViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the bulk checkout was refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             checkout = open.copy(saving = false, error = result.error),
                         )
+                    }
                 }
             }
         }
@@ -728,24 +729,25 @@ class InventoryViewModel(
         if (mutableState.value.selection.isEmpty()) {
             return
         }
-        mutableState.value = mutableState.value.copy(bulk = BulkMoveState())
+        mutableState.update { it.copy(bulk = BulkMoveState()) }
         viewModelScope.launch {
             val places = source.locations("")
             val open = mutableState.value.bulk ?: return@launch
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update {
+                it.copy(
                     bulk =
                         open.copy(
                             places = (places as? ApiResult.Success)?.value?.rows.orEmpty(),
                             morePlaces = (places as? ApiResult.Success)?.value?.more == true,
                         ),
                 )
+            }
         }
     }
 
     /** Closes it. */
     fun onBulkMoveDismissed() {
-        mutableState.value = mutableState.value.copy(bulk = null)
+        mutableState.update { it.copy(bulk = null) }
     }
 
     /**
@@ -755,7 +757,7 @@ class InventoryViewModel(
      */
     fun onBulkMovePlace(place: LocationOption) {
         val open = mutableState.value.bulk ?: return
-        mutableState.value = mutableState.value.copy(bulk = open.copy(place = place, error = null))
+        mutableState.update { it.copy(bulk = open.copy(place = place, error = null)) }
     }
 
     /**
@@ -773,7 +775,7 @@ class InventoryViewModel(
         if (!ready || !mutableState.value.online) {
             return
         }
-        mutableState.value = mutableState.value.copy(bulk = open.copy(saving = true, error = null))
+        mutableState.update { it.copy(bulk = open.copy(saving = true, error = null)) }
         viewModelScope.launch {
             when (val result = source.bulkRebook(entryIds = ids, locationId = place.id)) {
                 is ApiResult.Success -> {
@@ -781,16 +783,14 @@ class InventoryViewModel(
                     // drop the one number a member cannot reconstruct — how many rows were skipped
                     // because they already stood at the target, which is not a failure and needs
                     // its sentence (design ch. 09, artboard 9).
-                    mutableState.value =
-                        mutableState.value.copy(bulk = open.copy(saving = false, result = result.value))
+                    mutableState.update { it.copy(bulk = open.copy(saving = false, result = result.value)) }
                 }
 
                 is ApiResult.Failure -> {
                     // The selection is deliberately left standing: nothing was changed, and a
                     // member who has just picked twelve rows must not have to pick them again to
                     // retry (artboard 10).
-                    mutableState.value =
-                        mutableState.value.copy(bulk = open.copy(saving = false, error = result.error))
+                    mutableState.update { it.copy(bulk = open.copy(saving = false, error = result.error)) }
                 }
             }
         }
@@ -805,8 +805,8 @@ class InventoryViewModel(
      * @param entry the stock entry to split.
      */
     fun onAllocate(entry: InventoryEntry) {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 allocation =
                     AllocationSheetState(
                         entry = entry,
@@ -814,24 +814,26 @@ class InventoryViewModel(
                         missions = entry.missionAllocations.toRows(),
                     ),
             )
+        }
         viewModelScope.launch {
             val orders = source.orderTargets()
             val missions = source.missionTargets()
             val open = mutableState.value.allocation ?: return@launch
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update {
+                it.copy(
                     allocation =
                         open.copy(
                             orderTargets = (orders as? ApiResult.Success)?.value.orEmpty(),
                             missionTargets = (missions as? ApiResult.Success)?.value.orEmpty(),
                         ),
                 )
+            }
         }
     }
 
     /** Closes it, discarding anything not saved. */
     fun onAllocationDismissed() {
-        mutableState.value = mutableState.value.copy(allocation = null)
+        mutableState.update { it.copy(allocation = null) }
     }
 
     /**
@@ -897,7 +899,7 @@ class InventoryViewModel(
             } else {
                 open.copy(missions = open.missions + row, picking = null)
             }
-        mutableState.value = mutableState.value.copy(allocation = next)
+        mutableState.update { it.copy(allocation = next) }
     }
 
     /**
@@ -907,7 +909,7 @@ class InventoryViewModel(
      */
     fun onAllocationPick(kind: AllocationKind?) {
         val open = mutableState.value.allocation ?: return
-        mutableState.value = mutableState.value.copy(allocation = open.copy(picking = kind))
+        mutableState.update { it.copy(allocation = open.copy(picking = kind)) }
     }
 
     /**
@@ -926,7 +928,7 @@ class InventoryViewModel(
         if (!open.submittable) {
             return
         }
-        mutableState.value = mutableState.value.copy(allocation = open.copy(saving = true, error = null, partial = 0))
+        mutableState.update { it.copy(allocation = open.copy(saving = true, error = null, partial = 0)) }
         viewModelScope.launch {
             var entry = open.entry
             var written = 0
@@ -947,8 +949,8 @@ class InventoryViewModel(
                     }
 
                     is ApiResult.Failure -> {
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 allocation =
                                     open.copy(
                                         entry = entry,
@@ -959,11 +961,12 @@ class InventoryViewModel(
                                         partial = written,
                                     ),
                             )
+                        }
                         return@launch
                     }
                 }
             }
-            mutableState.value = mutableState.value.copy(allocation = null)
+            mutableState.update { it.copy(allocation = null) }
             reload(keepRows = true)
         }
     }
@@ -990,7 +993,7 @@ class InventoryViewModel(
             } else {
                 open.copy(missions = edit(open.missions), error = null)
             }
-        mutableState.value = mutableState.value.copy(allocation = next)
+        mutableState.update { it.copy(allocation = next) }
     }
 
     /**
@@ -1000,7 +1003,7 @@ class InventoryViewModel(
      */
     private fun reload(keepRows: Boolean) {
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = InventoryPhase.Loading)
+            mutableState.update { it.copy(phase = InventoryPhase.Loading) }
         }
         viewModelScope.launch { readFirstPage() }
     }
@@ -1009,9 +1012,9 @@ class InventoryViewModel(
     private suspend fun readFirstPage() {
         when (val result = source.groups(page = 0)) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
-                        groups = result.value.groups,
+                mutableState.update {
+                    it.copy(
+                        groups = result.value.rows,
                         total = result.value.totalElements,
                         page = result.value.page,
                         hasMore = result.value.hasMore,
@@ -1019,17 +1022,19 @@ class InventoryViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "the Lager could not be read: ${result.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = InventoryPhase.Failed(result.error),
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = false)
             }
         }

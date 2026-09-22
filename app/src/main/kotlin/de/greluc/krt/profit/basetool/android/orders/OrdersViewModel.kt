@@ -38,6 +38,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the queue has got. */
@@ -133,7 +134,7 @@ class OrdersViewModel(
         connectivity?.let { network ->
             viewModelScope.launch {
                 network.online.collect { online ->
-                    mutableState.value = mutableState.value.copy(online = online)
+                    mutableState.update { it.copy(online = online) }
                 }
             }
         }
@@ -148,7 +149,7 @@ class OrdersViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -184,7 +185,7 @@ class OrdersViewModel(
             return
         }
         loadedOnce = true
-        mutableState.value = mutableState.value.copy(squadronIds = squadronIds)
+        mutableState.update { it.copy(squadronIds = squadronIds) }
         reload(keepRows = false)
     }
 
@@ -198,7 +199,7 @@ class OrdersViewModel(
             return
         }
         loadedOnce = true
-        mutableState.value = mutableState.value.copy(statuses = statuses)
+        mutableState.update { it.copy(statuses = statuses) }
         reload(keepRows = false)
     }
 
@@ -209,15 +210,16 @@ class OrdersViewModel(
      */
     fun onToggleMaterials(orderId: String) {
         val open = mutableState.value.expanded
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 expanded = if (orderId in open) open - orderId else open + orderId,
             )
+        }
     }
 
     /** Re-reads the first page while keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -242,7 +244,7 @@ class OrdersViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            orders = latest.orders + result.value.orders,
+                            orders = latest.orders + result.value.rows,
                             total = result.value.totalElements,
                             page = result.value.page,
                             hasMore = result.value.hasMore,
@@ -252,7 +254,7 @@ class OrdersViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of orders failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -268,7 +270,7 @@ class OrdersViewModel(
         val statuses = mutableState.value.statuses
         val squadronIds = mutableState.value.squadronIds
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = OrdersPhase.Loading)
+            mutableState.update { it.copy(phase = OrdersPhase.Loading) }
         }
         loadJob =
             viewModelScope.launch {
@@ -278,10 +280,10 @@ class OrdersViewModel(
                 val thresholds = source.ageThresholds()
                 when (val result = source.queue(statuses, page = 0, squadronIds = squadronIds)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 ageThresholds = thresholds,
-                                orders = result.value.orders,
+                                orders = result.value.rows,
                                 total = result.value.totalElements,
                                 page = result.value.page,
                                 hasMore = result.value.hasMore,
@@ -289,17 +291,19 @@ class OrdersViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onSuccess()
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "orders could not be read: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 phase = OrdersPhase.Failed(result.error),
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }
@@ -636,7 +640,7 @@ class OrderDetailViewModel(
             source = sources.work,
             scope = viewModelScope,
             read = { mutableState.value.handover },
-            write = { draft -> mutableState.value = mutableState.value.copy(handover = draft) },
+            write = { draft -> mutableState.update { it.copy(handover = draft) } },
             // The Auftrag is re-read rather than patched: a handover moves the line's open amount,
             // the order's status and possibly the whole order into „completed", and none of that is
             // in the answer.
@@ -655,7 +659,7 @@ class OrderDetailViewModel(
             orgUnits = sources.orgUnits,
             scope = viewModelScope,
             read = { mutableState.value.claims },
-            write = { claims -> mutableState.value = mutableState.value.copy(claims = claims) },
+            write = { claims -> mutableState.update { it.copy(claims = claims) } },
         )
 
     /**
@@ -669,7 +673,7 @@ class OrderDetailViewModel(
             source = sources.work,
             scope = viewModelScope,
             read = { mutableState.value.itemHandover },
-            write = { draft -> mutableState.value = mutableState.value.copy(itemHandover = draft) },
+            write = { draft -> mutableState.update { it.copy(itemHandover = draft) } },
             onRecorded = { reload(keepContent = true) },
         )
 
@@ -688,7 +692,7 @@ class OrderDetailViewModel(
             slot =
                 ProductionSlot(
                     read = { mutableState.value.production },
-                    write = { draft -> mutableState.value = mutableState.value.copy(production = draft) },
+                    write = { draft -> mutableState.update { it.copy(production = draft) } },
                 ),
             // Re-read rather than patched: a run moves the line's manufactured count, the order's
             // derived material demand, the linked stock it consumed and possibly the whole order
@@ -700,7 +704,7 @@ class OrderDetailViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepContent = false) },
         )
 
@@ -712,7 +716,7 @@ class OrderDetailViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.order(orderId))) { sections ->
@@ -745,8 +749,7 @@ class OrderDetailViewModel(
         viewModelScope.launch {
             val result = source.itemStock(orderId)
             if (result is ApiResult.Success) {
-                mutableState.value =
-                    mutableState.value.copy(itemStock = result.value.associateBy { it.gameItemId })
+                mutableState.update { state -> state.copy(itemStock = result.value.associateBy { it.gameItemId }) }
             }
         }
     }
@@ -764,7 +767,7 @@ class OrderDetailViewModel(
         viewModelScope.launch {
             val result = orgUnits.memberships()
             if (result is ApiResult.Success) {
-                mutableState.value = mutableState.value.copy(myUnitIds = result.value.map { it.id }.toSet())
+                mutableState.update { state -> state.copy(myUnitIds = result.value.map { it.id }.toSet()) }
             }
         }
     }
@@ -787,12 +790,13 @@ class OrderDetailViewModel(
             val responsibleId = mutableState.value.order?.responsibleOrgUnitId ?: return@launch
             val result = orgUnits.activeAllKinds()
             if (result is ApiResult.Success) {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update { state ->
+                    state.copy(
                         responsibleIsSpecialCommand =
                             result.value.firstOrNull { it.id == responsibleId }?.kind ==
                                 OrgUnitKind.SPECIAL_COMMAND,
                     )
+                }
             }
         }
     }
@@ -811,7 +815,7 @@ class OrderDetailViewModel(
         viewModelScope.launch {
             when (val result = identity.me()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(me = result.value)
+                    mutableState.update { it.copy(me = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -845,12 +849,12 @@ class OrderDetailViewModel(
      * @param value what the member typed.
      */
     fun onNoteChanged(value: String) {
-        mutableState.value = mutableState.value.copy(noteDraft = value.take(NOTE_LENGTH), error = null)
+        mutableState.update { it.copy(noteDraft = value.take(NOTE_LENGTH), error = null) }
     }
 
     /** Closes the editor, discarding what was typed. */
     fun onDismissNote() {
-        mutableState.value = mutableState.value.copy(noteDraft = null, error = null)
+        mutableState.update { it.copy(noteDraft = null, error = null) }
     }
 
     /**
@@ -937,17 +941,18 @@ class OrderDetailViewModel(
      * @param tab the page.
      */
     fun onTabSelected(tab: OrderTab) {
-        mutableState.value = mutableState.value.copy(tab = tab)
+        mutableState.update { it.copy(tab = tab) }
     }
 
     /** Closes the status picker, discarding an unapplied choice. */
     fun onDismissStatusPicker() {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 statusPickerOpen = false,
                 statusChoice = null,
                 statusConfirmOpen = false,
             )
+        }
     }
 
     /**
@@ -984,7 +989,7 @@ class OrderDetailViewModel(
 
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
     fun onDismissStatusConfirm() {
-        mutableState.value = mutableState.value.copy(statusConfirmOpen = false)
+        mutableState.update { it.copy(statusConfirmOpen = false) }
     }
 
     /**
@@ -1012,27 +1017,27 @@ class OrderDetailViewModel(
         val refused = mutableState.value.noteDraft
         when (val reload = source.detail(orderId)) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update { state ->
+                    state.copy(
                         order = reload.value,
                         phase = OrderDetailPhase.Ready,
                         noteDraft =
                             reload.value.assignees
-                                .firstOrNull { it.userId == mutableState.value.me?.userId }
+                                .firstOrNull { it.userId == state.me?.userId }
                                 ?.note
                                 .orEmpty(),
                         rejectedNote = refused,
                         saving = false,
                         error = ApiError.OptimisticLock(),
                     )
+                }
             }
 
             // The reload failed too. Keep the typed text exactly where it is and say only what is
             // known — that the save lost the race. Resetting the field here would throw the
             // member's paragraph away at the moment the network is least able to give it back.
             is ApiResult.Failure -> {
-                mutableState.value =
-                    mutableState.value.copy(saving = false, error = ApiError.OptimisticLock())
+                mutableState.update { it.copy(saving = false, error = ApiError.OptimisticLock()) }
             }
         }
     }
@@ -1046,12 +1051,12 @@ class OrderDetailViewModel(
      * @param request the call.
      */
     private fun write(request: suspend () -> ApiResult<JobOrder>) {
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             order = result.value,
                             phase = OrderDetailPhase.Ready,
                             noteDraft = null,
@@ -1061,6 +1066,7 @@ class OrderDetailViewModel(
                             saving = false,
                             error = null,
                         )
+                    }
                     // Both write paths land here, and both move what another viewer of this order
                     // is looking at: the assignee list and the status in the header.
                     publishLiveSync(
@@ -1083,8 +1089,8 @@ class OrderDetailViewModel(
                         onConflict()
                         return@launch
                     }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             saving = false,
                             // A refused write leaves the sheet closed but the choice discarded:
                             // re-opening it must show where the order actually is, not what the
@@ -1094,6 +1100,7 @@ class OrderDetailViewModel(
                             statusConfirmOpen = false,
                             error = result.error,
                         )
+                    }
                 }
             }
         }
@@ -1101,7 +1108,7 @@ class OrderDetailViewModel(
 
     /** Re-reads it, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
     }
 
@@ -1112,17 +1119,18 @@ class OrderDetailViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = OrderDetailPhase.Loading)
+            mutableState.update { it.copy(phase = OrderDetailPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = source.detail(orderId)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             order = result.value,
                             phase = OrderDetailPhase.Ready,
                             refreshing = false,
                         )
+                    }
                     retry.onSuccess()
                     readItemStock()
                     // Only now: the responsible unit's id arrives with the order, so the kind
@@ -1132,11 +1140,12 @@ class OrderDetailViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "order could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = OrderDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = false)
                 }
             }

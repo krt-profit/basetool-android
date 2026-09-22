@@ -22,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -196,7 +197,7 @@ class BankLifecycleViewModel(
 
     /** Re-reads them, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepContent = true)
     }
@@ -207,8 +208,7 @@ class BankLifecycleViewModel(
      * @param id the account, or `null` to close whatever is open.
      */
     fun onExpand(id: String?) {
-        mutableState.value =
-            mutableState.value.copy(expandedId = id.takeIf { it != mutableState.value.expandedId })
+        mutableState.update { state -> state.copy(expandedId = id.takeIf { it != state.expandedId }) }
     }
 
     /**
@@ -217,12 +217,12 @@ class BankLifecycleViewModel(
      * @param prompt what is being confirmed.
      */
     fun onPrompt(prompt: BankLifecyclePrompt) {
-        mutableState.value = mutableState.value.copy(prompt = prompt, error = null)
+        mutableState.update { it.copy(prompt = prompt, error = null) }
     }
 
     /** Takes it away again. */
     fun onDismissPrompt() {
-        mutableState.value = mutableState.value.copy(prompt = null)
+        mutableState.update { it.copy(prompt = null) }
     }
 
     /**
@@ -238,7 +238,7 @@ class BankLifecycleViewModel(
                 is BankLifecyclePrompt.Create -> prompt.copy(name = name)
                 else -> return
             }
-        mutableState.value = mutableState.value.copy(prompt = updated, error = null)
+        mutableState.update { it.copy(prompt = updated, error = null) }
     }
 
     /** Carries out whatever is on screen. */
@@ -247,17 +247,16 @@ class BankLifecycleViewModel(
         if (mutableState.value.saving) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true)
+        mutableState.update { it.copy(saving = true) }
         viewModelScope.launch {
             val result = carryOut(prompt)
             if (result == null) {
-                mutableState.value = mutableState.value.copy(saving = false)
+                mutableState.update { it.copy(saving = false) }
                 return@launch
             }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, prompt = null, error = null)
+                    mutableState.update { it.copy(saving = false, prompt = null, error = null) }
                     reload(keepContent = true)
                     if (prompt is BankLifecyclePrompt.RevokeGrant) {
                         mutableState.value.grantAccountId?.let { readGrants(it) }
@@ -266,8 +265,7 @@ class BankLifecycleViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "lifecycle write refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -318,30 +316,32 @@ class BankLifecycleViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             when (val accounts = source.managedAccounts()) {
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "account list could not be read: ${accounts.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = BankPhase.Failed(accounts.error),
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Success -> {
                     // The holder list failing is not the tab's failure: the accounts rendered, and
                     // a register that could not be read is a section that stays empty.
                     val holders = staff.holders()
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             accounts = accounts.value,
                             holders = (holders as? ApiResult.Success)?.value.orEmpty(),
                             phase = BankPhase.Ready,
                             refreshing = false,
                         )
+                    }
                 }
             }
         }
@@ -353,8 +353,7 @@ class BankLifecycleViewModel(
      * @param accountId which account, or `null` to show none.
      */
     fun onSelectGrantAccount(accountId: String?) {
-        mutableState.value =
-            mutableState.value.copy(grantAccountId = accountId, grants = emptyList())
+        mutableState.update { it.copy(grantAccountId = accountId, grants = emptyList()) }
         accountId?.let { readGrants(it) }
     }
 
@@ -370,18 +369,17 @@ class BankLifecycleViewModel(
         if (mutableState.value.saving) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = grantSource.setGrant(grant)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(saving = false)
+                    mutableState.update { it.copy(saving = false) }
                     mutableState.value.grantAccountId?.let { readGrants(it) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "grant change refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -393,18 +391,16 @@ class BankLifecycleViewModel(
      * @param accountId which account.
      */
     private fun readGrants(accountId: String) {
-        mutableState.value = mutableState.value.copy(grantsLoading = true)
+        mutableState.update { it.copy(grantsLoading = true) }
         viewModelScope.launch {
             when (val result = grantSource.grants(accountId)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(grants = result.value, grantsLoading = false)
+                    mutableState.update { it.copy(grants = result.value, grantsLoading = false) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "grants matrix unavailable: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(grantsLoading = false, error = result.error)
+                    mutableState.update { it.copy(grantsLoading = false, error = result.error) }
                 }
             }
         }
@@ -412,13 +408,13 @@ class BankLifecycleViewModel(
 
     /** Opens the „+ Halter registrieren" sheet and offers the first candidates unfiltered. */
     fun onAddHolder() {
-        mutableState.value = mutableState.value.copy(holderDraft = BankGranteeDraft(), error = null)
+        mutableState.update { it.copy(holderDraft = BankGranteeDraft(), error = null) }
         searchHolderCandidates("")
     }
 
     /** Closes it, discarding what was typed. */
     fun onDismissHolderDraft() {
-        mutableState.value = mutableState.value.copy(holderDraft = null)
+        mutableState.update { it.copy(holderDraft = null) }
     }
 
     /**
@@ -428,8 +424,7 @@ class BankLifecycleViewModel(
      */
     fun onHolderQuery(query: String) {
         val draft = mutableState.value.holderDraft ?: return
-        mutableState.value =
-            mutableState.value.copy(holderDraft = draft.copy(query = query, selected = null))
+        mutableState.update { it.copy(holderDraft = draft.copy(query = query, selected = null)) }
         searchHolderCandidates(query)
     }
 
@@ -440,10 +435,11 @@ class BankLifecycleViewModel(
      */
     fun onHolderSelected(member: BankGrantee) {
         val draft = mutableState.value.holderDraft ?: return
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 holderDraft = draft.copy(selected = member, query = member.handle),
             )
+        }
     }
 
     /** Registers the picked member as a holder of the unit's custody. */
@@ -452,19 +448,17 @@ class BankLifecycleViewModel(
         if (member == null || mutableState.value.saving) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = source.registerHolder(member.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, holderDraft = null)
+                    mutableState.update { it.copy(saving = false, holderDraft = null) }
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "holder registration refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -477,7 +471,7 @@ class BankLifecycleViewModel(
      */
     private fun searchHolderCandidates(query: String) {
         val draft = mutableState.value.holderDraft ?: return
-        mutableState.value = mutableState.value.copy(holderDraft = draft.copy(searching = true))
+        mutableState.update { it.copy(holderDraft = draft.copy(searching = true)) }
         viewModelScope.launch {
             val result = grantSource.searchGrantees(query)
             val current = mutableState.value.holderDraft ?: return@launch
@@ -510,13 +504,13 @@ class BankLifecycleViewModel(
 
     /** Opens the „+ Grant hinzufügen" sheet and offers the first candidates unfiltered. */
     fun onAddGrant() {
-        mutableState.value = mutableState.value.copy(granteeDraft = BankGranteeDraft(), error = null)
+        mutableState.update { it.copy(granteeDraft = BankGranteeDraft(), error = null) }
         searchGrantees("")
     }
 
     /** Closes the sheet, discarding what was typed. */
     fun onDismissGrantDraft() {
-        mutableState.value = mutableState.value.copy(granteeDraft = null)
+        mutableState.update { it.copy(granteeDraft = null) }
     }
 
     /**
@@ -526,8 +520,7 @@ class BankLifecycleViewModel(
      */
     fun onGranteeQuery(query: String) {
         val draft = mutableState.value.granteeDraft ?: return
-        mutableState.value =
-            mutableState.value.copy(granteeDraft = draft.copy(query = query, selected = null))
+        mutableState.update { it.copy(granteeDraft = draft.copy(query = query, selected = null)) }
         searchGrantees(query)
     }
 
@@ -538,10 +531,11 @@ class BankLifecycleViewModel(
      */
     fun onGranteeSelected(grantee: BankGrantee) {
         val draft = mutableState.value.granteeDraft ?: return
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 granteeDraft = draft.copy(selected = grantee, query = grantee.handle),
             )
+        }
     }
 
     /**
@@ -552,7 +546,7 @@ class BankLifecycleViewModel(
      * @param draft the sheet as it now stands.
      */
     fun onGrantDraftChanged(draft: BankGranteeDraft) {
-        mutableState.value = mutableState.value.copy(granteeDraft = draft)
+        mutableState.update { it.copy(granteeDraft = draft) }
     }
 
     /**
@@ -569,7 +563,7 @@ class BankLifecycleViewModel(
             return
         }
         val draft = requireNotNull(state.granteeDraft)
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             val result =
                 grantSource.setGrant(
@@ -586,15 +580,13 @@ class BankLifecycleViewModel(
                 )
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, granteeDraft = null)
+                    mutableState.update { it.copy(saving = false, granteeDraft = null) }
                     readGrants(accountId)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "grant creation refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -607,7 +599,7 @@ class BankLifecycleViewModel(
      */
     private fun searchGrantees(query: String) {
         val draft = mutableState.value.granteeDraft ?: return
-        mutableState.value = mutableState.value.copy(granteeDraft = draft.copy(searching = true))
+        mutableState.update { it.copy(granteeDraft = draft.copy(searching = true)) }
         viewModelScope.launch {
             val result = grantSource.searchGrantees(query)
             val current = mutableState.value.granteeDraft ?: return@launch

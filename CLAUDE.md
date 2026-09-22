@@ -350,6 +350,21 @@ scope — but never add a new one on top.
     [`docs/APPLE_PLATFORM_FEASIBILITY.md`](docs/APPLE_PLATFORM_FEASIBILITY.md) § 3.
 - Immutable `data class`/`value class` for models; sealed interfaces for UI/domain states;
   no platform types leaking across module boundaries.
+- **A ViewModel state change is `state.update { it.copy(…) }`, never
+  `state.value = state.value.copy(…)`.** `update` is a compare-and-set loop, correct from any
+  thread; the read-copy-assign form is correct on one only. Its lambda may run more than once, so
+  it builds a value and does nothing else — a request, a log line or a counter goes before it and
+  its result goes in. `StateFlowUpdateConventionTest` fails the build on the old form (2026-09-22,
+  audit SIB-MOD-01; 563 sites converted). A guard that reads `current` first and writes
+  `current.copy(…)` only if a condition holds is a different shape and stays as it is.
+- **A repository maps an `ApiResult` with `map` / `flatMap`** (`core:network` `ApiResult.kt`), not
+  with a `when` whose failure branch is `is ApiResult.Failure -> result`: the failure passes through
+  as the same object, so its `ApiError` subtype cannot be lost in a re-wrap (2026-09-22, audit
+  SIB-SIMP-01; 69 blocks converted). `onFailure` is there for a side effect on the failure alone.
+- **Every paged list is `Page<T>`** (`core:data` `Page.kt`: `rows`, `page`, `totalPages`,
+  `totalElements`, `hasMore`); the per-area names (`MissionPage`, `BankBookingPage`, …) are
+  typealiases of it. A picker's page is the separate `PickerPage` — it carries only whether more
+  exists (main repo ADR-0104), never indices (2026-09-22, audit SIB-SIMP-02; 17 classes merged).
 - **KDoc is mandatory on every public API of `core:*` modules** (classes, functions,
   properties) and on every `feature:*` screen entry point. It must describe actual behavior,
   parameters, error cases, and invariants — generic boilerplate ("Returns the value") is

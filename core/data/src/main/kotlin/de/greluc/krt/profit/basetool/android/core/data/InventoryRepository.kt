@@ -38,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.serializer
 import okhttp3.OkHttpClient
@@ -96,17 +97,9 @@ data class InventoryStack(
  * the whole material at once, which is what the tablet's detail pane shows and what the web's
  * `/inventory/material/{id}` page is.
  *
- * @property entries the rows on this page.
- * @property page the zero-based page index.
- * @property totalPages how many pages exist.
- * @property totalElements how many entries the material has in total.
+ * [Page.rows] holds the rows on this page.
  */
-data class MaterialEntryPage(
-    val entries: List<InventoryEntry>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-)
+typealias MaterialEntryPage = Page<InventoryEntry>
 
 /**
  * One entry inside a stack — the thing a booking actually moves.
@@ -452,20 +445,9 @@ data class TerminalOption(
 /**
  * One page of material groups.
  *
- * @property groups the rows on this page
- * @property page the zero-based page index
- * @property totalPages how many pages exist
- * @property totalElements how many materials the org unit holds in total
+ * [Page.rows] holds the rows on this page.
  */
-data class InventoryPage(
-    val groups: List<InventoryGroup>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias InventoryPage = Page<InventoryGroup>
 
 /**
  * The material catalogue, as a seam of its own.
@@ -793,13 +775,8 @@ class InventoryRepository(
         pageSize: Int,
     ): ApiResult<InventoryPage> {
         val params = listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString())
-        return when (
-            val result =
-                reader.get(AGGREGATED_PATH, params, PageResponseAggregatedInventoryDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(AGGREGATED_PATH, params, PageResponseAggregatedInventoryDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /**
@@ -882,7 +859,7 @@ class InventoryRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     MaterialEntryPage(
-                        entries = result.value.content.orEmpty().mapNotNull { it.toEntry() },
+                        rows = result.value.content.orEmpty().mapNotNull { it.toEntry() },
                         page = result.value.page ?: page,
                         totalPages = result.value.totalPages ?: 1,
                         totalElements = result.value.totalElements ?: 0L,
@@ -1030,17 +1007,12 @@ class InventoryRepository(
         }
 
     override suspend fun gameItemStock(): ApiResult<List<GameItemStock>> =
-        when (
-            val result =
-                reader.get(
-                    ALL_GROUPED_PATH,
-                    listOf(CATALOG_PARAM to CATALOG_ITEM),
-                    ListSerializer(GroupedInventoryDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toItemStock() })
-        }
+        reader.get(
+            ALL_GROUPED_PATH,
+            listOf(CATALOG_PARAM to CATALOG_ITEM),
+            ListSerializer(GroupedInventoryDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toItemStock() } }
 
     override suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit> =
         reader.postAccepted(
@@ -1113,18 +1085,13 @@ class InventoryRepository(
         version: Long?,
         note: String?,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.put(
-                    "$BOOK_IN_PATH/$id/note",
-                    InventoryItemNoteUpdateRequest(version = version ?: 0L, note = note),
-                    InventoryItemNoteUpdateRequest.serializer(),
-                    InventoryItemDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.put(
+            "$BOOK_IN_PATH/$id/note",
+            InventoryItemNoteUpdateRequest(version = version ?: 0L, note = note),
+            InventoryItemNoteUpdateRequest.serializer(),
+            InventoryItemDto.serializer(),
+        )
+            .map { }
 
     override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> {
         val params =
@@ -1245,32 +1212,22 @@ class InventoryRepository(
     }
 
     override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
-        when (
-            val result =
-                reader.get(
-                    // `allKinds=true` spans Staffel, SK, Bereich and Organisationsleitung. The
-                    // default returns Staffel and SK only, which would hide a Bereich or OL
-                    // member's own pool from a picker the server would have accepted it in.
-                    path = "/api/v1/users/$userId/memberships",
-                    query = listOf(ALL_KINDS_PARAM to "true"),
-                    deserializer = ListSerializer(OrgUnitMembershipOptionDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toOption() })
-        }
+        reader.get(
+            // `allKinds=true` spans Staffel, SK, Bereich and Organisationsleitung. The
+            // default returns Staffel and SK only, which would hide a Bereich or OL
+            // member's own pool from a picker the server would have accepted it in.
+            path = "/api/v1/users/$userId/memberships",
+            query = listOf(ALL_KINDS_PARAM to "true"),
+            deserializer = ListSerializer(OrgUnitMembershipOptionDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toOption() } }
 
     override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
-        when (
-            val result =
-                reader.get(
-                    "/api/v1/materials/$materialId/terminals",
-                    ListSerializer(MaterialSellingTerminalDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toOption() })
-        }
+        reader.get(
+            "/api/v1/materials/$materialId/terminals",
+            ListSerializer(MaterialSellingTerminalDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toOption() } }
 
     /**
      * Sends a booking whose answer the screen does not read.
@@ -1374,7 +1331,7 @@ class InventoryRepository(
  */
 private fun PageResponseAggregatedInventoryDto.toModel(page: Int): InventoryPage =
     InventoryPage(
-        groups = content.orEmpty().map { it.toModel() },
+        rows = content.orEmpty().map { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

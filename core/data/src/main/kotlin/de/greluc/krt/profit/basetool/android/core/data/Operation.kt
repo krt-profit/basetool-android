@@ -92,17 +92,6 @@ data class Operation(
  * `totalElements` is carried for the reason [MissionPage] carries it: a paginated list that cannot
  * say how much it is not showing is the silent truncation the main repo's ADR-0104 forbids.
  *
- * @property operations the rows on this page, in server order
- * @property page the zero-based index of this page
- * @property totalPages how many pages the filter matches
- * @property totalElements how many Operationen the filter matches in total
+ * [Page.rows] holds the rows on this page, in server order.
  */
-data class OperationPage(
-    val operations: List<Operation>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias OperationPage = Page<Operation>

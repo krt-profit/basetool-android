@@ -130,7 +130,7 @@ class MaterialBoardRepositoryTest {
 
             val page = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value
 
-            val first = page.entries.first()
+            val first = page.rows.first()
             assertEquals("Quantainium", first.materialName)
             assertFalse(first.unitIsPiece)
             assertEquals("240.0", first.amount)
@@ -145,7 +145,7 @@ class MaterialBoardRepositoryTest {
         runTest {
             respond(OFFERS)
 
-            val item = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.entries[1]
+            val item = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows[1]
 
             // An item names itself in itemName/itemQuantity, not in material/amount. Reading only
             // the material fields would render every item row blank with an empty amount.
@@ -162,7 +162,7 @@ class MaterialBoardRepositoryTest {
         runTest {
             respond(OFFERS)
 
-            val other = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.entries[0]
+            val other = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows[0]
 
             // REQ-MARKET-006: the server sends the handles only to the owner. Rendering an empty
             // list instead of nothing would imply nobody had answered.
@@ -174,7 +174,7 @@ class MaterialBoardRepositoryTest {
         runTest {
             respond(REQUESTS)
 
-            val row = (repository.board(BoardSide.REQUESTS) as ApiResult.Success).value.entries.single()
+            val row = (repository.board(BoardSide.REQUESTS) as ApiResult.Success).value.rows.single()
 
             assertEquals(BoardSide.REQUESTS, row.side)
             assertEquals("Titanium", row.materialName)
@@ -186,7 +186,7 @@ class MaterialBoardRepositoryTest {
     fun `the interest toggle answers with the updated row`() =
         runTest {
             respond(OFFERS)
-            val entry = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.entries.first()
+            val entry = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows.first()
             server.takeRequest()
             respond(AFTER_INTEREST)
 
@@ -204,7 +204,7 @@ class MaterialBoardRepositoryTest {
     fun `taking the pledge back sends a DELETE to the same path`() =
         runTest {
             respond(OFFERS)
-            val entry = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.entries.first()
+            val entry = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows.first()
             server.takeRequest()
             respond(AFTER_INTEREST)
 
@@ -219,7 +219,7 @@ class MaterialBoardRepositoryTest {
     fun `a request's writes address the request family, not the offer one`() =
         runTest {
             respond(REQUESTS)
-            val entry = (repository.board(BoardSide.REQUESTS) as ApiResult.Success).value.entries.single()
+            val entry = (repository.board(BoardSide.REQUESTS) as ApiResult.Success).value.rows.single()
             server.takeRequest()
             respond(REQUESTS.substringAfter("\"content\": [").substringBeforeLast("]").trim().trimEnd(','))
 

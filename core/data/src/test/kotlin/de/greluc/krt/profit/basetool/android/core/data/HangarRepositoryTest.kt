@@ -153,7 +153,7 @@ class HangarRepositoryTest {
 
             val page = (repository.myShips() as ApiResult.Success).value
 
-            val first = page.ships.first()
+            val first = page.rows.first()
             assertEquals("Meridian", first.name)
             assertEquals("Carrack", first.typeName)
             assertEquals("Anvil Aerospace", first.manufacturerName)
@@ -169,7 +169,7 @@ class HangarRepositoryTest {
             // vanish.
             respond(SHIPS)
 
-            val second = (repository.myShips() as ApiResult.Success).value.ships[1]
+            val second = (repository.myShips() as ApiResult.Success).value.rows[1]
 
             assertNull(second.name)
             assertNull(second.manufacturerName)
@@ -187,7 +187,7 @@ class HangarRepositoryTest {
                     "page": 0, "totalElements": 1, "totalPages": 1}""",
             )
 
-            assertNull((repository.myShips() as ApiResult.Success).value.ships.first().name)
+            assertNull((repository.myShips() as ApiResult.Success).value.rows.first().name)
         }
 
     @Test
@@ -199,7 +199,7 @@ class HangarRepositoryTest {
             )
 
             val page = (repository.myShips() as ApiResult.Success).value
-            assertEquals(1, page.ships.size)
+            assertEquals(1, page.rows.size)
             assertEquals(2L, page.totalElements)
         }
 
@@ -210,7 +210,7 @@ class HangarRepositoryTest {
 
             val page = (repository.orgOverview() as ApiResult.Success).value
 
-            val row = page.types.single()
+            val row = page.rows.single()
             assertEquals("Carrack", row.typeName)
             assertEquals("Anvil Aerospace", row.manufacturerName)
             assertEquals(THREE, row.count)
@@ -255,7 +255,7 @@ class HangarRepositoryTest {
             // A read-only card had no use for these; a writing one cannot save without them.
             respond(SHIPS)
 
-            val ship = (repository.myShips() as ApiResult.Success).value.ships.first()
+            val ship = (repository.myShips() as ApiResult.Success).value.rows.first()
 
             assertEquals("t1", ship.typeId)
             assertEquals("l1", ship.locationId)

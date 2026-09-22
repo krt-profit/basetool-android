@@ -290,7 +290,7 @@ class BankRepositoryTest {
             // number would show every withdrawal as a deposit.
             respond(LEDGER)
 
-            val lines = (repository.bookings("a1") as ApiResult.Success).value.bookings
+            val lines = (repository.bookings("a1") as ApiResult.Success).value.rows
 
             assertEquals(true, lines[0].incoming)
             assertEquals(false, lines[1].incoming)
@@ -303,7 +303,7 @@ class BankRepositoryTest {
             // Better an unsigned figure than a direction nobody checked.
             respond(LEDGER)
 
-            assertNull((repository.bookings("a1") as ApiResult.Success).value.bookings[2].incoming)
+            assertNull((repository.bookings("a1") as ApiResult.Success).value.rows[2].incoming)
         }
 
     @Test
@@ -314,7 +314,7 @@ class BankRepositoryTest {
             // who received it.
             respond(LEDGER)
 
-            val line = (repository.bookings("a1") as ApiResult.Success).value.bookings[1]
+            val line = (repository.bookings("a1") as ApiResult.Success).value.rows[1]
 
             assertEquals("16.0000", line.transferFee)
             assertEquals("Kestrel", line.counterpartyHandle)
@@ -327,7 +327,7 @@ class BankRepositoryTest {
 
             assertEquals(
                 "12400.0000",
-                (repository.bookings("a1") as ApiResult.Success).value.bookings.first().amount,
+                (repository.bookings("a1") as ApiResult.Success).value.rows.first().amount,
             )
         }
 

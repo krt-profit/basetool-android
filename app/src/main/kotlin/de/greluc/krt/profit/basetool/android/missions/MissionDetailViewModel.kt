@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -365,9 +366,9 @@ class MissionDetailViewModel(
                 val current = mutableState.value
                 MissionAdminContext(current.adminForm, current.detail, current.canManage)
             },
-            write = { form -> mutableState.value = mutableState.value.copy(adminForm = form) },
+            write = { form -> mutableState.update { it.copy(adminForm = form) } },
             onSaved = { saved ->
-                mutableState.value = mutableState.value.copy(detail = saved)
+                mutableState.update { it.copy(detail = saved) }
                 announce(LiveSyncSections.MISSION_OVERVIEW)
             },
         )
@@ -427,7 +428,7 @@ class MissionDetailViewModel(
             source = seams.people,
             scope = viewModelScope,
             read = { mutableState.value.memberPicker },
-            write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
+            write = { picker -> mutableState.update { it.copy(memberPicker = picker) } },
             onPicked = { target, option ->
                 when (target) {
                     MissionMemberTarget.PARTY_LEAD -> {
@@ -474,7 +475,7 @@ class MissionDetailViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepContent = false) },
         )
 
@@ -492,7 +493,7 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             when (val result = seams.people.crewJobTypes()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(crewJobTypes = result.value)
+                    mutableState.update { it.copy(crewJobTypes = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -527,7 +528,7 @@ class MissionDetailViewModel(
 
         /** Closes the confirmation without moving anything. */
         fun dismiss() {
-            mutableState.value = mutableState.value.copy(lifecycleAsk = null)
+            mutableState.update { it.copy(lifecycleAsk = null) }
         }
 
         /**
@@ -582,7 +583,7 @@ class MissionDetailViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.mission(missionId))) { sections ->
@@ -621,7 +622,7 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             when (val result = identity.me()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(me = result.value)
+                    mutableState.update { it.copy(me = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -668,13 +669,12 @@ class MissionDetailViewModel(
      * not pay for a list they will not see.
      */
     fun onJoinSheetOpened() {
-        mutableState.value = mutableState.value.copy(joinSheet = JoinSheet(), error = null)
+        mutableState.update { it.copy(joinSheet = JoinSheet(), error = null) }
         viewModelScope.launch {
             when (val result = seams.read.jobTypes()) {
                 is ApiResult.Success -> {
                     val open = mutableState.value.joinSheet ?: return@launch
-                    mutableState.value =
-                        mutableState.value.copy(joinSheet = open.copy(jobTypes = result.value))
+                    mutableState.update { it.copy(joinSheet = open.copy(jobTypes = result.value)) }
                 }
 
                 is ApiResult.Failure -> {
@@ -688,7 +688,7 @@ class MissionDetailViewModel(
 
     /** Closes the sheet without signing up. */
     fun onJoinSheetDismissed() {
-        mutableState.value = mutableState.value.copy(joinSheet = null)
+        mutableState.update { it.copy(joinSheet = null) }
     }
 
     /**
@@ -700,7 +700,7 @@ class MissionDetailViewModel(
     fun onDesiredFunction(jobType: MissionJobType) {
         val open = mutableState.value.joinSheet ?: return
         val next = if (open.desired?.id == jobType.id) null else jobType
-        mutableState.value = mutableState.value.copy(joinSheet = open.copy(desired = next))
+        mutableState.update { it.copy(joinSheet = open.copy(desired = next)) }
     }
 
     /**
@@ -710,7 +710,7 @@ class MissionDetailViewModel(
      */
     fun onJoinPayout(donate: Boolean) {
         val open = mutableState.value.joinSheet ?: return
-        mutableState.value = mutableState.value.copy(joinSheet = open.copy(donate = donate))
+        mutableState.update { it.copy(joinSheet = open.copy(donate = donate)) }
     }
 
     /** Sends the sign-up with what the sheet collected. */
@@ -735,17 +735,18 @@ class MissionDetailViewModel(
                     )
             ) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(joinSheet = null)
+                    mutableState.update { it.copy(joinSheet = null) }
                     settle(result)
                 }
 
                 is ApiResult.Failure -> {
                     // The sheet stays and so do the answers: nothing was written, and a member who
                     // has to re-pick after a refusal is paying for the server's reply.
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             joinSheet = open.copy(saving = false, error = result.error),
                         )
+                    }
                 }
             }
         }
@@ -844,7 +845,7 @@ class MissionDetailViewModel(
 
     /** Closes the editor, discarding what was typed. */
     fun onDismissEntry() {
-        mutableState.value = mutableState.value.copy(entryDraft = null, error = null)
+        mutableState.update { it.copy(entryDraft = null, error = null) }
     }
 
     /** Sends the booking. */
@@ -895,12 +896,11 @@ class MissionDetailViewModel(
      * @param request the call.
      */
     private fun bookkeeping(request: suspend () -> ApiResult<Unit>) {
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(entryDraft = null, saving = false, error = null)
+                    mutableState.update { it.copy(entryDraft = null, saving = false, error = null) }
                     loadFinances()
                     announce(LiveSyncSections.MISSION_FINANCE)
                 }
@@ -908,8 +908,7 @@ class MissionDetailViewModel(
                 // The editor stays open with what was typed.
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the booking could not be written: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -925,7 +924,7 @@ class MissionDetailViewModel(
      * @param request the call.
      */
     private fun writeRow(request: suspend () -> ApiResult<MissionParticipant>) {
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
@@ -942,8 +941,7 @@ class MissionDetailViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the sign-up could not be changed: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -969,19 +967,20 @@ class MissionDetailViewModel(
     private fun settle(result: ApiResult<MissionDetail>) {
         when (result) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         detail = result.value,
                         phase = MissionDetailPhase.Ready,
                         saving = false,
                         error = null,
                     )
+                }
                 announce(LiveSyncSections.MISSION_CREW)
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "the sign-up could not be changed: ${result.error}" }
-                mutableState.value = mutableState.value.copy(saving = false, error = result.error)
+                mutableState.update { it.copy(saving = false, error = result.error) }
             }
         }
     }
@@ -993,7 +992,7 @@ class MissionDetailViewModel(
      * to remain.
      */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
         if (mutableState.value.finances !is MissionFinancesPhase.Idle) {
             loadFinances()
@@ -1012,7 +1011,7 @@ class MissionDetailViewModel(
      */
     fun onTabSelected(tab: MissionTab) {
         val leaving = mutableState.value.tab
-        mutableState.value = mutableState.value.copy(tab = tab)
+        mutableState.update { it.copy(tab = tab) }
         when {
             tab == MissionTab.ADMIN -> admin.open()
             leaving == MissionTab.ADMIN -> admin.dismiss()
@@ -1035,18 +1034,19 @@ class MissionDetailViewModel(
                 viewModelScope.launch {
                     val ships = seams.admin.unitShipOptions(missionId)
                     val members = (seams.people.members("") as? ApiResult.Success)?.value?.rows.orEmpty()
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             unitShips = ships,
                             unitMembers = members.map { it.id to it.name },
                         )
+                    }
                 }
             }
         }
         if (tab == MissionTab.PARTICIPANTS) {
             val current = mutableState.value
             roster.loadJobTypes(current.canManage, current.rosterJobTypes) { types ->
-                mutableState.value = mutableState.value.copy(rosterJobTypes = types)
+                mutableState.update { it.copy(rosterJobTypes = types) }
             }
         }
     }
@@ -1063,27 +1063,29 @@ class MissionDetailViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = MissionDetailPhase.Loading)
+            mutableState.update { it.copy(phase = MissionDetailPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = seams.read.detail(missionId)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             detail = result.value,
                             phase = MissionDetailPhase.Ready,
                             refreshing = false,
                         )
+                    }
                     retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "Einsatz could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = MissionDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = false)
                 }
             }
@@ -1092,7 +1094,7 @@ class MissionDetailViewModel(
 
     /** Reads the money. */
     private fun loadFinances() {
-        mutableState.value = mutableState.value.copy(finances = MissionFinancesPhase.Loading)
+        mutableState.update { it.copy(finances = MissionFinancesPhase.Loading) }
         viewModelScope.launch {
             mutableState.value =
                 when (val result = seams.read.finances(missionId)) {

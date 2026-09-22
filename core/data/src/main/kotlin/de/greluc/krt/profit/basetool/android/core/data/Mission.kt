@@ -134,17 +134,6 @@ data class Mission(
  * cannot say how much it is not showing is exactly the silent-truncation failure the main repo's
  * ADR-0104 forbids.
  *
- * @property missions the rows on this page, in server order
- * @property page the zero-based index of this page
- * @property totalPages how many pages the filter matches
- * @property totalElements how many Einsätze the filter matches in total
+ * [Page.rows] holds the rows on this page, in server order.
  */
-data class MissionPage(
-    val missions: List<Mission>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias MissionPage = Page<Mission>
