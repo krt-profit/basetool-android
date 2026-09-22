@@ -178,7 +178,7 @@ class MissionsViewModelTest {
         total: Long = ids.size.toLong(),
     ) = ApiResult.Success(
         MissionPage(
-            missions = ids.map(::mission),
+            rows = ids.map(::mission),
             page = page,
             totalPages = totalPages,
             totalElements = total,

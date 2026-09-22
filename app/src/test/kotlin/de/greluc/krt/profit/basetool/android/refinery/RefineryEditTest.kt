@@ -129,6 +129,33 @@ class RefineryEditTest {
             assertTrue("editing never posts a second order", source.created.isEmpty())
         }
 
+    /**
+     * A goods line keeps its identity through an edit and through the removal of the line above it.
+     *
+     * The form's list is keyed by [RefineryGoodDraft.key]. Keyed by position — which it was until
+     * 2026-09-22 — removing the first of two lines gave the surviving line the first line's slot and
+     * whatever that slot remembered. The key only helps if the ViewModel's edits carry it along, so
+     * that is what is pinned: a fresh line gets a key of its own, `copy` keeps it, and removing a
+     * neighbour leaves it untouched.
+     */
+    @Test
+    fun aGoodsLineKeepsItsKeyThroughAnEditAndARemovalAboveIt() =
+        runTest(dispatcher) {
+            val model = RefineryCreateViewModel(RecordingSource(), null)
+            model.loadOnce()
+            advanceUntilIdle()
+            model.onAddGood()
+            val (first, second) = model.state.value.draft.goods
+            assertTrue("two fresh lines must not share a key", first.key != second.key)
+
+            model.onGoodChanged(1, second.copy(inputQuantity = "620"))
+            model.onRemoveGood(0)
+
+            val survivor = model.state.value.draft.goods.single()
+            assertEquals("the edited line is still the same line", second.key, survivor.key)
+            assertEquals("620", survivor.inputQuantity)
+        }
+
     /** Picking an ore fills in what it refines into; the member never answers that question. */
     @Test
     fun pickingAnOreDerivesItsOutputMaterial() =

@@ -28,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log subsystem. A blueprint's owner is member data and never reaches the log. */
@@ -229,7 +230,7 @@ class PersonalBlueprintsViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -249,7 +250,7 @@ class PersonalBlueprintsViewModel(
             if (mutableState.value.selection != null) {
                 return
             }
-            mutableState.value = mutableState.value.copy(selection = BlueprintSelection(ids = setOf(id)))
+            mutableState.update { it.copy(selection = BlueprintSelection(ids = setOf(id))) }
         }
 
         /**
@@ -264,10 +265,11 @@ class PersonalBlueprintsViewModel(
         fun toggle(id: String) {
             val open = mutableState.value.selection ?: return
             val next = if (id in open.ids) open.ids - id else open.ids + id
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update {
+                it.copy(
                     selection = open.copy(ids = next, everything = false),
                 )
+            }
         }
 
         /**
@@ -280,13 +282,12 @@ class PersonalBlueprintsViewModel(
         fun selectAll() {
             val open = mutableState.value.selection ?: return
             val loaded = mutableState.value.items.map { it.id }.toSet()
-            mutableState.value =
-                mutableState.value.copy(selection = open.copy(ids = loaded, everything = true))
+            mutableState.update { it.copy(selection = open.copy(ids = loaded, everything = true)) }
         }
 
         /** Leaves the mode without deleting anything. */
         fun cancel() {
-            mutableState.value = mutableState.value.copy(selection = null)
+            mutableState.update { it.copy(selection = null) }
         }
 
         /**
@@ -296,7 +297,7 @@ class PersonalBlueprintsViewModel(
          */
         fun ask(asking: Boolean) {
             val open = mutableState.value.selection ?: return
-            mutableState.value = mutableState.value.copy(selection = open.copy(asking = asking))
+            mutableState.update { it.copy(selection = open.copy(asking = asking)) }
         }
 
         /**
@@ -312,12 +313,11 @@ class PersonalBlueprintsViewModel(
             if (open.deleting || open.ids.isEmpty()) {
                 return
             }
-            mutableState.value =
-                mutableState.value.copy(selection = open.copy(deleting = true, asking = false))
+            mutableState.update { it.copy(selection = open.copy(deleting = true, asking = false)) }
             viewModelScope.launch {
                 val refused = if (open.everything) deleteEverything() else deleteEach(open.ids)
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update { state ->
+                    state.copy(
                         selection =
                             if (refused.isEmpty()) {
                                 null
@@ -325,6 +325,7 @@ class PersonalBlueprintsViewModel(
                                 open.copy(ids = refused, deleting = false, everything = false)
                             },
                     )
+                }
                 reload(keepRows = false)
             }
         }
@@ -378,12 +379,12 @@ class PersonalBlueprintsViewModel(
     inner class Import {
         /** Opens the sheet, waiting for a file. */
         fun open() {
-            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Waiting)
+            mutableState.update { it.copy(import = BlueprintImportStep.Waiting) }
         }
 
         /** Closes it, whatever step it was on. Nothing is written by closing. */
         fun dismiss() {
-            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Closed)
+            mutableState.update { it.copy(import = BlueprintImportStep.Closed) }
         }
 
         /**
@@ -398,25 +399,25 @@ class PersonalBlueprintsViewModel(
             bytes: ByteArray?,
         ) {
             if (bytes == null) {
-                mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Failed(null))
+                mutableState.update { it.copy(import = BlueprintImportStep.Failed(null)) }
                 return
             }
-            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Reading(fileName))
+            mutableState.update { it.copy(import = BlueprintImportStep.Reading(fileName)) }
             viewModelScope.launch {
-                mutableState.value =
-                    mutableState.value.copy(
-                        import =
-                            when (val result = imports.importPreview(fileName, bytes)) {
-                                is ApiResult.Success -> {
-                                    BlueprintImportStep.Preview(fileName, result.value)
-                                }
+                // The request and its log line run once, outside `update`: its lambda is re-run
+                // whenever a concurrent write wins, and a network call inside it would be repeated.
+                val step =
+                    when (val result = imports.importPreview(fileName, bytes)) {
+                        is ApiResult.Success -> {
+                            BlueprintImportStep.Preview(fileName, result.value)
+                        }
 
-                                is ApiResult.Failure -> {
-                                    KrtLog.w(LOG_TAG) { "the import file could not be read: ${result.error}" }
-                                    BlueprintImportStep.Failed(result.error)
-                                }
-                            },
-                    )
+                        is ApiResult.Failure -> {
+                            KrtLog.w(LOG_TAG) { "the import file could not be read: ${result.error}" }
+                            BlueprintImportStep.Failed(result.error)
+                        }
+                    }
+                mutableState.update { it.copy(import = step) }
             }
         }
 
@@ -428,19 +429,17 @@ class PersonalBlueprintsViewModel(
                 dismiss()
                 return
             }
-            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Writing(entries.size))
+            mutableState.update { it.copy(import = BlueprintImportStep.Writing(entries.size)) }
             viewModelScope.launch {
                 when (val result = imports.importApply(entries)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(import = BlueprintImportStep.Done(result.value))
+                        mutableState.update { it.copy(import = BlueprintImportStep.Done(result.value)) }
                         reload(keepRows = false)
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the import could not be applied: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(import = BlueprintImportStep.Failed(result.error))
+                        mutableState.update { it.copy(import = BlueprintImportStep.Failed(result.error)) }
                     }
                 }
             }
@@ -462,7 +461,7 @@ class PersonalBlueprintsViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
     }
@@ -485,7 +484,7 @@ class PersonalBlueprintsViewModel(
         if (query == mutableState.value.query) {
             return
         }
-        mutableState.value = mutableState.value.copy(query = query)
+        mutableState.update { it.copy(query = query) }
         loadedOnce = true
         loadJob?.cancel()
         loadJob =
@@ -497,7 +496,7 @@ class PersonalBlueprintsViewModel(
 
     /** Re-reads while keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -519,12 +518,12 @@ class PersonalBlueprintsViewModel(
      * @param enabled whether refining counts.
      */
     fun onRefineryChanged(enabled: Boolean) {
-        mutableState.value = mutableState.value.copy(withRefinery = enabled)
+        mutableState.update { it.copy(withRefinery = enabled) }
     }
 
     /** Opens the add sheet. */
     fun onAdd() {
-        mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Adding())
+        mutableState.update { it.copy(editor = BlueprintEditor.Adding()) }
     }
 
     /**
@@ -533,16 +532,17 @@ class PersonalBlueprintsViewModel(
      * @param entry the row.
      */
     fun onEdit(entry: OwnedBlueprint) {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 editor = BlueprintEditor.Editing(entry = entry, note = entry.note.orEmpty()),
             )
+        }
     }
 
     /** Closes whatever is open, discarding what was typed. */
     fun onEditorDismissed() {
         searchJob?.cancel()
-        mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+        mutableState.update { it.copy(editor = BlueprintEditor.Closed) }
     }
 
     /**
@@ -560,23 +560,20 @@ class PersonalBlueprintsViewModel(
         if (mutableState.value.selectedId == id && mutableState.value.recipe is RecipeState.Ready) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(selectedId = id, recipe = RecipeState.Loading)
+        mutableState.update { it.copy(selectedId = id, recipe = RecipeState.Loading) }
         viewModelScope.launch {
             when (val result = repository.recipe(id)) {
                 is ApiResult.Success -> {
                     // Guarded: a slow read for a row the member has since left must not overwrite
                     // the recipe of the one they are looking at now.
                     if (mutableState.value.selectedId == id) {
-                        mutableState.value =
-                            mutableState.value.copy(recipe = RecipeState.Ready(result.value))
+                        mutableState.update { it.copy(recipe = RecipeState.Ready(result.value)) }
                     }
                 }
 
                 is ApiResult.Failure -> {
                     if (mutableState.value.selectedId == id) {
-                        mutableState.value =
-                            mutableState.value.copy(recipe = RecipeState.Failed(result.error))
+                        mutableState.update { it.copy(recipe = RecipeState.Failed(result.error)) }
                     }
                 }
             }
@@ -590,7 +587,7 @@ class PersonalBlueprintsViewModel(
      */
     fun onProductQueryChanged(query: String) {
         val adding = mutableState.value.editor as? BlueprintEditor.Adding ?: return
-        mutableState.value = mutableState.value.copy(editor = adding.copy(query = query))
+        mutableState.update { it.copy(editor = adding.copy(query = query)) }
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH_LENGTH) {
             update<BlueprintEditor.Adding> { it.copy(results = emptyList(), capped = false) }
@@ -615,7 +612,7 @@ class PersonalBlueprintsViewModel(
                         update<BlueprintEditor.Adding> {
                             it.copy(results = emptyList(), searching = false, capped = false)
                         }
-                        mutableState.value = mutableState.value.copy(lastFailure = result.error)
+                        mutableState.update { it.copy(lastFailure = result.error) }
                     }
                 }
             }
@@ -657,7 +654,7 @@ class PersonalBlueprintsViewModel(
                 is BlueprintEditor.Editing -> editor.copy(note = capped, error = null)
                 BlueprintEditor.Closed -> return
             }
-        mutableState.value = mutableState.value.copy(editor = next)
+        mutableState.update { it.copy(editor = next) }
     }
 
     /** Saves whatever the open sheet holds. */
@@ -682,7 +679,7 @@ class PersonalBlueprintsViewModel(
         if (picked.isEmpty()) {
             return
         }
-        mutableState.value = mutableState.value.copy(editor = editor.copy(saving = true, error = null))
+        mutableState.update { it.copy(editor = editor.copy(saving = true, error = null)) }
         viewModelScope.launch {
             // One product keeps the single create, because that is the call that carries the note.
             // Several go through the batch, which carries none.
@@ -708,13 +705,12 @@ class PersonalBlueprintsViewModel(
         val note = editor.note.trim().takeIf { it.isNotEmpty() }
         when (val result = repository.add(product.productKey, note)) {
             is ApiResult.Success -> {
-                mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+                mutableState.update { it.copy(editor = BlueprintEditor.Closed) }
                 reload(keepRows = true)
             }
 
             is ApiResult.Failure -> {
-                mutableState.value =
-                    mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
+                mutableState.update { it.copy(editor = editor.copy(saving = false, error = result.error)) }
             }
         }
     }
@@ -735,8 +731,8 @@ class PersonalBlueprintsViewModel(
     ) {
         when (val result = repository.addAll(picked.map { it.productKey })) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         editor =
                             editor.copy(
                                 saving = false,
@@ -744,14 +740,14 @@ class PersonalBlueprintsViewModel(
                                 outcome = result.value,
                             ),
                     )
+                }
                 if (result.value.anyAdded) {
                     reload(keepRows = true)
                 }
             }
 
             is ApiResult.Failure -> {
-                mutableState.value =
-                    mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
+                mutableState.update { it.copy(editor = editor.copy(saving = false, error = result.error)) }
             }
         }
     }
@@ -763,18 +759,17 @@ class PersonalBlueprintsViewModel(
      */
     private fun edit(editor: BlueprintEditor.Editing) {
         val version = editor.entry.version ?: return
-        mutableState.value = mutableState.value.copy(editor = editor.copy(saving = true, error = null))
+        mutableState.update { it.copy(editor = editor.copy(saving = true, error = null)) }
         viewModelScope.launch {
             val note = editor.note.trim().takeIf { it.isNotEmpty() }
             when (val result = repository.updateNote(editor.entry.id, version, note)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+                    mutableState.update { it.copy(editor = BlueprintEditor.Closed) }
                     reload(keepRows = true)
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
+                    mutableState.update { it.copy(editor = editor.copy(saving = false, error = result.error)) }
                 }
             }
         }
@@ -786,12 +781,12 @@ class PersonalBlueprintsViewModel(
      * @param entry the row.
      */
     fun onDeleteRequested(entry: OwnedBlueprint) {
-        mutableState.value = mutableState.value.copy(pendingDelete = entry)
+        mutableState.update { it.copy(pendingDelete = entry) }
     }
 
     /** Abandons the removal. */
     fun onDeleteDismissed() {
-        mutableState.value = mutableState.value.copy(pendingDelete = null)
+        mutableState.update { it.copy(pendingDelete = null) }
     }
 
     /** Removes the row the member confirmed. */
@@ -800,21 +795,22 @@ class PersonalBlueprintsViewModel(
         if (!mutableState.value.online) {
             return
         }
-        mutableState.value = mutableState.value.copy(deleting = true)
+        mutableState.update { it.copy(deleting = true) }
         viewModelScope.launch {
             when (val result = repository.remove(entry.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(pendingDelete = null, deleting = false)
+                    mutableState.update { it.copy(pendingDelete = null, deleting = false) }
                     reload(keepRows = true)
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             pendingDelete = null,
                             deleting = false,
                             lastFailure = result.error,
                         )
+                    }
                 }
             }
         }
@@ -822,7 +818,7 @@ class PersonalBlueprintsViewModel(
 
     /** Acknowledges the last write failure. */
     fun onFailureShown() {
-        mutableState.value = mutableState.value.copy(lastFailure = null)
+        mutableState.update { it.copy(lastFailure = null) }
     }
 
     /**
@@ -833,7 +829,7 @@ class PersonalBlueprintsViewModel(
      */
     private inline fun <reified T : BlueprintEditor> update(transform: (T) -> BlueprintEditor) {
         val editor = mutableState.value.editor as? T ?: return
-        mutableState.value = mutableState.value.copy(editor = transform(editor))
+        mutableState.update { it.copy(editor = transform(editor)) }
     }
 
     /**
@@ -857,14 +853,14 @@ class PersonalBlueprintsViewModel(
         keepRows: Boolean,
     ) {
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = BlueprintsPhase.Loading)
+            mutableState.update { it.copy(phase = BlueprintsPhase.Loading) }
         }
         when (val result = repository.page(query = mutableState.value.query, page = page)) {
             is ApiResult.Success -> {
                 val current = mutableState.value
                 mutableState.value =
                     current.copy(
-                        items = if (page == 0) result.value.items else current.items + result.value.items,
+                        items = if (page == 0) result.value.rows else current.items + result.value.rows,
                         total = result.value.totalElements,
                         hasMore = result.value.hasMore,
                         phase = BlueprintsPhase.Ready,
@@ -875,11 +871,12 @@ class PersonalBlueprintsViewModel(
             }
 
             is ApiResult.Failure -> {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = BlueprintsPhase.Failed(result.error),
                         refreshing = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = false)
             }
         }
@@ -894,11 +891,11 @@ class PersonalBlueprintsViewModel(
     private suspend fun loadCraftability() {
         when (val result = repository.craftability()) {
             is ApiResult.Success -> {
-                mutableState.value = mutableState.value.copy(craftability = result.value)
+                mutableState.update { it.copy(craftability = result.value) }
             }
 
             is ApiResult.Failure -> {
-                mutableState.value = mutableState.value.copy(craftability = emptyMap())
+                mutableState.update { it.copy(craftability = emptyMap()) }
             }
         }
     }

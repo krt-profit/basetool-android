@@ -23,6 +23,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMat
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -89,20 +90,9 @@ data class BoardEntry(
 /**
  * One page of one half of the board.
  *
- * @property entries the rows on this page.
- * @property page the zero-based page index.
- * @property totalPages how many pages exist.
- * @property totalElements how many rows the filter matches.
+ * [Page.rows] holds the rows on this page.
  */
-data class BoardPage(
-    val entries: List<BoardEntry>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias BoardPage = Page<BoardEntry>
 
 /**
  * One of the caller's own Lager entries that could be offered.
@@ -329,31 +319,21 @@ class MaterialBoardRepository(
         val params = listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString())
         return when (side) {
             BoardSide.OFFERS -> {
-                when (
-                    val result =
-                        reader.get(
-                            OFFERS_PATH,
-                            params,
-                            PageResponseMaterialExchangeOfferDto.serializer(),
-                        )
-                ) {
-                    is ApiResult.Failure -> result
-                    is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-                }
+                reader.get(
+                    OFFERS_PATH,
+                    params,
+                    PageResponseMaterialExchangeOfferDto.serializer(),
+                )
+                    .map { it.toModel(page) }
             }
 
             BoardSide.REQUESTS -> {
-                when (
-                    val result =
-                        reader.get(
-                            REQUESTS_PATH,
-                            params,
-                            PageResponseMaterialRequestDto.serializer(),
-                        )
-                ) {
-                    is ApiResult.Failure -> result
-                    is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-                }
+                reader.get(
+                    REQUESTS_PATH,
+                    params,
+                    PageResponseMaterialRequestDto.serializer(),
+                )
+                    .map { it.toModel(page) }
             }
         }
     }
@@ -405,16 +385,11 @@ class MaterialBoardRepository(
 
     /** {@inheritDoc} */
     override suspend fun releasableStock(): ApiResult<List<ReleasableStock>> =
-        when (
-            val result =
-                reader.get(
-                    RELEASABLE_PATH,
-                    ListSerializer(MaterialExchangeReleasableItemDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(
+            RELEASABLE_PATH,
+            ListSerializer(MaterialExchangeReleasableItemDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     /** {@inheritDoc} */
     override suspend fun createOffer(
@@ -452,17 +427,12 @@ class MaterialBoardRepository(
 
     /** {@inheritDoc} */
     override suspend fun searchProducts(query: String): ApiResult<List<BlueprintProduct>> =
-        when (
-            val result =
-                reader.get(
-                    PRODUCTS_PATH,
-                    listOf(QUERY_PARAM to query, LIMIT_PARAM to PRODUCT_LIMIT.toString()),
-                    ListSerializer(BlueprintProductDto.serializer()),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(
+            PRODUCTS_PATH,
+            listOf(QUERY_PARAM to query, LIMIT_PARAM to PRODUCT_LIMIT.toString()),
+            ListSerializer(BlueprintProductDto.serializer()),
+        )
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     /** {@inheritDoc} */
     override suspend fun createItemOffer(
@@ -637,7 +607,7 @@ private fun ApiResult<MaterialRequestDto>.mapRequest(entry: BoardEntry): ApiResu
  */
 private fun PageResponseMaterialExchangeOfferDto.toModel(page: Int): BoardPage =
     BoardPage(
-        entries = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,
@@ -651,7 +621,7 @@ private fun PageResponseMaterialExchangeOfferDto.toModel(page: Int): BoardPage =
  */
 private fun PageResponseMaterialRequestDto.toModel(page: Int): BoardPage =
     BoardPage(
-        entries = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

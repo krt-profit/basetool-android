@@ -20,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseOpe
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import okhttp3.OkHttpClient
 import java.time.Instant
 
@@ -224,10 +225,8 @@ class OperationRepository(
                 add(SORT_PARAM to DEFAULT_SORT)
             }
 
-        return when (val result = reader.get(SEARCH_PATH, params, PageResponseOperationDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(SEARCH_PATH, params, PageResponseOperationDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /**
@@ -293,44 +292,34 @@ class OperationRepository(
         operationId: String,
         draft: OperationDraft,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.put(
-                    "$OPERATIONS_PATH/$operationId",
-                    OperationUpdateDto(
-                        name = draft.name,
-                        status = OperationUpdateDto.Status.valueOf(draft.status.name),
-                        version = draft.version ?: 0L,
-                        description = draft.description?.takeIf { it.isNotBlank() },
-                    ),
-                    OperationUpdateDto.serializer(),
-                    OperationDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.put(
+            "$OPERATIONS_PATH/$operationId",
+            OperationUpdateDto(
+                name = draft.name,
+                status = OperationUpdateDto.Status.valueOf(draft.status.name),
+                version = draft.version ?: 0L,
+                description = draft.description?.takeIf { it.isNotBlank() },
+            ),
+            OperationUpdateDto.serializer(),
+            OperationDto.serializer(),
+        )
+            .map { }
 
     override suspend fun setPaidOut(
         operationId: String,
         participantKey: String,
         paidOut: Boolean,
     ): ApiResult<Unit> =
-        when (
-            val result =
-                reader.put(
-                    "${payoutsPath(operationId)}/paid-out",
-                    OperationPayoutStatusUpdateDto(
-                        participantKey = participantKey,
-                        paidOut = paidOut,
-                    ),
-                    OperationPayoutStatusUpdateDto.serializer(),
-                    OperationPayoutStatusDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+        reader.put(
+            "${payoutsPath(operationId)}/paid-out",
+            OperationPayoutStatusUpdateDto(
+                participantKey = participantKey,
+                paidOut = paidOut,
+            ),
+            OperationPayoutStatusUpdateDto.serializer(),
+            OperationPayoutStatusDto.serializer(),
+        )
+            .map { }
 
     /**
      * Fetches the payouts and completes the overview.
@@ -415,7 +404,7 @@ class OperationRepository(
  */
 private fun PageResponseOperationDto.toModel(page: Int): OperationPage =
     OperationPage(
-        operations = content.orEmpty().mapNotNull { it.toRow() },
+        rows = content.orEmpty().mapNotNull { it.toRow() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

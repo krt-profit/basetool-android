@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderS
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.time.Instant
@@ -389,20 +390,9 @@ data class JobOrderItemStock(
 /**
  * One page of the queue.
  *
- * @property orders the rows on this page
- * @property page the zero-based page index
- * @property totalPages how many pages exist
- * @property totalElements how many orders the filter matches
+ * [Page.rows] holds the rows on this page.
  */
-data class JobOrderPage(
-    val orders: List<JobOrder>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias JobOrderPage = Page<JobOrder>
 
 /**
  * One material line on an order being raised.
@@ -770,10 +760,8 @@ class JobOrderRepository(
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
             }
-        return when (val result = reader.get(QUEUE_PATH, params, PageResponseJobOrderDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(QUEUE_PATH, params, PageResponseJobOrderDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /**
@@ -1231,7 +1219,7 @@ private fun JobOrderStatus.toWire(): UpdateJobOrderStatusDto.Status? =
  */
 private fun PageResponseJobOrderDto.toModel(page: Int): JobOrderPage =
     JobOrderPage(
-        orders = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

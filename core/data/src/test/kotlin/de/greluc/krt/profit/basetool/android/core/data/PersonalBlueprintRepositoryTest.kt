@@ -120,8 +120,8 @@ class PersonalBlueprintRepositoryTest {
 
             val page = (repository.page() as ApiResult.Success).value
 
-            assertEquals(2, page.items.size)
-            val first = page.items.first()
+            assertEquals(2, page.rows.size)
+            val first = page.rows.first()
             assertEquals("F7A Hornet", first.productName)
             assertEquals("vom Event", first.note)
             assertEquals(VERSION, first.version)
@@ -137,7 +137,7 @@ class PersonalBlueprintRepositoryTest {
 
             val page = (repository.page() as ApiResult.Success).value
 
-            assertFalse(page.items.last().removable)
+            assertFalse(page.rows.last().removable)
         }
 
     @Test
@@ -147,7 +147,7 @@ class PersonalBlueprintRepositoryTest {
 
             val page = (repository.page() as ApiResult.Success).value
 
-            assertEquals(2, page.items.size)
+            assertEquals(2, page.rows.size)
             assertEquals(ROWS_IN_FIXTURE, page.totalElements)
         }
 

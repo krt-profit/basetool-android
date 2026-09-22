@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -107,7 +108,7 @@ class FleetImportViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
     }
@@ -118,7 +119,7 @@ class FleetImportViewModel(
      * @param text the export text.
      */
     fun onPasted(text: String) {
-        mutableState.value = mutableState.value.copy(pasted = text, error = null)
+        mutableState.update { it.copy(pasted = text, error = null) }
     }
 
     /**
@@ -131,17 +132,17 @@ class FleetImportViewModel(
         name: String,
         bytes: ByteArray,
     ) {
-        mutableState.value = mutableState.value.copy(fileName = name, fileBytes = bytes, error = null)
+        mutableState.update { it.copy(fileName = name, fileBytes = bytes, error = null) }
     }
 
     /** Drops a picked file, so the box takes over again. */
     fun onFileCleared() {
-        mutableState.value = mutableState.value.copy(fileName = null, fileBytes = null)
+        mutableState.update { it.copy(fileName = null, fileBytes = null) }
     }
 
     /** Closes the result modal. */
     fun onResultDismissed() {
-        mutableState.value = mutableState.value.copy(result = null)
+        mutableState.update { it.copy(result = null) }
     }
 
     /**
@@ -167,8 +168,7 @@ class FleetImportViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(uploading = false, error = result.error)
+                    mutableState.update { it.copy(uploading = false, error = result.error) }
                 }
             }
         }

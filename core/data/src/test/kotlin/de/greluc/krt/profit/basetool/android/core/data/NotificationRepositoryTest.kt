@@ -110,15 +110,15 @@ class NotificationRepositoryTest {
 
             assertTrue(result is ApiResult.Success)
             val page = (result as ApiResult.Success).value
-            assertEquals(2, page.notifications.size)
-            val first = page.notifications.first()
+            assertEquals(2, page.rows.size)
+            val first = page.rows.first()
             assertEquals("n1", first.id)
             assertEquals("JOB_ORDER_CREATED", first.type)
             assertEquals("1042", first.params["displayId"])
             assertEquals("JOB_ORDER", first.entityType)
             assertFalse(first.read)
             assertEquals(Instant.parse("2026-08-22T10:00:00Z"), first.createdAt)
-            assertTrue(page.notifications[1].read)
+            assertTrue(page.rows[1].read)
             assertEquals(2L, page.totalElements)
         }
 
@@ -129,8 +129,8 @@ class NotificationRepositoryTest {
 
             val page = (repository.inbox() as ApiResult.Success).value
 
-            assertEquals(NotificationKind.ORDER, page.notifications.first().kind)
-            assertEquals(NotificationKind.BANK, page.notifications[1].kind)
+            assertEquals(NotificationKind.ORDER, page.rows.first().kind)
+            assertEquals(NotificationKind.BANK, page.rows[1].kind)
             assertEquals(NotificationKind.SYSTEM, NotificationKind.from("SOMETHING_NEW"))
         }
 
@@ -146,7 +146,7 @@ class NotificationRepositoryTest {
 
             val page = (repository.inbox() as ApiResult.Success).value
 
-            assertEquals(1, page.notifications.size)
+            assertEquals(1, page.rows.size)
             assertEquals(2L, page.totalElements)
         }
 
@@ -158,9 +158,9 @@ class NotificationRepositoryTest {
 
             val page = (repository.inbox() as ApiResult.Success).value
 
-            assertEquals(1, page.notifications.size)
-            assertEquals("", page.notifications.first().type)
-            assertEquals(NotificationKind.SYSTEM, page.notifications.first().kind)
+            assertEquals(1, page.rows.size)
+            assertEquals("", page.rows.first().type)
+            assertEquals(NotificationKind.SYSTEM, page.rows.first().kind)
         }
 
     @Test
@@ -232,7 +232,7 @@ class NotificationRepositoryTest {
 
             val page = (repository.inbox() as ApiResult.Success).value
 
-            assertEquals(1, page.notifications.size)
-            assertNull(page.notifications.first().createdAt)
+            assertEquals(1, page.rows.size)
+            assertNull(page.rows.first().createdAt)
         }
 }

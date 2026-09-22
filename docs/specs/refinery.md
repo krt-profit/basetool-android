@@ -372,6 +372,10 @@ is silently unsendable, which is exactly how it presented on a device.
   `IN_PROGRESS` at Levski · Cormack at quality 874, and the app opens it. **The figures recorded
   here originally read "620 → 442 SCU"; they were 620 and 442 *units*, i.e. 6.2 → 4.42 SCU. The
   label was wrong, and so was this note (corrected 2026-09-01).**
+- [x] Each goods line has an identity of its own (`RefineryGoodDraft.key`, never sent), and the
+  form's list is keyed by it rather than by position, so removing a line does not hand its
+  neighbour's remembered picker state to a different line; an edit and a removal above keep it
+  (`RefineryEditTest`, added 2026-09-22 — improvement audit, a minor defect found beside SIB-MOD-01).
 
 **Vhost:** `/api/v1/refinery-orders` (POST), `/api/v1/locations/refineries`,
 `/api/v1/refining-methods` — runbook Phase M.

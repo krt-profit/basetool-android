@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDemandO
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDemandRowDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import okhttp3.OkHttpClient
 
 /**
@@ -125,10 +126,8 @@ class MaterialDemandRepository(
     )
 
     override suspend fun demand(): ApiResult<List<MaterialDemandGroup>> =
-        when (val result = reader.get(DEMAND_PATH, MaterialDemandOverviewDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.groups.orEmpty().map { it.toModel() })
-        }
+        reader.get(DEMAND_PATH, MaterialDemandOverviewDto.serializer())
+            .map { loaded -> loaded.groups.orEmpty().map { it.toModel() } }
 
     private companion object {
         const val DEMAND_PATH = "/api/v1/orders/material-demand"

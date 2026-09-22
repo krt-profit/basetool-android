@@ -16,6 +16,10 @@
   konnte die App sie unbemerkt ein zweites Mal schicken. Jetzt erscheint in diesem Fall eine
   Fehlermeldung, und du entscheidest selbst, ob du erneut speicherst.
 
+- **Raffinerieauftrag: Beim Entfernen einer Güterzeile rutscht kein Zustand mehr in die Nachbarzeile.**
+  Die Zeilen waren nach Position statt nach Identität geführt, sodass etwa ein offenes Materialmenü
+  nach dem Löschen der Zeile darüber an der falschen Zeile hing.
+
 ## [0.3.0] — 2026-09-14
 
 ### Changed

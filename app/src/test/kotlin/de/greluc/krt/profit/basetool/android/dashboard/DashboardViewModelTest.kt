@@ -221,7 +221,7 @@ class DashboardViewModelTest {
             pageSize: Int,
         ): ApiResult<NotificationPage> =
             ApiResult.Success(
-                NotificationPage(notifications = emptyList(), page = 0, totalPages = 0, totalElements = 0),
+                NotificationPage(rows = emptyList(), page = 0, totalPages = 0, totalElements = 0),
             )
 
         override suspend fun unreadCount(): ApiResult<Long> = ApiResult.Success(0)

@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -98,7 +99,7 @@ class BankHolderViewModel(
 
     /** Re-reads everything, keeping what is on screen until the answer arrives. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
     }
 
@@ -116,12 +117,12 @@ class BankHolderViewModel(
 
     /** Opens the custody transfer sheet. */
     fun onTransfer() {
-        mutableState.value = mutableState.value.copy(draft = BankCustodyDraft(), error = null)
+        mutableState.update { it.copy(draft = BankCustodyDraft(), error = null) }
     }
 
     /** Closes it, discarding what was typed. */
     fun onDismissTransfer() {
-        mutableState.value = mutableState.value.copy(draft = null)
+        mutableState.update { it.copy(draft = null) }
     }
 
     /**
@@ -130,7 +131,7 @@ class BankHolderViewModel(
      * @param draft the sheet as it now stands.
      */
     fun onDraftChanged(draft: BankCustodyDraft) {
-        mutableState.value = mutableState.value.copy(draft = draft)
+        mutableState.update { it.copy(draft = draft) }
     }
 
     /**
@@ -158,14 +159,13 @@ class BankHolderViewModel(
                 )
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(saving = false, draft = null)
+                    mutableState.update { it.copy(saving = false, draft = null) }
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "custody transfer refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -178,26 +178,28 @@ class BankHolderViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             when (val holder = source.holder(holderId)) {
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "holder unavailable: ${holder.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = BankPhase.Failed(holder.error),
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             holder = holder.value,
                             phase = BankPhase.Ready,
                             refreshing = false,
                         )
+                    }
                     readPeers()
                     readBookings(mutableState.value.page)
                 }
@@ -215,10 +217,11 @@ class BankHolderViewModel(
         viewModelScope.launch {
             when (val result = staff.holders()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             peers = result.value.filter { it.id != holderId && it.active },
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -237,18 +240,19 @@ class BankHolderViewModel(
         viewModelScope.launch {
             when (val result = source.holderBookings(holderId, page)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             bookings = result.value.rows,
                             page = result.value.page,
                             totalElements = result.value.totalElements,
                             totalPages = result.value.totalPages,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "holder postings unavailable: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(error = result.error)
+                    mutableState.update { it.copy(error = result.error) }
                 }
             }
         }

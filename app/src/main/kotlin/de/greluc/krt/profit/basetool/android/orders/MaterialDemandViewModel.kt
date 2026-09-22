@@ -18,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log subsystem. */
@@ -144,7 +145,7 @@ class MaterialDemandViewModel(
 
     /** Pull-to-refresh. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         read()
     }
 
@@ -154,7 +155,7 @@ class MaterialDemandViewModel(
      * @param filter which one.
      */
     fun onFilterChanged(filter: MaterialDemandFilter) {
-        mutableState.value = mutableState.value.copy(filter = filter)
+        mutableState.update { it.copy(filter = filter) }
     }
 
     /**
@@ -167,8 +168,7 @@ class MaterialDemandViewModel(
      */
     fun onToggleExpanded(row: MaterialDemandRow) {
         val current = mutableState.value.expanded
-        mutableState.value =
-            mutableState.value.copy(expanded = if (current == row.materialId) null else row.materialId)
+        mutableState.update { it.copy(expanded = if (current == row.materialId) null else row.materialId) }
     }
 
     /** Performs the read. */
@@ -176,21 +176,23 @@ class MaterialDemandViewModel(
         viewModelScope.launch {
             when (val result = source.demand()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             groups = result.value,
                             phase = MaterialDemandPhase.Ready,
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the material demand could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = MaterialDemandPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                 }
             }
         }

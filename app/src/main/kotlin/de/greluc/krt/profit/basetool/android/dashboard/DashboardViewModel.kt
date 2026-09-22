@@ -22,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
 
@@ -97,7 +98,7 @@ class DashboardViewModel(
 
     /** Re-reads both parts, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
     }
 
@@ -108,7 +109,7 @@ class DashboardViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = DashboardPhase.Loading)
+            mutableState.update { it.copy(phase = DashboardPhase.Loading) }
         }
         loadAnnouncement()
         loadMissions()
@@ -126,13 +127,14 @@ class DashboardViewModel(
         viewModelScope.launch {
             when (val result = notifications.inbox(page = 0, pageSize = UNREAD_PAGE)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             unread =
-                                result.value.notifications
+                                result.value.rows
                                     .filterNot { it.read }
                                     .take(UNREAD_PREVIEW),
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -153,7 +155,7 @@ class DashboardViewModel(
     private suspend fun readState(id: String) {
         when (val result = announcements.lastRead()) {
             is ApiResult.Success -> {
-                mutableState.value = mutableState.value.copy(announcementRead = result.value == id)
+                mutableState.update { it.copy(announcementRead = result.value == id) }
             }
 
             is ApiResult.Failure -> {
@@ -174,14 +176,14 @@ class DashboardViewModel(
         if (mutableState.value.announcementRead) {
             return
         }
-        mutableState.value = mutableState.value.copy(announcementRead = true)
+        mutableState.update { it.copy(announcementRead = true) }
         viewModelScope.launch {
             // Only the refusal needs handling: the state already says read, which is the whole
             // point of marking it optimistically.
             val result = announcements.markRead(notice.id)
             if (result is ApiResult.Failure) {
                 KrtLog.w(LOG_TAG) { "the announcement could not be marked read: ${result.error}" }
-                mutableState.value = mutableState.value.copy(announcementRead = false)
+                mutableState.update { it.copy(announcementRead = false) }
             }
         }
     }
@@ -192,7 +194,7 @@ class DashboardViewModel(
             when (val result = announcements.current()) {
                 is ApiResult.Success -> {
                     val notice = result.value
-                    mutableState.value = mutableState.value.copy(announcement = notice)
+                    mutableState.update { it.copy(announcement = notice) }
                     if (notice != null) {
                         // Sequential, and only when there is something to be unread about: the
                         // read flag costs a second request and answers a question that does not
@@ -206,7 +208,7 @@ class DashboardViewModel(
                     // honest one: the app does not know of an announcement. An error strip over a
                     // working dashboard would be louder than the thing it is reporting.
                     KrtLog.w(LOG_TAG) { "announcement could not be read: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(announcement = null)
+                    mutableState.update { it.copy(announcement = null) }
                 }
             }
         }
@@ -219,18 +221,18 @@ class DashboardViewModel(
             val query = MissionQuery(from = now, until = now.plus(WINDOW))
             when (val result = missions.search(query, page = 0, pageSize = BAND_SIZE)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
-                            missions = result.value.missions,
+                    mutableState.update {
+                        it.copy(
+                            missions = result.value.rows,
                             phase = DashboardPhase.Ready,
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "dashboard Einsätze could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(phase = DashboardPhase.Failed, refreshing = false)
+                    mutableState.update { it.copy(phase = DashboardPhase.Failed, refreshing = false) }
                 }
             }
         }

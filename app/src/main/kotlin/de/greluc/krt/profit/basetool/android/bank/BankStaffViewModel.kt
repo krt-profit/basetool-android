@@ -34,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -457,8 +458,7 @@ class BankStaffViewModel(
          * @param accountId which account it books onto, or `null` to let the sheet ask.
          */
         fun open(accountId: String? = null) {
-            mutableState.value =
-                mutableState.value.copy(direct = DirectBookingState(accountId = accountId))
+            mutableState.update { it.copy(direct = DirectBookingState(accountId = accountId)) }
             loadFeeRate()
         }
 
@@ -472,17 +472,18 @@ class BankStaffViewModel(
         private fun loadFeeRate() {
             viewModelScope.launch {
                 (source.transferFeeRate() as? ApiResult.Success)?.let { result ->
-                    mutableState.value =
-                        mutableState.value.copy(
-                            direct = mutableState.value.direct?.copy(feeRate = result.value.value),
+                    mutableState.update { state ->
+                        state.copy(
+                            direct = state.direct?.copy(feeRate = result.value.value),
                         )
+                    }
                 }
             }
         }
 
         /** Closes it. */
         fun close() {
-            mutableState.value = mutableState.value.copy(direct = null)
+            mutableState.update { it.copy(direct = null) }
         }
 
         /**
@@ -500,13 +501,12 @@ class BankStaffViewModel(
          * @param query what was typed; blank asks for the first page unfiltered.
          */
         fun searchCounterparty(query: String) {
-            mutableState.value = mutableState.value.copy(counterpartyQuery = query)
+            mutableState.update { it.copy(counterpartyQuery = query) }
             val search = grantees ?: return
             viewModelScope.launch {
                 val result = search.searchGrantees(query)
                 if (result is ApiResult.Success && mutableState.value.counterpartyQuery == query) {
-                    mutableState.value =
-                        mutableState.value.copy(counterpartyOptions = result.value.rows)
+                    mutableState.update { it.copy(counterpartyOptions = result.value.rows) }
                 }
             }
         }
@@ -527,7 +527,7 @@ class BankStaffViewModel(
             viewModelScope.launch {
                 val result = units.activeAllKinds()
                 if (result is ApiResult.Success) {
-                    mutableState.value = mutableState.value.copy(orgUnitOptions = result.value)
+                    mutableState.update { it.copy(orgUnitOptions = result.value) }
                 }
             }
         }
@@ -539,7 +539,7 @@ class BankStaffViewModel(
          * message that disappears on its own is one a member can miss entirely.
          */
         fun acknowledgeFiled() {
-            mutableState.value = mutableState.value.copy(filed = false)
+            mutableState.update { it.copy(filed = false) }
         }
 
         /**
@@ -549,7 +549,7 @@ class BankStaffViewModel(
          */
         fun edit(edit: (DirectBookingState) -> DirectBookingState) {
             val open = mutableState.value.direct ?: return
-            mutableState.value = mutableState.value.copy(direct = edit(open).copy(error = null))
+            mutableState.update { it.copy(direct = edit(open).copy(error = null)) }
         }
 
         /**
@@ -567,8 +567,7 @@ class BankStaffViewModel(
             if (account == null || holder == null || !open.submittable(balance)) {
                 return
             }
-            mutableState.value =
-                mutableState.value.copy(direct = open.copy(saving = true, error = null))
+            mutableState.update { it.copy(direct = open.copy(saving = true, error = null)) }
             viewModelScope.launch {
                 val booking =
                     DirectBooking(
@@ -607,20 +606,22 @@ class BankStaffViewModel(
                     )
                 when (val result = source.bookDirectly(booking)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 direct = null,
                                 filed = result.value == BankDirectOutcome.REQUEST_FILED,
                             )
+                        }
                         reload(keepContent = true)
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the direct booking was refused: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 direct = open.copy(saving = false, error = result.error),
                             )
+                        }
                     }
                 }
             }
@@ -648,7 +649,7 @@ class BankStaffViewModel(
 
     /** Re-reads it, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepContent = true)
     }
@@ -660,17 +661,18 @@ class BankStaffViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             when (val dashboard = source.staffDashboard()) {
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "staff dashboard could not be read: ${dashboard.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = BankPhase.Failed(dashboard.error),
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Success -> {
@@ -750,7 +752,7 @@ class BankStaffViewModel(
                 }
 
                 is ApiResult.Success -> {
-                    result.value.requests.forEach { request ->
+                    result.value.rows.forEach { request ->
                         total++
                         rows.add(request)
                         request.accountId?.let { perAccount[it] = (perAccount[it] ?: 0) + 1 }
@@ -793,8 +795,7 @@ class BankStaffViewModel(
         viewModelScope.launch {
             when (val result = source.holders()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(holders = result.value.filter { it.active })
+                    mutableState.update { state -> state.copy(holders = result.value.filter { it.active }) }
                 }
 
                 is ApiResult.Failure -> {
@@ -810,12 +811,12 @@ class BankStaffViewModel(
      * @param request the request to book.
      */
     fun onConfirmOpen(request: BankBookingRequest) {
-        mutableState.value = mutableState.value.copy(confirming = BankConfirmState(request))
+        mutableState.update { it.copy(confirming = BankConfirmState(request)) }
     }
 
     /** Closes the confirmation sheet, discarding what was filled in. */
     fun onConfirmDismiss() {
-        mutableState.value = mutableState.value.copy(confirming = null)
+        mutableState.update { it.copy(confirming = null) }
     }
 
     /**
@@ -825,14 +826,14 @@ class BankStaffViewModel(
      */
     fun onConfirmChanged(change: (BankConfirmState) -> BankConfirmState) {
         val open = mutableState.value.confirming ?: return
-        mutableState.value = mutableState.value.copy(confirming = change(open).copy(error = null))
+        mutableState.update { it.copy(confirming = change(open).copy(error = null)) }
     }
 
     /** Sends the open confirmation. */
     fun onConfirmSubmit() {
         val open = mutableState.value.confirming ?: return
         val holderId = open.holderId ?: return
-        mutableState.value = mutableState.value.copy(confirming = open.copy(saving = true))
+        mutableState.update { it.copy(confirming = open.copy(saving = true)) }
         viewModelScope.launch {
             val result =
                 source.confirmRequest(
@@ -847,20 +848,21 @@ class BankStaffViewModel(
                 )
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(confirming = null)
+                    mutableState.update { it.copy(confirming = null) }
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "confirmation refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             confirming =
-                                mutableState.value.confirming?.copy(
+                                state.confirming?.copy(
                                     saving = false,
                                     error = result.error,
                                 ),
                         )
+                    }
                 }
             }
         }
@@ -872,12 +874,12 @@ class BankStaffViewModel(
      * @param request the request to refuse.
      */
     fun onRejectOpen(request: BankBookingRequest) {
-        mutableState.value = mutableState.value.copy(rejecting = BankRejectState(request))
+        mutableState.update { it.copy(rejecting = BankRejectState(request)) }
     }
 
     /** Closes the refusal dialog. */
     fun onRejectDismiss() {
-        mutableState.value = mutableState.value.copy(rejecting = null)
+        mutableState.update { it.copy(rejecting = null) }
     }
 
     /**
@@ -887,7 +889,7 @@ class BankStaffViewModel(
      */
     fun onRejectReason(reason: String) {
         val open = mutableState.value.rejecting ?: return
-        mutableState.value = mutableState.value.copy(rejecting = open.copy(reason = reason, error = null))
+        mutableState.update { it.copy(rejecting = open.copy(reason = reason, error = null)) }
     }
 
     /** Sends the refusal. */
@@ -896,26 +898,27 @@ class BankStaffViewModel(
         if (!open.submittable) {
             return
         }
-        mutableState.value = mutableState.value.copy(rejecting = open.copy(saving = true))
+        mutableState.update { it.copy(rejecting = open.copy(saving = true)) }
         viewModelScope.launch {
             val result =
                 source.rejectRequest(open.request.id, open.reason.trim(), open.request.version)
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(rejecting = null)
+                    mutableState.update { it.copy(rejecting = null) }
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "refusal refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             rejecting =
-                                mutableState.value.rejecting?.copy(
+                                state.rejecting?.copy(
                                     saving = false,
                                     error = result.error,
                                 ),
                         )
+                    }
                 }
             }
         }

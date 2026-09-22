@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log subsystem. A holder's name is member data and never reaches the log. */
@@ -117,7 +118,7 @@ class GameItemStockViewModel(
 
     /** Pull-to-refresh. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         read()
     }
 
@@ -127,7 +128,7 @@ class GameItemStockViewModel(
      * @param query what was typed.
      */
     fun onQueryChanged(query: String) {
-        mutableState.value = mutableState.value.copy(query = query)
+        mutableState.update { it.copy(query = query) }
     }
 
     /**
@@ -137,7 +138,7 @@ class GameItemStockViewModel(
      */
     fun onKindChanged(kind: String?) {
         val current = mutableState.value.kind
-        mutableState.value = mutableState.value.copy(kind = if (current == kind) null else kind)
+        mutableState.update { it.copy(kind = if (current == kind) null else kind) }
     }
 
     /**
@@ -151,7 +152,7 @@ class GameItemStockViewModel(
      */
     fun onToggleExpanded(item: GameItemStock) {
         val current = mutableState.value.expanded
-        mutableState.value = mutableState.value.copy(expanded = if (current == item.id) null else item.id)
+        mutableState.update { it.copy(expanded = if (current == item.id) null else item.id) }
     }
 
     /** Performs the read. */
@@ -159,21 +160,23 @@ class GameItemStockViewModel(
         viewModelScope.launch {
             when (val result = source.gameItemStock()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             items = result.value.sortedBy { it.name },
                             phase = GameItemPhase.Ready,
                             refreshing = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the game-item stock could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = GameItemPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                 }
             }
         }

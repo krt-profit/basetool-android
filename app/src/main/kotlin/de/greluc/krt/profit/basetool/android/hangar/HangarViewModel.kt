@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Which half of the Hangar screen is showing. */
@@ -216,7 +217,7 @@ class HangarViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -230,7 +231,7 @@ class HangarViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
     }
@@ -267,7 +268,7 @@ class HangarViewModel(
             return
         }
         loadedOnce = true
-        mutableState.value = mutableState.value.copy(segment = segment)
+        mutableState.update { it.copy(segment = segment) }
         reload(keepRows = false)
     }
 
@@ -277,7 +278,7 @@ class HangarViewModel(
      * @param text what the member has typed so far.
      */
     fun onSearchChanged(text: String) {
-        mutableState.value = mutableState.value.copy(searchText = text)
+        mutableState.update { it.copy(searchText = text) }
         typedText.value = text
     }
 
@@ -298,7 +299,7 @@ class HangarViewModel(
 
     /** Re-reads the showing half while keeping its rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -337,7 +338,7 @@ class HangarViewModel(
                 val latest = mutableState.value
                 mutableState.value =
                     latest.copy(
-                        ships = latest.ships + result.value.ships,
+                        ships = latest.ships + result.value.rows,
                         shipsTotal = result.value.totalElements,
                         page = result.value.page,
                         hasMore = result.value.hasMore,
@@ -347,7 +348,7 @@ class HangarViewModel(
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "next page of ships failed: ${result.error}" }
-                mutableState.value = mutableState.value.copy(loadingMore = false)
+                mutableState.update { it.copy(loadingMore = false) }
             }
         }
     }
@@ -367,7 +368,7 @@ class HangarViewModel(
                 val latest = mutableState.value
                 mutableState.value =
                     latest.copy(
-                        types = latest.types + result.value.types,
+                        types = latest.types + result.value.rows,
                         typesTotal = result.value.totalElements,
                         page = result.value.page,
                         hasMore = result.value.hasMore,
@@ -377,7 +378,7 @@ class HangarViewModel(
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "next page of the hangar aggregate failed: ${result.error}" }
-                mutableState.value = mutableState.value.copy(loadingMore = false)
+                mutableState.update { it.copy(loadingMore = false) }
             }
         }
     }
@@ -411,9 +412,9 @@ class HangarViewModel(
     private suspend fun loadShips(search: String) {
         when (val result = source.myShips(search = search, page = 0)) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
-                        ships = result.value.ships,
+                mutableState.update {
+                    it.copy(
+                        ships = result.value.rows,
                         shipsTotal = result.value.totalElements,
                         page = result.value.page,
                         hasMore = result.value.hasMore,
@@ -421,17 +422,19 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "ships could not be read: ${result.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = HangarPhase.Failed(result.error),
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = false)
             }
         }
@@ -445,9 +448,9 @@ class HangarViewModel(
     private suspend fun loadTypes(search: String) {
         when (val result = source.orgOverview(search = search, page = 0)) {
             is ApiResult.Success -> {
-                mutableState.value =
-                    mutableState.value.copy(
-                        types = result.value.types,
+                mutableState.update {
+                    it.copy(
+                        types = result.value.rows,
                         typesTotal = result.value.totalElements,
                         page = result.value.page,
                         hasMore = result.value.hasMore,
@@ -455,17 +458,19 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "the hangar aggregate could not be read: ${result.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = HangarPhase.Failed(result.error),
                         loadingMore = false,
                         refreshing = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = false)
             }
         }
@@ -473,7 +478,7 @@ class HangarViewModel(
 
     /** Opens the editor for a new ship. */
     fun onCreate() {
-        mutableState.value = mutableState.value.copy(editor = ShipEditor.Open())
+        mutableState.update { it.copy(editor = ShipEditor.Open()) }
         loadPickers()
     }
 
@@ -487,8 +492,8 @@ class HangarViewModel(
      */
     fun onEdit(ship: Ship) {
         val months = ship.insurance?.takeIf { it != INSURANCE_LTI }
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 editor =
                     ShipEditor.Open(
                         editing = ship,
@@ -500,12 +505,13 @@ class HangarViewModel(
                         fitted = ship.fitted,
                     ),
             )
+        }
         loadPickers()
     }
 
     /** Closes the editor, discarding what was entered. */
     fun onEditorDismissed() {
-        mutableState.value = mutableState.value.copy(editor = ShipEditor.Closed)
+        mutableState.update { it.copy(editor = ShipEditor.Closed) }
     }
 
     /**
@@ -515,7 +521,7 @@ class HangarViewModel(
      */
     private fun editor(transform: (ShipEditor.Open) -> ShipEditor.Open) {
         val open = mutableState.value.editor as? ShipEditor.Open ?: return
-        mutableState.value = mutableState.value.copy(editor = transform(open))
+        mutableState.update { it.copy(editor = transform(open)) }
     }
 
     /**
@@ -596,7 +602,7 @@ class HangarViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(editor = ShipEditor.Closed)
+                    mutableState.update { it.copy(editor = ShipEditor.Closed) }
                     onRefresh()
                 }
 
@@ -615,17 +621,17 @@ class HangarViewModel(
      * @param ship the row.
      */
     fun onDeleteRequested(ship: Ship) {
-        mutableState.value = mutableState.value.copy(pendingDelete = ship)
+        mutableState.update { it.copy(pendingDelete = ship) }
     }
 
     /** Opens the danger modal behind "Hangar leeren". */
     fun onClearRequested() {
-        mutableState.value = mutableState.value.copy(clearRequested = true)
+        mutableState.update { it.copy(clearRequested = true) }
     }
 
     /** Closes it without deleting anything. */
     fun onClearDismissed() {
-        mutableState.value = mutableState.value.copy(clearRequested = false)
+        mutableState.update { it.copy(clearRequested = false) }
     }
 
     /**
@@ -641,11 +647,11 @@ class HangarViewModel(
         }
         // Counted before the write, because afterwards the list is empty and the number is gone.
         val emptied = mutableState.value.ships.size
-        mutableState.value = mutableState.value.copy(deleting = true)
+        mutableState.update { it.copy(deleting = true) }
         viewModelScope.launch {
             val result = source.clearHangar()
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update { state ->
+                state.copy(
                     clearRequested = false,
                     deleting = false,
                     lastFailure = (result as? ApiResult.Failure)?.error,
@@ -654,6 +660,7 @@ class HangarViewModel(
                     // told how many went (design ch. 08, artboard 6).
                     cleared = (result as? ApiResult.Success)?.let { emptied },
                 )
+            }
             if (result is ApiResult.Success) {
                 onRefresh()
             }
@@ -662,22 +669,22 @@ class HangarViewModel(
 
     /** Takes the "home location set" confirmation off screen once it has been read. */
     fun onHomeLocationSetAcknowledged() {
-        mutableState.value = mutableState.value.copy(homeLocationSet = null)
+        mutableState.update { it.copy(homeLocationSet = null) }
     }
 
     /** Takes the "hangar emptied" confirmation off screen once it has been read. */
     fun onClearedAcknowledged() {
-        mutableState.value = mutableState.value.copy(cleared = null)
+        mutableState.update { it.copy(cleared = null) }
     }
 
     /** Opens the bulk home-location sheet. */
     fun onBulkHomeLocationRequested() {
-        mutableState.value = mutableState.value.copy(bulkHomeLocation = BulkHomeLocation())
+        mutableState.update { it.copy(bulkHomeLocation = BulkHomeLocation()) }
     }
 
     /** Closes it. */
     fun onBulkHomeLocationDismissed() {
-        mutableState.value = mutableState.value.copy(bulkHomeLocation = null)
+        mutableState.update { it.copy(bulkHomeLocation = null) }
     }
 
     /**
@@ -687,7 +694,7 @@ class HangarViewModel(
      */
     fun onBulkHomeLocationChosen(place: HomeLocation) {
         val bulk = mutableState.value.bulkHomeLocation ?: return
-        mutableState.value = mutableState.value.copy(bulkHomeLocation = bulk.copy(place = place))
+        mutableState.update { it.copy(bulkHomeLocation = bulk.copy(place = place)) }
     }
 
     /** Applies the chosen place to every ship. */
@@ -698,13 +705,11 @@ class HangarViewModel(
             return
         }
         val affected = mutableState.value.ships.size
-        mutableState.value =
-            mutableState.value.copy(bulkHomeLocation = bulk.copy(saving = true, error = null))
+        mutableState.update { it.copy(bulkHomeLocation = bulk.copy(saving = true, error = null)) }
         viewModelScope.launch {
             when (val result = source.setHomeLocationForAll(place.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(bulkHomeLocation = null, homeLocationSet = affected)
+                    mutableState.update { it.copy(bulkHomeLocation = null, homeLocationSet = affected) }
                     onRefresh()
                 }
 
@@ -712,10 +717,11 @@ class HangarViewModel(
                     // The sheet stays, and so does the picked place. Nothing was written, and a
                     // member who has to re-pick after a refusal is being charged for the server's
                     // answer (design ch. 08, artboard 10).
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             bulkHomeLocation = bulk.copy(saving = false, error = result.error),
                         )
+                    }
                 }
             }
         }
@@ -723,7 +729,7 @@ class HangarViewModel(
 
     /** Abandons the removal. */
     fun onDeleteDismissed() {
-        mutableState.value = mutableState.value.copy(pendingDelete = null)
+        mutableState.update { it.copy(pendingDelete = null) }
     }
 
     /** Removes the ship the member confirmed. */
@@ -732,21 +738,22 @@ class HangarViewModel(
         if (!mutableState.value.online) {
             return
         }
-        mutableState.value = mutableState.value.copy(deleting = true)
+        mutableState.update { it.copy(deleting = true) }
         viewModelScope.launch {
             when (val result = source.delete(ship.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(pendingDelete = null, deleting = false)
+                    mutableState.update { it.copy(pendingDelete = null, deleting = false) }
                     onRefresh()
                 }
 
                 is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             pendingDelete = null,
                             deleting = false,
                             lastFailure = result.error,
                         )
+                    }
                 }
             }
         }
@@ -754,7 +761,7 @@ class HangarViewModel(
 
     /** Acknowledges the last write failure. */
     fun onFailureShown() {
-        mutableState.value = mutableState.value.copy(lastFailure = null)
+        mutableState.update { it.copy(lastFailure = null) }
     }
 
     /**
@@ -768,10 +775,10 @@ class HangarViewModel(
     private fun loadPickers() {
         viewModelScope.launch {
             (source.shipTypes("") as? ApiResult.Success)?.let {
-                mutableState.value = mutableState.value.copy(hulls = it.value)
+                mutableState.update { state -> state.copy(hulls = it.value) }
             }
             (source.homeLocations() as? ApiResult.Success)?.let {
-                mutableState.value = mutableState.value.copy(places = it.value)
+                mutableState.update { state -> state.copy(places = it.value) }
             }
         }
     }

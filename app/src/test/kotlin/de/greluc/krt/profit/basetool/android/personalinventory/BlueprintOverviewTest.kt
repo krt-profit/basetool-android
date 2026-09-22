@@ -202,7 +202,7 @@ class BlueprintOverviewTest {
         vararg entries: BlueprintOverviewEntry,
         more: Boolean = false,
     ) = BlueprintOverviewPage(
-        entries = entries.toList(),
+        rows = entries.toList(),
         page = 0,
         totalPages = if (more) 2 else 1,
         totalElements = entries.size.toLong(),

@@ -18,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiErrorMapper
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.await
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -115,10 +116,8 @@ class TermsRepository(
      * @return the document, or a failure the caller can show
      */
     override suspend fun document(): ApiResult<TermsDocument> =
-        when (val result = reader.get(DOCUMENT_PATH, TermsDocumentDto.serializer())) {
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-            is ApiResult.Failure -> result
-        }
+        reader.get(DOCUMENT_PATH, TermsDocumentDto.serializer())
+            .map { it.toModel() }
 
     /**
      * Records consent.
@@ -131,17 +130,12 @@ class TermsRepository(
      * @return the resulting status, or a failure the caller can show
      */
     override suspend fun accept(): ApiResult<TermsStatus> =
-        when (
-            val result =
-                reader.execute(
-                    ACCEPTANCE_PATH,
-                    Request.Builder().post(EMPTY_BODY),
-                    TermsStatusDto.serializer(),
-                )
-        ) {
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-            is ApiResult.Failure -> result
-        }
+        reader.execute(
+            ACCEPTANCE_PATH,
+            Request.Builder().post(EMPTY_BODY),
+            TermsStatusDto.serializer(),
+        )
+            .map { it.toModel() }
 
     /**
      * Performs one authenticated GET.

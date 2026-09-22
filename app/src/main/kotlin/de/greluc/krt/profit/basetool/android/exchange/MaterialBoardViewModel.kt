@@ -31,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the board has got. */
@@ -271,7 +272,7 @@ class MaterialBoardViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -291,7 +292,7 @@ class MaterialBoardViewModel(
         connectivity?.let { link ->
             viewModelScope.launch {
                 link.online.collect { online ->
-                    mutableState.value = mutableState.value.copy(online = online)
+                    mutableState.update { it.copy(online = online) }
                 }
             }
         }
@@ -316,7 +317,7 @@ class MaterialBoardViewModel(
             return
         }
         loadedOnce = true
-        mutableState.value = mutableState.value.copy(side = side, entries = emptyList())
+        mutableState.update { it.copy(side = side, entries = emptyList()) }
         reload(keepRows = false)
     }
 
@@ -328,7 +329,7 @@ class MaterialBoardViewModel(
 
     /** Re-reads the first page while keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -346,7 +347,7 @@ class MaterialBoardViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            entries = latest.entries + result.value.entries,
+                            entries = latest.entries + result.value.rows,
                             page = result.value.page,
                             hasMore = result.value.hasMore,
                             loadingMore = false,
@@ -355,7 +356,7 @@ class MaterialBoardViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of the board failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -370,7 +371,7 @@ class MaterialBoardViewModel(
         if (!entry.canSignal || !mutableState.value.writable) {
             return
         }
-        mutableState.value = mutableState.value.copy(busyEntryId = entry.id, error = null)
+        mutableState.update { it.copy(busyEntryId = entry.id, error = null) }
         viewModelScope.launch {
             when (val result = source.setInterest(entry, !entry.viewerInterested)) {
                 is ApiResult.Success -> {
@@ -380,8 +381,7 @@ class MaterialBoardViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the interest toggle failed: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(busyEntryId = null, error = result.error)
+                    mutableState.update { it.copy(busyEntryId = null, error = result.error) }
                 }
             }
         }
@@ -396,7 +396,7 @@ class MaterialBoardViewModel(
         if (!entry.mine || !mutableState.value.writable) {
             return
         }
-        mutableState.value = mutableState.value.copy(busyEntryId = entry.id, error = null)
+        mutableState.update { it.copy(busyEntryId = entry.id, error = null) }
         viewModelScope.launch {
             when (val result = source.withdraw(entry)) {
                 is ApiResult.Success -> {
@@ -421,8 +421,7 @@ class MaterialBoardViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "withdrawing the entry failed: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(busyEntryId = null, error = result.error)
+                    mutableState.update { it.copy(busyEntryId = null, error = result.error) }
                 }
             }
         }
@@ -442,8 +441,7 @@ class MaterialBoardViewModel(
     fun onWithdrawRequested() {
         val sheet = mutableState.value.sheet as? BoardSheet.EditEntry ?: return
         if (sheet.entry.interestCount > 0) {
-            mutableState.value =
-                mutableState.value.copy(sheet = sheet.copy(confirmingWithdrawal = true))
+            mutableState.update { it.copy(sheet = sheet.copy(confirmingWithdrawal = true)) }
             return
         }
         onWithdraw(sheet.entry)
@@ -451,12 +449,12 @@ class MaterialBoardViewModel(
 
     /** Opens „Gesuch erstellen". */
     fun onNewRequest() {
-        mutableState.value = mutableState.value.copy(sheet = BoardSheet.NewRequest(), error = null)
+        mutableState.update { it.copy(sheet = BoardSheet.NewRequest(), error = null) }
     }
 
     /** Opens „Angebot erstellen" and reads the caller's own stock behind it. */
     fun onNewOffer() {
-        mutableState.value = mutableState.value.copy(sheet = BoardSheet.NewOffer(), error = null)
+        mutableState.update { it.copy(sheet = BoardSheet.NewOffer(), error = null) }
         viewModelScope.launch {
             when (val result = source.releasableStock()) {
                 is ApiResult.Success -> {
@@ -468,7 +466,7 @@ class MaterialBoardViewModel(
                     // The sheet stays open with an empty list and its own message: closing it
                     // under the member would lose whatever they had already typed.
                     updateOfferSheet { it.copy(loadingStock = false) }
-                    mutableState.value = mutableState.value.copy(error = result.error)
+                    mutableState.update { it.copy(error = result.error) }
                 }
             }
         }
@@ -476,7 +474,7 @@ class MaterialBoardViewModel(
 
     /** Closes whichever sheet is open. */
     fun onSheetDismissed() {
-        mutableState.value = mutableState.value.copy(sheet = BoardSheet.None, error = null)
+        mutableState.update { it.copy(sheet = BoardSheet.None, error = null) }
     }
 
     /**
@@ -486,7 +484,7 @@ class MaterialBoardViewModel(
      */
     fun onRequestEdited(edit: (BoardSheet.NewRequest) -> BoardSheet.NewRequest) {
         val sheet = mutableState.value.sheet as? BoardSheet.NewRequest ?: return
-        mutableState.value = mutableState.value.copy(sheet = edit(sheet))
+        mutableState.update { it.copy(sheet = edit(sheet)) }
     }
 
     /**
@@ -500,8 +498,8 @@ class MaterialBoardViewModel(
      */
     fun onMaterialQueryChanged(query: String) {
         val sheet = mutableState.value.sheet as? BoardSheet.NewRequest ?: return
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 sheet =
                     sheet.copy(
                         materialName = query,
@@ -510,6 +508,7 @@ class MaterialBoardViewModel(
                         matches = if (query.isBlank()) emptyList() else sheet.matches,
                     ),
             )
+        }
         searchJob?.cancel()
         if (query.isBlank()) {
             return
@@ -714,8 +713,8 @@ class MaterialBoardViewModel(
         if (!entry.mine) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 sheet =
                     BoardSheet.EditEntry(
                         entry = entry,
@@ -725,6 +724,7 @@ class MaterialBoardViewModel(
                     ),
                 error = null,
             )
+        }
     }
 
     /**
@@ -734,7 +734,7 @@ class MaterialBoardViewModel(
      */
     fun onEntryEdited(edit: (BoardSheet.EditEntry) -> BoardSheet.EditEntry) {
         val sheet = mutableState.value.sheet as? BoardSheet.EditEntry ?: return
-        mutableState.value = mutableState.value.copy(sheet = edit(sheet))
+        mutableState.update { it.copy(sheet = edit(sheet)) }
     }
 
     /** Sends the rewritten row. */
@@ -744,7 +744,7 @@ class MaterialBoardViewModel(
         if (sheet == null || amount == null) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             val result =
                 when (sheet.entry.side) {
@@ -765,16 +765,14 @@ class MaterialBoardViewModel(
                 is ApiResult.Success -> {
                     // The write answers with the row, so it is replaced in place rather than the
                     // page re-read — the member keeps their scroll position.
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, sheet = BoardSheet.None)
+                    mutableState.update { it.copy(saving = false, sheet = BoardSheet.None) }
                     replace(result.value)
                     announce()
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the board entry could not be rewritten: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -782,7 +780,7 @@ class MaterialBoardViewModel(
 
     /** Clears the last write error. */
     fun onErrorDismissed() {
-        mutableState.value = mutableState.value.copy(error = null)
+        mutableState.update { it.copy(error = null) }
     }
 
     /**
@@ -795,12 +793,11 @@ class MaterialBoardViewModel(
      * @param write the create to run.
      */
     private fun submit(write: suspend () -> ApiResult<Unit>) {
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             when (val result = write()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, sheet = BoardSheet.None)
+                    mutableState.update { it.copy(saving = false, sheet = BoardSheet.None) }
                     announce()
                     reload(keepRows = true)
                 }
@@ -808,8 +805,7 @@ class MaterialBoardViewModel(
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the board entry could not be created: ${result.error}" }
                     // The sheet stays open, holding what the member typed.
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -835,7 +831,7 @@ class MaterialBoardViewModel(
                 is BoardSheet.NewOffer -> offer(sheet)
                 else -> null
             }
-        next?.let { mutableState.value = mutableState.value.copy(sheet = it) }
+        next?.let { mutableState.update { state -> state.copy(sheet = it) } }
     }
 
     /**
@@ -859,7 +855,7 @@ class MaterialBoardViewModel(
      */
     private fun updateOfferSheet(edit: (BoardSheet.NewOffer) -> BoardSheet.NewOffer) {
         val sheet = mutableState.value.sheet as? BoardSheet.NewOffer ?: return
-        mutableState.value = mutableState.value.copy(sheet = edit(sheet))
+        mutableState.update { it.copy(sheet = edit(sheet)) }
     }
 
     /**
@@ -869,7 +865,7 @@ class MaterialBoardViewModel(
      */
     private fun updateRequestSheet(edit: (BoardSheet.NewRequest) -> BoardSheet.NewRequest) {
         val sheet = mutableState.value.sheet as? BoardSheet.NewRequest ?: return
-        mutableState.value = mutableState.value.copy(sheet = edit(sheet))
+        mutableState.update { it.copy(sheet = edit(sheet)) }
     }
 
     /**
@@ -897,32 +893,34 @@ class MaterialBoardViewModel(
         loadJob?.cancel()
         val side = mutableState.value.side
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = BoardPhase.Loading)
+            mutableState.update { it.copy(phase = BoardPhase.Loading) }
         }
         loadJob =
             viewModelScope.launch {
                 when (val result = source.board(side, page = 0)) {
                     is ApiResult.Success -> {
                         retry.onSuccess()
-                        mutableState.value =
-                            mutableState.value.copy(
-                                entries = result.value.entries,
+                        mutableState.update {
+                            it.copy(
+                                entries = result.value.rows,
                                 page = result.value.page,
                                 hasMore = result.value.hasMore,
                                 phase = BoardPhase.Ready,
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the board could not be read: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 phase = BoardPhase.Failed(result.error),
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }

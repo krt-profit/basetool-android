@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.AnnouncementDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import okhttp3.OkHttpClient
 import java.time.Instant
 
@@ -88,10 +89,8 @@ class AnnouncementRepository(
      * @return the announcement, `null` when there is none, or the classified failure.
      */
     override suspend fun current(): ApiResult<Announcement?> =
-        when (val result = reader.getOptional(ANNOUNCEMENT_PATH, AnnouncementDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value?.toModel())
-        }
+        reader.getOptional(ANNOUNCEMENT_PATH, AnnouncementDto.serializer())
+            .map { it?.toModel() }
 
     /**
      * Reads which announcement the caller has already marked read.
@@ -105,10 +104,8 @@ class AnnouncementRepository(
      * @return the id, or `null` when the member has marked none.
      */
     override suspend fun lastRead(): ApiResult<String?> =
-        when (val result = reader.get(ME_PATH, UserDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.lastReadAnnouncementId)
-        }
+        reader.get(ME_PATH, UserDto.serializer())
+            .map { it.lastReadAnnouncementId }
 
     /**
      * Marks an announcement read for the caller.
@@ -123,10 +120,8 @@ class AnnouncementRepository(
      * @return the id the server now holds.
      */
     override suspend fun markRead(id: String): ApiResult<String?> =
-        when (val result = reader.put("$READ_PATH/$id", UserDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.lastReadAnnouncementId)
-        }
+        reader.put("$READ_PATH/$id", UserDto.serializer())
+            .map { it.lastReadAnnouncementId }
 
     private companion object {
         /** Log subsystem. The announcement text is org content and is never logged. */
