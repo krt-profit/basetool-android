@@ -3,8 +3,8 @@
 > **Doc type:** Living runbook · **Audience:** @greluc, alone
 > **Related:** [`ANDROID_APP_DEV_CI.md`](ANDROID_APP_DEV_CI.md) § 4 (signing),
 > [`ANDROID_APP_SECURITY.md`](ANDROID_APP_SECURITY.md) § 5.1 (pin rotation),
-> main repo [`docs/API_VHOST_ROLLOUT_RUNBOOK.md`](https://github.com/krt-profit/basetool/blob/main/docs/API_VHOST_ROLLOUT_RUNBOOK.md)
-> (Phase J)
+> main repo [`docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md`](https://github.com/krt-profit/basetool/blob/main/docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md)
+> (Phase J; archived 2026-09-22 — the live allow-list is `docker/edge/include/api-allowlist.conf`)
 
 Everything else in this project is automated, reviewed or testable. What is left here needs
 production access, a secret, a repository setting, or a decision — and each of those is yours by
@@ -36,7 +36,9 @@ machinery that generates every member's inbox. It stayed out.
 
 ## 1a. Deploy a build that contains what the vhost now admits
 
-**Status:** outstanding, and it is the only reason the probe table is not fully green.
+**Status:** done. Every `basetool` release from v1.6.0 on contains `#1662` and `#1665`, and the
+probe below answered `200` when re-run on 2026-09-22 (`minimumVersionCode` 15). The rest of this
+section is kept as the record of why the step existed.
 
 `GET /api/v1/app/version-policy` answered **401** where the table says **200**. That is not the
 vhost: a path the vhost had not admitted would answer `404`, and this one reaches the backend. It
@@ -67,8 +69,10 @@ this one path is anonymous, and it is the one path a stale deployment silently b
 
 ## 2. The release signing key — generate once, back up, never lose
 
-**Status:** outstanding. **Undoable:** no. A lost key means no member can ever install an update
-over their existing app; they would have to uninstall and lose their local state.
+**Status:** done — the key exists and has signed every release from v0.1.0 (2026-08-25) to v0.3.0;
+its certificate fingerprint is the one in the README. The steps stay here for the record and for a
+key rotation. **Undoable:** no. A lost key means no member can ever install an update over their
+existing app; they would have to uninstall and lose their local state.
 
 Do this **offline**, on a machine you trust, not on a runner and not in a repository directory.
 
@@ -100,7 +104,9 @@ keytool -list -v -keystore basetool-release.p12 -storetype PKCS12 -alias basetoo
 
 ## 3. The `release` environment — where the key lives on GitHub
 
-**Status:** outstanding. Settings → Environments → **New environment** → `release`.
+**Status:** done — the `release` environment exists with a required reviewer and a deployment
+branch/tag policy (checked through the GitHub API on 2026-09-22). Settings → Environments →
+**New environment** → `release`.
 
 Configure, in this order:
 
@@ -128,7 +134,8 @@ safety net, not the plan.
 
 ## 4. Cutting a release
 
-**Status:** done once (v0.1.0, 2026-08-25) and repeatable. §§ 2, 3 and 8 are prerequisites and are
+**Status:** repeatable; done for every release from v0.1.0 (2026-08-25) to v0.3.0 (2026-09-14).
+§§ 2, 3 and 8 are prerequisites and are
 in place; nothing below needs them redone.
 
 0. **Bump the version first, on `main`, in its own PR.** `app/build.gradle.kts` carries
@@ -166,8 +173,10 @@ in place; nothing below needs them redone.
 
 ## 5. Raising the served-version floor — only when you need it
 
-**Status:** not needed yet, and deliberately so. The floor defaults to `0`, which serves every
-build.
+**Status:** used once. The floor stands at **15** (v0.3.0) since 2026-09-14, raised together with
+`APP_ANDROID_LATEST_VERSION_CODE` because the Keycloak issuer moved to `profit-base.online/auth` and
+no earlier build can sign in any more; `GET /api/v1/app/version-policy` answered
+`minimumVersionCode: 15` on 2026-09-22. Unset, the floor defaults to `0`, which serves every build.
 
 You need this the day a contract change makes an old build unsafe or broken. On the production
 host, in the `.env`:
@@ -202,30 +211,34 @@ one-commit change whenever a chapter exists.
 
 ---
 
-## 7. The German wiki page
+## 7. The German handbook
 
-**Status:** drafted, in [`docs/wiki/App.md`](wiki/App.md) — but the wiki is a **separate git
-repository** (`basetool.wiki`) that is not checked out here, so committing it is yours.
+**Status:** done, and no longer a copy step. The user handbook is this repository's own **GitHub
+wiki** — <https://github.com/krt-profit/basetool-android/wiki>, a separate git repository
+(`basetool-android.wiki`) with one page per topic: Installation, Echtheit prüfen, Anmelden, Updates,
+Bedienung, Bereiche, Benachrichtigungen, Einstellungen, Datenschutz and Fehlerbehebung, entered
+through `Home`. The main handbook's `Android-App` page in `basetool.wiki` is a short summary that
+links there.
 
-```bash
-git clone https://github.com/krt-profit/basetool.wiki.git
-cp <this repo>/docs/wiki/App.md basetool.wiki/App.md
-cd basetool.wiki && git add App.md && git commit -s -m "Add the Android app page" && git push
-```
+It is edited in place in the wiki repository, with every user-visible change, like the rest of the
+documentation. German content, English commit message — the wiki is the one carve-out from the
+English-only rule, and the carve-out is the *content*, not the commit.
 
-German content, English commit message — the wiki is the one carve-out from the English-only rule,
-and the carve-out is the *content*, not the commit.
-
-**Do it with the release, not before.** The page tells members how to install something; until § 4
-is done there is nothing to install, and a handbook page describing a file that does not exist is
-worse than no page.
+> [!note] Changed 2026-09-22
+> This section used to tell you to copy a draft, `docs/wiki/App.md`, into `basetool.wiki` with the
+> first release. That draft had drifted from the published page and has been deleted; the wiki is
+> the only copy, so there is nothing left to keep in sync.
 
 ---
 
 ## 8. Close the two governance gaps — do this before § 4
 
-**Status:** outstanding, both halves. **Undoable:** yes, trivially — these are two settings
-screens. Neither is urgent on its own; both are worth doing before § 4, because a rule added
+**Status:** done, both halves (checked through the GitHub API on 2026-09-22): `Protect main`
+carries a `required_status_checks` rule with exactly the eight checks listed in 8a, and a tag
+ruleset `version` protects `refs/tags/v*` against deletion, force-push, creation and update. It
+does not list `refs/tags/V*`, which 8b asks for; this repository has never cut an upper-case tag.
+**Undoable:** yes, trivially — these are two settings screens. Neither is urgent on its own; both
+are worth doing before § 4, because a rule added
 afterwards protects everything from then on and nothing from before.
 
 ### 8a. `main` accepts a merge with red CI

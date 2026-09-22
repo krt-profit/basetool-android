@@ -131,7 +131,7 @@ object KrtNotificationChannels {
         // The permission itself only exists from API 33. Below that a notification needs no runtime
         // grant, so the member's own switch is the whole gate -- and naming the constant by string
         // rather than by field keeps the compile-time reference off a platform this app also runs
-        // on (minSdk 30).
+        // on (minSdk 31).
         val granted =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, POST_NOTIFICATIONS) ==
@@ -139,7 +139,7 @@ object KrtNotificationChannels {
         return granted && NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
-    /** The runtime permission, by name: the constant is API 33 and this app starts at 30. */
+    /** The runtime permission, by name: the constant is API 33 and this app starts at 31. */
     private const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
 
     /** Chapter 14's HOCH. */

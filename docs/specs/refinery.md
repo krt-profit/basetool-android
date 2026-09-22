@@ -178,7 +178,9 @@ reloads the detail.
 scan icon on the screen; it moves to phase 5 together with the Fleetview and blueprint imports,
 because all three need a file picker plus the permission and privacy work they share. The icon is
 absent rather than present-and-inert: a control that does nothing is worse than one that is not
-there yet.
+there yet. *(Superseded 2026-09-22 note: the extractor import is now excluded permanently by
+`REQ-APP-REF-009` — the handover is redeemed once in a browser and cannot reach a phone — while the
+Fleetview and blueprint imports it was to travel with shipped on 2026-08-30.)*
 
 **The „Geschätzter Wert" is the recorded figure, not a UEX estimate.** Chapter 11 labels the value
 „UEX-Schätzung", and **no endpoint provides one** — the server carries `oreSales`, which a member

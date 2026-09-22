@@ -16,23 +16,32 @@ Posteingang — and write to them. Sign up for an Einsatz and book its money, bo
 take an Auftrag and change its status, keep your own ships and blueprints, offer and request on the
 Materialbörse, book a refining yield into the Lager, and clear the inbox. The Raffinerie lists the
 **unit's** runs rather than only your own, and names each one's owner, as the web has always done.
+Bank employees get the bank's Verwaltung view (a „Mitglied | Verwaltung" switch: every account of
+the unit, confirming and rejecting requests, direct bookings, Storno, holders and grants) — in the
+app since v0.2.0. Two file imports work from the phone: the **Fleetview import** in the Hangar
+(CCU-Game Fleetview, HangarXPLOR shiplist, Fleetyards JSON) and the **blueprint JSON import** in
+Mein Inventar, both with a preview before anything is written.
 Data updates live while the app is in front; on a tablet the list sits beside its detail.
 
 **What it deliberately does not do.** The administration stays in the browser, permanently and by
-decision — roles, members, catalogues, mission planning — as does the bank-employee view. There is
-no push channel, so notifications reach you only while the app runs; that is the cost of not routing
-them through Google. Beförderung is absent for a different reason: it is built and tested but has no
-design chapter, so it is withheld ([#66](https://github.com/krt-profit/basetool-android/issues/66),
-[ADR-0009](docs/adr/0009-tablet-settings-ships-without-its-befoerderung-column.md)). The file
-imports of the Desktop-Extractor come later.
+decision — roles, members, catalogues, mission planning. There is no push channel, so notifications
+reach you only while the app is in front; that is the cost of not routing them through Google.
+Beförderung is absent for a different reason: it is built and tested but has no design chapter, so
+it is withheld ([#66](https://github.com/krt-profit/basetool-android/issues/66),
+[ADR-0009](docs/adr/0009-tablet-settings-ships-without-its-befoerderung-column.md)). The SC
+Extractor's refinery handover is not in the app either, permanently: it is redeemed once in a
+browser and cannot reach a phone (`REQ-APP-REF-009`).
 
 The app needs the server side of `basetool` **v1.6.0 or newer** — and, separately, it needs the
 **API vhost to admit every path it calls**. That allow-list is default-deny and names each path
 individually, so a server that is new enough can still answer `404` to a path nobody admitted; the
 Raffinerie shipped broken in v0.2.8 for exactly that reason. Both live in the main repository:
 the version in its `CHANGELOG.md`, the admitted paths in
-`docs/API_VHOST_ROLLOUT_RUNBOOK.md`. **Check a path against that runbook before making the app
-depend on it**, not before releasing — by then the choice has shaped the screen.
+`docker/edge/include/api-allowlist.conf` — the authoritative list since 2026-09-12. The rollout
+runbook that admitted them phase by phase is archived at `docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md`
+and remains the record of *why* each family was admitted, but its copy of the block is no longer
+the list. **Check a path against `api-allowlist.conf` before making the app depend on it**, not
+before releasing — by then the choice has shaped the screen.
 
 The owner-approved concept lives in [`docs/`](docs/):
 
@@ -43,13 +52,18 @@ The owner-approved concept lives in [`docs/`](docs/):
 | [`ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md) | GDPR / TDDDG / German-law analysis and the compliance checklist |
 | [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) | Local dev/test environment, hardened GitHub CI, release signing |
 | [`docs/design/android/`](docs/design/android/README.md) | **Binding UI specification** (design handoff): chapters 00–18, `artifacts/Theme.kt`, icon export list, fonts. Open `00 Index.dc.html` in a browser. Delivered as a bundle and replaced wholesale — its own README and `github.md` still say “00–14”, which is the designer's text and not ours to edit. |
-| [`ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md) | Historical: the Claude Design brief that produced the specification above. Its facts are frozen at the briefing — it still says minSdk 30 — and it is read as a record, not as current |
+| [`docs/archive/`](docs/archive/README.md) | Finished work, kept as a record: the Claude Design brief that produced the specification above ([`ANDROID_APP_DESIGN_PROMPT.md`](docs/archive/ANDROID_APP_DESIGN_PROMPT.md), frozen at the briefing — it still says minSdk 30) and the 2026-08-26 tenancy measurement ([`TENANCY_VERIFICATION.md`](docs/archive/TENANCY_VERIFICATION.md)). Read as records, not as current |
 | [`docs/specs/`](docs/specs/INDEX.md) | The durable requirements (`REQ-APP-<AREA>-NNN`), one file per area. **This is where behaviour is written down**; a change without a matching spec change is incomplete |
 | [`docs/adr/`](docs/adr/README.md) | Architecture and design decisions, including the ones that were later overturned — a superseded ADR stays and says by which |
 | [`OWNER_RUNBOOK.md`](docs/OWNER_RUNBOOK.md) | The owner's procedures: cutting a release, the signing key, the `release` environment, raising the served-version floor |
 
+The German **user handbook** is this repository's GitHub wiki,
+<https://github.com/krt-profit/basetool-android/wiki> — installation, checking what you installed,
+signing in, updates, what the app can do in each area, notifications, settings, privacy and
+troubleshooting.
+
 Also under `docs/`, situational rather than foundational: `DESIGN_PARITY_AUDIT.md`,
-`TENANCY_VERIFICATION.md`, `GOOGLE_PLAY_DISTRIBUTION_PLAN.md`, and
+`GOOGLE_PLAY_DISTRIBUTION_PLAN.md`, and
 [`APPLE_PLATFORM_FEASIBILITY.md`](docs/APPLE_PLATFORM_FEASIBILITY.md). The last two are explicitly
 **not decisions**: Q1 still reads „GitHub Releases APK (+ Obtainium); no Play", and the Apple
 assessment is an analysis of what an iPhone/iPad port would cost — its finding is that the code is
@@ -133,9 +147,12 @@ The attestation is checkable offline with the GitHub CLI:
 gh attestation verify basetool-<version>.apk --repo krt-profit/basetool-android
 ```
 
-**The app pins its TLS.** All three production hosts are pinned to the two Let's Encrypt roots
-(`app/src/main/res/xml/network_security_config.xml`); what that does and does not protect against,
-and how to rotate it, is in [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) § 5.1.
+**The app pins its TLS.** Both production hosts — `api.profit-base.online` and
+`profit-base.online`, which has also served Keycloak under `/auth` since the main repo's ADR-0166 —
+are pinned to the two Let's Encrypt roots (`app/src/main/res/xml/network_security_config.xml`).
+There were three until 2026-09-13, when `keycloak.profit-base.online` was retired. What the pins do
+and do not protect against, and how to rotate them, is in
+[`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) § 5.1.
 
 ## Contributing
 

@@ -16,13 +16,15 @@ hosts, and certificate pins are public by design; secrets of any kind never land
 Security below).
 
 Binding concept documents (until superseded by `docs/specs/`): [`docs/ANDROID_APP_PLAN.md`](docs/ANDROID_APP_PLAN.md)
-(master plan incl. the resolved decisions Q1–Q7), [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md),
+(master plan incl. the resolved decisions Q1–Q8), [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md),
 [`docs/ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md),
 [`docs/ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md).
 The **binding UI specification is the delivered design handoff at
 [`docs/design/android/`](docs/design/android/README.md)** (chapters 00–18 + `artifacts/Theme.kt`;
-see the UI section below). [`docs/ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md)
-is the historical brief that produced it — do not design against the prompt anymore.
+see the UI section below). [`docs/archive/ANDROID_APP_DESIGN_PROMPT.md`](docs/archive/ANDROID_APP_DESIGN_PROMPT.md)
+is the historical brief that produced it — do not design against the prompt anymore. Finished
+plans and one-time records live in [`docs/archive/`](docs/archive/README.md) and are never edited to
+track new changes.
 
 ## The knowledge base (HARD RULE — read before every task)
 
@@ -102,8 +104,13 @@ architecture decisions in [`docs/adr/`](docs/adr/README.md).
   matching spec change is incomplete.
 - **Every architecturally significant decision is recorded as an ADR** before or with the
   change that implements it.
-- **README and CHANGELOG move with the change.** The German end-user wiki page for the app
-  (in the `basetool.wiki` repo) moves with every user-visible change too.
+- **README and CHANGELOG move with the change.** The German end-user handbook moves with every
+  user-visible change too: it is this repository's own GitHub wiki
+  (<https://github.com/krt-profit/basetool-android/wiki>, the separate `basetool-android.wiki` git
+  repo, one page per topic), plus — when the summary there is affected — the `Android-App` page of
+  the main handbook in the `basetool.wiki` repo. (Changed 2026-09-22: this line named only the
+  `basetool.wiki` page, and a drafted copy of it lived in `docs/wiki/`; the draft is gone and the
+  app's own wiki is the handbook.)
 - **Requirements must always be honoured.** If a change must violate one, it needs prior
   approval by the repository owner (@greluc) AND the requirement amended first. When in
   doubt, stop and ask.
@@ -128,8 +135,10 @@ Permissions stay minimal: `INTERNET`, `USE_BIOMETRIC` (optional app-lock),
 ## Frontend / UI & design system
 
 - **The DAS KARTELL design system is binding** (dark-only, square-first, Lato, orange
-  #E77E23 — full token set and component canon in `docs/ANDROID_APP_DESIGN_PROMPT.md`; the
-  binding upstream contract is `docs/specs/ui-design-system.md` in the main repo). Dynamic
+  #E77E23 — full token set in `docs/design/android/artifacts/Theme.kt` and the component canon in
+  the handoff's chapter 02; the brief that first listed them is archived at
+  `docs/archive/ANDROID_APP_DESIGN_PROMPT.md`; the binding upstream contract is
+  `docs/specs/ui-design-system.md` in the main repo). Dynamic
   color / Material You theming of brand hues is deliberately disabled. No emoji in UI, no
   native-styled dialogs, no icon libraries — the in-house stroke icon set only.
 - All UI is Compose; layouts are `WindowSizeClass`-driven (compact width = phone portrait,
@@ -295,10 +304,16 @@ scope — but never add a new one on top.
 
 ## Testing
 
-- **Every new feature ships with tests.** No exceptions. Pyramid: JUnit/Turbine unit tests →
-  Robolectric screen tests → MockWebServer contract tests against `openapi.json` fixtures →
-  Gradle Managed Devices instrumented suite → screenshot tests for `core:designsystem`.
-  Kover gates coverage on `core:*` (≥ 80 % line from Phase 2).
+- **Every new feature ships with tests.** No exceptions. What exists: JUnit 4 +
+  kotlinx-coroutines-test unit tests → Robolectric screen tests → MockWebServer contract tests
+  against `openapi.json` fixtures, all in `./gradlew check` → a small instrumented suite in
+  `app/src/androidTest` (Keystore contract, main-thread rule, test-stack TLS) run by hand with
+  `connectedDevDebugAndroidTest` on a device, because no CI job runs it → device walks on the three
+  device classes. A property only a device can show needs an instrumented test or a recorded walk.
+  Corrected 2026-09-22: this line promised Turbine, a Gradle Managed Devices suite, screenshot tests
+  for `core:designsystem` and a Kover gate (≥ 80 % line on `core:*`) — the plan of
+  `docs/ANDROID_APP_DEV_CI.md` § 3. None of the four is in the build; adding one is a change, not a
+  catch-up.
 - **Never use production / real credentials in tests or local stacks.** Only the synthetic
   test-stack artifacts of the main repo (`.env.test`, stripped realm export, throwaway
   keystore). Anything that enters a public worktree, CI log, or screenshot must be assumed
@@ -340,7 +355,8 @@ scope — but never add a new one on top.
 
 - **Maintain `CHANGELOG.md`** for every user-visible change. Entries short, terse, one to
   three sentences — what changed and why it matters to the user. No design essays.
-- README, the concept docs, and the German wiki page move with the change (see Requirements).
+- README, the concept docs, and the German handbook (the `basetool-android.wiki` repo) move with
+  the change (see Requirements).
 
 ## Git
 
@@ -352,8 +368,8 @@ Identical rules to the main repo — the short form:
 - **Every commit carries a DCO `Signed-off-by:` trailer** — always `git commit -s` (or
   `-S -s` when GPG-signing, which is the norm on PR branches). **The signing identity is
   `Lucas Greuloch (greluc) <lucas.greuloch@gmail.com>` — that address, not any other, belongs
-  in the trailer.** The owner's contact address (`lucas.greuloch@pm.me`) is a different address
-  and is NOT the git identity; using it fails the DCO gate. Never hand-write the trailer:
+  in the trailer.** It is also the owner's public contact address; the owner's former contact
+  address was retired on 2026-09-11 and must not be used anywhere. Never hand-write the trailer:
   `-s` derives it from `git config user.name` / `user.email`, which is already correct —
   typing it out by hand is exactly how the wrong address gets in.
 - **Every commit Claude authors includes a `Co-Authored-By:` trailer naming the model**, e.g.
@@ -361,7 +377,7 @@ Identical rules to the main repo — the short form:
   independent of the DCO sign-off. Substitute the actual model identifier of the session.
 - **All Git/GitHub/in-code prose is English** — commit messages, branch names, PRs, issues,
   comments, KDoc — regardless of the conversation language. Sole carve-outs: verbatim quotes
-  and the German `basetool.wiki`.
+  and the German wikis (`basetool-android.wiki`, `basetool.wiki`).
 - **Every PR is assigned (`--assignee greluc`) and labelled** from the repo's existing label
   set (Conventional-Commit type → `enhancement`/`bug`/`documentation`, plus functional-area
   labels once created). Never invent labels inline.

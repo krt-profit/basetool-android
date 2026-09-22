@@ -1,3 +1,7 @@
+> **Archived 2026-09-22.** Doc type: Historical record — frozen, kept as a record and no longer updated. One verification run against the isolated test stack on 2026-08-26; the code comments and specs that cite it cite this run, not a procedure to repeat.
+>
+> **Current truth:** the main repo's [`org-unit-tenancy.md`](https://github.com/krt-profit/basetool/blob/main/docs/specs/org-unit-tenancy.md) and [`security-and-access.md`](https://github.com/krt-profit/basetool/blob/main/docs/specs/security-and-access.md); in this repo [`api-contract.md`](../specs/api-contract.md) and [`auth.md`](../specs/auth.md). Index of the archive: [`README.md`](README.md).
+
 # What each caller may see — measured, not assumed
 
 Doc type: *historical record.* The binding rules are the main repo's

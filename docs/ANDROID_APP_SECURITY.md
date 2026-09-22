@@ -273,7 +273,9 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   (API 28+): while the device is locked the refresh token is cryptographically unusable —
   exactly threat (c) — and since the app only refreshes in the foreground (no push, Q2) the
   restriction costs nothing.
-- **Backup exclusion in all three rule sets** (minSdk 30 still spans both worlds): legacy
+- **Backup exclusion in all three rule sets** (written when minSdk 30 still spanned both worlds;
+  since ADR-0015 raised the floor to 31 no supported device reads the legacy file, which the
+  manifest still references beside `allowBackup="false"`): legacy
   `fullBackupContent` (API ≤ 30 devices) *and* `dataExtractionRules` with explicit excludes in
   **both** `<cloud-backup>` and `<device-transfer>` (API 31+; `allowBackup=false` alone does not
   reliably stop D2D transfers — verified Android 12 behavior-change doc).
@@ -292,7 +294,8 @@ public clients MUST be sender-constrained or use refresh token rotation"):
 - **Optional app-lock** (user setting): BiometricPrompt `BIOMETRIC_STRONG` + `CryptoObject`
   gating a second, auth-bound Keystore key that wraps the token key. API-29 caveats honored:
   `DEVICE_CREDENTIAL` combos via `setUserAuthenticationParameters`, which minSdk 30
-  guarantees — the API-29 time-bound fallback is gone with the floor (ADR-0006).
+  guaranteed — the API-29 time-bound fallback is gone with the floor (ADR-0006), and the floor is
+  31 since ADR-0015.
   `setInvalidatedByBiometricEnrollment` die on new enrollment → re-login path required.
 - **`FLAG_SECURE` app-wide, on by default, member-switchable** (fixed by the design spec,
   ch. 04 — not just authenticated screens; blocks screenshots/cast; ~70 % effective ≤ API 30 per
@@ -359,8 +362,9 @@ itself. That is the price of the choice, and the CAA record of §4 is what narro
 **Both roots, not one.** ISRG Root X2 is the ECDSA root and Let's Encrypt issues from its
 intermediates. A certificate chaining to X2 with only X1 pinned fails to validate, so pinning one
 root would turn an ordinary CA-side change into an outage reaching every installed build at once.
-`NetworkSecurityConfigTest` asserts both, on all three hosts, as real `<pin>` elements rather than
-as strings anywhere in the file.
+`NetworkSecurityConfigTest` asserts both, on both hosts, as real `<pin>` elements rather than
+as strings anywhere in the file. (Corrected 2026-09-22: this read „all three hosts" after the
+Keycloak host was retired; the test has asserted two since 2026-09-13.)
 
 **The expiry is the safety valve.** Android stops *enforcing* an expired pin-set rather than
 failing the connection. If both roots were ever replaced and no update shipped, the app degrades to
@@ -385,7 +389,7 @@ Two situations need it, and only one of them is an emergency.
    openssl x509 -in root.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
    ```
 
-2. **Add** it to all three `<pin-set>` blocks. Do not remove the old ones — a pin-set is an OR, and
+2. **Add** it to both `<pin-set>` blocks. Do not remove the old ones — a pin-set is an OR, and
    the whole point of this step is that both chains validate while members update.
 3. Push the `expiration` out by two years in the same edit.
 4. Ship that build **before** anything changes server-side, and leave it out there long enough that
@@ -399,7 +403,7 @@ The failure looks like every request failing with a TLS error on production whil
 fine — that asymmetry is the tell, because Chrome does not use this config.
 
 1. **Do not touch the server.** Nothing server-side can fix a pin baked into an APK.
-2. Ship a build with the corrected pin, or with the three `<domain-config>` blocks removed
+2. Ship a build with the corrected pin, or with both `<domain-config>` blocks removed
    entirely. Removing them is a legitimate emergency action: it returns the app to ordinary system
    trust, which is where it was before this section existed.
 3. Announce it where members will see it — the wiki page and the release notes — because an app

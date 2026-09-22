@@ -268,7 +268,7 @@ dependencies {
     // The instrumented tests, which exist for the properties the JVM cannot see at all. Two so
     // far: Android applies the network security config to the process, so nothing on the JVM or
     // under Robolectric can tell whether a TLS handshake with the test stack actually succeeds --
-    // and StrictMode is a runtime facility, so the main-thread rule of REQ-APP-API-006 is
+    // and StrictMode is a runtime facility, so the main-thread rule of REQ-APP-API-008 is
     // unobservable off a device. It took a device walk and a crash to learn the second one.
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

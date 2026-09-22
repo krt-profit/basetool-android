@@ -139,6 +139,17 @@ Coverage: **Kover** on `core:*` and `feature:*` modules, reported in CI on every
 starts advisory in Phase 1 and becomes a failing gate (line coverage ≥ 80 % on `core:*`) from
 Phase 2 — mirroring this repo's JaCoCo culture without starting at an unmeetable bar.
 
+> **Status, checked against the build on 2026-09-22 — the table above is the plan, not the build.**
+> Built and gated in `./gradlew check`: the unit layer (JUnit **4**, not 5, with
+> kotlinx-coroutines-test; Turbine is not a dependency), Robolectric, and the MockWebServer contract
+> layer. Built but **not in CI**: three instrumented tests in `app/src/androidTest`
+> (`AppLockKeystoreContractTest`, `ApiReaderMainThreadTest`, `TestStackTlsHandshakeTest`), run by
+> hand with `connectedDevDebugAndroidTest`; every workflow's own comment says there is no
+> instrumented-test job. **Not built at all:** Gradle Managed Devices, the Keycloak Testcontainer
+> auth flow, screenshot tests, the nightly E2E workflow, and Kover — no coverage is measured and
+> nothing gates on it. `feature/` stayed empty, so the `feature:*` half of the coverage line has no
+> modules to apply to.
+
 ## 4. GitHub Actions — hardened for a public repo
 
 Baseline posture (all from GitHub's current security docs):

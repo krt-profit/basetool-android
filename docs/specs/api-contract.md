@@ -152,7 +152,7 @@ scope the app does not have.
 switcher's last row (design ch. 02, artboard 7) sends no header at all, which the backend answers
 with the union of the caller's **own** memberships — never a unit they do not belong to, verified
 against a two-Staffel and a Staffel-plus-Spezialkommando member
-([`docs/TENANCY_VERIFICATION.md`](../TENANCY_VERIFICATION.md)). It therefore cannot be stored as a
+([`docs/archive/TENANCY_VERIFICATION.md`](../archive/TENANCY_VERIFICATION.md)). It therefore cannot be stored as a
 cleared pin: the rule above would fall through to the server default on the next cold start and put
 the member back into a single Staffel they never picked. A sentinel is stored instead, and the badge
 reads „Alle" — a known scope deserves a badge, and dropping it would read as "no scope resolved".
@@ -248,7 +248,9 @@ recorded in `core/contract/src/main/openapi/README.md`.
 
 ---
 
-### REQ-APP-API-006 — A response is handled off the main thread, always
+### REQ-APP-API-008 — A response is handled off the main thread, always
+
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-API-006`, an id an earlier requirement in this file already held. The earlier one keeps it.
 
 `Call.await()` resumes on the **caller's** dispatcher, and for a ViewModel that is the main thread.
 `ApiReader` therefore wraps both of its handling blocks in `withContext(Dispatchers.IO)`.

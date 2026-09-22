@@ -58,5 +58,5 @@ fun RequestNotificationPermissionOnce() {
     }
 }
 
-/** The runtime permission, by name: the constant is API 33 and this app starts at 30. */
+/** The runtime permission, by name: the constant is API 33 and this app starts at 31. */
 private const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"

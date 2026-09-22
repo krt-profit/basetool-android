@@ -267,7 +267,10 @@ either accepting alpha-versioned UI infrastructure across the whole app, or wait
 - **107 test files use Robolectric.** Robolectric is Android/JVM-only. Those tests can keep testing
   shared code from the Android target's test source set, but **iOS gets no equivalent coverage**
   from them. „Every new feature ships with tests" then needs an iOS leg — simulator UI tests —
-  that does not exist today, on top of Kover's ≥ 80 % line gate on `core:*`.
+  that does not exist today, on top of Kover's ≥ 80 % line gate on `core:*`. *(Corrected
+  2026-09-22: that gate was planned in `ANDROID_APP_DEV_CI.md` § 3 and `CLAUDE.md` stated it as
+  fact, but Kover is not in the build — no coverage is measured today, so there is no gate to
+  re-baseline, only one to build.)*
 - **`allWarningsAsErrors`, Lint `warningsAsErrors`, detekt, Spotless** all apply to every line
   moved. A port of 100k lines under warnings-as-errors is a large, noisy diff by construction.
 - **The privacy gate makes each new dependency a formal step.** Ktor, kotlinx-datetime, bignum and

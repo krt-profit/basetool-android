@@ -1,6 +1,9 @@
 # ADR-0004 — The session model: a stale session is not a signed-out one
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22, on the evidence of the shipped code; proposed 2026-08-18).
+  `SessionState.Stale` is distinct from `SignedOut`, refreshing is single-flight behind
+  `AuthSession`'s `refreshMutex`, and the per-attempt secrets live in one object
+  (`AuthSessionTest`, `PendingAuthorizationTest`). In production since v0.1.0.
 - **Date:** 2026-08-18
 - **Related:** [ADR-0001](0001-core-module-split-and-network-layer.md) ·
   [ADR-0002](0002-refresh-token-at-rest.md) · [ADR-0003](0003-token-endpoint-client.md) ·

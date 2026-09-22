@@ -640,7 +640,9 @@ and so nothing to declare (ADR-0104 is satisfied by the read).
 
 ---
 
-### REQ-APP-INV-019 — Booking in needs a grade, and the cSCU hint belongs to SCU
+### REQ-APP-INV-023 — Booking in needs a grade, and the cSCU hint belongs to SCU
+
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-INV-019`, an id an earlier requirement in this file already held. The earlier one keeps it.
 
 **A material row without a grade is a rejection the form knows about.**
 `InventoryItemCreateDto` pairs the two with an `@AssertTrue` (REQ-INV-029): a material row requires
@@ -664,7 +666,9 @@ merge opt-in beside it already followed — the web applies it too, hiding its o
 
 ---
 
-### REQ-APP-INV-020 — A book-in names one of two catalogues, and they are not interchangeable
+### REQ-APP-INV-024 — A book-in names one of two catalogues, and they are not interchangeable
+
+> [!note] Renumbered 2026-09-22 — this requirement was published as `REQ-APP-INV-020`, an id an earlier requirement in this file already held. The earlier one keeps it.
 
 The web's booking form has carried a Material/Item switch since the item inventory landed
 (REQ-INV-029, ADR-0101); the app could read item stock („Game-Items" under „Mehr") but never book

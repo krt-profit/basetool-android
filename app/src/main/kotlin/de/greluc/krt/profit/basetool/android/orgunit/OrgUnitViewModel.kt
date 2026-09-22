@@ -165,7 +165,7 @@ class OrgUnitViewModel(
      *
      * Nothing widens: with no `X-Active-Org-Unit-Id` the backend answers with the union of the
      * caller's **own** memberships — verified against a two-Staffel member, see
-     * `docs/TENANCY_VERIFICATION.md`.
+     * `docs/archive/TENANCY_VERIFICATION.md`.
      */
     fun selectAll() {
         store.pinAll()

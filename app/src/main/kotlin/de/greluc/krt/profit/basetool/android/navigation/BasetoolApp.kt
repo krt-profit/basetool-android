@@ -397,7 +397,7 @@ fun BasetoolApp(
             // Two wordings, because sending no pin means two different things. An ADMIN gets
             // `adminAllScope` — literally every org unit; everyone else gets the union of their own
             // reach (RequestScopeResolver#currentScopePredicate), never a unit they do not belong
-            // to (design ch. 02, artboard 7, verified in docs/TENANCY_VERIFICATION.md). One label
+            // to (design ch. 02, artboard 7, verified in docs/archive/TENANCY_VERIFICATION.md). One label
             // said „Alle Org-Einheiten" to both, which promises a member more than it delivers:
             // measured on the test stack 2026-09-01, a member of two Staffeln read 884.8 SCU under
             // this row while an admin read 1403.4.

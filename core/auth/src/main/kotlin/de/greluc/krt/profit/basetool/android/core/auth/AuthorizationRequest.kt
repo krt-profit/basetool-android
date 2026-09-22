@@ -86,7 +86,7 @@ data class AuthorizationRequest(
             .filter { it.contains("=") }
             .associate { pair ->
                 val (name, value) = pair.split("=", limit = 2)
-                // The (String, Charset) overload is API 33+ and minSdk is 30 — on a device at
+                // The (String, Charset) overload is API 33+ and minSdk is 31 — on a device at
                 // the floor it would be a NoSuchMethodError at the moment of login.
                 URLDecoder.decode(name, CHARSET_UTF_8) to URLDecoder.decode(value, CHARSET_UTF_8)
             }

@@ -26,7 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The guard for `REQ-APP-API-006`: a response is handled off the main thread, always.
+ * The guard for `REQ-APP-API-008`: a response is handled off the main thread, always.
  *
  * **This test exists on a device because the JVM suite cannot see the defect at all.** `StrictMode`
  * is an Android runtime facility; on a JVM there is no main-thread policy and no

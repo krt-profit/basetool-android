@@ -125,7 +125,7 @@ object BiometricGate {
                 .setAllowedAuthenticators(ALLOWED)
                 .build()
 
-        // Always bound: minSdk 30 guarantees an auth-per-use key, and a prompt without a
+        // Always bound: minSdk 31 guarantees an auth-per-use key, and a prompt without a
         // CryptoObject would authenticate the member without authorising the operation.
         prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
     }
