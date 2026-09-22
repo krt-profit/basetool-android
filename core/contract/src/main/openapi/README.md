@@ -7,18 +7,21 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `f4d94d871504b77e2e9276383182d7ed9a95d077` (2026-09-03) — PR krt-profit/basetool#1765, **merged**; ships to production with backend 1.6.18 |
-| Document | OpenAPI 3.1.0 · 402 paths · 409 schemas |
+| Copied from commit | `553600bac` (2026-09-22) — PR krt-profit/basetool#1999, **open** at the time of copying |
+| Document | OpenAPI 3.1.0 · 400 paths · 417 schemas |
 
-> The copy is ahead of the backend's `main` on purpose: it carries the **optional request body of
-> `POST /api/v1/missions/{id}/join`** (`JoinMissionRequest`), which the sign-up sheet sends and which
-> lands with basetool#1765. **This repository must not release a build that sends it before that PR
-> is merged and deployed** — an older backend ignores an unknown body, so the sign-up would succeed
-> while silently dropping the desired Funktion and the payout preference, which is worse than
-> failing.
+> The copy is ahead of the backend's `main` on purpose: it carries the **manager-only add-by-id**
+> `POST /api/v1/missions/{id}/participants/by-id/slim` (`AddParticipantByIdRequest`, basetool
+> REQ-MISSION-020), which „Teilnehmer hinzufügen" sends and which lands with basetool#1999.
+> **This repository must not release a build that sends it before that PR is merged and deployed**
+> — together with its API-vhost rule — or the manager's add fails at the edge exactly as it has
+> since 2026-09-07.
 >
-> (The previous note here tracked `GET /api/v1/users/me/memberships` and basetool#1613, merged
-> 2026-08-20.)
+> The copy also drops the seventeen deprecated mission endpoints the backend deleted early on
+> 2026-09-22 (basetool#1996); the app called none of them any more.
+>
+> (The previous note here tracked the optional body of `POST …/join` and basetool#1765, merged
+> 2026-09-03.)
 
 ## Refreshing it
 

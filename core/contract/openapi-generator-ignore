@@ -10,3 +10,11 @@
 # `correlationId` and the `fieldErrors` array the generated model does not describe at all
 # (REQ-API-004). Two types with the same name, one of them unusable, is worse than one.
 **/ProblemDetail.kt
+
+# The GDPR self-export (`GET /api/v1/users/me/export`): each section's `rows` is an array of
+# free-form objects, which the generator can only render as `Any?` — and kotlinx.serialization
+# refuses to compile that without a contextual serializer. The app does not offer the export (it is
+# a web feature), so neither model is generated. Consuming it one day means a typed row model here
+# first, not a serializer for `Any`. Added 2026-09-22 with the contract refresh from basetool#1999.
+**/DataExport.kt
+**/ExportSection.kt

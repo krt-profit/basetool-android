@@ -156,6 +156,13 @@ tasks.openApiGenerate.configure {
         .file(layout.projectDirectory.file("src/main/openapi/openapi.json"))
         .withPropertyName("openapiSpecFile")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // Same hole, other file: `ignoreFileOverride` is a plain path string too, so an edit to the
+    // ignore list left the cache key unchanged and a cached run restored a model the list now
+    // excludes. Found 2026-09-22 when excluding the export models still compiled the old ones.
+    inputs
+        .file(layout.projectDirectory.file("openapi-generator-ignore"))
+        .withPropertyName("openapiIgnoreFile")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 val openApiSources =

@@ -1601,7 +1601,7 @@
       "get" : {
         "tags" : [ "special-command-controller" ],
         "summary" : "Get a Spezialkommando by id",
-        "description" : "Returns the full DTO for the requested Spezialkommando. ADMIN-only.",
+        "description" : "Returns the full DTO for the requested Spezialkommando. Admin, or the SK lead of this Spezialkommando (the same gate as its member-management endpoints).",
         "operationId" : "getSpecialCommand",
         "parameters" : [ {
           "name" : "id",
@@ -1637,6 +1637,16 @@
               }
             }
           },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
           "404" : {
             "description" : "Not Found",
             "content" : {
@@ -1662,16 +1672,6 @@
           },
           "401" : {
             "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
             "content" : {
               "application/problem+json" : {
                 "schema" : {
@@ -3020,7 +3020,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -3119,7 +3119,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -3201,7 +3201,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -3309,7 +3309,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -3408,7 +3408,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -3490,7 +3490,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -3598,7 +3598,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -3697,7 +3697,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -3779,7 +3779,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -3888,7 +3888,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -3996,7 +3996,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -4095,7 +4095,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -4177,7 +4177,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -4285,7 +4285,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -4384,7 +4384,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -4466,7 +4466,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -4567,7 +4567,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -4649,7 +4649,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -7429,7 +7429,7 @@
       "put" : {
         "tags" : [ "Operations" ],
         "summary" : "Toggle the per-participant paid-out flag for an operation",
-        "description" : "Records that a mission manager has marked the participant as paid out (or unset it). Setting `paidOut=true` requires the MISSION_MANAGER role (admins and officers satisfy it via the role hierarchy). Setting `paidOut=false` is reserved for ADMIN and OFFICER — a plain mission manager cannot undo a paid-out confirmation. Last-writer-wins: no client-supplied version is required because the field is a boolean. The audit fields (`paidOutAt`, `paidOutByUser`) are always refreshed when `paidOut=true`; setting `paidOut=false` keeps the last audit fields as a historical record. The participantKey matches the opaque key returned by `/payouts` (real user UUID stringified or `guest_<name>`). Returns only the participant's paid-out status block (flag + audit trace) — a toggle never changes any amount, so the payout computation is not re-run.",
+        "description" : "Records that a mission manager has marked the participant as paid out (or unset it). Setting `paidOut=true` requires the MISSION_MANAGER role (admins and officers satisfy it via the role hierarchy). Setting `paidOut=false` is reserved for ADMIN and OFFICER — a plain mission manager cannot undo a paid-out confirmation. Last-writer-wins: no client-supplied version is required because the field is a boolean. The audit fields (`paidOutAt`, `paidOutByUser`) are always refreshed when `paidOut=true`; setting `paidOut=false` keeps the last audit fields as a historical record. The participantKey matches the opaque key returned by `/payouts` (real user UUID stringified, `guest_<name>` for an external participant, or `deleted_<participantId>` for a participant whose account was deleted). Returns only the participant's paid-out status block (flag + audit trace) — a toggle never changes any amount, so the payout computation is not re-run.",
         "operationId" : "setPayoutStatus",
         "parameters" : [ {
           "name" : "id",
@@ -7628,7 +7628,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -7727,7 +7727,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -7809,7 +7809,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -8094,210 +8094,6 @@
         }
       }
     },
-    "/api/v1/missions/{id}/units/{unitId}" : {
-      "put" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Update a mission unit (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer PUT /api/v1/missions/{id}/units/{unitId}/slim which returns only the updated unit.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/{unitId}/slim`",
-        "operationId" : "updateUnit",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "unitId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateUnitRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      },
-      "delete" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Delete a mission unit (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer DELETE /api/v1/missions/{id}/units/{unitId}/slim which returns 204 No Content.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/{unitId}/slim`",
-        "operationId" : "deleteUnit",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "unitId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      }
-    },
     "/api/v1/missions/{id}/units/{unitId}/slim" : {
       "put" : {
         "tags" : [ "Missions" ],
@@ -8491,226 +8287,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}" : {
-      "put" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Update crew in a mission unit (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer PUT /api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}/slim which returns only the updated crew entry.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}/slim`",
-        "operationId" : "updateCrew",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "missionUnitId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "crewId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateCrewRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      },
-      "delete" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Remove crew from a mission unit (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer DELETE /api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}/slim which returns 204 No Content.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}/slim`",
-        "operationId" : "removeCrew",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "missionUnitId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "crewId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/units/{missionUnitId}/crew/{crewId}/slim" : {
@@ -9246,7 +8822,7 @@
       "put" : {
         "tags" : [ "Missions" ],
         "summary" : "Set or clear the party lead of a mission",
-        "description" : "Assigns the mission's party lead by explicit userId (from autocomplete) or by free-text guestName, mirroring the participant-add resolution: a free-text name is resolved case-insensitively against registered members (unique match links the user, multiple matches return 409, no match stores a guest handle). Submitting neither clears the party lead. The version must match the mission's current partyLeadVersion or 409 (application/problem+json) is returned.",
+        "description" : "Assigns the mission's party lead by explicit userId (from autocomplete) or by free-text guestName, mirroring the participant-add resolution: a free-text name is resolved case-insensitively against registered members (unique match links the user, multiple matches return 409, no match stores an external handle). Submitting neither clears the party lead. The version must match the mission's current partyLeadVersion or 409 (application/problem+json) is returned.",
         "operationId" : "setPartyLead",
         "parameters" : [ {
           "name" : "id",
@@ -9339,210 +8915,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/participants/{participantId}" : {
-      "put" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Update a participant (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer PUT /api/v1/missions/{id}/participants/{participantId}/slim which returns only the updated participant.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/{participantId}/slim`",
-        "operationId" : "updateParticipant",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "participantId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateParticipantRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      },
-      "delete" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Remove a participant (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer DELETE /api/v1/missions/{id}/participants/{participantId}/slim which returns 204 No Content.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/{participantId}/slim`",
-        "operationId" : "removeParticipant",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "participantId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/participants/{participantId}/slim" : {
@@ -9738,114 +9110,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/participants/{participantId}/payout-preference" : {
-      "put" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Update payout preference for a participant (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer PUT /api/v1/missions/{id}/participants/{participantId}/payout-preference/slim which returns only the updated participant.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/{participantId}/payout-preference/slim`",
-        "operationId" : "updatePayoutPreference",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "participantId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdatePayoutPreferenceRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/participants/{participantId}/payout-preference/slim" : {
@@ -10151,104 +9415,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/owner/{userId}" : {
-      "put" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Change the owner of a mission (legacy, deprecated)",
-        "description" : "Legacy endpoint without optimistic lock on the ownership aggregate. Prefer PUT /api/v1/missions/{id}/owner with UpdateMissionOwnerRequest (includes version) to benefit from per-section optimistic locking that does not invalidate other users' open forms on the same mission.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/owner`",
-        "operationId" : "setMissionOwnerLegacy",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "userId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/objectives/{objectiveId}/slim" : {
@@ -11060,7 +10226,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "put" : {
@@ -11159,7 +10325,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -11540,7 +10706,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -14099,7 +13265,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -14181,7 +13347,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -14282,7 +13448,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -14364,8 +13530,105 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
+      }
+    },
+    "/api/v1/users/{id}/consolidate" : {
+      "post" : {
+        "tags" : [ "user-controller" ],
+        "operationId" : "consolidateAccount",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConsolidateAccountRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/users/sync" : {
@@ -14382,6 +13645,272 @@
                 }
               }
             }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/deletion-request" : {
+      "get" : {
+        "tags" : [ "deletion-request-controller" ],
+        "summary" : "Read my own account-deletion request",
+        "description" : "Returns the caller's latest Art. 17 erasure request - including a refused one, whose recorded reason Art. 12(4) requires the requester to be told - or 204 when they have never made one. The subject is always the caller; no user id can be passed.",
+        "operationId" : "myRequest",
+        "responses" : {
+          "200" : {
+            "description" : "The caller has a pending request",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletionRequestDto"
+                }
+              }
+            }
+          },
+          "204" : {
+            "description" : "The caller has no pending request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletionRequestDto"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "deletion-request-controller" ],
+        "summary" : "Request erasure of my own account (Art. 17)",
+        "description" : "Raises a request for an admin to decide. Does NOT delete the account: the deletion removes the Keycloak account and purges owned data irreversibly, so it is never triggered by the member's own click. Idempotent - a second submission returns the existing request.",
+        "operationId" : "request",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDeletionRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletionRequestDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "deletion-request-controller" ],
+        "summary" : "Withdraw my own account-deletion request",
+        "description" : "Takes back a pending request. Idempotent: 204 whether or not one existed. The row is kept as WITHDRAWN rather than deleted, because 'asked and changed their mind' is a different fact from 'never asked'.",
+        "operationId" : "withdraw",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           },
           "400" : {
             "description" : "Bad Request",
@@ -16630,7 +16159,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -16720,7 +16249,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -16843,7 +16372,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -16933,7 +16462,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -17056,7 +16585,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -17146,7 +16675,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -17269,7 +16798,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -17359,7 +16888,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -17489,7 +17018,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -17579,7 +17108,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -17709,7 +17238,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -17799,7 +17328,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -17879,7 +17408,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -17977,7 +17506,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -18069,7 +17598,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -18161,7 +17690,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -21119,7 +20648,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -21201,7 +20730,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -21303,7 +20832,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -21393,7 +20922,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -21602,214 +21131,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/units" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Add a unit to a mission (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/units/slim which returns only the updated list of units and avoids parent-coupled payloads (Option A / multi-user concurrency).\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/slim`",
-        "operationId" : "addUnit",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddUnitRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      }
-    },
-    "/api/v1/missions/{id}/units/{missionUnitId}/crew" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Add crew to a mission unit (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/units/{missionUnitId}/crew/slim which returns only the crew list of the affected unit.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/units/{missionUnitId}/crew/slim`",
-        "operationId" : "addCrew",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "missionUnitId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddCrewRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/units/{missionUnitId}/crew/slim" : {
@@ -22224,204 +21545,6 @@
         }
       }
     },
-    "/api/v1/missions/{id}/participants" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Add a participant (admin, legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/participants/slim which returns only the updated participant list.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/slim`",
-        "operationId" : "addParticipant",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddParticipantRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      }
-    },
-    "/api/v1/missions/{id}/participants/{participantId}/check-out" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Check out a participant (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/participants/{participantId}/check-out/slim which returns only the updated participant.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/{participantId}/check-out/slim`",
-        "operationId" : "checkOutParticipant",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "participantId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      }
-    },
     "/api/v1/missions/{id}/participants/{participantId}/check-out/slim" : {
       "post" : {
         "tags" : [ "Missions" ],
@@ -22517,104 +21640,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/participants/{participantId}/check-in" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Check in a participant (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/participants/{participantId}/check-in/slim which returns only the updated participant.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/participants/{participantId}/check-in/slim`",
-        "operationId" : "checkInParticipant",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "participantId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/participants/{participantId}/check-in/slim" : {
@@ -22718,7 +21743,7 @@
       "post" : {
         "tags" : [ "Missions" ],
         "summary" : "Add a participant (slim response)",
-        "description" : "Adds a participant and returns the updated participant list as slim DTOs. Mirrors the public add-participant logic: explicit userId (autocomplete) or free-text guestName (case-insensitive resolution against registered users). Authenticated users may always add themselves; adding other registered users is restricted to managers/officers/admins. Anonymous users may only add guest entries.",
+        "description" : "Adds a participant and returns the updated participant list as slim DTOs. Mirrors the public add-participant logic: explicit userId (autocomplete) or free-text guestName (case-insensitive resolution against registered users). Callers may always add themselves; adding anyone else is restricted to managers/officers/admins.",
         "operationId" : "addParticipantSlim",
         "parameters" : [ {
           "name" : "id",
@@ -22733,7 +21758,109 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddParticipantPublicRequest"
+                "$ref" : "#/components/schemas/AddExternalParticipantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MissionParticipantDto"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{id}/participants/by-id/slim" : {
+      "post" : {
+        "tags" : [ "Missions" ],
+        "summary" : "Add a registered member by id (manager-only, slim response)",
+        "description" : "Adds the registered member named by userId as a participant and returns the updated participant list as slim DTOs. Restricted to callers who may manage the mission; takes no free-text name. The member's org units and payout default are stamped exactly as on self-enrolment.",
+        "operationId" : "addParticipantByIdSlim",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddParticipantByIdRequest"
               }
             }
           },
@@ -22819,8 +21946,8 @@
     "/api/v1/missions/{id}/participants/add" : {
       "post" : {
         "tags" : [ "Missions" ],
-        "summary" : "Add a participant (public)",
-        "description" : "Adds a participant by explicit userId (from autocomplete) or by free-text guestName. Free-text names are resolved case-insensitively against existing users: a unique match links the participant as a registered member; no match falls back to the guest path; multiple matches return 409 (ambiguous name).",
+        "summary" : "Add a participant",
+        "description" : "Adds a participant by explicit userId (from autocomplete) or by free-text guestName. Free-text names are resolved case-insensitively against existing users: a unique match links the participant as a registered member; no match records an external participant; multiple matches return 409 (ambiguous name).",
         "operationId" : "addParticipantPublic",
         "parameters" : [ {
           "name" : "id",
@@ -22835,7 +21962,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddParticipantPublicRequest"
+                "$ref" : "#/components/schemas/AddExternalParticipantRequest"
               }
             }
           },
@@ -23015,200 +22142,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/managers/{userId}" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Add a manager to a mission (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/managers/{userId}/slim which returns only the updated manager list.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/managers/{userId}/slim`",
-        "operationId" : "addManager",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "userId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      },
-      "delete" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Remove a manager from a mission (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer DELETE /api/v1/missions/{id}/managers/{userId}/slim which returns 204 No Content.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/managers/{userId}/slim`",
-        "operationId" : "removeManager",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "userId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/managers/{userId}/slim" : {
@@ -23495,106 +22428,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/missions/{id}/frequencies" : {
-      "post" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Add or update a frequency for a mission (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer POST /api/v1/missions/{id}/frequencies/slim which returns only the updated frequency list.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/frequencies/slim`",
-        "operationId" : "addOrUpdateFrequency",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddFrequencyRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/frequencies/slim" : {
@@ -24171,7 +23004,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -24261,7 +23094,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -24352,7 +23185,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -24441,7 +23274,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -24532,7 +23365,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -24624,7 +23457,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -24964,7 +23797,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -25054,7 +23887,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -25145,7 +23978,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "delete" : {
@@ -25234,7 +24067,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -25325,7 +24158,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -25416,7 +24249,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -25508,7 +24341,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -25993,7 +24826,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -30569,7 +29402,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -30668,7 +29501,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -30806,7 +29639,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -30905,7 +29738,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -31012,7 +29845,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -31113,7 +29946,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -31214,7 +30047,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -31316,7 +30149,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -31412,7 +30245,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -31511,8 +30344,199 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
+      }
+    },
+    "/api/v1/admin/deletion-requests/{id}/execute" : {
+      "post" : {
+        "tags" : [ "admin-deletion-request-controller" ],
+        "summary" : "Carry out an account-deletion request",
+        "description" : "IRREVERSIBLE. Deletes the local row and the Keycloak account, in that order (ADR-0111). With grantHistoryErasure, the member's surviving handle snapshots are anonymised first, across both audit trails, the bank booking history, the booking requests and the two handover recipients. Returns 204: the request row cascades away with the account, so there is nothing left to return.",
+        "operationId" : "execute",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecideDeletionRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Carried out"
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/deletion-requests/{id}/decline" : {
+      "post" : {
+        "tags" : [ "admin-deletion-request-controller" ],
+        "summary" : "Refuse an account-deletion request",
+        "description" : "Records the admin's reason and notifies the member. The reason is MANDATORY: Art. 12(4) requires telling the requester why a request is refused.",
+        "operationId" : "decline",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecideDeletionRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Refused",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletionRequestDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/default-blueprints" : {
@@ -31613,7 +30637,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       },
       "post" : {
@@ -31703,7 +30727,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -32303,7 +31327,7 @@
       "patch" : {
         "tags" : [ "squadron-membership-controller" ],
         "summary" : "Patch per-Squadron-membership role flags",
-        "description" : "Flips is_logistician and / or is_mission_manager on the Staffel membership row. ADMIN only. Replaces the legacy /api/v1/users/{id}/logistician and /api/v1/users/{id}/mission-manager query-param endpoints, which stay live as transitional aliases during the R6.e soak.",
+        "description" : "Flips is_logistician and / or is_mission_manager on the Staffel membership row. ADMIN only. Replaces the legacy /api/v1/users/{id}/logistician and /api/v1/users/{id}/mission-manager query-param endpoints, which have been removed.",
         "operationId" : "patchFlags_1",
         "parameters" : [ {
           "name" : "id",
@@ -35831,6 +34855,201 @@
         }
       }
     },
+    "/api/v1/users/me/export" : {
+      "get" : {
+        "tags" : [ "data-export-controller" ],
+        "summary" : "Export my own data (Art. 15 / Art. 20)",
+        "description" : "The complete export as JSON. Every section carries its legal basis: ART_15 for the right of access, ART_15_20 where the data is additionally portable under Art. 20 (provided by the member, on consent or contract). Third-party data is excluded by the projections rather than scrubbed afterwards; free text the member wrote has other members' handles replaced.",
+        "operationId" : "exportJson",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataExport"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/export/pdf" : {
+      "get" : {
+        "tags" : [ "data-export-controller" ],
+        "summary" : "Export my own data as a PDF",
+        "description" : "The readable half: master data in full, plus an inventory of every section with its row count and legal basis. The long lists are in the JSON export, which the document points at - a PDF of thousands of warehouse movements serves the right of access worse than a short document that says exactly what exists.",
+        "operationId" : "exportPdf",
+        "responses" : {
+          "200" : {
+            "description" : "The PDF",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/lookup" : {
       "get" : {
         "tags" : [ "user-controller" ],
@@ -36043,7 +35262,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -36238,7 +35457,8 @@
               }
             }
           }
-        }
+        },
+        "security" : [ ]
       }
     },
     "/api/v1/terminals" : {
@@ -37903,7 +37123,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38022,7 +37242,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38133,7 +37353,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38235,7 +37455,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38358,7 +37578,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38481,7 +37701,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38604,7 +37824,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38715,7 +37935,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38817,7 +38037,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -38935,7 +38155,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39066,7 +38286,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39177,7 +38397,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39508,7 +38728,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39639,7 +38859,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39749,7 +38969,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -39860,7 +39080,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -40992,7 +40212,7 @@
       "get" : {
         "tags" : [ "org-unit-controller" ],
         "summary" : "List every active org unit",
-        "description" : "Returns the full active Staffel + Spezialkommando catalog as picker options, each with its isProfitEligible flag. Drives the Job Order create form's owner-pickers — Job Orders are cross-staffel workspaces and the picker must offer the full active list, not the caller's memberships. Open to anonymous callers because the request form is public; the payload carries no PII.",
+        "description" : "Returns the full active Staffel + Spezialkommando catalog as picker options, each with its isProfitEligible flag. Drives the Job Order create form's owner-pickers — Job Orders are cross-staffel workspaces and the picker must offer the full active list, not the caller's memberships. Members only since REQ-SEC-052; it was open to anonymous callers while the request form was.",
         "operationId" : "listActiveOrgUnits",
         "responses" : {
           "200" : {
@@ -43681,7 +42901,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -43780,7 +43000,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -43879,7 +43099,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -43991,7 +43211,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -46264,7 +45484,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -46379,7 +45599,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -46497,7 +45717,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -46605,7 +45825,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -46704,7 +45924,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -47465,7 +46685,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -47889,6 +47109,17 @@
             }
           }
         }, {
+          "name" : "locationIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }, {
           "name" : "minQuality",
           "in" : "query",
           "required" : false,
@@ -48055,6 +47286,17 @@
           }
         }, {
           "name" : "gameItemIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }, {
+          "name" : "locationIds",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -48736,6 +47978,17 @@
             }
           }
         }, {
+          "name" : "locationIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }, {
           "name" : "minQuality",
           "in" : "query",
           "required" : false,
@@ -49146,6 +48399,17 @@
           }
         }, {
           "name" : "gameItemIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }, {
+          "name" : "locationIds",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -50128,7 +49392,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -50731,7 +49995,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "ACCOUNT_CREATED", "ACCOUNT_RENAMED", "ACCOUNT_CLOSED", "ACCOUNT_REOPENED", "ACCOUNT_RESPONSIBLE_CHANGED", "HOLDER_REGISTERED", "HOLDER_DEACTIVATED", "HOLDER_REACTIVATED", "GRANT_CREATED", "GRANT_UPDATED", "GRANT_REVOKED", "DEPOSIT_BOOKED", "DEPOSIT_SPLIT_BOOKED", "WITHDRAWAL_BOOKED", "TRANSFER_BOOKED", "HOLDER_TRANSFER", "HOLDER_REBOOKED", "TRANSACTION_REVERSED", "WIPE_RESET_EXECUTED", "STATEMENT_EXPORTED", "MANAGEMENT_REPORT_EXPORTED", "AUDIT_LOG_EXPORTED", "AUDIT_LOG_PURGED", "BOOKING_REQUEST_CREATED", "BOOKING_REQUEST_CONFIRMED", "BOOKING_REQUEST_REJECTED", "BOOKING_REQUEST_CANCELLED", "BOOKING_REQUEST_UPDATED", "BALANCE_TARGET_SET", "BALANCE_TARGET_CLEARED", "BALANCE_VISIBILITY_GRANTED", "BALANCE_VISIBILITY_REVOKED", "APPROVAL_LIMIT_SET", "APPROVAL_LIMIT_CLEARED", "BOOKING_REQUEST_OWNER_APPROVAL_GRANTED", "BOOKING_REQUEST_OWNER_APPROVAL_REVOKED", "BOOKING_REQUEST_OWNER_APPROVAL_CONFIRMED", "CARTEL_APPROVAL_TIERS_SET", "CARTEL_APPROVAL_TIERS_CLEARED" ]
+            "enum" : [ "ACCOUNT_CREATED", "ACCOUNT_RENAMED", "ACCOUNT_CLOSED", "ACCOUNT_REOPENED", "ACCOUNT_RESPONSIBLE_CHANGED", "HOLDER_REGISTERED", "HOLDER_DEACTIVATED", "HOLDER_REACTIVATED", "GRANT_CREATED", "GRANT_UPDATED", "GRANT_REVOKED", "DEPOSIT_BOOKED", "DEPOSIT_SPLIT_BOOKED", "WITHDRAWAL_BOOKED", "TRANSFER_BOOKED", "HOLDER_TRANSFER", "HOLDER_REBOOKED", "TRANSACTION_REVERSED", "WIPE_RESET_EXECUTED", "STATEMENT_EXPORTED", "MANAGEMENT_REPORT_EXPORTED", "AUDIT_LOG_EXPORTED", "AUDIT_LOG_PURGED", "BOOKING_REQUEST_CREATED", "BOOKING_REQUEST_CONFIRMED", "BOOKING_REQUEST_REJECTED", "BOOKING_REQUEST_CANCELLED", "BOOKING_REQUEST_UPDATED", "BALANCE_TARGET_SET", "BALANCE_TARGET_CLEARED", "BALANCE_VISIBILITY_GRANTED", "BALANCE_VISIBILITY_REVOKED", "APPROVAL_LIMIT_SET", "APPROVAL_LIMIT_CLEARED", "BOOKING_REQUEST_OWNER_APPROVAL_GRANTED", "BOOKING_REQUEST_OWNER_APPROVAL_REVOKED", "BOOKING_REQUEST_OWNER_APPROVAL_CONFIRMED", "CARTEL_APPROVAL_TIERS_SET", "CARTEL_APPROVAL_TIERS_CLEARED", "HANDLE_SNAPSHOTS_ANONYMISED" ]
           }
         }, {
           "name" : "clientId",
@@ -51613,7 +50877,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "INVENTORY_ITEM_CREATED", "INVENTORY_ITEM_UPDATED", "INVENTORY_ITEM_MERGED", "INVENTORY_ITEM_NOTE_UPDATED", "INVENTORY_ALLOCATION_ADDED", "INVENTORY_ALLOCATION_CHANGED", "INVENTORY_ALLOCATION_REMOVED", "INVENTORY_ITEM_CONSUMED", "INVENTORY_ITEM_TRANSFERRED", "INVENTORY_ITEM_SOLD", "INVENTORY_ITEM_DEPERSONALIZED", "INVENTORY_ITEM_PERSONALIZED", "INVENTORY_ITEM_DELIVERY_TOGGLED", "INVENTORY_BULK_CHECKED_OUT", "INVENTORY_BULK_REBOOKED", "INVENTORY_WIPED", "INVENTORY_RECEIVED_FROM_REFINERY", "INVENTORY_RECEIVED_FROM_PRODUCTION", "INVENTORY_HANDED_OVER", "INVENTORY_CONSUMED_BY_PRODUCTION", "INVENTORY_ORG_RESTAMPED", "INVENTORY_OWNER_REASSIGNED", "INVENTORY_PURGED_ON_USER_DELETION", "INVENTORY_AUDIT_EXPORTED", "INVENTORY_AUDIT_PURGED", "JOB_ORDER_CREATED", "JOB_ORDER_ITEM_CREATED", "JOB_ORDER_UPDATED", "JOB_ORDER_ITEM_UPDATED", "JOB_ORDER_STATUS_CHANGED", "JOB_ORDER_PRIORITY_CHANGED", "JOB_ORDER_BLUEPRINT_COUNTING_CHANGED", "JOB_ORDER_DELETED", "JOB_ORDER_COMPLETED", "JOB_ORDER_REASSIGNED", "JOB_ORDER_ASSIGNEE_ADDED", "JOB_ORDER_ASSIGNEE_REMOVED", "JOB_ORDER_ASSIGNEE_NOTE_SET", "JOB_ORDER_ASSIGNEE_NOTE_CLEARED", "JOB_ORDER_MATERIAL_UNLINKED", "JOB_ORDER_INVENTORY_UNLINKED", "JOB_ORDER_HANDOVER_CREATED", "JOB_ORDER_ITEM_HANDOVER_CREATED", "JOB_ORDER_PRODUCTION_BOOKED", "JOB_ORDER_CLAIM_UPSERTED", "JOB_ORDER_CLAIM_WITHDRAWN", "JOB_ORDER_AUDIT_EXPORTED", "JOB_ORDER_AUDIT_PURGED", "REFINERY_ORDER_CREATED", "REFINERY_ORDER_UPDATED", "REFINERY_ORDER_CANCELED", "REFINERY_ORDER_STORED", "REFINERY_METHOD_CREATED", "REFINERY_METHOD_UPDATED", "REFINERY_METHOD_DELETED", "REFINERY_METHODS_SYNCED", "REFINERY_YIELDS_SYNCED", "REFINERY_ORDERS_REASSIGNED", "REFINERY_AUDIT_EXPORTED", "REFINERY_AUDIT_PURGED", "PERSONAL_INVENTORY_CREATED", "PERSONAL_INVENTORY_UPDATED", "PERSONAL_INVENTORY_DELETED", "PERSONAL_DATA_PURGED_ON_USER_DELETION", "PERSONAL_INVENTORY_AUDIT_EXPORTED", "PERSONAL_INVENTORY_AUDIT_PURGED", "MISSION_CREATED", "MISSION_UPDATED", "MISSION_DELETED", "MISSION_PARTICIPANT_ADDED", "MISSION_PARTICIPANT_REMOVED", "MISSION_PARTICIPANT_UPDATED", "MISSION_PARTICIPANT_CHECKED_IN", "MISSION_PARTICIPANT_CHECKED_OUT", "MISSION_UNIT_ADDED", "MISSION_UNIT_UPDATED", "MISSION_UNIT_REMOVED", "MISSION_CREW_ADDED", "MISSION_CREW_UPDATED", "MISSION_CREW_REMOVED", "MISSION_FREQUENCY_CHANGED", "MISSION_FREQUENCY_REMOVED", "MISSION_OWNER_CHANGED", "MISSION_OWNING_ORG_UNIT_CHANGED", "MISSION_PARTY_LEAD_CHANGED", "MISSION_MANAGER_ADDED", "MISSION_MANAGER_REMOVED", "MISSION_FINANCE_ENTRY_CREATED", "MISSION_FINANCE_ENTRY_UPDATED", "MISSION_FINANCE_ENTRY_DELETED", "MISSION_STEP_ADDED", "MISSION_STEP_UPDATED", "MISSION_STEP_REMOVED", "MISSION_STEP_REORDERED", "MISSION_STEP_DONE_CHANGED", "MISSION_OBJECTIVE_ADDED", "MISSION_OBJECTIVE_UPDATED", "MISSION_OBJECTIVE_REMOVED", "MISSION_OBJECTIVE_REORDERED", "MISSION_AUDIT_EXPORTED", "MISSION_AUDIT_PURGED", "OPERATION_CREATED", "OPERATION_UPDATED", "OPERATION_DELETED", "OPERATION_PAYOUT_TOGGLED", "OPERATION_AUDIT_EXPORTED", "OPERATION_AUDIT_PURGED", "MEMBERSHIP_GRANTED", "MEMBERSHIP_REVOKED", "ROLE_GRANTED", "ROLE_CHANGED", "ROLE_REVOKED", "CAPABILITY_FLAGS_CHANGED", "ROLE_PERMISSIONS_CHANGED", "KOMMANDO_GROUP_CREATED", "KOMMANDO_GROUP_UPDATED", "KOMMANDO_GROUP_DELETED", "USER_DELETED", "USER_MERGED", "ROLE_AUDIT_EXPORTED", "ROLE_AUDIT_PURGED", "PROMOTION_TOPIC_CREATED", "PROMOTION_TOPIC_UPDATED", "PROMOTION_TOPIC_DELETED", "PROMOTION_CATEGORY_CREATED", "PROMOTION_CATEGORY_UPDATED", "PROMOTION_CATEGORY_DELETED", "PROMOTION_LEVEL_CONTENT_CREATED", "PROMOTION_LEVEL_CONTENT_UPDATED", "PROMOTION_LEVEL_CONTENT_DELETED", "PROMOTION_RANK_REQUIREMENT_CREATED", "PROMOTION_RANK_REQUIREMENT_UPDATED", "PROMOTION_RANK_REQUIREMENT_DELETED", "PROMOTION_EVALUATION_CREATED", "PROMOTION_EVALUATION_UPDATED", "PROMOTION_EVALUATION_DELETED", "PROMOTION_AUDIT_EXPORTED", "PROMOTION_AUDIT_PURGED", "MARKET_OFFER_RELEASED", "MARKET_OFFER_DEACTIVATED", "MARKET_REMARK_UPDATED", "MARKET_INTEREST_REGISTERED", "MARKET_INTEREST_WITHDRAWN", "MARKET_REQUEST_CREATED", "MARKET_REQUEST_UPDATED", "MARKET_REQUEST_DEACTIVATED", "MARKET_REQUEST_INTEREST_SIGNALLED", "MARKET_REQUEST_INTEREST_WITHDRAWN", "MARKET_AUDIT_EXPORTED", "MARKET_AUDIT_PURGED" ]
+            "enum" : [ "INVENTORY_ITEM_CREATED", "INVENTORY_ITEM_UPDATED", "INVENTORY_ITEM_MERGED", "INVENTORY_ITEM_NOTE_UPDATED", "INVENTORY_ALLOCATION_ADDED", "INVENTORY_ALLOCATION_CHANGED", "INVENTORY_ALLOCATION_REMOVED", "INVENTORY_ITEM_CONSUMED", "INVENTORY_ITEM_TRANSFERRED", "INVENTORY_ITEM_SOLD", "INVENTORY_ITEM_DEPERSONALIZED", "INVENTORY_ITEM_PERSONALIZED", "INVENTORY_ITEM_DELIVERY_TOGGLED", "INVENTORY_BULK_CHECKED_OUT", "INVENTORY_BULK_REBOOKED", "INVENTORY_WIPED", "INVENTORY_RECEIVED_FROM_REFINERY", "INVENTORY_RECEIVED_FROM_PRODUCTION", "INVENTORY_HANDED_OVER", "INVENTORY_CONSUMED_BY_PRODUCTION", "INVENTORY_ORG_RESTAMPED", "INVENTORY_OWNER_REASSIGNED", "INVENTORY_PURGED_ON_USER_DELETION", "INVENTORY_AUDIT_EXPORTED", "INVENTORY_AUDIT_PURGED", "JOB_ORDER_CREATED", "JOB_ORDER_ITEM_CREATED", "JOB_ORDER_UPDATED", "JOB_ORDER_ITEM_UPDATED", "JOB_ORDER_STATUS_CHANGED", "JOB_ORDER_PRIORITY_CHANGED", "JOB_ORDER_BLUEPRINT_COUNTING_CHANGED", "JOB_ORDER_DELETED", "JOB_ORDER_COMPLETED", "JOB_ORDER_REASSIGNED", "JOB_ORDER_ASSIGNEE_ADDED", "JOB_ORDER_ASSIGNEE_REMOVED", "JOB_ORDER_ASSIGNEE_NOTE_SET", "JOB_ORDER_ASSIGNEE_NOTE_CLEARED", "JOB_ORDER_MATERIAL_UNLINKED", "JOB_ORDER_INVENTORY_UNLINKED", "JOB_ORDER_HANDOVER_CREATED", "JOB_ORDER_ITEM_HANDOVER_CREATED", "JOB_ORDER_PRODUCTION_BOOKED", "JOB_ORDER_CLAIM_UPSERTED", "JOB_ORDER_CLAIM_WITHDRAWN", "JOB_ORDER_AUDIT_EXPORTED", "JOB_ORDER_AUDIT_PURGED", "REFINERY_ORDER_CREATED", "REFINERY_ORDER_UPDATED", "REFINERY_ORDER_CANCELED", "REFINERY_ORDER_STORED", "REFINERY_METHOD_CREATED", "REFINERY_METHOD_UPDATED", "REFINERY_METHOD_DELETED", "REFINERY_METHODS_SYNCED", "REFINERY_YIELDS_SYNCED", "REFINERY_ORDERS_REASSIGNED", "REFINERY_AUDIT_EXPORTED", "REFINERY_AUDIT_PURGED", "PERSONAL_INVENTORY_CREATED", "PERSONAL_INVENTORY_UPDATED", "PERSONAL_INVENTORY_DELETED", "PERSONAL_DATA_PURGED_ON_USER_DELETION", "PERSONAL_INVENTORY_AUDIT_EXPORTED", "PERSONAL_INVENTORY_AUDIT_PURGED", "MISSION_CREATED", "MISSION_UPDATED", "MISSION_DELETED", "MISSION_PARTICIPANT_ADDED", "MISSION_PARTICIPANT_REMOVED", "MISSION_PARTICIPANT_UPDATED", "MISSION_PARTICIPANT_CHECKED_IN", "MISSION_PARTICIPANT_CHECKED_OUT", "MISSION_UNIT_ADDED", "MISSION_UNIT_UPDATED", "MISSION_UNIT_REMOVED", "MISSION_CREW_ADDED", "MISSION_CREW_UPDATED", "MISSION_CREW_REMOVED", "MISSION_FREQUENCY_CHANGED", "MISSION_FREQUENCY_REMOVED", "MISSION_OWNER_CHANGED", "MISSION_OWNING_ORG_UNIT_CHANGED", "MISSION_PARTY_LEAD_CHANGED", "MISSION_MANAGER_ADDED", "MISSION_MANAGER_REMOVED", "MISSION_FINANCE_ENTRY_CREATED", "MISSION_FINANCE_ENTRY_UPDATED", "MISSION_FINANCE_ENTRY_DELETED", "MISSION_STEP_ADDED", "MISSION_STEP_UPDATED", "MISSION_STEP_REMOVED", "MISSION_STEP_REORDERED", "MISSION_STEP_DONE_CHANGED", "MISSION_OBJECTIVE_ADDED", "MISSION_OBJECTIVE_UPDATED", "MISSION_OBJECTIVE_REMOVED", "MISSION_OBJECTIVE_REORDERED", "MISSION_AUDIT_EXPORTED", "MISSION_AUDIT_PURGED", "OPERATION_CREATED", "OPERATION_UPDATED", "OPERATION_DELETED", "OPERATION_PAYOUT_TOGGLED", "OPERATION_AUDIT_EXPORTED", "OPERATION_AUDIT_PURGED", "MEMBERSHIP_GRANTED", "MEMBERSHIP_REVOKED", "ROLE_GRANTED", "ROLE_CHANGED", "ROLE_REVOKED", "CAPABILITY_FLAGS_CHANGED", "ROLE_PERMISSIONS_CHANGED", "KOMMANDO_GROUP_CREATED", "KOMMANDO_GROUP_UPDATED", "KOMMANDO_GROUP_DELETED", "USER_DELETED", "USER_MERGED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_WITHDRAWN", "ACCOUNT_DELETION_REQUEST_DECLINED", "ACCOUNT_DELETION_REQUEST_EXECUTED", "ACCOUNT_DELETION_KEYCLOAK_DELETE_FAILED", "HANDLE_SNAPSHOTS_ANONYMISED", "PERSON_SEARCH_PERFORMED", "PERSONAL_DATA_EXPORTED", "ROLE_AUDIT_EXPORTED", "ROLE_AUDIT_PURGED", "PROMOTION_TOPIC_CREATED", "PROMOTION_TOPIC_UPDATED", "PROMOTION_TOPIC_DELETED", "PROMOTION_CATEGORY_CREATED", "PROMOTION_CATEGORY_UPDATED", "PROMOTION_CATEGORY_DELETED", "PROMOTION_LEVEL_CONTENT_CREATED", "PROMOTION_LEVEL_CONTENT_UPDATED", "PROMOTION_LEVEL_CONTENT_DELETED", "PROMOTION_RANK_REQUIREMENT_CREATED", "PROMOTION_RANK_REQUIREMENT_UPDATED", "PROMOTION_RANK_REQUIREMENT_DELETED", "PROMOTION_EVALUATION_CREATED", "PROMOTION_EVALUATION_UPDATED", "PROMOTION_EVALUATION_DELETED", "PROMOTION_AUDIT_EXPORTED", "PROMOTION_AUDIT_PURGED", "MARKET_OFFER_RELEASED", "MARKET_OFFER_DEACTIVATED", "MARKET_REMARK_UPDATED", "MARKET_INTEREST_REGISTERED", "MARKET_INTEREST_WITHDRAWN", "MARKET_REQUEST_CREATED", "MARKET_REQUEST_UPDATED", "MARKET_REQUEST_DEACTIVATED", "MARKET_REQUEST_INTEREST_SIGNALLED", "MARKET_REQUEST_INTEREST_WITHDRAWN", "MARKET_AUDIT_EXPORTED", "MARKET_AUDIT_PURGED" ]
           }
         }, {
           "name" : "clientId",
@@ -52177,7 +51441,8 @@
               }
             }
           }
-        }
+        },
+        "security" : [ ]
       }
     },
     "/api/v1/announcement/admin" : {
@@ -52205,6 +51470,218 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AnnouncementDto"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{userId}/export" : {
+      "get" : {
+        "tags" : [ "admin-data-export-controller" ],
+        "summary" : "Export another member's data (Art. 15 / Art. 20)",
+        "description" : "For an access request from somebody who cannot sign in - a locked-out member, or a disabled account. Identical projections and identical third-party anonymisation as the self-service export: an admin export is not a fuller one.",
+        "operationId" : "exportJson_1",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataExport"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{userId}/export/pdf" : {
+      "get" : {
+        "tags" : [ "admin-data-export-controller" ],
+        "summary" : "Export another member's data as a PDF",
+        "operationId" : "exportPdf_1",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
                 }
               }
             }
@@ -52712,6 +52189,111 @@
         }
       }
     },
+    "/api/v1/admin/person-search" : {
+      "get" : {
+        "tags" : [ "admin-person-search-controller" ],
+        "summary" : "Find every mention of a name across the free-text surfaces",
+        "description" : "Case-insensitive substring search over every registered free-text column - external mission participants, party leads, handover recipients, org-chart placeholders, notes, booking reasons and the audit trails. Bounded: 25 hits per column, 300 in total, and the response says when it was capped. Run it for EVERY Art. 16 or Art. 17 request: a rectification that fixes one of four occurrences is not one.",
+        "operationId" : "search_2",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The hits, possibly capped",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonSearchResult"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/import/p4k/jobs/{id}" : {
       "get" : {
         "tags" : [ "Admin – P4K Import" ],
@@ -52816,8 +52398,108 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
+      }
+    },
+    "/api/v1/admin/deletion-requests" : {
+      "get" : {
+        "tags" : [ "admin-deletion-request-controller" ],
+        "summary" : "List the pending account-deletion requests",
+        "description" : "Oldest first, which is the order the Art. 12(3) one-month response deadline runs in. Each entry carries the requesting member's handle, because an admin cannot act on an anonymous request.",
+        "operationId" : "pending",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "headers" : {
+              "ETag" : {
+                "description" : "Entity Tag for conditional requests",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Cache-Control" : {
+                "description" : "Caching policy (e.g. no-cache for API responses)",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DeletionRequestDto"
+                  }
+                }
+              }
+            }
+          },
+          "304" : {
+            "description" : "Not Modified (ETag/If-None-Match)"
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/terminals/{id}/loading-dock-override" : {
@@ -53161,7 +52843,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -53966,7 +53648,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -54048,106 +53730,8 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
-      }
-    },
-    "/api/v1/missions/{id}/frequencies/{frequencyId}" : {
-      "delete" : {
-        "tags" : [ "Missions" ],
-        "summary" : "Remove a frequency from a mission (legacy, deprecated)",
-        "description" : "Returns the full MissionDto. Prefer DELETE /api/v1/missions/{id}/frequencies/{frequencyId}/slim which returns 204 No Content.\n\n**DEPRECATED**\n- Sunset Date: 2026-10-20\n- Replacement: `/api/v1/missions/{id}/frequencies/{frequencyId}/slim`",
-        "operationId" : "removeFrequency",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }, {
-          "name" : "frequencyId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MissionDto"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "application/problem+json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/v1/missions/{id}/frequencies/{frequencyId}/slim" : {
@@ -54405,7 +53989,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     },
@@ -54489,7 +54073,7 @@
           }
         },
         "security" : [ {
-          "bearerAuth" : [ ]
+          "bearer-jwt" : [ ]
         } ]
       }
     }
@@ -56857,11 +56441,11 @@
         "properties" : {
           "eventType" : {
             "type" : "string",
-            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_CANCELLED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" ]
+            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_CANCELLED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_DECLINED", "ACCOUNT_DELETION_REQUEST_RESOLVED" ]
           },
           "notificationType" : {
             "type" : "string",
-            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED", "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" ]
+            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED", "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_DECLINED" ]
           },
           "description" : {
             "type" : "string",
@@ -56896,11 +56480,11 @@
           },
           "eventType" : {
             "type" : "string",
-            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_CANCELLED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" ]
+            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_CANCELLED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_DECLINED", "ACCOUNT_DELETION_REQUEST_RESOLVED" ]
           },
           "notificationType" : {
             "type" : "string",
-            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED", "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" ]
+            "enum" : [ "JOB_ORDER_CREATED", "JOB_ORDER_UPDATED_BY_REQUESTER", "BANK_BOOKING_REQUEST_CREATED", "BANK_BOOKING_REQUEST_CONFIRMED", "BANK_BOOKING_REQUEST_REJECTED", "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED", "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED", "DISCORD_REGISTRATION_PENDING", "MATERIAL_EXCHANGE_INTEREST_REGISTERED", "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_DECLINED" ]
           },
           "description" : {
             "type" : "string"
@@ -57257,6 +56841,10 @@
           },
           "meetingPoint" : {
             "type" : "string"
+          },
+          "ownershipVersion" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
         "required" : [ "name" ]
@@ -57346,9 +56934,6 @@
           "version" : {
             "type" : "integer",
             "format" : "int64"
-          },
-          "guestEditToken" : {
-            "type" : "string"
           }
         }
       },
@@ -57729,7 +57314,7 @@
           "desiredAmount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "minQuality" : {
             "type" : "integer",
@@ -57934,7 +57519,7 @@
           "offeredAmount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "remark" : {
             "type" : "string",
@@ -58390,12 +57975,72 @@
           }
         }
       },
+      "ConsolidateAccountRequest" : {
+        "type" : "object",
+        "properties" : {
+          "targetUserId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "targetUserId" ]
+      },
       "UserSyncResultDto" : {
         "type" : "object",
         "properties" : {
           "syncedCount" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "CreateDeletionRequestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "eraseHistory" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "DeletionRequestDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "handle" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "WITHDRAWN", "DECLINED" ]
+          },
+          "eraseHistoryRequested" : {
+            "type" : "boolean"
+          },
+          "requestedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "decidedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "decisionNote" : {
+            "type" : "string"
           }
         }
       },
@@ -58575,12 +58220,12 @@
           "width" : {
             "type" : "integer",
             "format" : "int32",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "height" : {
             "type" : "integer",
             "format" : "int32",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "cropMode" : {
             "type" : "string",
@@ -59261,7 +58906,7 @@
           "amount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           }
         },
         "required" : [ "amount", "claimingOrgUnitId", "materialId", "qualityRequirement" ]
@@ -59304,7 +58949,7 @@
           "amount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "version" : {
             "type" : "integer",
@@ -59391,7 +59036,7 @@
           "amount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           }
         },
         "required" : [ "amount", "targetId" ]
@@ -59430,7 +59075,7 @@
           "amount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "missionReductions" : {
             "type" : "array",
@@ -59617,6 +59262,24 @@
         },
         "required" : [ "title" ]
       },
+      "AddCrewRequest" : {
+        "type" : "object",
+        "properties" : {
+          "participantId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "jobTypeIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "participantId" ]
+      },
       "AddUnitRequest" : {
         "type" : "object",
         "properties" : {
@@ -59652,24 +59315,6 @@
         },
         "required" : [ "name" ]
       },
-      "AddCrewRequest" : {
-        "type" : "object",
-        "properties" : {
-          "participantId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "jobTypeIds" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string",
-              "format" : "uuid"
-            },
-            "uniqueItems" : true
-          }
-        },
-        "required" : [ "participantId" ]
-      },
       "AddMissionStepRequest" : {
         "type" : "object",
         "properties" : {
@@ -59690,17 +59335,7 @@
         },
         "required" : [ "stepsVersion", "title" ]
       },
-      "AddParticipantRequest" : {
-        "type" : "object",
-        "properties" : {
-          "userId" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        },
-        "required" : [ "userId" ]
-      },
-      "AddParticipantPublicRequest" : {
+      "AddExternalParticipantRequest" : {
         "type" : "object",
         "properties" : {
           "userId" : {
@@ -59733,6 +59368,16 @@
             "enum" : [ "PAYOUT", "DONATE" ]
           }
         }
+      },
+      "AddParticipantByIdRequest" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "userId" ]
       },
       "AddMissionObjectiveRequest" : {
         "type" : "object",
@@ -59856,7 +59501,7 @@
           "requestedAmount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "remark" : {
             "type" : "string",
@@ -59904,7 +59549,7 @@
           "offeredAmount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           },
           "remark" : {
             "type" : "string",
@@ -59972,7 +59617,7 @@
           "amount" : {
             "type" : "number",
             "format" : "double",
-            "minimum" : 0
+            "exclusiveMinimum" : 0
           }
         },
         "required" : [ "amount", "targetId" ]
@@ -60931,6 +60576,23 @@
           }
         }
       },
+      "DecideDeletionRequestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "grantHistoryErasure" : {
+            "type" : "boolean"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "DefaultBlueprintCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -61525,6 +61187,58 @@
           "approvalStatus" : {
             "type" : "string",
             "enum" : [ "PENDING", "ACTIVE", "REJECTED" ]
+          }
+        }
+      },
+      "DataExport" : {
+        "type" : "object",
+        "properties" : {
+          "subjectId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "subjectHandle" : {
+            "type" : "string"
+          },
+          "generatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "thirdPartyHandlesRemoved" : {
+            "type" : "boolean"
+          },
+          "outOfScope" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "sections" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExportSection"
+            }
+          }
+        }
+      },
+      "ExportSection" : {
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "legalBasis" : {
+            "type" : "string"
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "additionalProperties" : { }
+            }
+          },
+          "truncated" : {
+            "type" : "boolean"
           }
         }
       },
@@ -65558,7 +65272,7 @@
           },
           "eventType" : {
             "type" : "string",
-            "enum" : [ "ACCOUNT_CREATED", "ACCOUNT_RENAMED", "ACCOUNT_CLOSED", "ACCOUNT_REOPENED", "ACCOUNT_RESPONSIBLE_CHANGED", "HOLDER_REGISTERED", "HOLDER_DEACTIVATED", "HOLDER_REACTIVATED", "GRANT_CREATED", "GRANT_UPDATED", "GRANT_REVOKED", "DEPOSIT_BOOKED", "DEPOSIT_SPLIT_BOOKED", "WITHDRAWAL_BOOKED", "TRANSFER_BOOKED", "HOLDER_TRANSFER", "HOLDER_REBOOKED", "TRANSACTION_REVERSED", "WIPE_RESET_EXECUTED", "STATEMENT_EXPORTED", "MANAGEMENT_REPORT_EXPORTED", "AUDIT_LOG_EXPORTED", "AUDIT_LOG_PURGED", "BOOKING_REQUEST_CREATED", "BOOKING_REQUEST_CONFIRMED", "BOOKING_REQUEST_REJECTED", "BOOKING_REQUEST_CANCELLED", "BOOKING_REQUEST_UPDATED", "BALANCE_TARGET_SET", "BALANCE_TARGET_CLEARED", "BALANCE_VISIBILITY_GRANTED", "BALANCE_VISIBILITY_REVOKED", "APPROVAL_LIMIT_SET", "APPROVAL_LIMIT_CLEARED", "BOOKING_REQUEST_OWNER_APPROVAL_GRANTED", "BOOKING_REQUEST_OWNER_APPROVAL_REVOKED", "BOOKING_REQUEST_OWNER_APPROVAL_CONFIRMED", "CARTEL_APPROVAL_TIERS_SET", "CARTEL_APPROVAL_TIERS_CLEARED" ]
+            "enum" : [ "ACCOUNT_CREATED", "ACCOUNT_RENAMED", "ACCOUNT_CLOSED", "ACCOUNT_REOPENED", "ACCOUNT_RESPONSIBLE_CHANGED", "HOLDER_REGISTERED", "HOLDER_DEACTIVATED", "HOLDER_REACTIVATED", "GRANT_CREATED", "GRANT_UPDATED", "GRANT_REVOKED", "DEPOSIT_BOOKED", "DEPOSIT_SPLIT_BOOKED", "WITHDRAWAL_BOOKED", "TRANSFER_BOOKED", "HOLDER_TRANSFER", "HOLDER_REBOOKED", "TRANSACTION_REVERSED", "WIPE_RESET_EXECUTED", "STATEMENT_EXPORTED", "MANAGEMENT_REPORT_EXPORTED", "AUDIT_LOG_EXPORTED", "AUDIT_LOG_PURGED", "BOOKING_REQUEST_CREATED", "BOOKING_REQUEST_CONFIRMED", "BOOKING_REQUEST_REJECTED", "BOOKING_REQUEST_CANCELLED", "BOOKING_REQUEST_UPDATED", "BALANCE_TARGET_SET", "BALANCE_TARGET_CLEARED", "BALANCE_VISIBILITY_GRANTED", "BALANCE_VISIBILITY_REVOKED", "APPROVAL_LIMIT_SET", "APPROVAL_LIMIT_CLEARED", "BOOKING_REQUEST_OWNER_APPROVAL_GRANTED", "BOOKING_REQUEST_OWNER_APPROVAL_REVOKED", "BOOKING_REQUEST_OWNER_APPROVAL_CONFIRMED", "CARTEL_APPROVAL_TIERS_SET", "CARTEL_APPROVAL_TIERS_CLEARED", "HANDLE_SNAPSHOTS_ANONYMISED" ]
           },
           "accountId" : {
             "type" : "string",
@@ -65666,7 +65380,7 @@
           },
           "eventType" : {
             "type" : "string",
-            "enum" : [ "INVENTORY_ITEM_CREATED", "INVENTORY_ITEM_UPDATED", "INVENTORY_ITEM_MERGED", "INVENTORY_ITEM_NOTE_UPDATED", "INVENTORY_ALLOCATION_ADDED", "INVENTORY_ALLOCATION_CHANGED", "INVENTORY_ALLOCATION_REMOVED", "INVENTORY_ITEM_CONSUMED", "INVENTORY_ITEM_TRANSFERRED", "INVENTORY_ITEM_SOLD", "INVENTORY_ITEM_DEPERSONALIZED", "INVENTORY_ITEM_PERSONALIZED", "INVENTORY_ITEM_DELIVERY_TOGGLED", "INVENTORY_BULK_CHECKED_OUT", "INVENTORY_BULK_REBOOKED", "INVENTORY_WIPED", "INVENTORY_RECEIVED_FROM_REFINERY", "INVENTORY_RECEIVED_FROM_PRODUCTION", "INVENTORY_HANDED_OVER", "INVENTORY_CONSUMED_BY_PRODUCTION", "INVENTORY_ORG_RESTAMPED", "INVENTORY_OWNER_REASSIGNED", "INVENTORY_PURGED_ON_USER_DELETION", "INVENTORY_AUDIT_EXPORTED", "INVENTORY_AUDIT_PURGED", "JOB_ORDER_CREATED", "JOB_ORDER_ITEM_CREATED", "JOB_ORDER_UPDATED", "JOB_ORDER_ITEM_UPDATED", "JOB_ORDER_STATUS_CHANGED", "JOB_ORDER_PRIORITY_CHANGED", "JOB_ORDER_BLUEPRINT_COUNTING_CHANGED", "JOB_ORDER_DELETED", "JOB_ORDER_COMPLETED", "JOB_ORDER_REASSIGNED", "JOB_ORDER_ASSIGNEE_ADDED", "JOB_ORDER_ASSIGNEE_REMOVED", "JOB_ORDER_ASSIGNEE_NOTE_SET", "JOB_ORDER_ASSIGNEE_NOTE_CLEARED", "JOB_ORDER_MATERIAL_UNLINKED", "JOB_ORDER_INVENTORY_UNLINKED", "JOB_ORDER_HANDOVER_CREATED", "JOB_ORDER_ITEM_HANDOVER_CREATED", "JOB_ORDER_PRODUCTION_BOOKED", "JOB_ORDER_CLAIM_UPSERTED", "JOB_ORDER_CLAIM_WITHDRAWN", "JOB_ORDER_AUDIT_EXPORTED", "JOB_ORDER_AUDIT_PURGED", "REFINERY_ORDER_CREATED", "REFINERY_ORDER_UPDATED", "REFINERY_ORDER_CANCELED", "REFINERY_ORDER_STORED", "REFINERY_METHOD_CREATED", "REFINERY_METHOD_UPDATED", "REFINERY_METHOD_DELETED", "REFINERY_METHODS_SYNCED", "REFINERY_YIELDS_SYNCED", "REFINERY_ORDERS_REASSIGNED", "REFINERY_AUDIT_EXPORTED", "REFINERY_AUDIT_PURGED", "PERSONAL_INVENTORY_CREATED", "PERSONAL_INVENTORY_UPDATED", "PERSONAL_INVENTORY_DELETED", "PERSONAL_DATA_PURGED_ON_USER_DELETION", "PERSONAL_INVENTORY_AUDIT_EXPORTED", "PERSONAL_INVENTORY_AUDIT_PURGED", "MISSION_CREATED", "MISSION_UPDATED", "MISSION_DELETED", "MISSION_PARTICIPANT_ADDED", "MISSION_PARTICIPANT_REMOVED", "MISSION_PARTICIPANT_UPDATED", "MISSION_PARTICIPANT_CHECKED_IN", "MISSION_PARTICIPANT_CHECKED_OUT", "MISSION_UNIT_ADDED", "MISSION_UNIT_UPDATED", "MISSION_UNIT_REMOVED", "MISSION_CREW_ADDED", "MISSION_CREW_UPDATED", "MISSION_CREW_REMOVED", "MISSION_FREQUENCY_CHANGED", "MISSION_FREQUENCY_REMOVED", "MISSION_OWNER_CHANGED", "MISSION_OWNING_ORG_UNIT_CHANGED", "MISSION_PARTY_LEAD_CHANGED", "MISSION_MANAGER_ADDED", "MISSION_MANAGER_REMOVED", "MISSION_FINANCE_ENTRY_CREATED", "MISSION_FINANCE_ENTRY_UPDATED", "MISSION_FINANCE_ENTRY_DELETED", "MISSION_STEP_ADDED", "MISSION_STEP_UPDATED", "MISSION_STEP_REMOVED", "MISSION_STEP_REORDERED", "MISSION_STEP_DONE_CHANGED", "MISSION_OBJECTIVE_ADDED", "MISSION_OBJECTIVE_UPDATED", "MISSION_OBJECTIVE_REMOVED", "MISSION_OBJECTIVE_REORDERED", "MISSION_AUDIT_EXPORTED", "MISSION_AUDIT_PURGED", "OPERATION_CREATED", "OPERATION_UPDATED", "OPERATION_DELETED", "OPERATION_PAYOUT_TOGGLED", "OPERATION_AUDIT_EXPORTED", "OPERATION_AUDIT_PURGED", "MEMBERSHIP_GRANTED", "MEMBERSHIP_REVOKED", "ROLE_GRANTED", "ROLE_CHANGED", "ROLE_REVOKED", "CAPABILITY_FLAGS_CHANGED", "ROLE_PERMISSIONS_CHANGED", "KOMMANDO_GROUP_CREATED", "KOMMANDO_GROUP_UPDATED", "KOMMANDO_GROUP_DELETED", "USER_DELETED", "USER_MERGED", "ROLE_AUDIT_EXPORTED", "ROLE_AUDIT_PURGED", "PROMOTION_TOPIC_CREATED", "PROMOTION_TOPIC_UPDATED", "PROMOTION_TOPIC_DELETED", "PROMOTION_CATEGORY_CREATED", "PROMOTION_CATEGORY_UPDATED", "PROMOTION_CATEGORY_DELETED", "PROMOTION_LEVEL_CONTENT_CREATED", "PROMOTION_LEVEL_CONTENT_UPDATED", "PROMOTION_LEVEL_CONTENT_DELETED", "PROMOTION_RANK_REQUIREMENT_CREATED", "PROMOTION_RANK_REQUIREMENT_UPDATED", "PROMOTION_RANK_REQUIREMENT_DELETED", "PROMOTION_EVALUATION_CREATED", "PROMOTION_EVALUATION_UPDATED", "PROMOTION_EVALUATION_DELETED", "PROMOTION_AUDIT_EXPORTED", "PROMOTION_AUDIT_PURGED", "MARKET_OFFER_RELEASED", "MARKET_OFFER_DEACTIVATED", "MARKET_REMARK_UPDATED", "MARKET_INTEREST_REGISTERED", "MARKET_INTEREST_WITHDRAWN", "MARKET_REQUEST_CREATED", "MARKET_REQUEST_UPDATED", "MARKET_REQUEST_DEACTIVATED", "MARKET_REQUEST_INTEREST_SIGNALLED", "MARKET_REQUEST_INTEREST_WITHDRAWN", "MARKET_AUDIT_EXPORTED", "MARKET_AUDIT_PURGED" ]
+            "enum" : [ "INVENTORY_ITEM_CREATED", "INVENTORY_ITEM_UPDATED", "INVENTORY_ITEM_MERGED", "INVENTORY_ITEM_NOTE_UPDATED", "INVENTORY_ALLOCATION_ADDED", "INVENTORY_ALLOCATION_CHANGED", "INVENTORY_ALLOCATION_REMOVED", "INVENTORY_ITEM_CONSUMED", "INVENTORY_ITEM_TRANSFERRED", "INVENTORY_ITEM_SOLD", "INVENTORY_ITEM_DEPERSONALIZED", "INVENTORY_ITEM_PERSONALIZED", "INVENTORY_ITEM_DELIVERY_TOGGLED", "INVENTORY_BULK_CHECKED_OUT", "INVENTORY_BULK_REBOOKED", "INVENTORY_WIPED", "INVENTORY_RECEIVED_FROM_REFINERY", "INVENTORY_RECEIVED_FROM_PRODUCTION", "INVENTORY_HANDED_OVER", "INVENTORY_CONSUMED_BY_PRODUCTION", "INVENTORY_ORG_RESTAMPED", "INVENTORY_OWNER_REASSIGNED", "INVENTORY_PURGED_ON_USER_DELETION", "INVENTORY_AUDIT_EXPORTED", "INVENTORY_AUDIT_PURGED", "JOB_ORDER_CREATED", "JOB_ORDER_ITEM_CREATED", "JOB_ORDER_UPDATED", "JOB_ORDER_ITEM_UPDATED", "JOB_ORDER_STATUS_CHANGED", "JOB_ORDER_PRIORITY_CHANGED", "JOB_ORDER_BLUEPRINT_COUNTING_CHANGED", "JOB_ORDER_DELETED", "JOB_ORDER_COMPLETED", "JOB_ORDER_REASSIGNED", "JOB_ORDER_ASSIGNEE_ADDED", "JOB_ORDER_ASSIGNEE_REMOVED", "JOB_ORDER_ASSIGNEE_NOTE_SET", "JOB_ORDER_ASSIGNEE_NOTE_CLEARED", "JOB_ORDER_MATERIAL_UNLINKED", "JOB_ORDER_INVENTORY_UNLINKED", "JOB_ORDER_HANDOVER_CREATED", "JOB_ORDER_ITEM_HANDOVER_CREATED", "JOB_ORDER_PRODUCTION_BOOKED", "JOB_ORDER_CLAIM_UPSERTED", "JOB_ORDER_CLAIM_WITHDRAWN", "JOB_ORDER_AUDIT_EXPORTED", "JOB_ORDER_AUDIT_PURGED", "REFINERY_ORDER_CREATED", "REFINERY_ORDER_UPDATED", "REFINERY_ORDER_CANCELED", "REFINERY_ORDER_STORED", "REFINERY_METHOD_CREATED", "REFINERY_METHOD_UPDATED", "REFINERY_METHOD_DELETED", "REFINERY_METHODS_SYNCED", "REFINERY_YIELDS_SYNCED", "REFINERY_ORDERS_REASSIGNED", "REFINERY_AUDIT_EXPORTED", "REFINERY_AUDIT_PURGED", "PERSONAL_INVENTORY_CREATED", "PERSONAL_INVENTORY_UPDATED", "PERSONAL_INVENTORY_DELETED", "PERSONAL_DATA_PURGED_ON_USER_DELETION", "PERSONAL_INVENTORY_AUDIT_EXPORTED", "PERSONAL_INVENTORY_AUDIT_PURGED", "MISSION_CREATED", "MISSION_UPDATED", "MISSION_DELETED", "MISSION_PARTICIPANT_ADDED", "MISSION_PARTICIPANT_REMOVED", "MISSION_PARTICIPANT_UPDATED", "MISSION_PARTICIPANT_CHECKED_IN", "MISSION_PARTICIPANT_CHECKED_OUT", "MISSION_UNIT_ADDED", "MISSION_UNIT_UPDATED", "MISSION_UNIT_REMOVED", "MISSION_CREW_ADDED", "MISSION_CREW_UPDATED", "MISSION_CREW_REMOVED", "MISSION_FREQUENCY_CHANGED", "MISSION_FREQUENCY_REMOVED", "MISSION_OWNER_CHANGED", "MISSION_OWNING_ORG_UNIT_CHANGED", "MISSION_PARTY_LEAD_CHANGED", "MISSION_MANAGER_ADDED", "MISSION_MANAGER_REMOVED", "MISSION_FINANCE_ENTRY_CREATED", "MISSION_FINANCE_ENTRY_UPDATED", "MISSION_FINANCE_ENTRY_DELETED", "MISSION_STEP_ADDED", "MISSION_STEP_UPDATED", "MISSION_STEP_REMOVED", "MISSION_STEP_REORDERED", "MISSION_STEP_DONE_CHANGED", "MISSION_OBJECTIVE_ADDED", "MISSION_OBJECTIVE_UPDATED", "MISSION_OBJECTIVE_REMOVED", "MISSION_OBJECTIVE_REORDERED", "MISSION_AUDIT_EXPORTED", "MISSION_AUDIT_PURGED", "OPERATION_CREATED", "OPERATION_UPDATED", "OPERATION_DELETED", "OPERATION_PAYOUT_TOGGLED", "OPERATION_AUDIT_EXPORTED", "OPERATION_AUDIT_PURGED", "MEMBERSHIP_GRANTED", "MEMBERSHIP_REVOKED", "ROLE_GRANTED", "ROLE_CHANGED", "ROLE_REVOKED", "CAPABILITY_FLAGS_CHANGED", "ROLE_PERMISSIONS_CHANGED", "KOMMANDO_GROUP_CREATED", "KOMMANDO_GROUP_UPDATED", "KOMMANDO_GROUP_DELETED", "USER_DELETED", "USER_MERGED", "ACCOUNT_DELETION_REQUESTED", "ACCOUNT_DELETION_REQUEST_WITHDRAWN", "ACCOUNT_DELETION_REQUEST_DECLINED", "ACCOUNT_DELETION_REQUEST_EXECUTED", "ACCOUNT_DELETION_KEYCLOAK_DELETE_FAILED", "HANDLE_SNAPSHOTS_ANONYMISED", "PERSON_SEARCH_PERFORMED", "PERSONAL_DATA_EXPORTED", "ROLE_AUDIT_EXPORTED", "ROLE_AUDIT_PURGED", "PROMOTION_TOPIC_CREATED", "PROMOTION_TOPIC_UPDATED", "PROMOTION_TOPIC_DELETED", "PROMOTION_CATEGORY_CREATED", "PROMOTION_CATEGORY_UPDATED", "PROMOTION_CATEGORY_DELETED", "PROMOTION_LEVEL_CONTENT_CREATED", "PROMOTION_LEVEL_CONTENT_UPDATED", "PROMOTION_LEVEL_CONTENT_DELETED", "PROMOTION_RANK_REQUIREMENT_CREATED", "PROMOTION_RANK_REQUIREMENT_UPDATED", "PROMOTION_RANK_REQUIREMENT_DELETED", "PROMOTION_EVALUATION_CREATED", "PROMOTION_EVALUATION_UPDATED", "PROMOTION_EVALUATION_DELETED", "PROMOTION_AUDIT_EXPORTED", "PROMOTION_AUDIT_PURGED", "MARKET_OFFER_RELEASED", "MARKET_OFFER_DEACTIVATED", "MARKET_REMARK_UPDATED", "MARKET_INTEREST_REGISTERED", "MARKET_INTEREST_WITHDRAWN", "MARKET_REQUEST_CREATED", "MARKET_REQUEST_UPDATED", "MARKET_REQUEST_DEACTIVATED", "MARKET_REQUEST_INTEREST_SIGNALLED", "MARKET_REQUEST_INTEREST_WITHDRAWN", "MARKET_AUDIT_EXPORTED", "MARKET_AUDIT_PURGED" ]
           },
           "actorHandle" : {
             "type" : "string"
@@ -65850,6 +65564,49 @@
             "format" : "int32"
           },
           "sort" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "PersonSearchHitDto" : {
+        "type" : "object",
+        "properties" : {
+          "area" : {
+            "type" : "string"
+          },
+          "table" : {
+            "type" : "string"
+          },
+          "column" : {
+            "type" : "string"
+          },
+          "rowId" : {
+            "type" : "string"
+          },
+          "snippet" : {
+            "type" : "string"
+          },
+          "linkKind" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PersonSearchResult" : {
+        "type" : "object",
+        "properties" : {
+          "hits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonSearchHitDto"
+            }
+          },
+          "truncated" : {
+            "type" : "boolean"
+          },
+          "cappedColumns" : {
             "type" : "array",
             "items" : {
               "type" : "string"
