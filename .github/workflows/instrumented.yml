@@ -16,10 +16,12 @@ name: Instrumented tests
 #
 # ── How ────────────────────────────────────────────────────────────────────────────────────────
 #
-# Gradle Managed Devices (`atdApi31` in app/build.gradle.kts): the emulator, its system image and
+# Gradle Managed Devices (`api31` in app/build.gradle.kts): the emulator, its system image and
 # its lifecycle are Gradle's, so the command a developer runs locally is the command CI runs —
-# `./gradlew :app:atdApi31DevDebugAndroidTest`. `aosp-atd` is the Automated Test Device image,
-# stripped of Play services and the launcher, and API 31 is the minSdk floor (ADR-0015).
+# `./gradlew :app:api31DevDebugAndroidTest`. The image is plain `aosp` at API 31, the minSdk floor
+# (ADR-0015). Not the lighter `aosp-atd` one: the Automated Test Device image ships without
+# `android.software.secure_lock_screen`, so the app lock's auth-bound key cannot exist on it — the
+# first run (#178, #180) failed every app-lock test for exactly that reason.
 #
 # GitHub's `ubuntu-latest` runners have /dev/kvm, but not readable by the runner user; the udev
 # rule below opens it, which is what makes the emulator hardware-accelerated instead of unusably
@@ -58,7 +60,7 @@ permissions:
 
 jobs:
   instrumented:
-    name: Instrumented tests (API 31, ATD)
+    name: Instrumented tests (API 31)
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -87,7 +89,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
 
-      # AGP downloads the emulator and the aosp-atd system image itself on the first run; the SDK
+      # AGP downloads the emulator and the aosp system image itself on the first run; the SDK
       # licences were accepted by the build-environment action.
       #
       # TestStackTlsHandshakeTest is excluded by name, not left to skip itself: it needs the main
@@ -96,7 +98,7 @@ jobs:
       # by-hand test against a running stack.
       - name: Run the instrumented tests on the managed device
         run: >-
-          ./gradlew :app:atdApi31DevDebugAndroidTest
+          ./gradlew :app:api31DevDebugAndroidTest
           -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
           -Pandroid.testInstrumentationRunnerArguments.notClass=de.greluc.krt.profit.basetool.android.TestStackTlsHandshakeTest
           --stacktrace

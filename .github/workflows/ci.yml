@@ -190,8 +190,14 @@ jobs:
           sudo install -m 0755 /tmp/actionlint /usr/local/bin/actionlint
           actionlint -version
 
+      # One message is ignored, and only that one: actionlint (up to v1.7.12, the newest release on
+      # 2026-09-22) does not know GitHub's self-repository form `uses: $/…` and reports it as a
+      # malformed remote reference. The runner accepts it — every job that sets up its build
+      # environment through `$/.github/actions/android-build-env` ran green on #180 — and zizmor
+      # 1.30 requires it (`self-repository`). Remove the `-ignore` once an actionlint release
+      # parses `$/`; until then it matches nothing but that form.
       - name: Run actionlint
-        run: actionlint -color
+        run: actionlint -color -ignore 'specifying action "\$/[^"]+" in invalid format because ref is missing'
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

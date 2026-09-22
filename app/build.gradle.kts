@@ -206,18 +206,19 @@ android {
 
         // The emulator `instrumented.yml` runs the androidTest suite on (DEV_CI § 4): the minSdk
         // floor, because that is the level no developer machine runs by default and the one the
-        // Keystore defects of ADR-0006 lived on. `aosp-atd` is the Automated Test Device image — no
-        // Play services, no launcher, smaller and faster to boot — which these tests do not need.
-        // Run locally with `./gradlew :app:atdApi31DevDebugAndroidTest`.
+        // Keystore defects of ADR-0006 lived on. The plain `aosp` image, NOT the lighter `aosp-atd`
+        // (Automated Test Device) one: ATD ships without `android.software.secure_lock_screen`, so no
+        // PIN can be set on it and the app lock's auth-bound key cannot be created at all — measured
+        // on the first CI run, 2026-09-22. Run locally with `./gradlew :app:api31DevDebugAndroidTest`.
         managedDevices {
             allDevices {
-                register<com.android.build.api.dsl.ManagedVirtualDevice>("atdApi31") {
+                register<com.android.build.api.dsl.ManagedVirtualDevice>("api31") {
                     device = "Pixel 2"
                     sdkVersion =
                         libs.versions.minSdk
                             .get()
                             .toInt()
-                    systemImageSource = "aosp-atd"
+                    systemImageSource = "aosp"
                 }
             }
         }

@@ -310,8 +310,8 @@ scope — but never add a new one on top.
   kotlinx-coroutines-test unit tests → Robolectric screen tests → MockWebServer contract tests
   against `openapi.json` fixtures, all in `./gradlew check` → a small instrumented suite in
   `app/src/androidTest` (Keystore contract, main-thread rule, test-stack TLS), run nightly by
-  `instrumented.yml` on one Gradle Managed Device (`./gradlew :app:atdApi31DevDebugAndroidTest`,
-  `aosp-atd` API 31 — not a required check; the TLS test skips itself there without the test stack)
+  `instrumented.yml` on one Gradle Managed Device (`./gradlew :app:api31DevDebugAndroidTest`,
+  `aosp` API 31 — not a required check; the TLS test is excluded there, it needs the test stack)
   and by hand with `connectedDevDebugAndroidTest` on a device → device walks on the three device
   classes. A property only a device can show needs an instrumented test or a recorded walk.
   Corrected 2026-09-22: this line promised Turbine, a Gradle Managed Devices suite, screenshot tests
