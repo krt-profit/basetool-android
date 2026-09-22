@@ -12,10 +12,14 @@ description: >-
 # the codeql-action pin in September (.github/dependabot.yml) — and six places for somebody to drop
 # `packages: ''` or a cache setting without noticing.
 #
-# The checkout is NOT in here, and cannot be: a local action (`uses: ./.github/actions/...`) is
-# read from the workspace, so the repository has to be checked out before this file exists on the
-# runner. Every caller therefore keeps its own `actions/checkout` step with
-# `persist-credentials: false`, which zizmor's `artipacked` audit checks per workflow.
+# Callers reference it as `uses: $/.github/actions/android-build-env` - GitHub's self-repository
+# form (July 2026), which GitHub treats as pinned to the workflow's own commit and which cannot
+# load an action a previous step wrote into the workspace. The `./` workspace-relative form it
+# replaced could, and zizmor 1.30's `self-repository` audit fails on it (changed 2026-09-22).
+#
+# The checkout is NOT in here: every caller builds from the workspace anyway, so each keeps its own
+# `actions/checkout` step with `persist-credentials: false`, which zizmor's `artipacked` audit
+# checks per workflow.
 #
 # The cache mode is REQUIRED on purpose. A default would be a security decision made by omission:
 # the release job must restore nothing (a poisoned cache entry becomes a signed artifact), a PR job

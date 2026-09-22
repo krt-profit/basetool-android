@@ -50,8 +50,17 @@ class SecureLockScreenRule : TestRule {
                 val keyguard = instrumentation.targetContext.getSystemService(KeyguardManager::class.java)
                 val setHere = !keyguard.isDeviceSecure
                 if (setHere) {
-                    shell("locksettings set-pin $THROWAWAY_PIN")
-                    check(keyguard.isDeviceSecure) { "locksettings did not give the device a screen lock" }
+                    val output = shell("locksettings set-pin $THROWAWAY_PIN")
+                    check(keyguard.isDeviceSecure) {
+                        // Everything needed to tell the causes apart, in the one line CI shows: the
+                        // command's own answer, and whether the image offers a secure lock screen
+                        // at all (an image without the feature refuses the command outright).
+                        val feature =
+                            instrumentation.targetContext.packageManager
+                                .hasSystemFeature(SECURE_LOCK_SCREEN_FEATURE)
+                        "locksettings did not give the device a screen lock; it answered " +
+                            "\"${output.trim()}\"; $SECURE_LOCK_SCREEN_FEATURE=$feature"
+                    }
                 }
                 try {
                     base.evaluate()
@@ -68,15 +77,18 @@ class SecureLockScreenRule : TestRule {
      * end is what waits for it, and closing the descriptor is what releases it.
      *
      * @param command the command line.
+     * @return what the command printed.
      */
-    private fun shell(command: String) {
+    private fun shell(command: String): String =
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command).use { pfd ->
-            FileInputStream(pfd.fileDescriptor).use { it.readBytes() }
+            FileInputStream(pfd.fileDescriptor).use { it.readBytes().decodeToString() }
         }
-    }
 
     private companion object {
         /** A PIN that exists only on a CI emulator for the length of one test. Not a secret. */
         const val THROWAWAY_PIN = "147258"
+
+        /** The platform feature a device needs before it can hold a PIN, pattern or password. */
+        const val SECURE_LOCK_SCREEN_FEATURE = "android.software.secure_lock_screen"
     }
 }
