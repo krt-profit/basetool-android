@@ -20,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log tag for one material's page. */
@@ -110,14 +111,14 @@ class MaterialDetailViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { load(refresh = false) },
         )
 
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         load(refresh = false)
@@ -139,7 +140,7 @@ class MaterialDetailViewModel(
      * @param value what was typed.
      */
     fun onFilter(value: String) {
-        mutableState.value = mutableState.value.copy(filter = value)
+        mutableState.update { it.copy(filter = value) }
     }
 
     /**
@@ -153,27 +154,29 @@ class MaterialDetailViewModel(
      */
     private fun load(refresh: Boolean) {
         loadJob?.cancel()
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 refreshing = refresh,
-                phase = if (refresh) mutableState.value.phase else MaterialsPhase.Loading,
+                phase = if (refresh) state.phase else MaterialsPhase.Loading,
                 retryIn = null,
             )
+        }
         loadJob =
             viewModelScope.launch {
                 when (val summary = source.material(materialId)) {
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the material could not be read: ${summary.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 phase = MaterialsPhase.Failed(summary.error),
                                 refreshing = false,
                             )
+                        }
                         retry.onFailure(summary.error, hasContent = mutableState.value.material != null)
                     }
 
                     is ApiResult.Success -> {
-                        mutableState.value = mutableState.value.copy(material = summary.value)
+                        mutableState.update { it.copy(material = summary.value) }
                         loadPrices()
                     }
                 }
@@ -185,21 +188,23 @@ class MaterialDetailViewModel(
         when (val result = source.prices(materialId)) {
             is ApiResult.Success -> {
                 retry.onSuccess()
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         prices = result.value,
                         phase = MaterialsPhase.Ready,
                         refreshing = false,
                     )
+                }
             }
 
             is ApiResult.Failure -> {
                 KrtLog.w(LOG_TAG) { "the prices could not be read: ${result.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = MaterialsPhase.Failed(result.error),
                         refreshing = false,
                     )
+                }
                 retry.onFailure(result.error, hasContent = mutableState.value.prices.isNotEmpty())
             }
         }

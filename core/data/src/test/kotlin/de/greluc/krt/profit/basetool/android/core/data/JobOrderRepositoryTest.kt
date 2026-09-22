@@ -145,7 +145,7 @@ class JobOrderRepositoryTest {
 
             val page = (repository.queue() as ApiResult.Success).value
 
-            val first = page.orders.first()
+            val first = page.rows.first()
             assertEquals("o1", first.id)
             assertEquals("1042", first.displayId)
             assertEquals(JobOrderStatus.IN_PROGRESS, first.status)
@@ -166,7 +166,7 @@ class JobOrderRepositoryTest {
             // (REQ-ORDERS-023). Losing it would present the gaps as the whole truth.
             respond(QUEUE)
 
-            assertTrue((repository.queue() as ApiResult.Success).value.orders.first().redacted)
+            assertTrue((repository.queue() as ApiResult.Success).value.rows.first().redacted)
         }
 
     @Test
@@ -176,7 +176,7 @@ class JobOrderRepositoryTest {
             // older server sends.
             respond("""{"content": [{"id": "o1", "displayId": 1}], "page": 0, "totalElements": 1, "totalPages": 1}""")
 
-            assertFalse((repository.queue() as ApiResult.Success).value.orders.first().redacted)
+            assertFalse((repository.queue() as ApiResult.Success).value.rows.first().redacted)
         }
 
     @Test
@@ -185,7 +185,7 @@ class JobOrderRepositoryTest {
             respond(QUEUE)
 
             val page = (repository.queue() as ApiResult.Success).value
-            assertEquals(1, page.orders.size)
+            assertEquals(1, page.rows.size)
             assertEquals(TOTAL, page.totalElements)
         }
 
@@ -194,7 +194,7 @@ class JobOrderRepositoryTest {
         runTest {
             respond(QUEUE)
 
-            val material = (repository.queue() as ApiResult.Success).value.orders.first().materials.single()
+            val material = (repository.queue() as ApiResult.Success).value.rows.first().materials.single()
 
             assertEquals(QUARTER, material.progress)
         }

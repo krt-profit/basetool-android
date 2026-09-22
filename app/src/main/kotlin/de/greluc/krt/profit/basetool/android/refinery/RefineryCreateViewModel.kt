@@ -21,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -128,8 +129,8 @@ class RefineryCreateViewModel(
             val refineries = source.refineries()
             val methods = source.methods()
             val existing = orderId?.let { source.orderDraft(it) }
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update { state ->
+                state.copy(
                     draft =
                         (existing as? ApiResult.Success)?.value?.let { loaded ->
                             // A run with no goods line would leave the editor with nothing to edit;
@@ -139,7 +140,7 @@ class RefineryCreateViewModel(
                             } else {
                                 loaded
                             }
-                        } ?: mutableState.value.draft,
+                        } ?: state.draft,
                     refineries = (refineries as? ApiResult.Success)?.value.orEmpty(),
                     methods = (methods as? ApiResult.Success)?.value.orEmpty(),
                     loading = false,
@@ -150,6 +151,7 @@ class RefineryCreateViewModel(
                             ?: (refineries as? ApiResult.Failure)?.error
                             ?: (methods as? ApiResult.Failure)?.error,
                 )
+            }
         }
     }
 
@@ -165,11 +167,12 @@ class RefineryCreateViewModel(
         viewModelScope.launch {
             when (val result = source.searchMaterials(query)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             materials = result.value.rows,
                             moreMaterials = result.value.more,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -237,14 +240,13 @@ class RefineryCreateViewModel(
      * @param draft the form as it now stands.
      */
     fun onDraftChanged(draft: RefineryOrderDraft) {
-        mutableState.value = mutableState.value.copy(draft = draft)
+        mutableState.update { it.copy(draft = draft) }
     }
 
     /** Adds an empty goods line. */
     fun onAddGood() {
         val draft = mutableState.value.draft
-        mutableState.value =
-            mutableState.value.copy(draft = draft.copy(goods = draft.goods + RefineryGoodDraft()))
+        mutableState.update { it.copy(draft = draft.copy(goods = draft.goods + RefineryGoodDraft())) }
     }
 
     /**
@@ -260,10 +262,11 @@ class RefineryCreateViewModel(
         if (draft.goods.size <= 1) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 draft = draft.copy(goods = draft.goods.filterIndexed { i, _ -> i != index }),
             )
+        }
     }
 
     /**
@@ -277,11 +280,12 @@ class RefineryCreateViewModel(
         good: RefineryGoodDraft,
     ) {
         val draft = mutableState.value.draft
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 draft =
                     draft.copy(goods = draft.goods.mapIndexed { i, old -> if (i == index) good else old }),
             )
+        }
     }
 
     /** Sends the form — raising the order, or rewriting the one being edited. */
@@ -304,14 +308,12 @@ class RefineryCreateViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, created = result.value)
+                    mutableState.update { it.copy(saving = false, created = result.value) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "writing the order was refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }

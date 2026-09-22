@@ -142,7 +142,7 @@ class RefineryViewModelTest {
             requestedStatuses += statuses
             listFailure?.let { return ApiResult.Failure(it) }
             return ApiResult.Success(
-                RefineryOrderPage(orders = orders, page = page, totalPages = 1, totalElements = orders.size.toLong()),
+                RefineryOrderPage(rows = orders, page = page, totalPages = 1, totalElements = orders.size.toLong()),
             )
         }
 

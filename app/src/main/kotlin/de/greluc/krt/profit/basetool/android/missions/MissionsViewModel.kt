@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 
@@ -132,7 +133,7 @@ class MissionsViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -174,7 +175,7 @@ class MissionsViewModel(
                 .debounce(SEARCH_DEBOUNCE_MS)
                 .distinctUntilChanged()
                 .collect { text ->
-                    mutableState.value = mutableState.value.copy(query = mutableState.value.query.copy(text = text))
+                    mutableState.update { state -> state.copy(query = state.query.copy(text = text)) }
                     reload()
                 }
         }
@@ -200,7 +201,7 @@ class MissionsViewModel(
      * @param text what the member has typed so far.
      */
     fun onSearchChanged(text: String) {
-        mutableState.value = mutableState.value.copy(searchText = text)
+        mutableState.update { it.copy(searchText = text) }
         typedText.value = text
     }
 
@@ -243,7 +244,7 @@ class MissionsViewModel(
      */
     fun onResetFilters() {
         typedText.value = ""
-        mutableState.value = mutableState.value.copy(query = MissionQuery.NONE, searchText = "")
+        mutableState.update { it.copy(query = MissionQuery.NONE, searchText = "") }
         reload()
     }
 
@@ -254,7 +255,7 @@ class MissionsViewModel(
      * flash back to a spinner, because the member is looking at content they expect to stay.
      */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepRows = true)
     }
 
@@ -281,7 +282,7 @@ class MissionsViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            missions = latest.missions + loaded.missions,
+                            missions = latest.missions + loaded.rows,
                             total = loaded.totalElements,
                             page = loaded.page,
                             hasMore = loaded.hasMore,
@@ -293,7 +294,7 @@ class MissionsViewModel(
                     // The rows already on screen stay. A failed *next* page is not a reason to
                     // replace a working list with an error, and the member can simply try again.
                     KrtLog.w(LOG_TAG) { "next page of Einsätze failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -309,7 +310,7 @@ class MissionsViewModel(
         if (updated == mutableState.value.query) {
             return
         }
-        mutableState.value = mutableState.value.copy(query = updated)
+        mutableState.update { it.copy(query = updated) }
         reload()
     }
 
@@ -323,16 +324,16 @@ class MissionsViewModel(
         loadJob?.cancel()
         val query = mutableState.value.query
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = MissionsPhase.Loading)
+            mutableState.update { it.copy(phase = MissionsPhase.Loading) }
         }
         loadJob =
             viewModelScope.launch {
                 when (val result = source.search(query, page = 0)) {
                     is ApiResult.Success -> {
                         val loaded = result.value
-                        mutableState.value =
-                            mutableState.value.copy(
-                                missions = loaded.missions,
+                        mutableState.update {
+                            it.copy(
+                                missions = loaded.rows,
                                 total = loaded.totalElements,
                                 page = loaded.page,
                                 hasMore = loaded.hasMore,
@@ -340,17 +341,19 @@ class MissionsViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onSuccess()
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "Einsätze could not be read: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 phase = MissionsPhase.Failed(result.error),
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }

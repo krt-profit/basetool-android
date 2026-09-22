@@ -143,7 +143,7 @@ class MaterialBoardViewModelTest {
             boardFailure?.let { return ApiResult.Failure(it) }
             val rows = if (side == BoardSide.OFFERS) offers else requests
             return ApiResult.Success(
-                BoardPage(entries = rows, page = page, totalPages = 1, totalElements = rows.size.toLong()),
+                BoardPage(rows = rows, page = page, totalPages = 1, totalElements = rows.size.toLong()),
             )
         }
 

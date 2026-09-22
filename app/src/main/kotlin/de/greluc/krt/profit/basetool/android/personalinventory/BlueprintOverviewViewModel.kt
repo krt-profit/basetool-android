@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log subsystem. Owner names are member data and never reach the log. */
@@ -162,7 +163,7 @@ class BlueprintOverviewViewModel(
      * @param query what was typed.
      */
     fun onQueryChanged(query: String) {
-        mutableState.value = mutableState.value.copy(query = query)
+        mutableState.update { it.copy(query = query) }
         searchJob?.cancel()
         searchJob =
             viewModelScope.launch {
@@ -177,7 +178,7 @@ class BlueprintOverviewViewModel(
      * @param filter which one.
      */
     fun onFilterChanged(filter: OverviewFilter) {
-        mutableState.value = mutableState.value.copy(filter = filter)
+        mutableState.update { it.copy(filter = filter) }
     }
 
     /** Reads the first page again. */
@@ -198,7 +199,7 @@ class BlueprintOverviewViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            entries = latest.entries + result.value.entries,
+                            entries = latest.entries + result.value.rows,
                             hasMore = result.value.hasMore,
                             loadingMore = false,
                         )
@@ -206,7 +207,7 @@ class BlueprintOverviewViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the next overview page failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -224,10 +225,11 @@ class BlueprintOverviewViewModel(
         if (mutableState.value.owners[entry.productKey] != null) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(
-                owners = mutableState.value.owners + (entry.productKey to OwnersState.Loading),
+        mutableState.update { state ->
+            state.copy(
+                owners = state.owners + (entry.productKey to OwnersState.Loading),
             )
+        }
         viewModelScope.launch {
             val next =
                 when (val result = source.owners(entry.productKey)) {
@@ -240,32 +242,33 @@ class BlueprintOverviewViewModel(
                         OwnersState.Failed(result.error)
                     }
                 }
-            mutableState.value =
-                mutableState.value.copy(
-                    owners = mutableState.value.owners + (entry.productKey to next),
+            mutableState.update { state ->
+                state.copy(
+                    owners = state.owners + (entry.productKey to next),
                 )
+            }
         }
     }
 
     /** Reads the first page, dropping whatever was loaded. */
     private fun reload() {
-        mutableState.value =
-            mutableState.value.copy(phase = OverviewPhase.Loading, entries = emptyList(), owners = emptyMap())
+        mutableState.update { it.copy(phase = OverviewPhase.Loading, entries = emptyList(), owners = emptyMap()) }
         viewModelScope.launch {
             when (val result = source.overview(mutableState.value.query, page = 0, pageSize = PAGE_SIZE)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
-                            entries = result.value.entries,
+                    mutableState.update {
+                        it.copy(
+                            entries = result.value.rows,
                             phase = OverviewPhase.Ready,
                             hasMore = result.value.hasMore,
                             total = result.value.totalElements,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the overview could not be read: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(phase = OverviewPhase.Failed(result.error))
+                    mutableState.update { it.copy(phase = OverviewPhase.Failed(result.error)) }
                 }
             }
         }

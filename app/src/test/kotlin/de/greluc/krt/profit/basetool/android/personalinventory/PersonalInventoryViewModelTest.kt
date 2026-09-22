@@ -96,7 +96,7 @@ class PersonalInventoryViewModelTest {
             pageReads++
             return ApiResult.Success(
                 PersonalItemPage(
-                    items = rows,
+                    rows = rows,
                     page = 0,
                     totalElements = rows.size.toLong(),
                     totalPages = 1,

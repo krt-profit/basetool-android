@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the inbox has got. */
@@ -118,7 +119,7 @@ class NotificationsViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -179,7 +180,7 @@ class NotificationsViewModel(
 
     /** Re-reads the first page and the count, keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         inboxLoaded = true
         reload(keepRows = true)
         refreshUnread()
@@ -244,7 +245,7 @@ class NotificationsViewModel(
         viewModelScope.launch {
             when (val result = source.markAllRead()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(unread = result.value.unreadCount)
+                    mutableState.update { it.copy(unread = result.value.unreadCount) }
                 }
 
                 is ApiResult.Failure -> {
@@ -326,7 +327,7 @@ class NotificationsViewModel(
         viewModelScope.launch {
             when (val result = source.deleteRead()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(unread = result.value.unreadCount)
+                    mutableState.update { it.copy(unread = result.value.unreadCount) }
                 }
 
                 is ApiResult.Failure -> {
@@ -348,7 +349,7 @@ class NotificationsViewModel(
         val pending = mutableState.value.pendingDelete ?: return
         undoJob?.cancel()
         undoJob = null
-        mutableState.value = mutableState.value.copy(pendingDelete = null)
+        mutableState.update { it.copy(pendingDelete = null) }
         viewModelScope.launch { commitDelete(pending.notification.id) }
     }
 
@@ -365,7 +366,7 @@ class NotificationsViewModel(
         when (val result = source.delete(id)) {
             is ApiResult.Success -> {
                 if (pending?.notification?.id == id) {
-                    mutableState.value = mutableState.value.copy(pendingDelete = null)
+                    mutableState.update { it.copy(pendingDelete = null) }
                 }
             }
 
@@ -398,7 +399,7 @@ class NotificationsViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            notifications = latest.notifications + loaded.notifications,
+                            notifications = latest.notifications + loaded.rows,
                             total = loaded.totalElements,
                             page = loaded.page,
                             hasMore = loaded.hasMore,
@@ -408,7 +409,7 @@ class NotificationsViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of notifications failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -457,7 +458,7 @@ class NotificationsViewModel(
         viewModelScope.launch {
             when (val result = source.unreadCount()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(unread = result.value)
+                    mutableState.update { it.copy(unread = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -476,15 +477,15 @@ class NotificationsViewModel(
      */
     private fun reload(keepRows: Boolean) {
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = NotificationsPhase.Loading)
+            mutableState.update { it.copy(phase = NotificationsPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = source.inbox(page = 0)) {
                 is ApiResult.Success -> {
                     val loaded = result.value
-                    mutableState.value =
-                        mutableState.value.copy(
-                            notifications = loaded.notifications,
+                    mutableState.update {
+                        it.copy(
+                            notifications = loaded.rows,
                             total = loaded.totalElements,
                             page = loaded.page,
                             hasMore = loaded.hasMore,
@@ -492,17 +493,19 @@ class NotificationsViewModel(
                             loadingMore = false,
                             refreshing = false,
                         )
+                    }
                     retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "notifications could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = NotificationsPhase.Failed(result.error),
                             loadingMore = false,
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = keepRows)
                 }
             }

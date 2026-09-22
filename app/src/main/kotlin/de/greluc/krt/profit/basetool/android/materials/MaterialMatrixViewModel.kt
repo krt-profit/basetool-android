@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
@@ -182,7 +183,7 @@ class MaterialMatrixViewModel(
      * @param value what was typed.
      */
     fun onQuery(value: String) {
-        mutableState.value = mutableState.value.copy(query = value)
+        mutableState.update { it.copy(query = value) }
     }
 
     /**
@@ -191,7 +192,7 @@ class MaterialMatrixViewModel(
      * @param value the system, or `null` for all of them.
      */
     fun onSystem(value: String?) {
-        mutableState.value = mutableState.value.copy(system = value)
+        mutableState.update { it.copy(system = value) }
     }
 
     /**
@@ -203,7 +204,7 @@ class MaterialMatrixViewModel(
      * @param value which side to show.
      */
     fun onMode(value: MatrixMode) {
-        mutableState.value = mutableState.value.copy(mode = value)
+        mutableState.update { it.copy(mode = value) }
     }
 
     /** Walks the matrix, publishing every page as it lands. */
@@ -217,8 +218,7 @@ class MaterialMatrixViewModel(
                     when (val result = source.matrixPage(page)) {
                         is ApiResult.Failure -> {
                             KrtLog.w(LOG_TAG) { "the matrix stopped at page $page: ${result.error}" }
-                            mutableState.value =
-                                mutableState.value.copy(loading = false, error = result.error)
+                            mutableState.update { it.copy(loading = false, error = result.error) }
                             return@launch
                         }
 
@@ -227,8 +227,8 @@ class MaterialMatrixViewModel(
                             val current = mutableState.value
                             mutableState.value =
                                 current.copy(
-                                    cells = current.cells + answer.cells,
-                                    loaded = current.loaded + answer.cells.size,
+                                    cells = current.cells + answer.rows,
+                                    loaded = current.loaded + answer.rows.size,
                                     total = answer.totalElements,
                                     loading = answer.hasMore,
                                 )
@@ -241,7 +241,7 @@ class MaterialMatrixViewModel(
                 }
                 // The cap is a backstop, not an answer: say so rather than letting a truncated
                 // matrix read as the whole one (ADR-0104).
-                mutableState.value = mutableState.value.copy(loading = false)
+                mutableState.update { it.copy(loading = false) }
             }
     }
 }
