@@ -23,9 +23,11 @@ import de.greluc.krt.profit.basetool.android.core.data.krtHandedOver
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedAmount
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -338,10 +340,8 @@ private fun OrderCreateState.krtWrite(
     } else {
         suspend {
             // The screen goes to the order it wrote — for an edit, the one it came from.
-            when (val result = write()) {
-                is ApiResult.Success -> ApiResult.Success(id)
-                is ApiResult.Failure -> result
-            }
+            write()
+                .map { id }
         }
     }
 }
@@ -484,7 +484,7 @@ class OrderCreateViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the order could not be read for editing: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(error = result.error, saved = true)
+                    mutableState.update { it.copy(error = result.error, saved = true) }
                 }
             }
         }
@@ -497,21 +497,22 @@ class OrderCreateViewModel(
      * derives it — one call, not two, and no chance of the two lists disagreeing.
      */
     fun load() {
-        mutableState.value = mutableState.value.copy(loading = true, error = null)
+        mutableState.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             when (val result = orgUnits.activeAllKinds()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update { state ->
+                        state.copy(
                             loading = false,
                             requestingOptions = result.value,
                             responsibleOptions = result.value.filter { it.profitEligible },
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the order form's unit pickers could not be read: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loading = false, error = result.error)
+                    mutableState.update { it.copy(loading = false, error = result.error) }
                 }
             }
         }
@@ -523,7 +524,7 @@ class OrderCreateViewModel(
      * @param id the unit.
      */
     fun onResponsible(id: String) {
-        mutableState.value = mutableState.value.copy(responsibleId = id)
+        mutableState.update { it.copy(responsibleId = id) }
     }
 
     /**
@@ -532,7 +533,7 @@ class OrderCreateViewModel(
      * @param id the unit.
      */
     fun onRequesting(id: String) {
-        mutableState.value = mutableState.value.copy(requestingId = id)
+        mutableState.update { it.copy(requestingId = id) }
     }
 
     /**
@@ -541,7 +542,7 @@ class OrderCreateViewModel(
      * @param value what is in the field.
      */
     fun onHandle(value: String) {
-        mutableState.value = mutableState.value.copy(handle = value.take(HANDLE_MAX))
+        mutableState.update { it.copy(handle = value.take(HANDLE_MAX)) }
     }
 
     /**
@@ -550,12 +551,12 @@ class OrderCreateViewModel(
      * @param value what is in the field.
      */
     fun onComment(value: String) {
-        mutableState.value = mutableState.value.copy(comment = value.take(COMMENT_MAX))
+        mutableState.update { it.copy(comment = value.take(COMMENT_MAX)) }
     }
 
     /** Appends an empty material line. */
     fun onAddLine() {
-        mutableState.value = mutableState.value.copy(lines = mutableState.value.lines + OrderLineDraft())
+        mutableState.update { state -> state.copy(lines = state.lines + OrderLineDraft()) }
     }
 
     /**
@@ -569,7 +570,7 @@ class OrderCreateViewModel(
     fun onRemoveLine(index: Int) {
         val lines = mutableState.value.lines
         val next = if (lines.size == 1) listOf(OrderLineDraft()) else lines.filterIndexed { i, _ -> i != index }
-        mutableState.value = mutableState.value.copy(lines = next)
+        mutableState.update { it.copy(lines = next) }
     }
 
     /**
@@ -581,12 +582,12 @@ class OrderCreateViewModel(
      * @param kind which order to raise.
      */
     fun onKind(kind: OrderKind) {
-        mutableState.value = mutableState.value.copy(kind = kind)
+        mutableState.update { it.copy(kind = kind) }
     }
 
     /** Appends an empty item line. */
     fun onAddItemLine() {
-        mutableState.value = mutableState.value.copy(itemLines = mutableState.value.itemLines + OrderItemLineDraft())
+        mutableState.update { state -> state.copy(itemLines = state.itemLines + OrderItemLineDraft()) }
     }
 
     /**
@@ -597,7 +598,7 @@ class OrderCreateViewModel(
     fun onRemoveItemLine(index: Int) {
         val lines = mutableState.value.itemLines
         val next = if (lines.size == 1) listOf(OrderItemLineDraft()) else lines.filterIndexed { i, _ -> i != index }
-        mutableState.value = mutableState.value.copy(itemLines = next)
+        mutableState.update { it.copy(itemLines = next) }
     }
 
     /**
@@ -614,8 +615,20 @@ class OrderCreateViewModel(
         if (index !in lines.indices) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(itemLines = lines.mapIndexed { i, l -> if (i == index) edit(l) else l })
+        mutableState.update { state ->
+            state.copy(
+                itemLines =
+                    lines.mapIndexed { i, l ->
+                        if (i ==
+                            index
+                        ) {
+                            edit(l)
+                        } else {
+                            l
+                        }
+                    },
+            )
+        }
     }
 
     /**
@@ -692,13 +705,13 @@ class OrderCreateViewModel(
      */
     private fun searchItems(query: String) {
         if (query.trim().length < MIN_QUERY) {
-            mutableState.value = mutableState.value.copy(items = emptyList())
+            mutableState.update { it.copy(items = emptyList()) }
             return
         }
         viewModelScope.launch {
             when (val result = source.searchItems(query)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(items = result.value)
+                    mutableState.update { it.copy(items = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -756,8 +769,7 @@ class OrderCreateViewModel(
         if (index !in lines.indices) {
             return
         }
-        mutableState.value =
-            mutableState.value.copy(lines = lines.mapIndexed { i, l -> if (i == index) edit(l) else l })
+        mutableState.update { state -> state.copy(lines = lines.mapIndexed { i, l -> if (i == index) edit(l) else l }) }
     }
 
     /**
@@ -825,17 +837,18 @@ class OrderCreateViewModel(
      */
     private fun searchMaterials(query: String) {
         if (query.trim().length < MIN_QUERY) {
-            mutableState.value = mutableState.value.copy(materials = emptyList(), materialsTruncated = false)
+            mutableState.update { it.copy(materials = emptyList(), materialsTruncated = false) }
             return
         }
         viewModelScope.launch {
             when (val result = source.searchMaterials(query)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             materials = result.value.rows,
                             materialsTruncated = result.value.more,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -859,12 +872,12 @@ class OrderCreateViewModel(
         viewModelScope.launch {
             when (val result = raise()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(saving = false, created = result.value)
+                    mutableState.update { it.copy(saving = false, created = result.value) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the order could not be raised: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -872,7 +885,7 @@ class OrderCreateViewModel(
 
     /** Clears the last refusal once the screen has shown it. */
     fun onErrorShown() {
-        mutableState.value = mutableState.value.copy(error = null)
+        mutableState.update { it.copy(error = null) }
     }
 
     private companion object {

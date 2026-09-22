@@ -144,8 +144,8 @@ class PersonalInventoryRepositoryTest {
             val result = repository.page()
 
             val page = (result as ApiResult.Success).value
-            assertEquals(1, page.items.size)
-            val item = page.items.first()
+            assertEquals(1, page.rows.size)
+            val item = page.rows.first()
             assertEquals("Medpens", item.name)
             assertEquals(QUANTITY, item.quantity)
             assertEquals(PersonalLocationKind.SPACE_STATION, item.locationKind)
@@ -162,7 +162,7 @@ class PersonalInventoryRepositoryTest {
 
             val page = (repository.page() as ApiResult.Success).value
 
-            assertEquals(1, page.items.size)
+            assertEquals(1, page.rows.size)
             assertEquals(2L, page.totalElements)
         }
 

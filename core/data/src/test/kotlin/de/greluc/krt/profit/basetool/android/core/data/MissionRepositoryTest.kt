@@ -159,8 +159,8 @@ class MissionRepositoryTest {
 
             assertTrue(result is ApiResult.Success)
             val page = (result as ApiResult.Success).value
-            assertEquals(1, page.missions.size)
-            val mission = page.missions.first()
+            assertEquals(1, page.rows.size)
+            val mission = page.rows.first()
             assertEquals("m1", mission.id)
             assertEquals("Vertikaler Abbau — Lyria", mission.name)
             assertEquals(MissionStatus.PLANNED, mission.status)
@@ -324,7 +324,7 @@ class MissionRepositoryTest {
 
             val page = (repository.search(MissionQuery.NONE) as ApiResult.Success).value
 
-            assertEquals(listOf("m1"), page.missions.map { it.id })
+            assertEquals(listOf("m1"), page.rows.map { it.id })
             assertEquals(2L, page.totalElements)
         }
 
@@ -338,7 +338,7 @@ class MissionRepositoryTest {
                 """.trimIndent(),
             )
 
-            val mission = (repository.search(MissionQuery.NONE) as ApiResult.Success).value.missions.first()
+            val mission = (repository.search(MissionQuery.NONE) as ApiResult.Success).value.rows.first()
 
             assertEquals(MissionStatus.UNKNOWN, mission.status)
             assertEquals("BRIEFING", mission.rawStatus)
@@ -357,7 +357,7 @@ class MissionRepositoryTest {
             val result = repository.search(MissionQuery.NONE)
 
             assertTrue(result is ApiResult.Success)
-            assertNull((result as ApiResult.Success).value.missions.first().plannedStartTime)
+            assertNull((result as ApiResult.Success).value.rows.first().plannedStartTime)
         }
 
     @Test
@@ -371,7 +371,7 @@ class MissionRepositoryTest {
             val result = repository.search(MissionQuery.NONE)
 
             assertTrue(result is ApiResult.Success)
-            assertTrue((result as ApiResult.Success).value.missions.isEmpty())
+            assertTrue((result as ApiResult.Success).value.rows.isEmpty())
         }
 
     @Test

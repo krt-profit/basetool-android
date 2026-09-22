@@ -18,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log tag for the Operation form. */
@@ -118,7 +119,7 @@ class OperationFormViewModel(
      * @param value what was typed.
      */
     fun onName(value: String) {
-        mutableState.value = mutableState.value.copy(name = value.take(NAME_MAX), error = null)
+        mutableState.update { it.copy(name = value.take(NAME_MAX), error = null) }
     }
 
     /**
@@ -127,8 +128,7 @@ class OperationFormViewModel(
      * @param value what was typed.
      */
     fun onDescription(value: String) {
-        mutableState.value =
-            mutableState.value.copy(description = value.take(DESCRIPTION_MAX), error = null)
+        mutableState.update { it.copy(description = value.take(DESCRIPTION_MAX), error = null) }
     }
 
     /**
@@ -137,7 +137,7 @@ class OperationFormViewModel(
      * @param value which one.
      */
     fun onStatus(value: OperationStatus) {
-        mutableState.value = mutableState.value.copy(status = value, error = null)
+        mutableState.update { it.copy(status = value, error = null) }
     }
 
     /** Sends the form. */
@@ -160,12 +160,12 @@ class OperationFormViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(saving = false, saved = result.value)
+                    mutableState.update { it.copy(saving = false, saved = result.value) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the Operation could not be written: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -178,8 +178,8 @@ class OperationFormViewModel(
             when (val result = source.overview(id)) {
                 is ApiResult.Success -> {
                     val operation = result.value.detail
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             name = operation.name,
                             description = operation.description.orEmpty(),
                             status = operation.status,
@@ -188,11 +188,12 @@ class OperationFormViewModel(
                             version = operation.version,
                             loading = false,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the Operation could not be read for editing: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loading = false, error = result.error)
+                    mutableState.update { it.copy(loading = false, error = result.error) }
                 }
             }
         }

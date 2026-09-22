@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalInvento
 import de.greluc.krt.profit.basetool.android.core.contract.model.UexLocationDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -87,20 +88,9 @@ data class PersonalItem(
 /**
  * One page of the member's stock.
  *
- * @property items the rows on this page
- * @property page the zero-based page index
- * @property totalElements how many rows exist in total
- * @property totalPages how many pages exist
+ * [Page.rows] holds the rows on this page.
  */
-data class PersonalItemPage(
-    val items: List<PersonalItem>,
-    val page: Int,
-    val totalElements: Long,
-    val totalPages: Int,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias PersonalItemPage = Page<PersonalItem>
 
 /**
  * What a save carries.
@@ -220,46 +210,31 @@ class PersonalInventoryRepository(
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
             }
-        return when (
-            val result =
-                reader.get(PATH, params, PageResponsePersonalInventoryItemResponse.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(PATH, params, PageResponsePersonalInventoryItemResponse.serializer())
+            .map { it.toModel(page) }
     }
 
     override suspend fun create(draft: PersonalItemDraft): ApiResult<PersonalItem> =
-        when (
-            val result =
-                reader.post(
-                    PATH,
-                    draft.toCreateRequest(),
-                    PersonalInventoryItemCreateRequest.serializer(),
-                    PersonalInventoryItemResponse.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.post(
+            PATH,
+            draft.toCreateRequest(),
+            PersonalInventoryItemCreateRequest.serializer(),
+            PersonalInventoryItemResponse.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun update(
         id: String,
         version: Long,
         draft: PersonalItemDraft,
     ): ApiResult<PersonalItem> =
-        when (
-            val result =
-                reader.put(
-                    itemPath(id),
-                    draft.toUpdateRequest(version),
-                    PersonalInventoryItemUpdateRequest.serializer(),
-                    PersonalInventoryItemResponse.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.put(
+            itemPath(id),
+            draft.toUpdateRequest(version),
+            PersonalInventoryItemUpdateRequest.serializer(),
+            PersonalInventoryItemResponse.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun delete(id: String): ApiResult<Unit> = reader.delete(itemPath(id))
 
@@ -342,7 +317,7 @@ class PersonalInventoryRepository(
  */
 private fun PageResponsePersonalInventoryItemResponse.toModel(page: Int): PersonalItemPage =
     PersonalItemPage(
-        items = content.orEmpty().filter { !it.id.isNullOrBlank() }.map { it.toModel() },
+        rows = content.orEmpty().filter { !it.id.isNullOrBlank() }.map { it.toModel() },
         page = this.page ?: page,
         totalElements = totalElements ?: 0L,
         totalPages = totalPages ?: 0,

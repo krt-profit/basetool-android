@@ -178,7 +178,9 @@ fun RefineryCreateScreen(
                 color = KrtPalette.White,
             )
         }
-        itemsIndexed(state.draft.goods) { index, good ->
+        // Keyed by the line's own identity, not its position: removing a line must not hand the
+        // next line's slot, and the picker state remembered in it, to a different line.
+        itemsIndexed(state.draft.goods, key = { _, good -> good.key }) { index, good ->
             GoodCard(
                 good = good,
                 removable = state.draft.goods.size > 1 && !locked,

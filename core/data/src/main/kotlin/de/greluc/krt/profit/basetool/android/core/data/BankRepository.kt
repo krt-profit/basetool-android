@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -289,20 +290,9 @@ data class BankBooking(
 /**
  * One page of the ledger.
  *
- * @property bookings the lines on this page, newest first
- * @property page the zero-based page index
- * @property totalPages how many pages exist
- * @property totalElements how many lines the ledger holds
+ * [Page.rows] holds the lines on this page, newest first.
  */
-data class BankBookingPage(
-    val bookings: List<BankBooking>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias BankBookingPage = Page<BankBooking>
 
 /**
  * One member with a limit of their own.
@@ -696,20 +686,9 @@ data class BankStaffDashboard(
 /**
  * One page of the bank-staff request queue.
  *
- * @property requests the rows.
- * @property page which page this is, zero-based.
- * @property totalPages how many exist.
- * @property totalElements how many rows the whole queue holds.
+ * [Page.rows] holds the rows.
  */
-data class BankRequestPage(
-    val requests: List<BankBookingRequest>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page follows. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias BankRequestPage = Page<BankBookingRequest>
 
 /**
  * One holder of the bank's money, as the confirmation picker offers them.
@@ -1020,17 +999,9 @@ data class BankHolderBooking(
 /**
  * One page of a holder's postings.
  *
- * @property rows the postings.
- * @property page which page this is, zero-based.
- * @property totalElements how many postings there are in total.
- * @property totalPages how many pages that makes.
+ * [Page.rows] holds the postings.
  */
-data class BankHolderBookingPage(
-    val rows: List<BankHolderBooking>,
-    val page: Int,
-    val totalElements: Long,
-    val totalPages: Int,
-)
+typealias BankHolderBookingPage = Page<BankHolderBooking>
 
 /**
  * The holder register's detail — `BANK_EMPLOYEE` to read, `BANK_MANAGEMENT` to move custody.
@@ -1384,13 +1355,8 @@ class BankRepository(
      * @return the list, or the classified failure.
      */
     override suspend fun balances(): ApiResult<List<BankAccountSummary>> =
-        when (
-            val result =
-                reader.get(BALANCES_PATH, ListSerializer(OrgUnitBankBalanceDto.serializer()))
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(BALANCES_PATH, ListSerializer(OrgUnitBankBalanceDto.serializer()))
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     /**
      * Reads one account.
@@ -1399,12 +1365,8 @@ class BankRepository(
      * @return the account, or the classified failure.
      */
     override suspend fun account(id: String): ApiResult<BankAccountDetail> =
-        when (
-            val result = reader.get(accountPath(id), OrgUnitBankAccountDetailDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(id))
-        }
+        reader.get(accountPath(id), OrgUnitBankAccountDetailDto.serializer())
+            .map { it.toModel(id) }
 
     /**
      * Reads one page of the ledger.
@@ -1503,10 +1465,8 @@ class BankRepository(
     private fun mapped(
         result: ApiResult<OrgUnitBankAccountSettingsDto>,
     ): ApiResult<BankAccountSettings> =
-        when (result) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        result
+            .map { it.toModel() }
 
     override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
         requestList("$REQUESTS_PATH")
@@ -1521,12 +1481,8 @@ class BankRepository(
      * @return the requests, or the classified failure.
      */
     private suspend fun requestList(path: String): ApiResult<List<BankBookingRequest>> =
-        when (
-            val result = reader.get(path, ListSerializer(BankBookingRequestDto.serializer()))
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(path, ListSerializer(BankBookingRequestDto.serializer()))
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     override suspend fun transferTargets(): ApiResult<List<BankTransferTarget>> =
         when (
@@ -1647,13 +1603,8 @@ class BankRepository(
         pageSize: Int,
     ): ApiResult<BankBookingPage> {
         val params = listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString())
-        return when (
-            val result =
-                reader.get(bookingsPath(id), params, PageResponseBankBookingDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(bookingsPath(id), params, PageResponseBankBookingDto.serializer())
+            .map { it.toModel(page) }
     }
 
     companion object {
@@ -1843,7 +1794,7 @@ private fun BankRequestKind.toWire(): CreateBankBookingRequest.Type =
  */
 internal fun PageResponseBankBookingDto.toModel(page: Int): BankBookingPage =
     BankBookingPage(
-        bookings = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

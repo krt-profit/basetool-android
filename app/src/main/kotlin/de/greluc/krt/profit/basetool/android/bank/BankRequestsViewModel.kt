@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -139,7 +140,7 @@ class BankRequestsViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.ORGUNIT_BANK)) { _ ->
@@ -162,7 +163,7 @@ class BankRequestsViewModel(
 
     /** Re-reads the requests, keeping what is on screen while it runs. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepContent = true)
     }
@@ -174,7 +175,7 @@ class BankRequestsViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
+            mutableState.update { it.copy(phase = BankPhase.Loading) }
         }
         viewModelScope.launch {
             val own = source.ownRequests()
@@ -182,11 +183,12 @@ class BankRequestsViewModel(
             val failure = (own as? ApiResult.Failure) ?: (foreign as? ApiResult.Failure)
             if (failure != null) {
                 KrtLog.w(LOG_TAG) { "bank requests could not be read: ${failure.error}" }
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update {
+                    it.copy(
                         phase = BankPhase.Failed(failure.error),
                         refreshing = false,
                     )
+                }
                 return@launch
             }
             val ownRows =
@@ -200,12 +202,13 @@ class BankRequestsViewModel(
                 (foreign as ApiResult.Success).value
                     .filterNot { it.id in ownIds }
                     .map { BankRequestRow(request = it, mine = false, actionable = true) }
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update { state ->
+                state.copy(
                     rows = (ownRows + foreignRows).sortedByDescending { it.request.createdAt },
                     phase = BankPhase.Ready,
                     refreshing = false,
                 )
+            }
             readAccounts()
         }
     }
@@ -220,14 +223,14 @@ class BankRequestsViewModel(
         viewModelScope.launch {
             val accounts = accountSource()
             if (accounts is ApiResult.Success) {
-                mutableState.value =
-                    mutableState.value.copy(
+                mutableState.update { state ->
+                    state.copy(
                         accounts = accounts.value,
                         // A sheet opened straight from the CTA gets here before the accounts do,
                         // and would otherwise sit with an empty, unsubmittable picker until the
                         // member noticed and chose one by hand.
                         draft =
-                            mutableState.value.draft?.let { open ->
+                            state.draft?.let { open ->
                                 if (open.accountId == null) {
                                     open.copy(accountId = accounts.value.firstOrNull()?.id)
                                 } else {
@@ -235,10 +238,11 @@ class BankRequestsViewModel(
                                 }
                             },
                     )
+                }
             }
             when (val targets = source.transferTargets()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(targets = targets.value)
+                    mutableState.update { it.copy(targets = targets.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -250,10 +254,11 @@ class BankRequestsViewModel(
 
     /** Opens the sheet on a blank request. */
     fun onCompose() {
-        mutableState.value =
-            mutableState.value.copy(
-                draft = BankRequestDraftState(accountId = mutableState.value.accounts.firstOrNull()?.id),
+        mutableState.update { state ->
+            state.copy(
+                draft = BankRequestDraftState(accountId = state.accounts.firstOrNull()?.id),
             )
+        }
     }
 
     /**
@@ -262,8 +267,8 @@ class BankRequestsViewModel(
      * @param request the caller's own pending, unapproved request.
      */
     fun onEdit(request: BankBookingRequest) {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update {
+            it.copy(
                 draft =
                     BankRequestDraftState(
                         editing = request,
@@ -274,11 +279,12 @@ class BankRequestsViewModel(
                         note = request.note.orEmpty(),
                     ),
             )
+        }
     }
 
     /** Closes the sheet, discarding what was typed. */
     fun onDismissSheet() {
-        mutableState.value = mutableState.value.copy(draft = null)
+        mutableState.update { it.copy(draft = null) }
     }
 
     /**
@@ -288,7 +294,7 @@ class BankRequestsViewModel(
      */
     fun onDraftChanged(change: (BankRequestDraftState) -> BankRequestDraftState) {
         val draft = mutableState.value.draft ?: return
-        mutableState.value = mutableState.value.copy(draft = change(draft).copy(error = null))
+        mutableState.update { it.copy(draft = change(draft).copy(error = null)) }
     }
 
     /** Sends the open sheet, as a new request or as a correction of one. */
@@ -300,7 +306,7 @@ class BankRequestsViewModel(
         if (existing == null && draft.accountId == null) {
             return
         }
-        mutableState.value = mutableState.value.copy(draft = draft.copy(saving = true))
+        mutableState.update { it.copy(draft = draft.copy(saving = true)) }
         viewModelScope.launch {
             val result =
                 if (existing != null) {
@@ -324,17 +330,18 @@ class BankRequestsViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(draft = null)
+                    mutableState.update { it.copy(draft = null) }
                     announce()
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "request write refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
-                            draft = mutableState.value.draft?.copy(saving = false, error = result.error),
+                    mutableState.update { state ->
+                        state.copy(
+                            draft = state.draft?.copy(saving = false, error = result.error),
                         )
+                    }
                 }
             }
         }
@@ -375,22 +382,23 @@ class BankRequestsViewModel(
         if (!mutableState.value.online || mutableState.value.busyId != null) {
             return
         }
-        mutableState.value = mutableState.value.copy(busyId = id)
+        mutableState.update { it.copy(busyId = id) }
         viewModelScope.launch {
             when (val result = call()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(busyId = null)
+                    mutableState.update { it.copy(busyId = null) }
                     announce()
                     reload(keepContent = true)
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "request action refused: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             busyId = null,
                             phase = BankPhase.Failed(result.error),
                         )
+                    }
                 }
             }
         }

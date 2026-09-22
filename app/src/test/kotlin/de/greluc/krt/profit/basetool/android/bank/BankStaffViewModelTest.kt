@@ -339,7 +339,7 @@ class BankStaffViewModelTest {
                         listOf(
                             ApiResult.Success(
                                 BankRequestPage(
-                                    requests =
+                                    rows =
                                         listOf(bankRequest("a1"), bankRequest("a1"), bankRequest("a2")),
                                     page = 0,
                                     totalPages = 1,

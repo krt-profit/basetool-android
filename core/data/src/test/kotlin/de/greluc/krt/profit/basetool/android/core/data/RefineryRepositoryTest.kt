@@ -174,7 +174,7 @@ class RefineryRepositoryTest {
 
             val page = (repository.myOrders() as ApiResult.Success).value
 
-            val first = page.orders.first()
+            val first = page.rows.first()
             assertEquals("r1", first.id)
             assertEquals("loc1", first.locationId)
             assertEquals("ARC-L1 Wide Forest", first.locationName)
@@ -195,7 +195,7 @@ class RefineryRepositoryTest {
         runTest {
             respond(ORDERS)
 
-            val running = (repository.myOrders() as ApiResult.Success).value.orders.first()
+            val running = (repository.myOrders() as ApiResult.Success).value.rows.first()
 
             // One order, two answers. The server said IN_PROGRESS both times; only the clock moved.
             assertEquals(RefineryPhase.RUNNING, running.phaseAt(BEFORE))
@@ -207,7 +207,7 @@ class RefineryRepositoryTest {
         runTest {
             respond(ORDERS)
 
-            val stored = (repository.myOrders() as ApiResult.Success).value.orders[1]
+            val stored = (repository.myOrders() as ApiResult.Success).value.rows[1]
 
             // Its end time is in the past too. A phase derived from the clock alone would call
             // this "Abholbereit" and offer to book a yield that is already in the Lager.

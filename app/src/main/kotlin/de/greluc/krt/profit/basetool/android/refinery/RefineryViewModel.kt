@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
@@ -225,7 +226,7 @@ class RefineryViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { reload(keepRows = false) },
         )
 
@@ -237,7 +238,7 @@ class RefineryViewModel(
             }
         }
         viewModelScope.launch {
-            clock.collect { now -> mutableState.value = mutableState.value.copy(now = now) }
+            clock.collect { now -> mutableState.update { it.copy(now = now) } }
         }
     }
 
@@ -264,7 +265,7 @@ class RefineryViewModel(
             return
         }
         loadedOnce = true
-        mutableState.value = mutableState.value.copy(filter = filter)
+        mutableState.update { it.copy(filter = filter) }
         reload(keepRows = false)
     }
 
@@ -276,7 +277,7 @@ class RefineryViewModel(
 
     /** Re-reads the first page while keeping the rows on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         loadedOnce = true
         reload(keepRows = true)
     }
@@ -297,7 +298,7 @@ class RefineryViewModel(
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
-                            loaded = latest.loaded + result.value.orders,
+                            loaded = latest.loaded + result.value.rows,
                             page = result.value.page,
                             hasMore = result.value.hasMore,
                             loadingMore = false,
@@ -306,7 +307,7 @@ class RefineryViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of orders failed: ${result.error}" }
-                    mutableState.value = mutableState.value.copy(loadingMore = false)
+                    mutableState.update { it.copy(loadingMore = false) }
                 }
             }
         }
@@ -321,16 +322,16 @@ class RefineryViewModel(
         loadJob?.cancel()
         val filter = mutableState.value.filter
         if (!keepRows) {
-            mutableState.value = mutableState.value.copy(phase = RefineryPhaseState.Loading)
+            mutableState.update { it.copy(phase = RefineryPhaseState.Loading) }
         }
         loadJob =
             viewModelScope.launch {
                 when (val result = source.myOrders(filter.serverStatuses(), page = 0)) {
                     is ApiResult.Success -> {
                         retry.onSuccess()
-                        mutableState.value =
-                            mutableState.value.copy(
-                                loaded = result.value.orders,
+                        mutableState.update {
+                            it.copy(
+                                loaded = result.value.rows,
                                 page = result.value.page,
                                 hasMore = result.value.hasMore,
                                 phase = RefineryPhaseState.Ready,
@@ -338,16 +339,18 @@ class RefineryViewModel(
                                 refreshing = false,
                                 now = OffsetDateTime.now(),
                             )
+                        }
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "orders could not be read: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update {
+                            it.copy(
                                 phase = RefineryPhaseState.Failed(result.error),
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        }
                         retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }
@@ -366,7 +369,7 @@ class RefineryViewModel(
         viewModelScope.launch {
             when (val result = reader.myUserId()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                    mutableState.update { it.copy(myUserId = result.value) }
                 }
 
                 is ApiResult.Failure -> {
@@ -524,7 +527,7 @@ class RefineryDetailViewModel(
             roster = seams.roster,
             scope = viewModelScope,
             read = { mutableState.value.memberPicker },
-            write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
+            write = { picker -> mutableState.update { it.copy(memberPicker = picker) } },
         )
 
     /** What the screen draws. */
@@ -534,7 +537,7 @@ class RefineryDetailViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { load(keepOrder = false) },
         )
 
@@ -551,12 +554,12 @@ class RefineryDetailViewModel(
             }
         }
         viewModelScope.launch {
-            clock.collect { now -> mutableState.value = mutableState.value.copy(now = now) }
+            clock.collect { now -> mutableState.update { it.copy(now = now) } }
         }
         connectivity?.let { link ->
             viewModelScope.launch {
                 link.online.collect { online ->
-                    mutableState.value = mutableState.value.copy(online = online)
+                    mutableState.update { it.copy(online = online) }
                 }
             }
         }
@@ -570,7 +573,7 @@ class RefineryDetailViewModel(
 
     /** Re-reads the order while keeping what is on screen. */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         load(keepOrder = true)
     }
 
@@ -579,12 +582,12 @@ class RefineryDetailViewModel(
         if (!mutableState.value.storable) {
             return
         }
-        mutableState.value = mutableState.value.copy(confirming = true, error = null)
+        mutableState.update { it.copy(confirming = true, error = null) }
     }
 
     /** Closes it without booking. */
     fun onStoreDismissed() {
-        mutableState.value = mutableState.value.copy(confirming = false)
+        mutableState.update { it.copy(confirming = false) }
     }
 
     /** Books the yield into the Lager. */
@@ -593,12 +596,11 @@ class RefineryDetailViewModel(
         if (!mutableState.value.storable) {
             return
         }
-        mutableState.value = mutableState.value.copy(confirming = false, storing = true, error = null)
+        mutableState.update { it.copy(confirming = false, storing = true, error = null) }
         viewModelScope.launch {
             when (val result = source.store(order)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(storing = false, stored = true, error = null)
+                    mutableState.update { it.copy(storing = false, stored = true, error = null) }
                     // Two rooms, because a booking changes two screens that are not the same
                     // screen: this order, and the Lager it just created entries in. Announcing
                     // only the order would leave every open Lager — web tab or phone — showing a
@@ -620,8 +622,7 @@ class RefineryDetailViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "booking the yield failed: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(storing = false, error = result.error)
+                    mutableState.update { it.copy(storing = false, error = result.error) }
                 }
             }
         }
@@ -629,7 +630,7 @@ class RefineryDetailViewModel(
 
     /** Clears the last write error. */
     fun onErrorDismissed() {
-        mutableState.value = mutableState.value.copy(error = null)
+        mutableState.update { it.copy(error = null) }
     }
 
     /**
@@ -640,28 +641,30 @@ class RefineryDetailViewModel(
     private fun load(keepOrder: Boolean) {
         val id = mutableState.value.orderId
         if (!keepOrder) {
-            mutableState.value = mutableState.value.copy(phase = RefineryDetailPhase.Loading)
+            mutableState.update { it.copy(phase = RefineryDetailPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = source.detail(id)) {
                 is ApiResult.Success -> {
                     retry.onSuccess()
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             order = result.value,
                             phase = RefineryDetailPhase.Ready,
                             refreshing = false,
                             now = OffsetDateTime.now(),
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "order could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = RefineryDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = keepOrder)
                 }
             }
@@ -677,8 +680,8 @@ class RefineryDetailViewModel(
      */
     fun onStoreFormRequested() {
         val order = mutableState.value.order ?: return
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 lines =
                     order.yields.mapNotNull { good ->
                         good.materialId?.let {
@@ -694,11 +697,12 @@ class RefineryDetailViewModel(
                     },
                 error = null,
             )
+        }
     }
 
     /** Closes the form, discarding what was typed on lines that were not booked. */
     fun onStoreFormDismissed() {
-        mutableState.value = mutableState.value.copy(lines = emptyList(), busy = null)
+        mutableState.update { it.copy(lines = emptyList(), busy = null) }
     }
 
     /**
@@ -707,21 +711,22 @@ class RefineryDetailViewModel(
      * @param line the line as it now stands.
      */
     fun onLineChanged(line: RefineryStoreLine) {
-        mutableState.value =
-            mutableState.value.copy(
+        mutableState.update { state ->
+            state.copy(
                 lines =
-                    mutableState.value.lines.map { if (it.key == line.key) line else it },
+                    state.lines.map { if (it.key == line.key) line else it },
             )
+        }
     }
 
     /** The member asked to delete this run; the confirmation is raised. */
     fun onDeleteRequested() {
-        mutableState.value = mutableState.value.copy(confirmingDelete = true, error = null)
+        mutableState.update { it.copy(confirmingDelete = true, error = null) }
     }
 
     /** The confirmation was dismissed. */
     fun onDeleteDismissed() {
-        mutableState.value = mutableState.value.copy(confirmingDelete = false)
+        mutableState.update { it.copy(confirmingDelete = false) }
     }
 
     /**
@@ -741,22 +746,24 @@ class RefineryDetailViewModel(
         viewModelScope.launch {
             when (val answer = writer.deleteOrder(id)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             deleting = false,
                             confirmingDelete = false,
                             deleted = true,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "deleting the run was refused: ${answer.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             deleting = false,
                             confirmingDelete = false,
                             error = answer.error,
                         )
+                    }
                 }
             }
         }
@@ -781,14 +788,12 @@ class RefineryDetailViewModel(
             val answer = requireNotNull(writer).storeLines(requireNotNull(orderId), current.lines)
             when (answer) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(busy = null, stored = true, lines = emptyList())
+                    mutableState.update { it.copy(busy = null, stored = true, lines = emptyList()) }
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "storing the run was refused: ${answer.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(busy = null, error = answer.error)
+                    mutableState.update { it.copy(busy = null, error = answer.error) }
                 }
             }
         }
@@ -806,7 +811,7 @@ class RefineryDetailViewModel(
         viewModelScope.launch {
             when (val result = reader.myUserId()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                    mutableState.update { it.copy(myUserId = result.value) }
                 }
 
                 is ApiResult.Failure -> {

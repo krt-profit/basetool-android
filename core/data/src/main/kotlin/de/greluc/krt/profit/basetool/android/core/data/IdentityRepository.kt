@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
@@ -157,10 +158,8 @@ class IdentityRepository(
      * @return the id, or the classified failure.
      */
     override suspend fun myUserId(): ApiResult<String> =
-        when (val result = me()) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.userId)
-        }
+        me()
+            .map { it.userId }
 
     override suspend fun me(): ApiResult<Identity> =
         mutex.withLock {

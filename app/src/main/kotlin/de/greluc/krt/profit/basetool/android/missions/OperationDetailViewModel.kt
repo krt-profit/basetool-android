@@ -26,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How far the Operation detail has got. */
@@ -119,7 +120,7 @@ class OperationDetailViewModel(
     private val retry =
         FirstLoadRetry(
             scope = viewModelScope,
-            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onCountdown = { left -> mutableState.update { it.copy(retryIn = left) } },
             onRetry = { load() },
         )
 
@@ -131,7 +132,7 @@ class OperationDetailViewModel(
     init {
         viewModelScope.launch {
             connectivity.online.collect { online ->
-                mutableState.value = mutableState.value.copy(online = online)
+                mutableState.update { it.copy(online = online) }
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.operation(operationId))) { _ ->
@@ -166,7 +167,7 @@ class OperationDetailViewModel(
                     // The Operation is re-read rather than the row patched: the payout totals move
                     // with a confirmation, and a patched row under a stale total is two numbers
                     // that disagree.
-                    mutableState.value = mutableState.value.copy(saving = false, error = null)
+                    mutableState.update { it.copy(saving = false, error = null) }
                     reload(keepContent = true)
                     publishLiveSync(
                         liveSync,
@@ -178,8 +179,7 @@ class OperationDetailViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the payout could not be confirmed: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(saving = false, error = result.error)
+                    mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
         }
@@ -198,7 +198,7 @@ class OperationDetailViewModel(
      * session.
      */
     fun onRefresh() {
-        mutableState.value = mutableState.value.copy(refreshing = true)
+        mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
         if (mutableState.value.myUserId == null) {
             // Only retried when it is still missing — a member whose first attempt failed gets
@@ -214,27 +214,29 @@ class OperationDetailViewModel(
      */
     private fun reload(keepContent: Boolean) {
         if (!keepContent) {
-            mutableState.value = mutableState.value.copy(phase = OperationDetailPhase.Loading)
+            mutableState.update { it.copy(phase = OperationDetailPhase.Loading) }
         }
         viewModelScope.launch {
             when (val result = source.overview(operationId)) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             overview = result.value,
                             phase = OperationDetailPhase.Ready,
                             refreshing = false,
                         )
+                    }
                     retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "Operation could not be read: ${result.error}" }
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             phase = OperationDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    }
                     retry.onFailure(result.error, hasContent = false)
                 }
             }
@@ -246,11 +248,12 @@ class OperationDetailViewModel(
         viewModelScope.launch {
             when (val result = identity.me()) {
                 is ApiResult.Success -> {
-                    mutableState.value =
-                        mutableState.value.copy(
+                    mutableState.update {
+                        it.copy(
                             myUserId = result.value.userId,
                             missionManager = result.value.missionManager,
                         )
+                    }
                 }
 
                 is ApiResult.Failure -> {

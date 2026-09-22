@@ -99,7 +99,7 @@ class OperationsViewModelTest {
         page: Int = 0,
         totalPages: Int = 1,
         total: Long = operations.size.toLong(),
-    ) = OperationPage(operations = operations.toList(), page = page, totalPages = totalPages, totalElements = total)
+    ) = OperationPage(rows = operations.toList(), page = page, totalPages = totalPages, totalElements = total)
 
     private lateinit var source: RecordingSource
 

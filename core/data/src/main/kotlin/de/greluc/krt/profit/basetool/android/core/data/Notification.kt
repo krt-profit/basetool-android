@@ -90,18 +90,6 @@ data class Notification(
 /**
  * One page of the inbox.
  *
- * @property notifications the rows on this page, newest first
- * @property page the zero-based index of this page
- * @property totalPages how many pages exist
- * @property totalElements how many notifications the member has in total — stated by the screen,
- *   because a list that cannot say what it is not showing is a silent truncation
+ * [Page.rows] holds the rows on this page, newest first.
  */
-data class NotificationPage(
-    val notifications: List<Notification>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias NotificationPage = Page<Notification>

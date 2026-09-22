@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBluepri
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -55,20 +56,9 @@ data class OwnedBlueprint(
 
 /** One page of owned blueprints.
  *
- * @property items the rows on this page
- * @property page the zero-based page index
- * @property totalElements how many exist in total
- * @property totalPages how many pages exist
+ * [Page.rows] holds the rows on this page.
  */
-data class OwnedBlueprintPage(
-    val items: List<OwnedBlueprint>,
-    val page: Int,
-    val totalElements: Long,
-    val totalPages: Int,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias OwnedBlueprintPage = Page<OwnedBlueprint>
 
 /**
  * What one material contributes to a blueprint's craftability.
@@ -134,7 +124,7 @@ data class Craftability(
  */
 private fun PageResponseBlueprintOverviewEntryDto.toModel(page: Int): BlueprintOverviewPage =
     BlueprintOverviewPage(
-        entries =
+        rows =
             content.orEmpty().mapNotNull { row ->
                 row.productKey?.takeIf { it.isNotBlank() }?.let {
                     BlueprintOverviewEntry(
@@ -189,20 +179,9 @@ data class BlueprintOverviewEntry(
 /**
  * One page of that overview.
  *
- * @property entries the rows.
- * @property page the zero-based page index.
- * @property totalPages how many pages exist.
- * @property totalElements how many blueprints the search matches.
+ * [Page.rows] holds the rows.
  */
-data class BlueprintOverviewPage(
-    val entries: List<BlueprintOverviewEntry>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias BlueprintOverviewPage = Page<BlueprintOverviewEntry>
 
 /**
  * One member who holds a blueprint.
@@ -546,12 +525,8 @@ class PersonalBlueprintRepository(
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
             }
-        return when (
-            val result = reader.get(PATH, params, PageResponsePersonalBlueprintResponse.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(PATH, params, PageResponsePersonalBlueprintResponse.serializer())
+            .map { it.toModel(page) }
     }
 
     override suspend fun craftability(): ApiResult<Map<String, Craftability>> =
@@ -578,36 +553,26 @@ class PersonalBlueprintRepository(
         productKey: String,
         note: String?,
     ): ApiResult<OwnedBlueprint> =
-        when (
-            val result =
-                reader.post(
-                    PATH,
-                    PersonalBlueprintCreateRequest(productKey = productKey, note = note),
-                    PersonalBlueprintCreateRequest.serializer(),
-                    PersonalBlueprintResponse.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.post(
+            PATH,
+            PersonalBlueprintCreateRequest(productKey = productKey, note = note),
+            PersonalBlueprintCreateRequest.serializer(),
+            PersonalBlueprintResponse.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun updateNote(
         id: String,
         version: Long,
         note: String?,
     ): ApiResult<OwnedBlueprint> =
-        when (
-            val result =
-                reader.put(
-                    "$PATH/$id",
-                    PersonalBlueprintUpdateRequest(version = version, note = note),
-                    PersonalBlueprintUpdateRequest.serializer(),
-                    PersonalBlueprintResponse.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.put(
+            "$PATH/$id",
+            PersonalBlueprintUpdateRequest(version = version, note = note),
+            PersonalBlueprintUpdateRequest.serializer(),
+            PersonalBlueprintResponse.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun remove(id: String): ApiResult<Unit> = reader.delete("$PATH/$id")
 
@@ -622,20 +587,15 @@ class PersonalBlueprintRepository(
         fileName: String,
         bytes: ByteArray,
     ): ApiResult<BlueprintImportPreview> =
-        when (
-            val result =
-                reader.postFile(
-                    path = IMPORT_PREVIEW_PATH,
-                    partName = FILE_PART,
-                    fileName = fileName,
-                    bytes = bytes,
-                    mediaType = JSON_MEDIA_TYPE,
-                    deserializer = BlueprintImportPreviewDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.postFile(
+            path = IMPORT_PREVIEW_PATH,
+            partName = FILE_PART,
+            fileName = fileName,
+            bytes = bytes,
+            mediaType = JSON_MEDIA_TYPE,
+            deserializer = BlueprintImportPreviewDto.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun importApply(
         entries: List<BlueprintImportEntry>,
@@ -653,36 +613,22 @@ class PersonalBlueprintRepository(
                         }
                     },
             )
-        return when (
-            val result =
-                reader.post(
-                    IMPORT_APPLY_PATH,
-                    request,
-                    BlueprintImportApplyRequest.serializer(),
-                    BlueprintImportResultDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        return reader.post(
+            IMPORT_APPLY_PATH,
+            request,
+            BlueprintImportApplyRequest.serializer(),
+            BlueprintImportResultDto.serializer(),
+        )
+            .map { it.toModel() }
     }
 
     override suspend fun removeAll(): ApiResult<Int> =
-        when (
-            val result = reader.delete(PATH, PersonalBlueprintBulkDeleteResult.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.deleted ?: 0)
-        }
+        reader.delete(PATH, PersonalBlueprintBulkDeleteResult.serializer())
+            .map { it.deleted ?: 0 }
 
     override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> =
-        when (
-            val result =
-                reader.get("$PATH/$id/recipe", PersonalBlueprintRecipeResponse.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.get("$PATH/$id/recipe", PersonalBlueprintRecipeResponse.serializer())
+            .map { it.toModel() }
 
     override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> =
         when (
@@ -720,17 +666,12 @@ class PersonalBlueprintRepository(
                 PAGE_PARAM to page.toString(),
                 SIZE_PARAM to pageSize.toString(),
             )
-        return when (
-            val result =
-                reader.get(
-                    OVERVIEW_PATH,
-                    params,
-                    PageResponseBlueprintOverviewEntryDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(
+            OVERVIEW_PATH,
+            params,
+            PageResponseBlueprintOverviewEntryDto.serializer(),
+        )
+            .map { it.toModel(page) }
     }
 
     override suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>> =
@@ -812,7 +753,7 @@ class PersonalBlueprintRepository(
  */
 private fun PageResponsePersonalBlueprintResponse.toModel(page: Int): OwnedBlueprintPage =
     OwnedBlueprintPage(
-        items = content.orEmpty().filter { !it.id.isNullOrBlank() }.map { it.toModel() },
+        rows = content.orEmpty().filter { !it.id.isNullOrBlank() }.map { it.toModel() },
         page = this.page ?: page,
         totalElements = totalElements ?: 0L,
         totalPages = totalPages ?: 0,

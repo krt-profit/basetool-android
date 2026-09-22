@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Log tag for the profit calculation. */
@@ -108,7 +109,7 @@ class ProfitViewModel(
      * @param id the hull.
      */
     fun onShip(id: String) {
-        mutableState.value = mutableState.value.copy(shipId = id)
+        mutableState.update { it.copy(shipId = id) }
         calculate()
     }
 
@@ -136,18 +137,18 @@ class ProfitViewModel(
 
     /** Reads the two catalogues the form is built from, then runs the default calculation. */
     private fun loadOptions() {
-        mutableState.value = mutableState.value.copy(loadingOptions = true, error = null)
+        mutableState.update { it.copy(loadingOptions = true, error = null) }
         viewModelScope.launch {
             val ships = source.shipTypes()
             if (ships is ApiResult.Failure) {
                 KrtLog.w(LOG_TAG) { "the ship catalogue could not be read: ${ships.error}" }
-                mutableState.value = mutableState.value.copy(loadingOptions = false, error = ships.error)
+                mutableState.update { it.copy(loadingOptions = false, error = ships.error) }
                 return@launch
             }
             val hulls = (ships as ApiResult.Success).value
             val systems = (source.starSystems() as? ApiResult.Success)?.value.orEmpty()
-            mutableState.value =
-                mutableState.value.copy(
+            mutableState.update { state ->
+                state.copy(
                     ships = hulls,
                     systems = systems,
                     // The web preselects the C2; with no C2 in the catalogue nothing is chosen and
@@ -155,6 +156,7 @@ class ProfitViewModel(
                     shipId = hulls.firstOrNull { it.name.contains(DEFAULT_SHIP, ignoreCase = true) }?.id,
                     loadingOptions = false,
                 )
+            }
             if (mutableState.value.shipId != null) {
                 calculate()
             }
@@ -165,25 +167,25 @@ class ProfitViewModel(
     private fun calculate() {
         val shipId = mutableState.value.shipId ?: return
         calculation?.cancel()
-        mutableState.value = mutableState.value.copy(calculating = true, error = null)
+        mutableState.update { it.copy(calculating = true, error = null) }
         calculation =
             viewModelScope.launch {
                 when (val result = source.profit(shipId, mutableState.value.includedSystems)) {
                     is ApiResult.Success -> {
-                        mutableState.value =
-                            mutableState.value.copy(rows = result.value, calculating = false)
+                        mutableState.update { it.copy(rows = result.value, calculating = false) }
                     }
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the profit calculation was refused: ${result.error}" }
-                        mutableState.value =
-                            mutableState.value.copy(
+                        mutableState.update { state ->
+                            state.copy(
                                 calculating = false,
                                 error = result.error,
                                 // The previous answer is dropped: leaving it under a new ship's
                                 // name would be a figure about the wrong hull.
                                 rows = emptyList(),
                             )
+                        }
                     }
                 }
             }

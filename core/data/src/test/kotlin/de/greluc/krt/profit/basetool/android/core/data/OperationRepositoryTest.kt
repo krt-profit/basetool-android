@@ -143,14 +143,14 @@ class OperationRepositoryTest {
 
             assertTrue(result is ApiResult.Success)
             val page = (result as ApiResult.Success).value
-            assertEquals(2, page.operations.size)
-            val first = page.operations.first()
+            assertEquals(2, page.rows.size)
+            val first = page.rows.first()
             assertEquals("o1", first.id)
             assertEquals("Operation Rotschild", first.name)
             assertEquals(OperationStatus.ACTIVE, first.status)
             assertEquals("Bergbau im Aaron Halo", first.description)
             assertTrue(first.isRunning)
-            assertFalse(page.operations[1].isRunning)
+            assertFalse(page.rows[1].isRunning)
             assertEquals(2L, page.totalElements)
             assertFalse(page.hasMore)
         }
@@ -169,7 +169,7 @@ class OperationRepositoryTest {
 
             val result = repository.search(OperationQuery.NONE)
 
-            val operation = (result as ApiResult.Success).value.operations.first()
+            val operation = (result as ApiResult.Success).value.rows.first()
             assertEquals(OperationStatus.CANCELED, operation.status)
             assertFalse(operation.isRunning)
         }
@@ -189,7 +189,7 @@ class OperationRepositoryTest {
 
             val page = (repository.search(OperationQuery.NONE) as ApiResult.Success).value
 
-            assertEquals(1, page.operations.size)
+            assertEquals(1, page.rows.size)
             assertEquals(2L, page.totalElements)
         }
 

@@ -9,6 +9,12 @@
   dieselbe Herkunftsattestierung wie die APK selbst. Bisher wurde sie zwar erzeugt, aber nie
   angehängt.
 
+### Fixed
+
+- **Raffinerieauftrag: Beim Entfernen einer Güterzeile rutscht kein Zustand mehr in die Nachbarzeile.**
+  Die Zeilen waren nach Position statt nach Identität geführt, sodass etwa ein offenes Materialmenü
+  nach dem Löschen der Zeile darüber an der falschen Zeile hing.
+
 ## [0.3.0] — 2026-09-14
 
 ### Changed

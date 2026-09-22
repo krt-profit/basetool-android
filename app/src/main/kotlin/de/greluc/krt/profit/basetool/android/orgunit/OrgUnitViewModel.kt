@@ -18,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -114,7 +115,7 @@ class OrgUnitViewModel(
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "org units could not be read: ${result.error}" }
-                        mutableState.value = mutableState.value.copy(loaded = true)
+                        mutableState.update { it.copy(loaded = true) }
                         return@launch
                     }
                 }
@@ -157,7 +158,7 @@ class OrgUnitViewModel(
         // No coroutine: the store is synchronous now, and the badge should move on the tap
         // rather than a frame later.
         store.pin(orgUnitId)
-        mutableState.value = mutableState.value.copy(activeId = orgUnitId, allChosen = false)
+        mutableState.update { it.copy(activeId = orgUnitId, allChosen = false) }
     }
 
     /**
@@ -169,7 +170,7 @@ class OrgUnitViewModel(
      */
     fun selectAll() {
         store.pinAll()
-        mutableState.value = mutableState.value.copy(activeId = null, allChosen = true)
+        mutableState.update { it.copy(activeId = null, allChosen = true) }
     }
 
     /**

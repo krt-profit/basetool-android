@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.SquadronShipOve
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
@@ -125,38 +126,16 @@ data class ShipTypeSummary(
 /**
  * One page of ships.
  *
- * @property ships the rows on this page
- * @property page the zero-based page index
- * @property totalPages how many pages exist
- * @property totalElements how many ships the filter matches in total
+ * [Page.rows] holds the rows on this page.
  */
-data class ShipPage(
-    val ships: List<Ship>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias ShipPage = Page<Ship>
 
 /**
  * One page of the org-unit aggregate.
  *
- * @property types the rows on this page
- * @property page the zero-based page index
- * @property totalPages how many pages exist
- * @property totalElements how many ship types the filter matches in total
+ * [Page.rows] holds the rows on this page.
  */
-data class ShipTypePage(
-    val types: List<ShipTypeSummary>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias ShipTypePage = Page<ShipTypeSummary>
 
 /**
  * The hangar reads, as a seam.
@@ -301,17 +280,12 @@ class HangarRepository(
         page: Int,
         pageSize: Int,
     ): ApiResult<ShipPage> =
-        when (
-            val result =
-                reader.get(
-                    MY_SHIPS_PATH,
-                    params(search, page, pageSize),
-                    PageResponseShipDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        reader.get(
+            MY_SHIPS_PATH,
+            params(search, page, pageSize),
+            PageResponseShipDto.serializer(),
+        )
+            .map { it.toModel(page) }
 
     /**
      * Reads the org unit's aggregate.
@@ -326,17 +300,12 @@ class HangarRepository(
         page: Int,
         pageSize: Int,
     ): ApiResult<ShipTypePage> =
-        when (
-            val result =
-                reader.get(
-                    OVERVIEW_PATH,
-                    params(search, page, pageSize),
-                    PageResponseSquadronShipOverviewDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        reader.get(
+            OVERVIEW_PATH,
+            params(search, page, pageSize),
+            PageResponseSquadronShipOverviewDto.serializer(),
+        )
+            .map { it.toModel(page) }
 
     /**
      * Builds the query both reads take.
@@ -373,20 +342,15 @@ class HangarRepository(
         fileName: String,
         bytes: ByteArray,
     ): ApiResult<FleetImportResult> =
-        when (
-            val result =
-                reader.postFile(
-                    path = FLEETVIEW_IMPORT_PATH,
-                    partName = "file",
-                    fileName = fileName,
-                    bytes = bytes,
-                    mediaType = JSON_MEDIA_TYPE,
-                    deserializer = FleetImportResponse.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
+        reader.postFile(
+            path = FLEETVIEW_IMPORT_PATH,
+            partName = "file",
+            fileName = fileName,
+            bytes = bytes,
+            mediaType = JSON_MEDIA_TYPE,
+            deserializer = FleetImportResponse.serializer(),
+        )
+            .map { it.toModel() }
 
     override suspend fun clearHangar(): ApiResult<Unit> = reader.delete(SHIPS_PATH)
 
@@ -421,13 +385,8 @@ class HangarRepository(
     }
 
     override suspend fun homeLocations(): ApiResult<List<HomeLocation>> =
-        when (
-            val result =
-                reader.get(HOME_LOCATIONS_PATH, ListSerializer(LocationDto.serializer()))
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
-        }
+        reader.get(HOME_LOCATIONS_PATH, ListSerializer(LocationDto.serializer()))
+            .map { loaded -> loaded.mapNotNull { it.toModel() } }
 
     /**
      * Sends one ship payload.
@@ -499,7 +458,7 @@ class HangarRepository(
  */
 private fun PageResponseShipDto.toModel(page: Int): ShipPage =
     ShipPage(
-        ships = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,
@@ -535,7 +494,7 @@ private fun ShipDto.toModel(): Ship? {
  */
 private fun PageResponseSquadronShipOverviewDto.toModel(page: Int): ShipTypePage =
     ShipTypePage(
-        types = content.orEmpty().map { it.toModel() },
+        rows = content.orEmpty().map { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

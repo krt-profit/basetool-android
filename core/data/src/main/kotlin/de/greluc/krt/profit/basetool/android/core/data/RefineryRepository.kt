@@ -25,6 +25,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDt
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.time.Instant
@@ -32,6 +33,7 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 /**
  * One material coming out of a refining run.
@@ -178,20 +180,9 @@ data class RefineryOrder(
 /**
  * One page of the member's own orders.
  *
- * @property orders the rows on this page.
- * @property page the zero-based page index.
- * @property totalPages how many pages exist.
- * @property totalElements how many orders the filter matches on the server.
+ * [Page.rows] holds the rows on this page.
  */
-data class RefineryOrderPage(
-    val orders: List<RefineryOrder>,
-    val page: Int,
-    val totalPages: Int,
-    val totalElements: Long,
-) {
-    /** Whether another page exists after this one. */
-    val hasMore: Boolean get() = page + 1 < totalPages
-}
+typealias RefineryOrderPage = Page<RefineryOrder>
 
 /** The Raffinerie reads and the one write the app offers, as a seam. */
 interface RefinerySource {
@@ -401,6 +392,11 @@ data class RefineryInputMaterial(
  * @property quality the grade, as typed, 0–1000.
  * @property yieldBonusPercent the refinery's UEX bonus for this material, read-only, as read back
  *   from the server. The wire ignores it on write and the database persists nothing for it.
+ * @property key this line's identity on the device, for the form's `LazyColumn`. Never sent — a
+ *   goods line has no id of its own on the wire. It is a constructor property so `copy` keeps it:
+ *   an edit must not turn a line into a new one. Without it the list was keyed by position, so
+ *   removing the first of two lines handed the second line's slot — and every state remembered in
+ *   it, such as whether the material picker's menu is open — to a different line.
  */
 data class RefineryGoodDraft(
     val inputMaterialId: String? = null,
@@ -411,6 +407,7 @@ data class RefineryGoodDraft(
     val outputQuantity: String = "",
     val quality: String = "",
     val yieldBonusPercent: String = "",
+    val key: String = UUID.randomUUID().toString(),
 ) {
     /**
      * Whether the server would accept this line.
@@ -682,13 +679,8 @@ class RefineryRepository(
                 add(SIZE_PARAM to pageSize.toString())
                 add(SORT_PARAM to NEWEST_FIRST)
             }
-        return when (
-            val result =
-                reader.get(ALL_ORDERS_PATH, params, PageResponseRefineryOrderListDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
-        }
+        return reader.get(ALL_ORDERS_PATH, params, PageResponseRefineryOrderListDto.serializer())
+            .map { it.toModel(page) }
     }
 
     /** {@inheritDoc} */
@@ -808,13 +800,8 @@ class RefineryRepository(
     }
 
     override suspend fun orderDraft(orderId: String): ApiResult<RefineryOrderDraft> =
-        when (
-            val result =
-                reader.get(orderPath(orderId), emptyList(), RefineryOrderDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toDraft())
-        }
+        reader.get(orderPath(orderId), emptyList(), RefineryOrderDto.serializer())
+            .map { it.toDraft() }
 
     override suspend fun updateOrder(
         orderId: String,
@@ -1072,7 +1059,7 @@ private fun RefineryOrderDto.missing(id: String): ApiResult.Failure {
  */
 private fun PageResponseRefineryOrderListDto.toModel(page: Int): RefineryOrderPage =
     RefineryOrderPage(
-        orders = content.orEmpty().mapNotNull { it.toModel() },
+        rows = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
         totalPages = totalPages ?: 0,
         totalElements = totalElements ?: 0L,

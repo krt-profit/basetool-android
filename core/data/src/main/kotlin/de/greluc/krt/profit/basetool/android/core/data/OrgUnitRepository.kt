@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.ActiveOrgUnitRe
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitMembershipOptionDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -149,10 +150,8 @@ class OrgUnitRepository(
      * @return the unit id or `null`.
      */
     override suspend fun serverDefault(): ApiResult<String?> =
-        when (val result = reader.get(ACTIVE_ORG_UNIT_PATH, ActiveOrgUnitResponse.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.orgUnitId)
-        }
+        reader.get(ACTIVE_ORG_UNIT_PATH, ActiveOrgUnitResponse.serializer())
+            .map { it.orgUnitId }
 
     private companion object {
         /** Log subsystem. Org-unit names are not member identities, but nothing here is logged. */
