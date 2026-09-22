@@ -113,7 +113,7 @@ jobs:
       # cache ever did skip compilation, the job fails there before anything is uploaded.
       - name: Set up the Android build environment
         if: matrix.build-mode == 'manual'
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: read-only
 

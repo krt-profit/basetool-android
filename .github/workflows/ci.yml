@@ -64,7 +64,7 @@ jobs:
       # read the Gradle cache but never write it: a cache entry written by a PR run is one an
       # attacker's PR could have poisoned (zizmor's `cache-poisoning`).
       - name: Set up the Android build environment
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: write-on-main
 
@@ -152,7 +152,7 @@ jobs:
 
       # `skip`: dependency-submission sets Gradle up itself.
       - name: Set up the Android build environment
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: skip
 

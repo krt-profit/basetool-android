@@ -10,9 +10,9 @@ name: Instrumented tests
 #                                     defects that made the lock unusable on a whole platform range
 #                                     were invisible off a device (ADR-0006).
 #   * TestStackTlsHandshakeTest     — needs the main repository's test stack, which this job does
-#                                     not start. It reports itself SKIPPED here, by design (its
-#                                     KDoc: a red bar for "the stack is not running" teaches people
-#                                     to ignore red bars). It stays a local, by-hand test.
+#                                     not start, so it is EXCLUDED here (see the run step): the
+#                                     managed-device runner counts its "stack not reachable"
+#                                     assumption as a failure. It stays a local, by-hand test.
 #
 # ── How ────────────────────────────────────────────────────────────────────────────────────────
 #
@@ -74,7 +74,7 @@ jobs:
       # `read-only`: this job restores the dependency cache and never writes one — a scheduled
       # run is on main, but nothing it produces is worth caching for the gate.
       - name: Set up the Android build environment
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: read-only
 
@@ -89,10 +89,16 @@ jobs:
 
       # AGP downloads the emulator and the aosp-atd system image itself on the first run; the SDK
       # licences were accepted by the build-environment action.
+      #
+      # TestStackTlsHandshakeTest is excluded by name, not left to skip itself: it needs the main
+      # repository's test stack, and the managed-device runner reports its assumption failure as a
+      # FAILED test rather than a skipped one (measured on the first run, #178). It stays a
+      # by-hand test against a running stack.
       - name: Run the instrumented tests on the managed device
         run: >-
           ./gradlew :app:atdApi31DevDebugAndroidTest
           -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+          -Pandroid.testInstrumentationRunnerArguments.notClass=de.greluc.krt.profit.basetool.android.TestStackTlsHandshakeTest
           --stacktrace
 
       - name: Upload the instrumented test reports

@@ -237,10 +237,21 @@ Baseline posture (all from GitHub's current security docs):
 validation and `setup-gradle` sit in one local composite action, `.github/actions/android-build-env`,
 used by `ci.yml` (×2), `codeql.yml`, `release.yml`, `release-dry-run.yml` and `instrumented.yml`. Its
 `cache-mode` input is **required** — `write-on-main`, `read-only`, `disabled` or `skip` — because a
-default would make the release job's no-cache rule a decision taken by omission. The checkout stays
-in each workflow: a local action is read from the workspace, so the repository has to be checked
-out before the action exists on the runner. Dependabot watches the action's directory
-(`directories: [/, /.github/actions/*]`), and zizmor scans it (added 2026-09-22, audit SIB-SIMP-04).
+default would make the release job's no-cache rule a decision taken by omission. Callers use
+GitHub's self-repository form, `uses: $/.github/actions/android-build-env`, which is pinned to the
+workflow's own commit and cannot pick up an action a previous step wrote into the workspace — the
+`./` form could, and zizmor 1.30's `self-repository` audit turned the workflow lint red on it the
+day the composite landed (#178). The checkout stays in each workflow, because every job builds from
+the workspace. Dependabot watches the action's directory (`directories: [/, /.github/actions/*]`),
+and zizmor scans it (added 2026-09-22, audit SIB-SIMP-04).
+
+**The first `instrumented.yml` run (#178) was red for two reasons neither of which was the app.**
+`TestStackTlsHandshakeTest` skips itself without the test stack, and the managed-device runner
+counts that assumption failure as a failure — so the job now excludes it by name
+(`notClass`). And `SecureLockScreenRule`'s `locksettings set-pin` did not give the ATD emulator a
+screen lock, so the app-lock contract tests failed in the rule rather than in the Keystore; the
+rule now reports the command's own answer and whether the image has the secure-lock-screen feature,
+which is what decides between fixing the command and changing the image.
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a

@@ -71,7 +71,7 @@ jobs:
       # rehearsal that runs warm would not rehearse the thing it exists for, so this job pays for
       # a cold build.
       - name: Set up the Android build environment
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: disabled
 

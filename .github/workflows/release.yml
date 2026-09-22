@@ -111,7 +111,7 @@ jobs:
       # `disabled`: see the header — a signed artifact must not be able to inherit a poisoned cache
       # entry.
       - name: Set up the Android build environment
-        uses: ./.github/actions/android-build-env
+        uses: $/.github/actions/android-build-env
         with:
           cache-mode: disabled
 
