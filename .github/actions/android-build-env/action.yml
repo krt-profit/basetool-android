@@ -1,0 +1,84 @@
+name: Android build environment
+description: >-
+  Everything a job needs between its checkout and its first Gradle call: JDK 25, the Android SDK
+  licences and paths (and no SDK packages), a validated Gradle wrapper, and setup-gradle with the
+  cache mode the caller names. One place for these pins instead of six.
+
+# Why a composite action, and why it stops where it does
+#
+# The same four steps stood in six jobs (ci.yml x2, codeql.yml, release.yml, release-dry-run.yml,
+# instrumented.yml), each with its own copy of four SHA pins and one comment about the emulator
+# download. Six copies are six places for a Dependabot bump to land in pieces — exactly what split
+# the codeql-action pin in September (.github/dependabot.yml) — and six places for somebody to drop
+# `packages: ''` or a cache setting without noticing.
+#
+# The checkout is NOT in here, and cannot be: a local action (`uses: ./.github/actions/...`) is
+# read from the workspace, so the repository has to be checked out before this file exists on the
+# runner. Every caller therefore keeps its own `actions/checkout` step with
+# `persist-credentials: false`, which zizmor's `artipacked` audit checks per workflow.
+#
+# The cache mode is REQUIRED on purpose. A default would be a security decision made by omission:
+# the release job must restore nothing (a poisoned cache entry becomes a signed artifact), a PR job
+# must never write (zizmor's `cache-poisoning`), and the CodeQL job must not reuse task outputs.
+# Naming it at every call site keeps that decision visible where it matters.
+
+inputs:
+  cache-mode:
+    description: >-
+      How setup-gradle treats its cache. `write-on-main` restores everywhere and writes only on a
+      push to refs/heads/main; `read-only` restores and never writes; `disabled` neither restores
+      nor writes (the release and its dry run); `skip` does not run setup-gradle at all, for a job
+      whose Gradle step sets itself up (dependency-submission).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check the cache mode
+      shell: bash
+      env:
+        CACHE_MODE: ${{ inputs.cache-mode }}
+      run: |
+        set -euo pipefail
+        case "$CACHE_MODE" in
+          write-on-main|read-only|disabled|skip) echo "Gradle cache mode: $CACHE_MODE" ;;
+          *)
+            echo "::error::cache-mode must be write-on-main, read-only, disabled or skip; got '$CACHE_MODE'"
+            exit 1
+            ;;
+        esac
+
+    # gradle/gradle-daemon-jvm.properties pins the daemon to Java 25. Installing it here means Gradle
+    # finds a local JDK instead of downloading one from foojay on every run.
+    - name: Set up JDK 25 (Temurin)
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        distribution: temurin
+        java-version: '25'
+
+    # `packages` defaults to `tools platform-tools`, and the deprecated `tools` meta-package drags
+    # in the ~500 MB Android Emulator — a download that has already died mid-stream ("Premature
+    # EOF") and reddened an otherwise green run (PR #106). The runner image already ships
+    # platform-tools, the android-37 platform and build-tools 37.0.0, so an empty list installs
+    # nothing while the action still accepts the SDK licences and exports ANDROID_HOME /
+    # ANDROID_SDK_ROOT. The one job that does need an emulator image, instrumented.yml, gets it
+    # from Gradle Managed Devices rather than from here.
+    - name: Set up the Android SDK
+      uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      with:
+        packages: ''
+
+    # Verifies gradle-wrapper.jar against the known-good checksums for the declared distribution. A
+    # tampered wrapper jar is the classic way to run arbitrary code in a build that otherwise looks
+    # untouched.
+    - name: Validate the Gradle wrapper
+      uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+    - name: Set up Gradle
+      if: inputs.cache-mode != 'skip'
+      uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      with:
+        cache-disabled: ${{ inputs.cache-mode == 'disabled' }}
+        # write-on-main: a cache entry written by a PR run is one an attacker's PR could have
+        # poisoned (zizmor's `cache-poisoning`), so only a push to main writes.
+        cache-read-only: ${{ inputs.cache-mode == 'read-only' || (inputs.cache-mode == 'write-on-main' && github.ref != 'refs/heads/main') }}

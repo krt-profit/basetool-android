@@ -9,6 +9,13 @@
   dieselbe Herkunftsattestierung wie die APK selbst. Bisher wurde sie zwar erzeugt, aber nie
   angehängt.
 
+### Fixed
+
+- **Ein Speichern wird bei einem Verbindungsabbruch nicht mehr heimlich doppelt gesendet.** Riss
+  die Verbindung, nachdem eine Buchung, ein Auftrag oder eine Anmeldung schon beim Server war,
+  konnte die App sie unbemerkt ein zweites Mal schicken. Jetzt erscheint in diesem Fall eine
+  Fehlermeldung, und du entscheidest selbst, ob du erneut speicherst.
+
 ## [0.3.0] — 2026-09-14
 
 ### Changed

@@ -14,33 +14,24 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The refresh token must not leave the device through a backup — in **either** rule set.
+ * The refresh token must not leave the device through a backup — in **either** section of the rule
+ * set every supported device reads.
  *
  * This is the failure that reports nothing when it happens. Renaming the DataStore file, or
  * excluding a path that turns out not to exist, breaks no build and shows no symptom; it simply
- * starts copying an encrypted refresh token into Google Drive or onto the next phone. This was
- * written when minSdk 30 still spanned both worlds; at minSdk 31 no supported device reads
- * `backup_rules.xml` (API ≤ 30), but the manifest still references it, so the app keeps it *and*
- * `data_extraction_rules.xml` (API 31+) — and the second needs the exclusion in both its
- * `cloud-backup` and `device-transfer` sections, because `allowBackup=false` alone does not
- * reliably stop a device-to-device transfer.
+ * starts copying an encrypted refresh token into Google Drive or onto the next phone.
+ * `data_extraction_rules.xml` (API 31+, the whole supported range since ADR-0015) needs the
+ * exclusion in both its `cloud-backup` and `device-transfer` sections, because `allowBackup=false`
+ * alone does not reliably stop a device-to-device transfer.
+ *
+ * The legacy `backup_rules.xml` half of this class went with the file on 2026-09-22: only API ≤ 30
+ * read it, and there `allowBackup=false` already stops both paths (REQ-APP-AUTH-004).
  *
  * Reading the XML as text is crude on purpose: the assertion should fail when the *file the app
  * writes* stops matching the *path the rules exclude*, which is a string-level fact.
  */
 class BackupExclusionTest {
-    private val legacyRules = File("src/main/res/xml/backup_rules.xml")
     private val extractionRules = File("src/main/res/xml/data_extraction_rules.xml")
-
-    @Test
-    fun `the legacy rule set excludes the token store`() {
-        val xml = read(legacyRules)
-
-        assertTrue(
-            "backup_rules.xml must exclude ${AuthDataStore.RELATIVE_PATH}",
-            xml.contains(AuthDataStore.RELATIVE_PATH),
-        )
-    }
 
     @Test
     fun `cloud backup and device transfer both exclude the token store`() {
@@ -60,19 +51,13 @@ class BackupExclusionTest {
     }
 
     @Test
-    fun `every rule set excludes the org-unit pin as well`() {
-        // Three source comments promise this test covers it — backup_rules.xml, the
-        // data_extraction_rules and ActiveOrgUnitStore itself — and until now none of them was
-        // true. The exclusions are correct today, so nothing is exposed; what was missing is the
-        // guard that keeps them correct. A renamed FILE_NAME would otherwise start shipping one
-        // member's org scope into cloud backup and device-to-device transfer, silently.
-        val legacy = read(File("src/main/res/xml/backup_rules.xml"))
-        assertTrue(
-            "backup_rules.xml must exclude ${ActiveOrgUnitStore.BACKUP_PATH}",
-            legacy.contains(ActiveOrgUnitStore.BACKUP_PATH),
-        )
-
-        val rules = read(File("src/main/res/xml/data_extraction_rules.xml"))
+    fun `both sections exclude the org-unit pin as well`() {
+        // The source comments promised this test covers it — the data_extraction_rules and
+        // ActiveOrgUnitStore itself — and at first it did not. The exclusions were correct,
+        // so nothing was exposed; what was missing is the guard that keeps them correct. A renamed
+        // FILE_NAME would otherwise start shipping one member's org scope into cloud backup and
+        // device-to-device transfer, silently.
+        val rules = read(extractionRules)
         val cloudBackup = section(rules, "cloud-backup")
         val deviceTransfer = section(rules, "device-transfer")
         assertTrue(
@@ -91,7 +76,7 @@ class BackupExclusionTest {
         // The exclusions above are the belt; this is the braces. With both persisted files
         // excluded a restore produces an empty app anyway, so leaving backup on bought a member
         // nothing and cost a standing invariant: every file added later has to be remembered in
-        // three rule sets, and forgetting one is invisible.
+        // every rule section, and forgetting one is invisible.
         val manifest = read(File("src/main/AndroidManifest.xml"))
         assertTrue(
             "the manifest must set android:allowBackup=\"false\"",

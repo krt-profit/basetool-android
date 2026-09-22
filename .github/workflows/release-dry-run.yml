@@ -14,16 +14,21 @@ name: Release signing dry run
 #
 #   generate key -> base64 -> decode to a runner file -> assembleProdRelease -> verify -> shred
 #
-# The base64 round trip is not decoration: it is the exact transport the real workflow will
-# use for the secret, and a keystore that survives it here will survive it there.
+# The base64 round trip is not decoration: it is the exact transport the real workflow uses
+# for the secret, and a keystore that survives it here will survive it there. It is rehearsed
+# in the same SHAPE, too: the encoded keystore reaches the decode step through `env:` exactly
+# as `secrets.RELEASE_KEYSTORE_BASE64` does in `release.yml`, it passes the same PKCS#12
+# look, and keytool gets its password as `-storepass:env` / `-keypass:env` rather than on
+# argv, where every process on the runner could read it (audit SIB-SEC-07, 2026-09-22).
 #
 # It needs NO secrets, which is why it can run on every pull request including forks: the key
 # is created in the runner, used once and shredded. Nothing it produces is published — an APK
 # signed with a throwaway key is good for the checks below and for nothing else, and attaching
 # it anywhere would invite somebody to install it.
 #
-# The real `release.yml` (tag `v*`, environment `release`, the actual key) still has to be
-# written for Phase 5. This is its rehearsal, not its replacement.
+# The real `release.yml` (tag `v*`, environment `release`, the actual key) is its sibling;
+# this is its rehearsal, not its replacement. What the dry run cannot rehearse is the tag
+# check and `gh release create --verify-tag`: it runs on no tag and publishes nothing.
 
 on:
   pull_request:
@@ -51,8 +56,9 @@ jobs:
     env:
       KEYSTORE_ALIAS: basetool-dry-run
       # The APK's own floor. `apksigner verify` judges an APK against an SDK range, and the
-      # range that matters is the one the app actually installs on (ADR-0006).
-      APP_MIN_SDK: '30'
+      # range that matters is the one the app actually installs on (ADR-0015; this said 30
+      # until 2026-09-22, a floor the app left on 2026-08-27).
+      APP_MIN_SDK: '31'
 
     steps:
       - name: Checkout
@@ -60,36 +66,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      # `disabled`, deliberately. The real release job restores no cache either — a poisoned
+      # cache entry would become a poisoned artifact, and a signed one at that (DEV_CI § 4). A
+      # rehearsal that runs warm would not rehearse the thing it exists for, so this job pays for
+      # a cold build.
+      - name: Set up the Android build environment
+        uses: ./.github/actions/android-build-env
         with:
-          distribution: temurin
-          java-version: '25'
-
-      # `packages` defaults to `tools platform-tools`, and the deprecated
-      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
-      # here uses — there is no instrumented-test job anywhere in this
-      # directory, and that download has already died mid-stream ("Premature
-      # EOF") and reddened an otherwise green run. The runner image already
-      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
-      # so an empty list installs nothing while the action still accepts the
-      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-        with:
-          packages: ''
-
-      - name: Validate the Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          # No cache at all, deliberately. The real release job restores none either — a
-          # poisoned cache entry would become a poisoned artifact, and a signed one at that
-          # (DEV_CI § 4). A rehearsal that runs warm would not rehearse the thing it exists
-          # for, so this job pays for a cold build.
-          cache-disabled: true
+          cache-mode: disabled
 
       - name: Generate a throwaway signing key
         id: key
@@ -103,6 +87,9 @@ jobs:
           password="$(openssl rand -base64 33)"
           echo "::add-mask::$password"
           echo "password=$password" >> "$GITHUB_OUTPUT"
+          # Exported under the name the real workflow's secret arrives under, so keytool reads
+          # it as `:env` exactly as it does there.
+          export KRT_SIGNING_STORE_PASSWORD="$password"
 
           keytool -genkeypair \
             -keystore "$RUNNER_TEMP/source.p12" \
@@ -110,25 +97,45 @@ jobs:
             -alias "$KEYSTORE_ALIAS" \
             -keyalg RSA -keysize 4096 \
             -validity 1 \
-            -storepass "$password" -keypass "$password" \
+            -storepass:env KRT_SIGNING_STORE_PASSWORD \
+            -keypass:env KRT_SIGNING_STORE_PASSWORD \
             -dname "CN=Basetool Release Signing Dry Run, O=DAS KARTELL, C=DE"
 
           # The certificate this run has to end up with, normalised to the lower-case,
           # colon-free form apksigner prints.
           fingerprint="$(keytool -list -v \
             -keystore "$RUNNER_TEMP/source.p12" -storetype PKCS12 \
-            -storepass "$password" -alias "$KEYSTORE_ALIAS" \
+            -storepass:env KRT_SIGNING_STORE_PASSWORD -alias "$KEYSTORE_ALIAS" \
             | grep -oP 'SHA256:\s*\K[0-9A-Fa-f:]+' \
             | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           test -n "$fingerprint"
           echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
           echo "expected certificate SHA-256: $fingerprint"
 
-      - name: Round-trip the keystore through base64, as the real secret will
+      # Encoded into a step output, masked, so the decode step below receives it through an
+      # `env:` expression — the same path `secrets.RELEASE_KEYSTORE_BASE64` takes in
+      # `release.yml`.
+      - name: Encode the keystore, as the real secret is stored
+        id: encoded
         run: |
           set -euo pipefail
           base64 -w0 "$RUNNER_TEMP/source.p12" > "$RUNNER_TEMP/keystore.b64"
-          base64 -d "$RUNNER_TEMP/keystore.b64" > "$KEYSTORE_PATH"
+          encoded="$(cat "$RUNNER_TEMP/keystore.b64")"
+          echo "::add-mask::$encoded"
+          echo "keystore=$encoded" >> "$GITHUB_OUTPUT"
+
+      # The decode half reads the encoded keystore from `env`, never expanded into the script
+      # text, and runs the same PKCS#12 look the real job does.
+      - name: Decode the signing keystore, as the real workflow does
+        env:
+          KRT_SIGNING_KEYSTORE_BASE64: ${{ steps.encoded.outputs.keystore }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KRT_SIGNING_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          if [ ! -s "$KEYSTORE_PATH" ] || [ "$(head -c 2 "$KEYSTORE_PATH" | xxd -p)" != "3082" ]; then
+            echo "::error::the encoded keystore did not decode to a PKCS#12 keystore."
+            exit 1
+          fi
           # A silently truncated secret is the failure this catches: the decode succeeds, the
           # file is short, and the build fails later with a keystore-format error that reads
           # like a corrupt key rather than like a broken transport.
@@ -139,10 +146,10 @@ jobs:
         env:
           KRT_SIGNING_STORE_PASSWORD: ${{ steps.key.outputs.password }}
           KRT_SIGNING_KEY_PASSWORD: ${{ steps.key.outputs.password }}
+          KRT_SIGNING_KEY_ALIAS: ${{ env.KEYSTORE_ALIAS }}
         run: |
           set -euo pipefail
           KRT_SIGNING_KEYSTORE="$KEYSTORE_PATH" \
-          KRT_SIGNING_KEY_ALIAS="$KEYSTORE_ALIAS" \
             ./gradlew :app:assembleProdRelease --stacktrace
 
       - name: Verify the signature

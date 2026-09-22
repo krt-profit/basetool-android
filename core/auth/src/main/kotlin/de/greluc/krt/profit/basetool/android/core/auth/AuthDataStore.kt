@@ -18,9 +18,9 @@ import androidx.datastore.preferences.preferencesDataStoreFile
  * file name that the backup exclusions have to match.
  *
  * The name is a published constant rather than a string literal at the call site because the
- * protection depends on two files agreeing: `backup_rules.xml` (API ≤ 30) and
- * `data_extraction_rules.xml` (API 31+, in **both** its `cloud-backup` and `device-transfer`
- * sections). A rename here with no matching edit there does not fail anything at build time; it
+ * protection depends on two files agreeing: this one and `data_extraction_rules.xml` (API 31+, the
+ * whole supported range, in **both** its `cloud-backup` and `device-transfer` sections). A rename
+ * here with no matching edit there does not fail anything at build time; it
  * just starts uploading a refresh token to Google Drive. `BackupExclusionTest` in `:app` reads the
  * XML and compares it against [RELATIVE_PATH] for exactly that reason.
  */

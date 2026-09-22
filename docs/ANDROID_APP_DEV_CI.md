@@ -122,7 +122,9 @@ mirroring this repo's conventions.
 - **Keycloak**: the test realm gets the `basetool-android` client (S256, exact redirect URIs,
   DPoP toggle) so the full login/refresh/DPoP path runs locally — this is also where the Phase-0
   DPoP verification task happens.
-- Optional: Gradle Managed Devices locally for the instrumented suite (same definition as CI).
+- Optional: Gradle Managed Devices locally for the instrumented suite (same definition as CI):
+  `./gradlew :app:atdApi31DevDebugAndroidTest` boots the `atdApi31` device declared in
+  `app/build.gradle.kts` — `aosp-atd`, API 31 — runs the suite and shuts it down again.
 
 ## 3. Test strategy
 
@@ -142,13 +144,17 @@ Phase 2 — mirroring this repo's JaCoCo culture without starting at an unmeetab
 > **Status, checked against the build on 2026-09-22 — the table above is the plan, not the build.**
 > Built and gated in `./gradlew check`: the unit layer (JUnit **4**, not 5, with
 > kotlinx-coroutines-test; Turbine is not a dependency), Robolectric, and the MockWebServer contract
-> layer. Built but **not in CI**: three instrumented tests in `app/src/androidTest`
-> (`AppLockKeystoreContractTest`, `ApiReaderMainThreadTest`, `TestStackTlsHandshakeTest`), run by
-> hand with `connectedDevDebugAndroidTest`; every workflow's own comment says there is no
-> instrumented-test job. **Not built at all:** Gradle Managed Devices, the Keycloak Testcontainer
-> auth flow, screenshot tests, the nightly E2E workflow, and Kover — no coverage is measured and
-> nothing gates on it. `feature/` stayed empty, so the `feature:*` half of the coverage line has no
-> modules to apply to.
+> layer. Built and run by CI **outside the gate**: three instrumented tests in `app/src/androidTest`
+> (`AppLockKeystoreContractTest`, `ApiReaderMainThreadTest`, `TestStackTlsHandshakeTest`), on one
+> Gradle Managed Device (`atdApi31`: `aosp-atd`, API 31 — the floor, not the plan's API 30 + 37
+> pair) by `instrumented.yml`, nightly and on pull requests that touch them; not a required check.
+> `TestStackTlsHandshakeTest` reports itself skipped there, because it needs the main repository's
+> test stack; it stays a by-hand test. The app-lock test gives a lock-less CI emulator a throwaway
+> PIN for its duration (`SecureLockScreenRule`), because an auth-bound key cannot be created
+> without one. (Changed 2026-09-22 — until then no workflow ran the suite.) **Not built at all:**
+> the Keycloak Testcontainer auth flow, screenshot tests, the nightly E2E workflow, and Kover — no
+> coverage is measured and nothing gates on it. `feature/` stayed empty, so the `feature:*` half of
+> the coverage line has no modules to apply to.
 
 ## 4. GitHub Actions — hardened for a public repo
 
@@ -217,15 +223,24 @@ Baseline posture (all from GitHub's current security docs):
 
 | Workflow | Trigger | Jobs | State |
 |---|---|---|---|
-| `ci.yml` | PR + push to main | `./gradlew build` (assemble all four variants, unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor | **built** |
-| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real uncached `assembleDevDebug`; see the file header for why `none` was abandoned) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020. **The extractor also caps the repo's Kotlin version**: it hooks the compiler, so a Kotlin above its `versions.bzl` list fails this job at the Gradle step rather than degrading the scan — the catalog holds `kotlin` one release back and Dependabot ignores the bump, ADR-0022 | **built** |
+| `ci.yml` | PR + push to main | `./gradlew build` (assemble the three enabled variants — `devRelease` is disabled since 2026-09-22 because nothing ships it — unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor over `.github/workflows` **and** `.github/actions` | **built** |
+| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real `assembleDevDebug --no-build-cache` over a **read-only** dependency cache, then an assertion that fails the job, before anything is uploaded, when the database holds fewer Kotlin files than the build compiles; see the file header for why `none` was abandoned and why the cache is safe) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020. **The extractor also caps the repo's Kotlin version**: it hooks the compiler, so a Kotlin above its `versions.bzl` list fails this job at the Gradle step rather than degrading the scan — the catalog holds `kotlin` one release back and Dependabot ignores the bump, ADR-0022 | **built** |
 | `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
 | `gitleaks.yml` | PR + dispatch | checksum-verified gitleaks binary, range-scoped to `base..head` on a PR | **built** |
 | `supply-chain.yml` | dependency review on PR; Scorecard daily + dispatch | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning. Scorecard deliberately does **not** run on push: its Binary-Artifacts check excludes the wrapper jar only once `ci.yml` has succeeded for that commit, and a 40 s scan racing a 15 min build never sees that. Daily rather than weekly because the exclusion only looks at the 30 newest `ci.yml` runs | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
-| `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
-| `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip → `assembleProdRelease` → `apksigner verify` (v3 present, v1 absent, one signer, certificate is the generated one) → shred; no secrets, no cache, nothing published | **built** |
-| `release.yml` | tag `v*` | wrapper validation, build APK, sign, `apksigner verify` against the configured key, provenance attestation, dependency SBOM (attached as a release asset and attested), **draft** release — **environment `release`** | **built** — cannot run until the owner runbook's §§ 2-3 provide the key and the environment |
+| `instrumented.yml` | nightly + dispatch + PRs touching `app/src/androidTest`, the workflow or the build-environment action | the three instrumented tests on the `atdApi31` Gradle Managed Device (`aosp-atd`, API 31, `swiftshader_indirect`) on `ubuntu-latest` with the KVM udev step; **not a required check**. The owner approved a label trigger; no fitting label exists, so a path filter stands in until one does | **built** (2026-09-22) |
+| `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip, decoded from `env` exactly as the real secret is → `assembleProdRelease` → `apksigner verify` at minSdk **31** (v3 present, v1 absent, one signer, certificate is the generated one) → shred; keytool reads its password with `-storepass:env`; no secrets, no cache, nothing published | **built** |
+| `release.yml` | tag `v*`; dispatch **on the tag** (`--ref vX.Y.Z`), no free-text input | refuses a ref that is not a `vMAJOR.MINOR.PATCH` tag, wrapper validation, build APK, sign, `apksigner verify` at minSdk **31** against the configured key, provenance attestation, dependency SBOM (attached as a release asset and attested), **draft** release via `gh release create --verify-tag` — **environment `release`**; every secret reaches its step through `env:`, keytool via `-storepass:env` | **built** |
+
+**One build environment for six jobs.** JDK 25, the SDK licences with an empty package list, wrapper
+validation and `setup-gradle` sit in one local composite action, `.github/actions/android-build-env`,
+used by `ci.yml` (×2), `codeql.yml`, `release.yml`, `release-dry-run.yml` and `instrumented.yml`. Its
+`cache-mode` input is **required** — `write-on-main`, `read-only`, `disabled` or `skip` — because a
+default would make the release job's no-cache rule a decision taken by omission. The checkout stays
+in each workflow: a local action is read from the workspace, so the repository has to be checked
+out before the action exists on the runner. Dependabot watches the action's directory
+(`directories: [/, /.github/actions/*]`), and zizmor scans it (added 2026-09-22, audit SIB-SIMP-04).
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a
@@ -268,10 +283,21 @@ platform and a documented refresh flow before it can be turned on; see the open 
   install as an update. With none set the release build is unsigned, which is what a contributor's
   `./gradlew build` and the ordinary CI gate produce.
 - **Signature schemes: v1 off, v2 on, v3 on.** v1 is JAR signing, unreachable below API 24 (the
-  floor is 30, ADR-0006) and the scheme Janus attacks. v3 carries the rotation lineage the key
+  floor is 31, ADR-0015) and the scheme Janus attacks. v3 carries the rotation lineage the key
   strategy below depends on and has to be present from the *first* signed build. v2 is inert on
   API 30+, where Android always uses v3; it stays enabled because it costs a few kilobytes and is
   what most APK-inspection tooling reports.
+- **No secret is expanded into a script, and no password is an argument.** Each secret reaches
+  its step through `env:` and is read as a shell variable; keytool gets the store password as
+  `-storepass:env KRT_SIGNING_STORE_PASSWORD`, because a plain `-storepass <value>` sits in the
+  process's argv, which every process on the runner can read. The dry run takes the same shapes
+  with its throwaway key — the encoded keystore arrives through an `env:` expression and passes the
+  same PKCS#12 check — so a regression here turns a pull request red first (audit SIB-SEC-07,
+  2026-09-22).
+- **The release tag is the run's own ref.** `release.yml` has no free-text `tag` input any more; a
+  manual re-run is dispatched on the tag (`gh workflow run release.yml --ref v0.3.1`). Its first
+  step refuses anything that is not a `vMAJOR.MINOR.PATCH` tag, and `gh release create
+  --verify-tag` refuses to create a tag that is not on the remote (audit SIB-SEC-06, 2026-09-22).
 - Signing keys live **only** as environment secrets in a `release` environment protected by:
   required reviewer (@greluc), deployment restricted to `v*` tags. Fork PRs structurally cannot
   reach them (no secrets on fork runs + environment gating).
@@ -321,7 +347,8 @@ platform and a documented refresh flow before it can be turned on; see the open 
 by owner decision) + detekt + Spotless(ktlint) verify.
 
 **detekt runs twice, and the difference matters.** The plain `detekt` task analyses without type
-resolution; `:app:detektMain` analyses all four production variants *with* it, and only the second
+resolution; `:app:detektMain` analyses every enabled production variant *with* it — three since
+`devRelease` was disabled on 2026-09-22, `src/dev` still covered through `devDebug` — and only the second
 sees the rules that need a resolved type — `UnusedPrivateFunction`, `UnusedPrivateProperty`,
 `InjectDispatcher` and their family. Until ADR-0017 only the first was gated, and five unused
 private declarations accumulated unreported. `:app:check` now depends on `detektMain`;

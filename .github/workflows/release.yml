@@ -34,16 +34,25 @@ name: Release
 # The release is created as a **draft**. The owner publishes it after reading the notes and, if they
 # want, installing the APK — a tag push should not be able to hand every member a build nobody
 # looked at.
+#
+# The tag is the ref this run was started on, and nothing else. A manual re-run is dispatched ON the
+# tag (`gh workflow run release.yml --ref v0.3.1`); there is no free-text `tag` input any more. The
+# old input let a dispatch name one tag while the run's ref — the one the `release` environment's
+# tag rule judges — was another, and its value went into the checkout ref and the release name. The
+# first step now refuses any ref that is not a `vMAJOR.MINOR.PATCH` tag, and
+# `gh release create --verify-tag` refuses to invent a tag that does not exist (audit SIB-SEC-06,
+# 2026-09-22).
+#
+# No secret is ever expanded into a script. Each reaches its step through `env:` and is read as a
+# variable, and the keystore password goes to keytool as `-storepass:env`, never as an argument —
+# argv is readable by every process on the runner (audit SIB-SEC-07, 2026-09-22). The dry run uses
+# the same shapes with its throwaway key, so a mistake here is caught on a pull request first.
 
 on:
   push:
     tags: ['v*']
+  # Dispatch on the tag itself: `gh workflow run release.yml --ref v0.3.1`. See the header.
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Existing tag to build (e.g. v0.1.0)'
-        required: true
-        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -70,49 +79,49 @@ jobs:
 
     env:
       # The APK's own floor. `apksigner verify` judges an APK against an SDK range, and the range
-      # that matters is the one the app actually installs on (ADR-0006).
-      APP_MIN_SDK: '30'
+      # that matters is the one the app actually installs on (ADR-0015; this said 30 until
+      # 2026-09-22, a floor the app left on 2026-08-27).
+      APP_MIN_SDK: '31'
 
     steps:
+      # Before anything is checked out or built: the ref must be a release tag of the one shape
+      # this repository cuts. `github.ref_name` is a tag name the runner reports, not something a
+      # dispatcher typed, and it is passed through `env` rather than expanded into the script.
+      - name: Check the release tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::a release runs on a tag; this run was started on a $REF_TYPE. Dispatch it with --ref vX.Y.Z."
+            exit 1
+          fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag of the form vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          echo "releasing $TAG"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || github.ref }}
           persist-credentials: false
 
-      - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      # `disabled`: see the header — a signed artifact must not be able to inherit a poisoned cache
+      # entry.
+      - name: Set up the Android build environment
+        uses: ./.github/actions/android-build-env
         with:
-          distribution: temurin
-          java-version: '25'
-
-      # `packages` defaults to `tools platform-tools`, and the deprecated
-      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
-      # here uses — there is no instrumented-test job anywhere in this
-      # directory, and that download has already died mid-stream ("Premature
-      # EOF") and reddened an otherwise green run. The runner image already
-      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
-      # so an empty list installs nothing while the action still accepts the
-      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-        with:
-          packages: ''
-
-      - name: Validate the Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          # See the header: a signed artifact must not be able to inherit a poisoned cache entry.
-          cache-disabled: true
+          cache-mode: disabled
 
       - name: Decode the signing keystore
+        env:
+          KRT_SIGNING_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
           keystore="$RUNNER_TEMP/release.p12"
-          printf '%s' "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$keystore"
+          printf '%s' "$KRT_SIGNING_KEYSTORE_BASE64" | base64 -d > "$keystore"
           # A silently truncated secret decodes fine and fails much later with an error that reads
           # like a corrupt key rather than a broken transport. PKCS#12 starts with an ASN.1
           # SEQUENCE, so a two-byte look is enough to tell the two apart here.
@@ -126,12 +135,15 @@ jobs:
         id: cert
         env:
           KRT_SIGNING_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KRT_SIGNING_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
           set -euo pipefail
+          # `:env` makes keytool read the password from the named variable; passed as a plain
+          # argument it would sit in the process's argv for as long as keytool runs.
           fingerprint="$(keytool -list -v \
             -keystore "$KEYSTORE_PATH" -storetype PKCS12 \
-            -storepass "$KRT_SIGNING_STORE_PASSWORD" \
-            -alias "${{ secrets.RELEASE_KEY_ALIAS }}" \
+            -storepass:env KRT_SIGNING_STORE_PASSWORD \
+            -alias "$KRT_SIGNING_KEY_ALIAS" \
             | grep -oP 'SHA256:\s*\K[0-9A-Fa-f:]+' \
             | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           test -n "$fingerprint"
@@ -141,10 +153,10 @@ jobs:
         env:
           KRT_SIGNING_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KRT_SIGNING_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          KRT_SIGNING_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
           set -euo pipefail
           KRT_SIGNING_KEYSTORE="$KEYSTORE_PATH" \
-          KRT_SIGNING_KEY_ALIAS="${{ secrets.RELEASE_KEY_ALIAS }}" \
             ./gradlew :app:assembleProdRelease --stacktrace
 
       - name: Verify the signature
@@ -270,7 +282,7 @@ jobs:
           APK_SHA256: ${{ steps.verify.outputs.sha256 }}
           CERT_SHA256: ${{ steps.cert.outputs.fingerprint }}
           SBOM: ${{ steps.sbom.outputs.path }}
-          TAG: ${{ inputs.tag || github.ref_name }}
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           cat > notes.md <<EOF
@@ -344,7 +356,10 @@ jobs:
             assets+=("$SBOM")
           fi
 
+          # --verify-tag: the release attaches to the tag this run built; gh refuses rather than
+          # creating a new tag on the default branch when that tag is not on the remote.
           gh release create "$TAG" "${assets[@]}" \
+            --verify-tag \
             --draft \
             --title "$TAG" \
             --notes-file notes.md
