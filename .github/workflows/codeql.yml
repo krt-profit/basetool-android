@@ -12,8 +12,11 @@ name: CodeQL
 # does not extract Kotlin, and in a repository with no `.java` file at all that
 # means an empty database rather than a partial one. The extractor hooks the
 # Kotlin compiler, so the compiler has to actually run — which also means the
-# Gradle build cache must be off for this job, or a restored task output would
-# skip compilation and produce the same empty database with a green build.
+# Gradle build cache must be off for this job (`--no-build-cache`), or a restored
+# task output would skip compilation and produce the same empty database with a
+# green build. The dependency cache is restored read-only; an assertion after
+# `Analyze` fails the job if the database holds fewer Kotlin files than the build
+# compiles, before anything is uploaded (audit SIB-CI-05, 2026-09-22).
 #
 # The `actions` pack needs no build and stays on `none`.
 #
@@ -37,8 +40,8 @@ name: CodeQL
 # default bundle is the same 2.27.0), and the runner's toolcache served 2.27.0 under the old pin
 # anyway. The Kotlin hold and the Dependabot ignore stay.
 #
-# **All four `github/codeql-action/*` call sites move in one commit** — `init` and `analyze` here,
-# `upload-sarif` in `ci.yml` and `supply-chain.yml`. `analyze` reads the config `init` wrote and
+# **All five `github/codeql-action/*` call sites move in one commit** — `init`, `analyze` and
+# `upload-sarif` here, `upload-sarif` in `ci.yml` and `supply-chain.yml`. `analyze` reads the config `init` wrote and
 # refuses a different version of it:
 #
 #     Loaded a configuration file for version '4.38.0', but running version '4.38.1'
@@ -94,41 +97,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 25 (Temurin)
+      # JDK 25, the SDK licences with no packages, wrapper validation and setup-gradle
+      # (.github/actions/android-build-env). The wrapper is validated because this job executes the
+      # same jar to build the CodeQL database.
+      #
+      # `read-only`, not `disabled` (changed 2026-09-22, audit SIB-CI-05). What must not reach this
+      # job is a *task output*: a restored one makes the compile tasks up-to-date, the Kotlin
+      # compiler never runs, and CodeQL builds an empty or partial database — green, and analysing
+      # nothing. Task outputs come from exactly two places, and neither is the Gradle user-home
+      # cache setup-gradle restores: the project's own `build/` directories, which a fresh checkout
+      # does not have, and the Gradle build cache, which `--no-build-cache` below switches off.
+      # What the cache does restore — dependency jars and the wrapper distribution — cannot skip a
+      # compilation, and read-only means this job never writes an entry either. The extraction
+      # assertion after `Analyze` is what makes that argument checkable instead of assumed: if a
+      # cache ever did skip compilation, the job fails there before anything is uploaded.
+      - name: Set up the Android build environment
         if: matrix.build-mode == 'manual'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: ./.github/actions/android-build-env
         with:
-          distribution: temurin
-          java-version: '25'
-
-      # `packages` defaults to `tools platform-tools`, and the deprecated
-      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
-      # here uses — there is no instrumented-test job anywhere in this
-      # directory, and that download has already died mid-stream ("Premature
-      # EOF") and reddened an otherwise green run. The runner image already
-      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
-      # so an empty list installs nothing while the action still accepts the
-      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
-      - name: Set up the Android SDK
-        if: matrix.build-mode == 'manual'
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-        with:
-          packages: ''
-
-      # Every other workflow that runs the wrapper validates it first; this one
-      # executes the same jar to build the CodeQL database, so it does too.
-      - name: Validate the Gradle wrapper
-        if: matrix.build-mode == 'manual'
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-
-      - name: Set up Gradle
-        if: matrix.build-mode == 'manual'
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          # No cache at all here. A restored task output would make the compile
-          # tasks up-to-date, the Kotlin compiler would never run, and CodeQL
-          # would build an empty database — green, and analysing nothing.
-          cache-disabled: true
+          cache-mode: read-only
 
       # One query of the security-and-quality suite is filtered out; the config file says which
       # and why. It has to be named here — a file at that path is not auto-discovered in advanced
@@ -153,7 +140,67 @@ jobs:
         if: matrix.build-mode == 'manual'
         run: ./gradlew assembleDevDebug --no-build-cache --stacktrace
 
+      # Analysed without uploading, so the assertion below can refuse an empty database before its
+      # results replace the last good analysis. Uploading first and failing afterwards would still
+      # mark every open Kotlin alert as fixed on main.
       - name: Analyze
         uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
+          category: /language:${{ matrix.language }}
+          upload: never
+          output: ${{ runner.temp }}/codeql-sarif
+
+      # The job fails if the database holds no Kotlin, or fewer Kotlin files than the build
+      # compiles. Two independent readings, and the larger one is judged: the files the extractor
+      # reports as successfully extracted (the SARIF's diagnostics, which is what the code scanning
+      # tool status page counts) and the source archive the database kept. Either being non-empty
+      # proves the compiler ran under the tracer; both zero is the empty database a restored task
+      # output or a build-mode change would produce while every other step stayed green.
+      #
+      # The expectation is every tracked `.kt` under a `src/main/kotlin` or `src/dev/kotlin`
+      # directory: `assembleDevDebug` compiles all of them and nothing under `src/prod`.
+      - name: Assert that Kotlin was extracted
+        if: matrix.build-mode == 'manual'
+        env:
+          SARIF_DIR: ${{ runner.temp }}/codeql-sarif
+          DB_DIR: ${{ runner.temp }}/codeql_databases
+        run: |
+          set -euo pipefail
+          pattern='src/(main|dev)/kotlin/.*\.kt$'
+          expected="$(git ls-files | grep -cE "$pattern" || true)"
+
+          from_sarif=0
+          sarif="$(find "$SARIF_DIR" -name '*.sarif' 2>/dev/null | head -1 || true)"
+          if [ -n "$sarif" ]; then
+            from_sarif="$(jq -r '
+              [ .runs[].invocations[]?.toolExecutionNotifications[]?
+                | select((.descriptor.id // "") | endswith("successfully-extracted-files"))
+                | .locations[]?.physicalLocation.artifactLocation.uri ]
+              | unique | .[]' "$sarif" | grep -cE "$pattern" || true)"
+          fi
+
+          from_archive=0
+          archive="$(find "$DB_DIR" -maxdepth 2 -name src.zip 2>/dev/null | head -1 || true)"
+          if [ -n "$archive" ]; then
+            from_archive="$(unzip -Z1 "$archive" | grep -cE "$pattern" || true)"
+          fi
+
+          extracted=$(( from_sarif > from_archive ? from_sarif : from_archive ))
+          echo "Kotlin files the build compiles:         $expected"
+          echo "extracted, per the SARIF diagnostics:    $from_sarif (${sarif:-no SARIF found})"
+          echo "extracted, per the database's archive:   $from_archive (${archive:-no src.zip found})"
+
+          if [ "$extracted" -eq 0 ]; then
+            echo "::error::CodeQL extracted no Kotlin. The database is empty, so the analysis would report no alerts because it looked at nothing. Nothing was uploaded."
+            exit 1
+          fi
+          if [ "$extracted" -lt "$expected" ]; then
+            echo "::error::CodeQL extracted $extracted of $expected Kotlin files. A compile task was skipped — a restored task output is the usual cause. Nothing was uploaded."
+            exit 1
+          fi
+
+      - name: Upload the results
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          sarif_file: ${{ runner.temp }}/codeql-sarif
           category: /language:${{ matrix.language }}

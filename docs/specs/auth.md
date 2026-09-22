@@ -117,17 +117,20 @@ refresh of a session fail intermittently and only in the field.
   therefore load-bearing rather than decorative: a stolen refresh token is useless without the
   device key.
 
-### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
+### REQ-APP-AUTH-004 — The token file is excluded from backup in both sections of the rule set
 
-`data_extraction_rules.xml` governs API 31+ and needs the exclusion in **both** its
-`cloud-backup` and `device-transfer` sections — `allowBackup=false` alone does not reliably stop a
-device-to-device transfer.
+`data_extraction_rules.xml` governs API 31+ — the whole supported range — and needs the exclusion in
+**both** its `cloud-backup` and `device-transfer` sections: `allowBackup=false` alone does not
+reliably stop a device-to-device transfer on Android 12 and later.
 
-> [!note] `backup_rules.xml` is inert since minSdk 31, and kept anyway
-> `android:fullBackupContent` is read only by API ≤ 30, so at the floor of ADR-0015 no device reads
-> it. It stays because it costs nothing and is the belt beside the braces on the one artefact that
-> must never leave the device — deleting it would leave a future lowering of the floor silently
-> unprotected. Both rule sets must therefore still agree.
+> [!note] Amended 2026-09-22 — the legacy rule set is gone
+> This requirement was titled „… in both rule sets" (the project `CLAUDE.md` said „all three") and
+> required `backup_rules.xml` as well, kept after ADR-0015 as „the belt beside the braces" against a
+> future lowering of the floor. It protected nothing at any floor: `android:fullBackupContent` is
+> read only by API ≤ 30, and on those releases `allowBackup="false"` already switches off cloud
+> backup **and** device transfer. The file, its manifest attribute and its half of
+> `BackupExclusionTest` were removed (improvement audit 2026-09, SIB-SIMP-03). Should the floor
+> ever drop below 31, `allowBackup="false"` is the protection there — the test pins it.
 
 The excluded path must be the file DataStore actually writes: `datastore/krt_tokens.preferences_pb`,
 not the bare store name. `AuthDataStore.RELATIVE_PATH` publishes it and `BackupExclusionTest` compares
@@ -136,7 +139,7 @@ simply starts uploading a refresh token.
 
 **Acceptance**
 
-- [x] Both rule files exclude the path, and the extraction rules do so in both sections
+- [x] The extraction rules exclude the path in both sections, and `allowBackup` is `false`
   (`BackupExclusionTest`).
 - [x] The path names the `datastore/` subdirectory and the `.preferences_pb` file.
 - [ ] A restored backup is observed not to contain the file. **Open** — device-level verification,

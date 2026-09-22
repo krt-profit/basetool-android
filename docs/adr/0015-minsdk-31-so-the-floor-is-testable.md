@@ -61,6 +61,17 @@ defect above is what that costs.
   **deliberately kept** rather than deleted: it costs nothing, and it is the belt beside the braces
   on the one artefact that must never leave the device (`REQ-APP-AUTH-004`). Deleting it would make
   a future lowering of the floor silently unprotected.
+
+  > **Amended 2026-09-22 — the file was removed after all.** The reasoning above missed that on
+  > API ≤ 30 `allowBackup="false"` already switches off cloud backup *and* device transfer, so the
+  > legacy rules governed nothing even for a lowered floor; and „costs nothing" was not true — it
+  > kept „all three rule sets" alive in the manifest, the test, three comments and the project
+  > `CLAUDE.md`, each of which a reader had to reconcile with a floor where the file is never read.
+  > The file, the manifest attribute and its half of `BackupExclusionTest` went together; the
+  > floor-lowering case is covered by the `allowBackup="false"` assertion that stays
+  > (improvement audit 2026-09, SIB-SIMP-03; `REQ-APP-AUTH-004` amended in the same change). The
+  > release workflows' `APP_MIN_SDK` — which `apksigner verify` judges the APK against — moved from
+  > `30` to `31` in the same change; they had not followed this ADR.
 - Two comments narrow from "API 30–32" to "API 31–32": the `AppCompatDelegate` locale backport is
   still needed, because the platform per-app locale service arrives at API 33.
 - The delivered design specification still states "minSdk 30, never 29" as a binding correction

@@ -273,18 +273,26 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   (API 28+): while the device is locked the refresh token is cryptographically unusable —
   exactly threat (c) — and since the app only refreshes in the foreground (no push, Q2) the
   restriction costs nothing.
-- **Backup exclusion in all three rule sets** (written when minSdk 30 still spanned both worlds;
-  since ADR-0015 raised the floor to 31 no supported device reads the legacy file, which the
-  manifest still references beside `allowBackup="false"`): legacy
-  `fullBackupContent` (API ≤ 30 devices) *and* `dataExtractionRules` with explicit excludes in
+- **Backup off, and the token excluded in both sections of the one rule set every supported
+  device reads**: `allowBackup="false"` plus `dataExtractionRules` with explicit excludes in
   **both** `<cloud-backup>` and `<device-transfer>` (API 31+; `allowBackup=false` alone does not
   reliably stop D2D transfers — verified Android 12 behavior-change doc).
+  > Changed 2026-09-22: this bullet read „in all three rule sets" and required the legacy
+  > `fullBackupContent` file (`backup_rules.xml`) as well. Only API ≤ 30 reads that file, the floor
+  > is 31 (ADR-0015), and on API ≤ 30 `allowBackup="false"` already switches off both cloud backup
+  > and device transfer — so the file protected nothing at any floor and was removed with its
+  > manifest attribute (audit finding SIB-SIMP-03; ADR-0015 carries the amendment).
 - Access token lives in memory only. Logout = Keycloak end-session + local wipe + best-effort
   refresh-token revocation call.
 - **No OkHttp disk cache.** The API client configures no HTTP cache: the Room read cache
   (backup-excluded, logout-wiped, settings-clearable) is the *only* persistence layer for member
   data — an OkHttp cache would be a second, uncontrolled copy outside every wipe path. The
   server mirrors this with `no-store` on sensitive reads (§2.12).
+- **No transport replay of a write.** OkHttp's `retryOnConnectionFailure` would otherwise repeat a
+  `POST` or `PATCH` that failed *after* it was sent, or was answered `408` — a second booking the
+  member never asked for. Every such body is marked one-shot by `OneShotWriteInterceptor` on the API
+  and token clients, so only a request that provably never left the device is retried
+  (`REQ-APP-API-009`, ADR-0023; added 2026-09-22 from audit finding SIB-SEC-08).
 - **Static guardrails in the app repo (CI-enforced):** a lint/detekt gate forbids `WebView`
   (login runs only in the Custom Tab, RFC 8252), direct `android.util.Log` use (logger facade
   only) and cleartext traffic (explicit `cleartextTrafficPermitted="false"` base config in every

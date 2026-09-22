@@ -1,4 +1,4 @@
-> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-08-18.
+> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-09-22.
 > **Owner area:** API · **Related:** [`../ANDROID_APP_SECURITY.md`](../ANDROID_APP_SECURITY.md),
 > main repo `REQ-API-004`, `REQ-API-009`, `REQ-OBS-002`, `REQ-ORG-*`, `REQ-SEC-031`,
 > ADR-0001 (this repo)
@@ -312,3 +312,35 @@ when the body named nothing.
 - [ ] Walked on a device: outstanding.
 
 **Code:** `core/network/ApiErrorMapper.kt`, `core/network/ApiError.kt`, `ui/FieldMessage.kt`
+
+### REQ-APP-API-009 — A write that may have reached the server is never replayed by the transport
+
+The API client keeps OkHttp's `retryOnConnectionFailure` on, and OkHttp then repeats a request on
+its own after an `IOException` that struck **after** the request was sent, and after an HTTP `408`.
+For a read that is the right call. For a `POST` or `PATCH` it is a second booking, a second
+Auftrag or a second sign-up that nobody asked for — or, for a versioned row, a `409` on a save
+that in fact succeeded.
+
+So every `POST` and `PATCH` body is marked **one-shot** (`OneShotWriteInterceptor`, on both the API
+client and the token client). OkHttp reads that flag and vetoes exactly those two replays, while
+still retrying a connection that failed *before* the request left the device — the server never
+saw it, so repeating it cannot double it. `GET`, `PUT` and `DELETE` keep the retry: they are
+idempotent by definition.
+
+The trade is deliberate: a write that meets a stale pooled connection now surfaces as
+`ApiError.Network` and the member presses save again, instead of OkHttp repeating it silently.
+The app's own 401 retry (`TokenRefreshInterceptor`) is unaffected — it re-sends a request the
+server refused before doing anything, and the wrapped body still writes the same bytes.
+
+**Acceptance**
+
+- [x] A `POST` and a `PATCH` dropped after the server read them reach the server once
+  (`WriteReplayTest`).
+- [x] A `GET` and a `PUT` dropped the same way are still retried — the control that keeps the
+  first assertion from passing because nothing is retried at all.
+- [x] A `408` on a `POST` is handed to the caller; on a `GET` it is still retried.
+- [x] The token client does not replay a token request.
+- [x] The 401 retry re-sends the full body with the renewed token.
+- [x] The tests fail with the interceptor removed (checked 2026-09-22: four of eight red).
+
+**Code:** `core/network/OneShotWriteInterceptor.kt`, `core/network/KrtHttpClient.kt` · ADR-0023

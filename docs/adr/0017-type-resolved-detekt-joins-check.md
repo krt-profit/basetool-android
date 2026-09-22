@@ -93,6 +93,13 @@ compiler errors, and is where the accumulated findings actually were.
 - A finding is reported once per production variant, so the same line appears four times. That is
   noisier than it is confusing, and collapsing it would mean gating one variant and losing a
   flavour source set.
+
+  > **Amended 2026-09-22 — three variants, not four.** The unshipped `devRelease` variant is
+  > disabled in `app/build.gradle.kts` (`beforeVariants { enable = false }`; improvement audit
+  > 2026-09, SIB-CI-02), so `detektMain` now fans out over `devDebug`, `prodDebug` and
+  > `prodRelease`, and a finding appears three times. No source set was lost: `src/dev` is still
+  > analysed through `devDebug` — checked with `./gradlew :app:detektMain --dry-run` — and the
+  > release build type through `prodRelease`. „Four" above is the count as decided on 2026-08-28.
 - **The gate was verified by making it fail**, not by reading the wiring: an unused private function
   added to `LicensesScreen` passed `:app:detekt` and failed `:app:check`. It was then removed.
 - The coupling to detekt's classpath convention is a real maintenance cost, and detekt is pinned at

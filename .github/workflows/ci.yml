@@ -4,8 +4,9 @@ name: CI
 # to be green, and every static-analysis tool the project runs has to be clean.
 #
 # `./gradlew build` is deliberately the whole of it rather than a hand-picked
-# task list. It is `assemble` + `check`, so it covers all four variants
-# (dev/prod x debug/release, including the R8 pass on release), the unit and
+# task list. It is `assemble` + `check`, so it covers the three shipped-or-run
+# variants (devDebug, prodDebug, prodRelease with its R8 pass — devRelease is
+# disabled in app/build.gradle.kts because nothing ships it), the unit and
 # Robolectric suites, Android Lint with `warningsAsErrors`, detekt and
 # Spotless/ktlint — and it is the exact command a contributor runs locally.
 # A CI-only task list is how CI and the working copy drift apart.
@@ -58,41 +59,14 @@ jobs:
           # that reads it (zizmor's `artipacked`).
           persist-credentials: false
 
-      # gradle/gradle-daemon-jvm.properties pins the daemon to Java 25.
-      # Installing it here means Gradle finds a local JDK instead of
-      # downloading one from foojay on every run.
-      - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      # JDK 25, the SDK licences with no packages, wrapper validation and setup-gradle — one
+      # composite so the pins live in one place (.github/actions/android-build-env). Branch builds
+      # read the Gradle cache but never write it: a cache entry written by a PR run is one an
+      # attacker's PR could have poisoned (zizmor's `cache-poisoning`).
+      - name: Set up the Android build environment
+        uses: ./.github/actions/android-build-env
         with:
-          distribution: temurin
-          java-version: '25'
-
-      # `packages` defaults to `tools platform-tools`, and the deprecated
-      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
-      # here uses — there is no instrumented-test job anywhere in this
-      # directory, and that download has already died mid-stream ("Premature
-      # EOF") and reddened an otherwise green run. The runner image already
-      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
-      # so an empty list installs nothing while the action still accepts the
-      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-        with:
-          packages: ''
-
-      # Verifies gradle-wrapper.jar against the known-good checksums for the
-      # declared distribution. A tampered wrapper jar is the classic way to run
-      # arbitrary code in a build that otherwise looks untouched.
-      - name: Validate the Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          # Branch builds read the cache but never write it: a cache entry
-          # written by a PR run is an entry an attacker's PR could have
-          # poisoned (zizmor's `cache-poisoning`).
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-mode: write-on-main
 
       - name: Build, test and lint
         run: ./gradlew build --continue --stacktrace
@@ -176,27 +150,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      # `skip`: dependency-submission sets Gradle up itself.
+      - name: Set up the Android build environment
+        uses: ./.github/actions/android-build-env
         with:
-          distribution: temurin
-          java-version: '25'
-
-      # `packages` defaults to `tools platform-tools`, and the deprecated
-      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
-      # here uses — there is no instrumented-test job anywhere in this
-      # directory, and that download has already died mid-stream ("Premature
-      # EOF") and reddened an otherwise green run. The runner image already
-      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
-      # so an empty list installs nothing while the action still accepts the
-      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-        with:
-          packages: ''
-
-      - name: Validate the Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+          cache-mode: skip
 
       - name: Submit the resolved dependencies
         uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
@@ -263,4 +221,6 @@ jobs:
       - name: Run zizmor
         env:
           GH_TOKEN: ${{ github.token }}
-        run: zizmor --persona=regular --format=plain .github/workflows
+        # `.github/actions` as well: the shared build-environment composite carries the setup
+        # pins of six jobs, and a workflow-only scan would never look at them.
+        run: zizmor --persona=regular --format=plain .github/workflows .github/actions

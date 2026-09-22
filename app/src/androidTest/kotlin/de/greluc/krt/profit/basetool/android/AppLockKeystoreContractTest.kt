@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipherException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -48,6 +49,13 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class AppLockKeystoreContractTest {
+    /**
+     * A screen lock for the length of each test, on a device that has none — a fresh CI emulator.
+     * The auth-bound key cannot be created without one; see [SecureLockScreenRule].
+     */
+    @get:Rule
+    val lockScreen = SecureLockScreenRule()
+
     private val key = AppLockKey()
 
     /**
