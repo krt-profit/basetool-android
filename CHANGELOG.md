@@ -11,6 +11,11 @@
 
 ### Fixed
 
+- **Einsätze: „Teilnehmer hinzufügen" funktioniert wieder.** Als Einsatzleitung ein Mitglied
+  einzutragen scheiterte seit dem 07.09.2026 mit „Konnte nicht gespeichert werden.“, weil der dafür
+  genutzte Weg am Server-Eingang gesperrt war. Die App nutzt jetzt den eigens dafür freigegebenen
+  Weg. Setzt einen Server voraus, der ihn schon kennt.
+
 - **Ein Speichern wird bei einem Verbindungsabbruch nicht mehr heimlich doppelt gesendet.** Riss
   die Verbindung, nachdem eine Buchung, ein Auftrag oder eine Anmeldung schon beim Server war,
   konnte die App sie unbemerkt ein zweites Mal schicken. Jetzt erscheint in diesem Fall eine

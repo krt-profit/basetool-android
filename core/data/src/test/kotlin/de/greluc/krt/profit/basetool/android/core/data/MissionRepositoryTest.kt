@@ -668,7 +668,10 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue("the deprecated twin sunsets 2026-10-20", request.target.endsWith("/units/slim"))
+            assertTrue(
+                "the deprecated twin was deleted server-side on 2026-09-22",
+                request.target.endsWith("/units/slim"),
+            )
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einheit Alpha""""))
             assertTrue(body.contains(""""highValueUnit":true"""))
@@ -758,20 +761,20 @@ class MissionRepositoryTest {
         }
 
     /**
-     * The ninth write on a deprecated path — and the one the sweep of the other eight missed.
+     * The manager's add goes to the one participant-add path the API vhost admits.
      *
-     * `POST …/participants` carries the same 2026-10-20 sunset. Nothing failed to announce it:
-     * `DeprecationInterceptor` only sets `Deprecation` / `Sunset` / `Link` headers and never blocks,
-     * so a call on a path scheduled for removal is indistinguishable from a healthy one until the
-     * method is deleted server-side. **This endpoint had no test at all**, which is why it survived
-     * the sweep — hence this one, asserting the path rather than only the outcome.
+     * `POST …/participants/by-id/slim` (basetool REQ-MISSION-020): manager-only, by user id. The
+     * deprecated `POST …/participants` is deleted server-side, and `POST …/participants/slim` — the
+     * add-anybody endpoint — is refused at the edge, which is exactly the failure this path check
+     * exists to catch: a wrong path passes every local test and fails only on a device against
+     * production. The body carries the user id and nothing else.
      *
-     * Two exchanges, not one: the slim twin answers with the participant list, so the Einsatz is
+     * Two exchanges, not one: the endpoint answers with the participant list, so the Einsatz is
      * re-read for `registeredParticipants`, which the head's „N Teilnehmer" comes from and which
      * the server — not the client — counts.
      */
     @Test
-    fun `putting a member on the roster uses the slim path`() =
+    fun `putting a member on the roster uses the manager-only by-id path`() =
         runTest {
             respond("""[]""")
             respond("""{"id":"m1","name":"Lyria"}""")
@@ -781,10 +784,11 @@ class MissionRepositoryTest {
             val request = server.takeRequest()
             assertEquals("POST", request.method)
             assertTrue(
-                "the deprecated twin sunsets 2026-10-20",
-                request.target.endsWith("/participants/slim"),
+                "only …/participants/by-id/slim is admitted at the edge",
+                request.target.endsWith("/missions/m1/participants/by-id/slim"),
             )
-            assertTrue(request.body?.utf8().orEmpty().contains(""""userId":"u9""""))
+            // The user id and nothing else: the endpoint has no name, org-unit or comment field.
+            assertEquals("""{"userId":"u9"}""", request.body?.utf8())
             assertEquals("GET", server.takeRequest().method)
         }
 

@@ -11,7 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCustomFrequencyRequest
-import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantPublicRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantByIdRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddUnitRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.JoinMissionRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
@@ -978,21 +978,23 @@ class MissionRepository(
         rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId/slim"))
 
     /**
-     * The ninth write this Einsatz had on a path that is being switched off.
+     * A manager puts a registered member on the roster, by user id.
      *
-     * `POST …/participants` is deprecated with a sunset of **2026-10-20**, and the sweep that
-     * moved eight of these onto their slim twins missed it — found on 2026-09-07 while working out
-     * what `APP_ANDROID_MINIMUM_VERSION_CODE` would have to be. Nothing announced it: the
-     * deprecation interceptor only sets `Deprecation` / `Sunset` / `Link` headers and never blocks,
-     * so the call keeps working until the method is deleted from the server and then fails with no
-     * warning at all.
+     * `POST …/participants/by-id/slim` is manager-only (`canManageMission`) and takes the user id
+     * and nothing else (basetool REQ-MISSION-020, ADR-0170 amended 2026-09-22). It replaced two
+     * paths this method used before: the deprecated `POST …/participants`, which the server deleted
+     * early on 2026-09-22, and — since 2026-09-07 — `POST …/participants/slim`, which the API vhost
+     * never admitted. That second one is the add-ANYBODY endpoint (free-text name, org units,
+     * comment, open to every member who can see the Einsatz) and stays off the public edge on
+     * purpose, so from 2026-09-07 until this change the manager's „Teilnehmer hinzufügen" was
+     * refused at the edge.
      *
-     * The slim twin answers with the **participant list**, not the whole Einsatz, so the Einsatz is
-     * re-read rather than patched from the answer: `registeredParticipants` is the server's own
-     * count and drives the head's „14 Teilnehmer", and deriving it from the list here would be
-     * inventing a number the server is the authority on. Every other slim write in this file does
-     * the same for the same reason; `addCustomFrequency` gets away with patching only because no
-     * counter hangs off a frequency.
+     * The answer is the **participant list**, not the whole Einsatz, so the Einsatz is re-read
+     * rather than patched from the answer: `registeredParticipants` is the server's own count and
+     * drives the head's „14 Teilnehmer", and deriving it from the list here would be inventing a
+     * number the server is the authority on. Every other slim write in this file does the same for
+     * the same reason; `addCustomFrequency` gets away with patching only because no counter hangs
+     * off a frequency.
      */
     override suspend fun addParticipant(
         missionId: String,
@@ -1002,9 +1004,9 @@ class MissionRepository(
             reader,
             missionId,
             reader.post(
-                "${missionPath(missionId)}/participants/slim",
-                AddParticipantPublicRequest(userId = userId),
-                AddParticipantPublicRequest.serializer(),
+                "${missionPath(missionId)}/participants/by-id/slim",
+                AddParticipantByIdRequest(userId = userId),
+                AddParticipantByIdRequest.serializer(),
                 ListSerializer(MissionParticipantDto.serializer()),
             ),
         )

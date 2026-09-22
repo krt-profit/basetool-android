@@ -879,7 +879,7 @@ step and objective back over a mobile connection.
 | Jemanden von Bord nehmen            | `DELETE …/crew/{crewId}/slim`                |
 | Frequenz entfernen                  | `DELETE …/frequencies/{frequencyId}/slim`    |
 | Verwalter hinzufügen / entfernen    | `POST`/`DELETE …/managers/{userId}/slim`     |
-| Teilnehmer hinzufügen               | `POST …/participants/slim`                   |
+| Teilnehmer hinzufügen               | `POST …/participants/by-id/slim`             |
 
 > [!danger] Corrected 2026-09-03 and again 2026-09-06 — the app had been sending deprecated paths
 > the API vhost did not admit either
@@ -909,6 +909,16 @@ step and objective back over a mobile connection.
 > exactly like a healthy one — and this endpoint was the one write in the file with **no test at
 > all**, so no assertion named its path either. Both halves are fixed: the path, and a test that
 > asserts it.
+>
+> **A fourth correction, 2026-09-22: the path the third one chose was never admitted either.**
+> `POST …/participants/slim` is the add-ANYBODY endpoint (free-text name, org units, comment, open to
+> every member who can see the Einsatz), and the main repo's ADR-0170 keeps exactly that kind off the
+> public edge — so from 2026-09-07 the manager's „Teilnehmer hinzufügen" was refused at the edge. The
+> deprecated `POST …/participants` was then deleted early on 2026-09-22. The owner decided on a
+> narrow replacement: `POST …/participants/by-id/slim` — manager-only (`canManageMission`), a
+> registered member by user id and nothing else (basetool REQ-MISSION-020, ADR-0170 amendment),
+> admitted at the edge and frozen in REQ-API-009. The app sends that now. **A build carrying this
+> must not be released before a backend with the endpoint and the edge rule is deployed.**
 
 **The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
 two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
@@ -923,8 +933,9 @@ the tab says so in a sentence.
 - [ ] Toggling one role sends the whole remaining set plus the crew row's version.
 - [x] A removal sends `DELETE …/crew/{crewId}/slim` and re-reads the Einsatz afterwards.
 - [x] Every other Einheiten/Verwaltung write sends its `/slim` twin and re-reads the Einsatz.
-- [x] Putting a member on the roster sends `POST …/participants/slim` and re-reads the Einsatz —
-  the answer is the participant list, and `registeredParticipants` is the server's count.
+- [x] Putting a member on the roster sends `POST …/participants/by-id/slim` with only the user id
+  and re-reads the Einsatz — the answer is the participant list, and `registeredParticipants` is the
+  server's count.
 - [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
 - [ ] An empty catalogue renders a sentence, not an empty row.
 
