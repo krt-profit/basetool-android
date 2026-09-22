@@ -123,8 +123,8 @@ mirroring this repo's conventions.
   DPoP toggle) so the full login/refresh/DPoP path runs locally — this is also where the Phase-0
   DPoP verification task happens.
 - Optional: Gradle Managed Devices locally for the instrumented suite (same definition as CI):
-  `./gradlew :app:atdApi31DevDebugAndroidTest` boots the `atdApi31` device declared in
-  `app/build.gradle.kts` — `aosp-atd`, API 31 — runs the suite and shuts it down again.
+  `./gradlew :app:api31DevDebugAndroidTest` boots the `api31` device declared in
+  `app/build.gradle.kts` — `aosp`, API 31 — runs the suite and shuts it down again.
 
 ## 3. Test strategy
 
@@ -146,7 +146,7 @@ Phase 2 — mirroring this repo's JaCoCo culture without starting at an unmeetab
 > kotlinx-coroutines-test; Turbine is not a dependency), Robolectric, and the MockWebServer contract
 > layer. Built and run by CI **outside the gate**: three instrumented tests in `app/src/androidTest`
 > (`AppLockKeystoreContractTest`, `ApiReaderMainThreadTest`, `TestStackTlsHandshakeTest`), on one
-> Gradle Managed Device (`atdApi31`: `aosp-atd`, API 31 — the floor, not the plan's API 30 + 37
+> Gradle Managed Device (`api31`: `aosp`, API 31 — the floor, not the plan's `aosp-atd` API 30 + 37
 > pair) by `instrumented.yml`, nightly and on pull requests that touch them; not a required check.
 > `TestStackTlsHandshakeTest` reports itself skipped there, because it needs the main repository's
 > test stack; it stays a by-hand test. The app-lock test gives a lock-less CI emulator a throwaway
@@ -229,7 +229,7 @@ Baseline posture (all from GitHub's current security docs):
 | `gitleaks.yml` | PR + dispatch | checksum-verified gitleaks binary, range-scoped to `base..head` on a PR | **built** |
 | `supply-chain.yml` | dependency review on PR; Scorecard daily + dispatch | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning. Scorecard deliberately does **not** run on push: its Binary-Artifacts check excludes the wrapper jar only once `ci.yml` has succeeded for that commit, and a 40 s scan racing a 15 min build never sees that. Daily rather than weekly because the exclusion only looks at the 30 newest `ci.yml` runs | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
-| `instrumented.yml` | nightly + dispatch + PRs touching `app/src/androidTest`, the workflow or the build-environment action | the three instrumented tests on the `atdApi31` Gradle Managed Device (`aosp-atd`, API 31, `swiftshader_indirect`) on `ubuntu-latest` with the KVM udev step; **not a required check**. The owner approved a label trigger; no fitting label exists, so a path filter stands in until one does | **built** (2026-09-22) |
+| `instrumented.yml` | nightly + dispatch + PRs touching `app/src/androidTest`, the workflow or the build-environment action | the instrumented tests on the `api31` Gradle Managed Device (`aosp`, API 31, `swiftshader_indirect`; `TestStackTlsHandshakeTest` excluded — it needs the test stack) on `ubuntu-latest` with the KVM udev step; **not a required check**. The owner approved a label trigger; no fitting label exists, so a path filter stands in until one does | **built** (2026-09-22) |
 | `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip, decoded from `env` exactly as the real secret is → `assembleProdRelease` → `apksigner verify` at minSdk **31** (v3 present, v1 absent, one signer, certificate is the generated one) → shred; keytool reads its password with `-storepass:env`; no secrets, no cache, nothing published | **built** |
 | `release.yml` | tag `v*`; dispatch **on the tag** (`--ref vX.Y.Z`), no free-text input | refuses a ref that is not a `vMAJOR.MINOR.PATCH` tag, wrapper validation, build APK, sign, `apksigner verify` at minSdk **31** against the configured key, provenance attestation, dependency SBOM (attached as a release asset and attested), **draft** release via `gh release create --verify-tag` — **environment `release`**; every secret reaches its step through `env:`, keytool via `-storepass:env` | **built** |
 
@@ -241,17 +241,21 @@ default would make the release job's no-cache rule a decision taken by omission.
 GitHub's self-repository form, `uses: $/.github/actions/android-build-env`, which is pinned to the
 workflow's own commit and cannot pick up an action a previous step wrote into the workspace — the
 `./` form could, and zizmor 1.30's `self-repository` audit turned the workflow lint red on it the
-day the composite landed (#178). The checkout stays in each workflow, because every job builds from
-the workspace. Dependabot watches the action's directory (`directories: [/, /.github/actions/*]`),
+day the composite landed (#178). actionlint does not parse the form yet (v1.7.12, the newest release
+on 2026-09-22), so `ci.yml` passes it one `-ignore` that matches exactly that message and nothing
+else — remove it once a release understands `$/`. The checkout stays in each workflow, because
+every job builds from the workspace. Dependabot watches the action's directory (`directories: [/, /.github/actions/*]`),
 and zizmor scans it (added 2026-09-22, audit SIB-SIMP-04).
 
 **The first `instrumented.yml` run (#178) was red for two reasons neither of which was the app.**
 `TestStackTlsHandshakeTest` skips itself without the test stack, and the managed-device runner
 counts that assumption failure as a failure — so the job now excludes it by name
-(`notClass`). And `SecureLockScreenRule`'s `locksettings set-pin` did not give the ATD emulator a
-screen lock, so the app-lock contract tests failed in the rule rather than in the Keystore; the
-rule now reports the command's own answer and whether the image has the secure-lock-screen feature,
-which is what decides between fixing the command and changing the image.
+(`notClass`). And `SecureLockScreenRule`'s `locksettings set-pin` did not give the emulator a
+screen lock, so the app-lock contract tests failed in the rule rather than in the Keystore. The rule
+was made to report why, and the second run answered it: `android.software.secure_lock_screen=false`
+— the `aosp-atd` image has no secure lock screen at all, so no PIN can be set and no auth-bound key
+created on it. The managed device therefore uses the plain `aosp` image; the plan's "ATD for speed"
+does not hold for an app whose Keystore contract is what the suite exists to test.
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a
