@@ -735,6 +735,14 @@ while the server runs on their own machine. The one-time emulator step is theref
   judged against a server that is not there, and a red bar for "you did not start docker" trains
   people to ignore red bars.
 
+**Anchor regenerated 2026-09-23.** The main repository gave every internal service its own leaf
+from a private CA (its REQ-SEC-070 / ADR-0211, ADR-0139 amendment 1) and regenerated the committed
+test material in that shape, so the test stack's backend now serves a leaf signed by a **new** test
+CA — the old anchor's key was destroyed and could sign nothing new. `res/raw/basetool_test_ca.crt`
+is that new CA (subject unchanged, `NOT FOR PRODUCTION`, valid to 2046-09-18, SHA-256
+`E4:E7:76:C4:…:C1:D3`). The backend leaf still names `localhost`, `10.0.2.2` and `127.0.0.1`, so the
+three emulator routes above are unchanged.
+
 ---
 
 ### REQ-APP-AUTH-012 — The access token is exchanged before it is spent, and again when the server refuses it
