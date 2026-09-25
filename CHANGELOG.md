@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-25
+
 ### Added
 
 - **Jedes Release liefert jetzt seine Stückliste (SBOM) mit.** Sie liegt als
