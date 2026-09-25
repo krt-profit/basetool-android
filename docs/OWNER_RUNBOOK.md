@@ -69,7 +69,7 @@ this one path is anonymous, and it is the one path a stale deployment silently b
 
 ## 2. The release signing key — generate once, back up, never lose
 
-**Status:** done — the key exists and has signed every release from v0.1.0 (2026-08-25) to v0.3.0;
+**Status:** done — the key exists and has signed every release from v0.1.0 (2026-08-25) to v0.3.1;
 its certificate fingerprint is the one in the README. The steps stay here for the record and for a
 key rotation. **Undoable:** no. A lost key means no member can ever install an update over their
 existing app; they would have to uninstall and lose their local state.
@@ -134,7 +134,7 @@ safety net, not the plan.
 
 ## 4. Cutting a release
 
-**Status:** repeatable; done for every release from v0.1.0 (2026-08-25) to v0.3.0 (2026-09-14).
+**Status:** repeatable; done for every release from v0.1.0 (2026-08-25) to v0.3.1 (2026-09-25).
 §§ 2, 3 and 8 are prerequisites and are
 in place; nothing below needs them redone.
 
@@ -173,10 +173,15 @@ in place; nothing below needs them redone.
 
 ## 5. Raising the served-version floor — only when you need it
 
-**Status:** used once. The floor stands at **15** (v0.3.0) since 2026-09-14, raised together with
-`APP_ANDROID_LATEST_VERSION_CODE` because the Keycloak issuer moved to `profit-base.online/auth` and
-no earlier build can sign in any more; `GET /api/v1/app/version-policy` answered
-`minimumVersionCode: 15` on 2026-09-22. Unset, the floor defaults to `0`, which serves every build.
+**Status:** used twice. The floor stands at **16** (v0.3.1) since 2026-09-25 ~16:45 UTC, raised
+together with `APP_ANDROID_LATEST_VERSION_CODE` right after v0.3.1 was published: earlier builds
+cannot add a mission participant (they use the path the server stopped accepting on 2026-09-07,
+fixed by #182) and still call the old mission endpoints basetool removed with 1.11.0.
+`GET https://api.profit-base.online/api/v1/app/version-policy` answers `minimumVersionCode: 16`,
+`latestVersionCode: 16`. Before that it stood at **15** (v0.3.0) from 2026-09-14, when the Keycloak
+issuer moved to `profit-base.online/auth`. Unset, the floor defaults to `0`, which serves every
+build. The backend restart that applies it also restarts `frontend` and `ingest` (their units
+`Requires=backend.service`), so the web app is away for about a minute, not only the API.
 
 You need this the day a contract change makes an old build unsafe or broken. On the production
 host, in the `.env`:
