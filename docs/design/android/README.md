@@ -189,6 +189,30 @@ reads as a rule.
   `s4…s32`, `touchTarget` 44 as tap area, `controlHeight`/`navIconFloor` 48, `iconButton` 48), and
   if the two ever disagree again, KrtTokens wins and Theme.kt is the bug.
 
+## Round 18 — „Mein Lager", the „gestohlen" marker, the RSI handle (26.09.2026)
+
+New **chapter 19**. Owner decision: drawn first, built after — nothing in it is implemented before
+this chapter. Epic basetool#2078 / #2097.
+
+* **N1 Mein Lager** is a **mode of the Lager screen** (segment „Org-Lager | Mein Lager"), not a second
+  destination. Same tree, same filters plus the mutually exclusive personal filter; personal stacks
+  carry their unit pill or „Keine Einheit". The selection bar carries four actions: Ausbuchen ·
+  Umbuchen · ⋮ (Einheit ändern · Als gestohlen markieren · Markierung entfernen).
+* **N2/N5 book-in** gains „Persönlich" (replaces the allocation rows with a line saying why) and
+  „Gestohlen".
+* **N3 Umbuchen persönlich ↔ gemeinsam** — single with amount and a four-kind pool picker (no „Keine
+  Einheit"); selection = whole rows with a moved/skipped result step.
+* **N4 Einheit ändern** — personal entries only, picker **with** „Keine Einheit", the web's visibility
+  notice verbatim, and a selection containing a shared entry is refused **as a whole** before the picker.
+* **N5 „gestohlen"** — one danger chip everywhere stock appears (both Lager, allocation picker,
+  order/mission stock, Materialbörse), a three-state filter, partial marking that splits the entry,
+  and the refusal when the regular rest would drop below what is offered on the exchange.
+* **N6 RSI-Handle** — optional inline row in KONTO with its purpose sentence always visible and the
+  one-profile conflict state; the app never names who owns a conflicting handle.
+* **N7 re-consent** — ratified: the first-run terms screen as a modal overlay from any call that
+  answers `TERMS_ACCEPTANCE_REQUIRED`, two ways out (Bestätigen / Abmelden), and the refused call is
+  retried after acceptance.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the
