@@ -2,6 +2,11 @@
 
 **Date:** 2026-09-26 · **Previous:** `MISSING_ARTBOARD_PROMPTS_17.md`.
 
+> [!note] Answered 2026-09-26
+> The design side drew all seven items as **chapter 19 „Mein Lager"** (artboards 1–11) and the RSI-handle
+> row into chapter 13 artboard 2; the README's *Round 18* section summarises them. Built with
+> `krt-profit/basetool#2097` (WP 1.5 of the epic).
+
 The owner reversed an old scope decision for the app on 2026-09-26 (main repo, epic
 `krt-profit/basetool#2078`, sub-issue #2097): the app gets **„Mein Lager"** — the member's own
 stock, personal and shared — and **full parity** for a new Lager property, the **„gestohlen"

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}
+  .scroll-none{scrollbar-width:none;-ms-overflow-style:none}
+  .scroll-none::-webkit-scrollbar{height:0;width:0;display:none}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:5200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:24px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">19</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Mein Lager · Gestohlen · RSI-Handle</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Runde 18 (26.09.2026, Epic basetool#2078 / #2097): „Mein Lager" mit voller Parität, die Kennzeichnung „gestohlen", das RSI-Handle im KONTO und der Re-Consent aus jedem Screen. Eigentümer-Entscheidung: erst gezeichnet, dann gebaut — nichts hier ist vor diesem Kapitel zu implementieren. Copy wörtlich aus dem Web, wo es sie gibt.</div>
+    </div>
+  </header>
+  <div class="card" style="padding:14px 16px;max-width:1200px;margin-bottom:18px">
+    <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Entscheidungen</div>
+    <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+      <li><b style="color:#fff">Mein Lager ist ein Modus des Lagers</b> (Segment „Org-Lager | Mein Lager"), keine zweite Destination — ein Nav-Eintrag weniger, dieselbe Baum-Komponente, dieselben Filter. Kap. 09 Artboard 6 („Modus LOCATION") gilt weiter fürs Org-Lager; Mein Lager ergänzt die Modi PERSONALIZE / DEPERSONALIZE</li>
+      <li><b style="color:#fff">„Gestohlen" ist ein Danger-Chip</b>, überall derselbe, nie eine Zeilentönung — eine Stapel-Eigenschaft mit rechtlicher Folge im Spiel</li>
+      <li><b style="color:#fff">Zwei Einheiten-Picker, bewusst verschieden:</b> Umbuchen ins gemeinsame Lager braucht einen Pool (kein „Keine Einheit"), Einheit ändern eines persönlichen Eintrags erlaubt „Keine Einheit" ausdrücklich</li>
+      <li><b style="color:#fff">Re-Consent = der Erstlauf-Screen als Overlay</b>, mit Wiederholung des abgelehnten Aufrufs — kein zweiter Terms-Screen</li>
+    </ul>
+  </div>
+  <section data-screen-label="Runde 18" style="display:flex;gap:28px;align-items:flex-start;margin-bottom:32px">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Lager — „Mein Lager" (Segment), Baum mit Einheit + Gestohlen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Lager</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Filter"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-filter"></use></svg></button>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Org-Lager</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;border-left:1px solid #282828;background:#E77E23;color:#000">Mein Lager</button>
+            </div>
+          </div>
+          <div class="scroll-none" style="flex:none;padding:10px 16px 0;display:flex;gap:6px;overflow-x:auto"><span class="chip chip--primary" style="font-size:10px;flex:none">Alle</span><span class="chip" style="font-size:10px;flex:none">Nur persönliche</span><span class="chip" style="font-size:10px;flex:none">Nur nicht-persönliche</span><span class="chip" style="font-size:10px;flex:none">Ort: Alle</span><span class="chip" style="font-size:10px;flex:none">Ohne gestohlene</span></div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;font-variant-numeric:tabular-nums">7 Materialien · nur deine Einträge</div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">522 SCU</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:transparent;font-variant-numeric:tabular-nums">
+                
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Q 874</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="squadron-badge" style="font-size:9px;flex:none">Bereich Profit</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">442</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:transparent;font-variant-numeric:tabular-nums">
+                
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Q 874</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="chip" style="font-size:8.5px;flex:none">Persönlich</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px;flex:none">Keine Einheit</span><span class="chip chip--danger" style="color:#F2564B;font-size:8.5px;flex:none">Gestohlen</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">80</span>
+              </div>
+            </div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Laranite</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">80 SCU</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:transparent;font-variant-numeric:tabular-nums">
+                
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Lorville · Q 733</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="chip" style="font-size:8.5px;flex:none">Persönlich</span><span class="squadron-badge" style="font-size:9px;flex:none">Staffel IRIDIUM</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">80</span>
+              </div>
+            </div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">24 Stück</span>
+              </div>
+
+            </div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Bexalit</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">40 SCU</span>
+              </div>
+
+            </div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N1 „Mein Lager"</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">Entscheidung: ein Modus des Lager-Screens</b> — Segment „Org-Lager | Mein Lager" im Kopf, keine zweite Destination (Präzedenz: Hangar „Meine Schiffe / Org-Einheit", Bank „Mitglied / Verwaltung"). Das Segment merkt sich den letzten Stand je Gerät; Deep-Link <span style="color:#8A8A8A">?scope=my</span></li>
+          <li>Reads: <span style="color:#8A8A8A">/inventory/my-inventory/grouped</span> → Stapel beim Aufklappen über <span style="color:#8A8A8A">…/stack/entries</span>, Auswahl-über-Seiten über <span style="color:#8A8A8A">…/entry-ids</span>. Drei Ebenen, Paging serverseitig, wie Kap. 09</li>
+          <li>Filter: „Nur persönliche" / „Nur nicht-persönliche" <b style="color:#fff">schließen sich aus</b> (Tippen auf den aktiven setzt zurück auf Alle) · Ort · Gestohlen (Artboard 9). Filterreihe klappt ein wie im Org-Lager</li>
+          <li>Stapelzeile: ein persönlicher Stapel trägt Chip „Persönlich" plus seine <b style="color:#fff">Einheit als Pille</b> — oder den Muted-Chip „Keine Einheit" (Sync-Bestand aus anderen Tools kommt ohne). Gestohlen als roter Chip (N5). Zeilenaktionen wie Kap. 09 (Buchen · Zuordnen); Zuordnen bei persönlichen Einträgen gesperrt mit Grund, denn persönlich trägt kein Earmark</li>
+          <li>Zustände: leer „Du hast noch keinen Bestand." + „Einbuchen" · Filter leer mit Zurücksetzen · Laden = Gruppen-Skeletons · Tablet = Rail + Tabelle wie Kap. 09 (Antwort 2)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Mein Lager — Auswahlmodus, Leiste mit vier Aktionen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Mein Lager</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">3 gewählt · 2 persönlich, 1 gemeinsam</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">522 SCU</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23;font-variant-numeric:tabular-nums">
+                <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Q 874</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="squadron-badge" style="font-size:9px;flex:none">Bereich Profit</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">442</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23;font-variant-numeric:tabular-nums">
+                <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Q 874</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="chip" style="font-size:8.5px;flex:none">Persönlich</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px;flex:none">Keine Einheit</span><span class="chip chip--danger" style="color:#F2564B;font-size:8.5px;flex:none">Gestohlen</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">80</span>
+              </div>
+            </div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Laranite</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">80 SCU</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 28px;border-bottom:1px solid #1C1C1C;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23;font-variant-numeric:tabular-nums">
+                <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Lorville · Q 733</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="chip" style="font-size:8.5px;flex:none">Persönlich</span><span class="squadron-badge" style="font-size:9px;flex:none">Staffel IRIDIUM</span></div>
+                </div>
+                <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF;flex:none">80</span>
+              </div>
+            </div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 12px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                <svg class="krt-icon" style="width:15px;height:15px;color:#E77E23;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">24 Stück</span>
+              </div>
+
+            </div>
+          </div></div>
+          <div style="position:absolute;right:16px;bottom:76px;width:260px;background:#1C1C1C;border:1px solid #282828;box-shadow:0 4px 8px rgba(0,0,0,.30);display:flex;flex-direction:column;padding:6px">
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;color:#D2D2D2;font:300 13px/1 Lato,sans-serif"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-users"></use></svg>Einheit ändern</button>
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;color:#D2D2D2;font:300 13px/1 Lato,sans-serif"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-warning"></use></svg>Als gestohlen markieren</button>
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;color:#D2D2D2;font:300 13px/1 Lato,sans-serif"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg>Markierung „gestohlen" entfernen</button>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #E77E23;padding:10px 16px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+            <div style="flex:none;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">3<div style="font:300 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">gewählt</div></div>
+            <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1;font-size:10.5px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-bookout"></use></svg>Ausbuchen</button>
+            <button class="btn-outline btn" style="background:transparent;min-height:48px;flex:1.1;font-size:10.5px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;width:48px;height:48px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #E77E23;color:#E77E23" aria-label="Weitere Aktionen"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-more-v"></use></svg></button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Auswahlmodus in Mein Lager</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Kap. 02 §4 unverändert (Langdruck, orange Kante, Haken, Leiste), aber die Leiste trägt hier <b style="color:#fff">vier</b> Aktionen statt einer. Auf 412 dp passen zwei plus Overflow: <b style="color:#fff">Ausbuchen · Umbuchen · ⋮</b> (Einheit ändern · Als gestohlen markieren · Markierung entfernen). Aufheben ist das × im Kopf — so bleibt die Leiste für Aktionen</li>
+          <li>Der Kopf nennt die Zusammensetzung („2 persönlich, 1 gemeinsam"), weil zwei der Aktionen daran scheitern können: Einheit ändern verweigert eine Auswahl mit gemeinsamem Eintrag ganz (Artboard 7), Umbuchen persönlich überspringt, was schon am Ziel liegt</li>
+          <li>Auswahl über Seiten und eingeklappte Stapel hinweg per <span style="color:#8A8A8A">…/entry-ids</span>; „Alles wählen" wählt die gefilterte Menge, nicht nur die geladene Seite</li>
+          <li>Overflow-Einträge, die für die Auswahl nicht greifen (z. B. „Markierung entfernen" ohne gestohlenen Eintrag), bleiben gedimmt stehen (Regel Kap. 08 Overflow)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Einbuchen — „Persönlich" und „Gestohlen" (N2 · N5)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Einbuchen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · ARC-L1</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div><label style="font-size:12px;margin-bottom:4px">Menge (SCU)</label><input type="text" value="80" style="width:100%;height:48px;font-size:16px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Qualität</label><input type="text" value="874" style="width:100%;height:48px;font-size:16px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums"></div>
+              </div>
+              <label style="display:flex;align-items:flex-start;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.45 Lato,sans-serif;color:#D2D2D2">Persönlich <span style="color:#8A8A8A">— nur in Mein Lager, ohne Auftrag/Einsatz</span></span></label>
+              <label style="display:flex;align-items:flex-start;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.45 Lato,sans-serif;color:#D2D2D2">Gestohlen <span style="color:#8A8A8A">— eigener Stapel, an regulären Terminals nicht verkäuflich</span></span></label>
+              <div style="border:1px dashed #282828;padding:10px 12px"><div style="font:700 10.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Zuordnung zu Aufträgen / Einsätzen</div><div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Entfällt bei persönlichen Einträgen — ein persönlicher Eintrag trägt keine Zuordnung.</div></div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bank-in"></use></svg>Einbuchen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N2 + N5 im Einbuchen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">„Persönlich"</b> (N2): <span style="color:#8A8A8A">BookInDraft.personal</span> ist nicht mehr fest false. Angehakt blendet die Zuordnungszeilen NICHT spurlos aus, sondern ersetzt sie durch eine gestrichelte Leerzeile, die sagt warum — sonst sucht man die Felder (Web macht dasselbe, nur ohne Zeile)</li>
+          <li>Bestehende Zuordnungen beim Umschalten: werden verworfen, und die Leerzeile sagt „2 Zuordnungen werden entfernt" in Gelb, bevor gebucht wird</li>
+          <li><b style="color:#fff">„Gestohlen"</b> (N5): ein Kästchen, Hilfetext nennt die Folge. Wirkt auf den STAPEL — gestohlener und regulärer Bestand gleichen Materials, Orts und Qualität werden zwei Stapel und mischen sich nie</li>
+          <li>Beide Kästchen unabhängig; Standard jeweils aus. Einbuchen im Org-Lager zeigt „Persönlich" ebenfalls (legt dann in Mein Lager ab — Toast sagt es)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Umbuchen — Persönlich ↔ gemeinsames Lager, einzeln (N3)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Laranite · Lorville · Q 733 · 80 SCU · persönlich</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Umbuchungsart</label><select style="width:100%;height:48px;font-size:13.5px"><option>Ins gemeinsame Lager umbuchen</option><option>Als persönlich umbuchen</option></select></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Menge (SCU)</label><div style="display:flex;gap:8px"><input type="text" value="80" style="flex:1;height:48px;font-size:16px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"><button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:none;font-size:11px;padding:0 14px">Alles</button></div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Einheit</label><div style="border:1px solid #E77E23;background:#1C1C1C">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:rgba(231,126,35,.10)"><span style="width:18px;height:18px;border:1px solid #E77E23;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:8px;height:8px;border-radius:999px;background:#E77E23"></span></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">Staffel IRIDIUM</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Staffel</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Bereich</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">SK VANGUARD</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">SK</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">OL Nord</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">OL</span></div>
+              </div></div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:-6px">Pool im gemeinsamen Lager — vorbelegt mit der Einheit des Eintrags, nie leer.</div>
+              <label style="display:flex;align-items:flex-start;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.45 Lato,sans-serif;color:#D2D2D2">Mit vorhandenem Bestand zusammenführen <span style="color:#8A8A8A">(nur SCU)</span></span></label>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N3 einzeln</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Ersetzt Kap. 09 Artboard 17 für Mein Lager: dieselbe Umbuchungsart, jetzt mit <b style="color:#fff">Menge</b> und — nur Richtung gemeinsam — dem <b style="color:#fff">Einheiten-Pool</b> über alle vier Arten (Staffel · SK · Bereich · OL), vorbelegt mit der Einheit der Zeile, <b style="color:#fff">ohne</b> „Keine Einheit" (ein gemeinsamer Eintrag braucht einen Pool)</li>
+          <li>Richtung „Als persönlich umbuchen": Einheiten-Feld entfällt ganz (die persönliche Einheit ändert N4)</li>
+          <li>Picker als Radio-Liste im Sheet statt Select, weil die Art je Eintrag als Chip mitlesen muss — vier Kinds sind sonst nicht unterscheidbar</li>
+          <li>Merge-Opt-in nur bei SCU-Material; Stück führt der Server immer zusammen — dann entfällt die Zeile. Teilmenge < Gesamt teilt den Eintrag</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Markierte umbuchen — Ergebnis mit Übersprungenen (N3)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Markierte umbuchen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Ins gemeinsame Lager umbuchen</div></div>
+              <div style="display:flex;gap:8px">
+                <div class="kpi-total" style="padding:10px 12px;flex:1"><div class="kpi-label" style="font-size:9px;min-height:28px">Umgebucht</div><div class="kpi-value" style="font-size:20px">9</div></div>
+                <div class="kpi-total" style="padding:10px 12px;flex:1;border-left-color:#646464"><div class="kpi-label" style="font-size:9px;min-height:28px">Übersprungen</div><div class="kpi-value" style="font-size:20px">3</div></div>
+              </div>
+              <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2">9 Einträge umgebucht. <b style="color:#fff">3 lagen bereits am Ziel</b> und wurden übersprungen — kein Fehler, keine Änderung nötig.</div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Ganze Zeilen, keine Mengen. Ziel-Pool: jede Zeile in die Einheit, die sie bereits trägt.</div>
+              <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Fertig</button>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N3 Auswahl</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Bulk-Umbuchen im Modus PERSONALIZE bzw. DEPERSONALIZE (Kap. 09 Artboards 5–10, jetzt mit den zwei Modi). Ganze Zeilen, KEINE Mengen — Teilmengen gibt es nur einzeln (Artboard 4)</li>
+          <li>Ergebnis als eigener Schritt im Sheet, zwei Zahlen: umgebucht / übersprungen („lagen bereits am Ziel"). Wortlaut des Webs: „Massenumbuchung erfolgreich: {0} Einträge umgebucht."</li>
+          <li>Ein Übersprung-Grund, genau einer: der Eintrag lag bereits am Ziel. Offen und als Frage an den Server notiert: was die Auswahl mit einer persönlichen Zeile ohne Einheit macht, wenn sie ins gemeinsame Lager soll (kein Pool). Bis das beantwortet ist, zeichnet das Artboard keinen zweiten Grund</li>
+          <li>Merge-Opt-in wie Artboard 4, einmal für die ganze Auswahl, nur wenn alle Zeilen SCU sind</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Einheit ändern — persönlicher Eintrag (N4)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Einheit ändern</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · ARC-L1 · Q 874 · 80 SCU · persönlich</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Einheit</label><div style="border:1px solid #E77E23;background:#1C1C1C">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#8A8A8A">Keine Einheit</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">Staffel IRIDIUM</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Staffel</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:rgba(231,126,35,.10)"><span style="width:18px;height:18px;border:1px solid #E77E23;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:8px;height:8px;border-radius:999px;background:#E77E23"></span></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Bereich</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">SK VANGUARD</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">SK</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-bottom:1px solid #282828;background:transparent"><span style="width:18px;height:18px;border:1px solid #646464;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#FFFFFF">OL Nord</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">OL</span></div>
+              </div></div>
+              <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px"><svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg><div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Mitglieder mit Bearbeitungsrecht in dieser Einheit können den Eintrag dann sehen und ändern. Ohne Einheit siehst nur du ihn.</div></div>
+              <label style="display:flex;align-items:flex-start;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"></span><span style="font:300 12.5px/1.45 Lato,sans-serif;color:#D2D2D2">Mit vorhandenem Bestand zusammenführen <span style="color:#8A8A8A">(nur SCU)</span></span></label>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Einheit übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N4 einzeln (REQ-INV-052)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Nur für PERSÖNLICHE Einträge (Zeilenaktion und Leisten-Eintrag). Anders als N3 <b style="color:#fff">hat</b> dieser Picker „Keine Einheit" — an erster Stelle, Muted-Text, weil es der Ursprungszustand von Sync-Bestand ist</li>
+          <li>Vorbelegt mit der aktuellen Einheit der Zeile; CTA gedimmt (Validierung, kein Schloss), solange sie unverändert ist</li>
+          <li>Sichtbarkeitshinweis <b style="color:#fff">wörtlich aus dem Web</b> als Info-Block — er erklärt die eigentliche Folge der Wahl. Er steht immer, nicht erst nach der Wahl</li>
+          <li>Merge-Opt-in wie N3; Stück ohne Zeile</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Markierte: Einheit ändern — Ergebnis und Verweigerung (N4)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Markierte: Einheit ändern</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">3 Einträge gewählt</div></div>
+              <div style="display:flex;gap:10px;border-left:4px solid #A3000A;background:rgba(163,0,10,.12);padding:10px 12px"><svg class="krt-icon" style="width:16px;height:16px;color:#F2564B;flex:none;margin-top:1px"><use href="#krt-icon-warning"></use></svg><div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2"><b style="color:#F2564B">Nicht möglich:</b> die Auswahl enthält <b style="color:#fff">1 gemeinsamen Eintrag</b>. „Einheit ändern" gilt nur für persönliche Einträge — hebe ihn aus der Auswahl oder buche ihn um.</div></div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Die Auswahl bleibt erhalten. Keine Einheit wurde geändert.</div>
+              <button class="btn-outline btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-filter"></use></svg>Gemeinsame aus der Auswahl nehmen</button>
+              <div style="border-top:1px solid #282828;padding-top:12px">
+                <div style="font:700 10.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Danach — Ergebnis</div>
+                <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2;margin-top:6px">Einheit bei <b style="color:#fff">2</b> Einträgen geändert, <b style="color:#fff">0</b> hatten sie bereits.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N4 Auswahl</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Eine Auswahl mit gemeinsamem Eintrag wird <b style="color:#fff">als Ganzes verweigert</b> (Server-Regel), nicht teilweise ausgeführt. Das Sheet sagt es VOR dem Picker, nennt die Anzahl und bietet den Ausweg als Button — die App kennt die Zusammensetzung schon aus dem Kopf von Artboard 2</li>
+          <li>Die Auswahl bleibt nach der Verweigerung stehen (wie bulk-checkout, Kap. 09 Artboard 20)</li>
+          <li>Ergebnis wörtlich: „Einheit bei {0} Einträgen geändert, {1} hatten sie bereits." — zwei Zahlen, kein Fehlerton</li>
+          <li>Picker, Hinweis und Merge wie Artboard 6, einmal für alle</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">8 · Als gestohlen markieren — Teilmenge und Börsen-Grenze (N5)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+              <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Als gestohlen markieren</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · ARC-L1 · Q 874 · 442 SCU</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Menge (SCU)</label><div style="display:flex;gap:8px"><input type="text" value="400" style="flex:1;height:48px;font-size:16px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"><button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:none;font-size:11px;padding:0 14px">Alles</button></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Teilmenge: der markierte Teil wird ein eigener Eintrag. 42 SCU bleiben regulär.</div></div>
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid #282828;background:#1C1C1C;padding:9px 12px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Auf der Materialbörse angeboten</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">200 SCU</span></div>
+              <div style="display:flex;gap:10px;border-left:4px solid #A3000A;background:rgba(163,0,10,.12);padding:10px 12px"><svg class="krt-icon" style="width:16px;height:16px;color:#F2564B;flex:none;margin-top:1px"><use href="#krt-icon-warning"></use></svg><div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2"><b style="color:#F2564B">Zu viel:</b> Nach der Markierung blieben nur 42 SCU regulär — angeboten sind 200 SCU. Senke die Menge auf höchstens 242 SCU oder ziehe das Angebot zuerst zurück.</div></div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-warning"></use></svg>Markieren</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N5 markieren / entfernen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Einzeln aus der Zeile (⋮) oder für die Auswahl aus der Leiste. Menge mit „Alles"; eine <b style="color:#fff">Teilmenge</b> spaltet den markierten Teil in einen eigenen Eintrag — die Zeile unter dem Feld sagt, was regulär bleibt</li>
+          <li><b style="color:#fff">Börsen-Grenze</b>: eine Teilmarkierung darf den regulären Rest nicht unter die auf der Materialbörse angebotene Menge drücken. Die App zeigt die Angebotsmenge VOR dem Absenden und rechnet live; der Danger-Block nennt die Obergrenze und beide Auswege. Server-Backstop mit gleicher Aussage</li>
+          <li>„Markierung entfernen" ist dasselbe Sheet mit umgekehrtem Titel — der entmarkierte Teil mischt sich NICHT automatisch in einen regulären Stapel zurück (Merge-Opt-in wie N3)</li>
+          <li>Auswahl: ganze Zeilen, Ergebnis „{n} markiert, {m} waren es bereits"</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">9 · „Gestohlen" überall, wo Bestand erscheint (N5)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Kennzeichnung</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Wo der Chip steht — fünf Flächen</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Filter (beide Lager)</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip" style="font-size:10px">Alle</span><span class="chip chip--primary" style="font-size:10px">Ohne gestohlene</span><span class="chip" style="font-size:10px">Nur gestohlene</span></div>
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px;margin-top:8px">Zuordnungs-Picker</div>
+            <div class="krt-combobox__listbox" style="position:static">
+              <li class="krt-combobox__option" role="option"><span class="krt-combobox__label" style="display:flex;align-items:center;gap:8px;width:100%"><span style="flex:1">Rhea · ARC-L1 · Q 874 · 442 SCU</span></span></li>
+              <li class="krt-combobox__option" role="option"><span class="krt-combobox__label" style="display:flex;align-items:center;gap:8px;width:100%"><span style="flex:1">Rhea · ARC-L1 · Q 874 · 80 SCU</span><span class="chip chip--danger" style="color:#F2564B;font-size:8.5px;flex:none">Gestohlen</span></span></li>
+            </div>
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px;margin-top:8px">Auftrag / Einsatz — zugeordneter Bestand</div>
+            <div class="card card--flush" style="padding:0"><div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px;font-variant-numeric:tabular-nums"><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium · Rhea</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">ARC-L1 · Q 874</div></div><span class="chip chip--danger" style="color:#F2564B;font-size:8.5px;flex:none">Gestohlen</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">80 SCU</span></div></div>
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px;margin-top:8px">Materialbörse — Liste, Suche, Detail</div>
+            <div class="card card--flush" style="padding:0"><div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px;font-variant-numeric:tabular-nums"><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium · 80 SCU</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">Angebot · Rhea · Q 874</div></div><span class="chip chip--danger" style="color:#F2564B;font-size:8.5px;flex:none">Gestohlen</span></div></div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Immer derselbe Chip, rechts neben dem Namen, vor der Menge. Nie als Zeilentönung.</div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N5 Kennzeichnung</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">Ein Chip, überall gleich</b>: <span style="color:#8A8A8A">KrtChip(„Gestohlen", DANGER)</span> — Rahmen #A3000A, Label #F2564B, UPPERCASE. Danger statt Warning, weil die Eigenschaft eine rechtliche Folge im Spiel hat (nicht an regulären Terminals verkäuflich), nicht nur eine Auffälligkeit</li>
+          <li>Fünf Flächen: Stapel- und Eintragszeile (beide Lager) · Zuordnungs-Picker · zugeordneter Bestand an Auftrag und Einsatz · Materialbörse Liste, Suche und Detail. Keine Zeilentönung — die Zeile bleibt lesbar, der Chip trägt die Information</li>
+          <li>Filter „Alle · Ohne gestohlene · Nur gestohlene" in beiden Lagern, Standard „Alle". Drei Zustände statt zwei Kästchen, weil sie sich ausschließen</li>
+          <li>Freischaltung: der Server markiert erst, wenn diese App-Version Mindestversion ist — bis dahin gibt es keine gestohlenen Stapel, und alle fünf Flächen verhalten sich wie heute. Die App muss die Felder trotzdem VOR der Freischaltung lesen können</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · KONTO — RSI-Handle mit Konfliktzustand (N6)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Einstellungen</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:0">Konto</div>
+            <div style="border:1px solid #282828;background:#141414">
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-user"></use></svg>
+                  <div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">GrafRotz</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">Bereich Profit · aktive Einheit</div></div>
+                  <span class="squadron-badge" style="font-size:10px">PROFIT</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-users"></use></svg>
+                  <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Aktive Org-Einheit</div></div>
+                  <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-bank"></use></svg>
+                  <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Auszahlungspräferenz</div></div>
+                  <select class="chip-select" style="min-height:32px" ><option>Auszahlung an mich</option><option>Verzicht (Org-Kasse)</option></select>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:12px 14px">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none;margin-top:2px"><use href="#krt-icon-shield"></use></svg>
+                  <div style="flex:1;min-width:0">
+                    <div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">RSI-Handle <span style="font-size:11px;color:#8A8A8A">(optional)</span></div>
+                    <div style="display:flex;gap:8px;margin-top:8px"><input type="text" value="GrafRotz_SC" style="flex:1;min-width:0;height:48px;font-size:13.5px;border-color:#A3000A"><button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:none;font-size:11px">Speichern</button></div>
+                    <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#F2564B;margin-top:5px">Dieser Handle ist bereits einem anderen Profil zugeordnet.</div>
+                    <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Nur dafür: ein verbundenes Tool darf fragen, ob ein Handle zu dir gehört. Der Server antwortet ja, nein oder unbekannt — und gibt den Handle nie heraus.</div>
+                  </div>
+                </div>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Gezeigt: der Konfliktzustand. Der Normalzustand (ohne Fehlerzeile, Rahmen neutral) steht in Kap. 13 Artboard 2.</div></div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N6 RSI-Handle</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Letzte Zeile des KONTO-Blocks, direkt nach „Auszahlungspräferenz", im Zeilen-Idiom von Kap. 13 (20-dp-Glyphe, 56 dp, 13,5 px) — in Kap. 13 Artboard 2 eingetragen. „Blueprints mit Org teilen" liegt dort im App-Block und bleibt, wo es ist. <b style="color:#fff">Optional</b> — leer ist ein gültiger Zustand, kein Hinweis „fehlt"</li>
+          <li>Inline-Feld mit Ghost-Speichern statt Push-Screen: ein Feld, eine Zeile Zweck — ein eigener Screen wäre mehr Gewicht als die Funktion trägt</li>
+          <li>Der Zwecksatz steht IMMER unter dem Feld, nicht nur im Fehlerfall: er beantwortet „warum will die App meinen Handle", bevor jemand fragen muss</li>
+          <li>Konflikt (ein Handle gehört genau einem Profil): Fehlerzeile #F2564B am Feld, Rahmen danger, Eingabe bleibt stehen. Kein Hinweis, WEM er gehört — der Server gibt das nicht heraus und die App erfindet es nicht</li>
+          <li>Zustände: Speichern = Button-Spinner · Erfolg = Toast „RSI-Handle gespeichert." · Leeren + Speichern entfernt ihn (keine Rückfrage — reversibel)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">11 · Nutzungsbedingungen geändert — Overlay aus jedem Screen (N7)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Aufträge</div></div>
+          </div>
+          <div style="flex:1;filter:brightness(.35);padding:16px"><div class="hud-box" style="height:260px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:56px 16px 16px">
+            <div class="krt-modal" style="width:100%;flex:1;display:flex;flex-direction:column;max-width:none">
+              <div class="krt-modal-head"><h2>Nutzungsbedingungen aktualisiert</h2></div>
+              <div class="krt-modal-body" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px">
+                <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2">Die Nutzungsbedingungen wurden geändert (Version 4 · 26.09.2026). Um weiterzuarbeiten, bestätige die neue Fassung.</div>
+                <div style="border:1px solid #282828;background:#1C1C1C;padding:12px;font:300 12px/1.65 Lato,sans-serif;color:#D2D2D2;flex:1;overflow:auto">§4 Materialbörse — Angebote und Gesuche sind org-weit sichtbar. Gestohlene Ware ist als solche zu kennzeichnen …<br><br>§5 Verbundene Tools — ein verbundenes Tool darf abfragen, ob ein RSI-Handle einem Profil gehört …</div>
+                <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Nach der Bestätigung geht es genau dort weiter, wo du warst — der abgelehnte Aufruf wird wiederholt.</div>
+              </div>
+              <div class="krt-modal-foot">
+                <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abmelden</button>
+                <button class="btn btn--cta" style="min-height:48px">Bestätigen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — N7 Re-Consent</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">Ratifiziert: der Erstlauf-Terms-Screen als Modal-Overlay</b>, derselbe Inhalt, derselbe Versionsstempel — kein zweiter Terms-Screen. Auslöser: JEDER Aufruf, der <span style="color:#8A8A8A">TERMS_ACCEPTANCE_REQUIRED</span> antwortet, nicht nur der Start</li>
+          <li>Das Overlay liegt über dem aktuellen Screen (Scrim 80 % + Blur, Kontext bleibt sichtbar), nicht als Navigation. Nach „Bestätigen" schließt es und <b style="color:#fff">wiederholt den abgelehnten Aufruf</b> — der Satz im Modal sagt das, damit niemand seine Eingabe verloren glaubt</li>
+          <li>Genau zwei Wege: Bestätigen oder Abmelden. Kein × und kein Zurück — die App kann ohne Zustimmung nicht weiterarbeiten, und ein wegtippbarer Dialog käme beim nächsten Aufruf sofort wieder</li>
+          <li>Mehrere parallele 403-Terms-Antworten öffnen EIN Overlay (Singleton), alle wartenden Aufrufe werden nach der Bestätigung wiederholt. Formulareingaben des darunterliegenden Screens bleiben erhalten</li>
+          <li>Zustände: Bestätigen = CTA-Spinner · Fehler = Fehlerzeile im Modal, Overlay bleibt · offline = Offline-Banner (Kap. 14), CTA gedimmt mit Grund</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="18 Abweichungs-Register.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 18 Abweichungs-Register</a>
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">00 Index →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
