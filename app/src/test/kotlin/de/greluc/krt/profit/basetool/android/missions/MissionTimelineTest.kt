@@ -164,8 +164,7 @@ class MissionTimelineTest {
         }
 
     /**
-     * Ticking sends the state it is to be **in**, not a flip. Two managers tapping at once then
-     * converge on „done" instead of cancelling each other out.
+     * Ticking sends the target state rather than a flip, so concurrent taps converge on „done".
      */
     @Test
     fun `ticking sends the target state`() =
@@ -178,7 +177,9 @@ class MissionTimelineTest {
             assertEquals(listOf("toggle" to STEPS_VERSION), calls)
         }
 
-    /** A refusal keeps what was typed: re-typing it to find out what went wrong is a charge. */
+    /**
+     * A refused save keeps what was typed in the editor.
+     */
     @Test
     fun `a refused save keeps the editor filled`() =
         runTest(dispatcher) {
@@ -338,7 +339,7 @@ class MissionTimelineTest {
         }
 
         /**
-         * The same for a Ziel.
+         * Answers a Ziel write the way the repository does, with the counter advanced by one.
          *
          * @param what which write.
          * @param current the Einsatz it was handed.

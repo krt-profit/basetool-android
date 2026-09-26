@@ -90,18 +90,12 @@ data class MissionMemberActions(
 )
 
 /**
- * The three member-shaped writes — design ch. 06 artboard 12, whose composition ratified this.
+ * The three member-shaped writes (design ch. 06 artboard 12), each row showing the current value
+ * before its action.
  *
- * **Every row shows the current value first, then the action.** The previous shape — three ghost
- * buttons with noun labels — is what the artboard names as the thing to fix: it said neither who
- * the Einsatzleitung was, nor that pressing it would be a *change*.
- *
- * The three rows are three shapes, because the three things are:
- * - **Einsatzleitung** is exactly one person — a value row and „Ändern".
- * - **Manager** is a set — removable data chips and a dashed „+ Manager" (`.assoc-add`).
- * - **Teilnehmer hinzufügen** is a pure action — full width, with nothing to show first.
- *
- * One picker serves all three writes.
+ * - **Einsatzleitung** — one person: a value row and „Ändern".
+ * - **Manager** — a set: removable chips and a dashed „+ Manager".
+ * - **Teilnehmer hinzufügen** — a full-width action.
  *
  * @param members the actions, the picker's state, and the values the rows show.
  */
@@ -243,19 +237,13 @@ private fun MemberEntry(
 }
 
 /**
- * The picker itself: a sheet holding chapter 12's combobox.
- *
- * A sheet rather than an inline field, and for a reason the three entry points make plain: one
- * combobox serves three writes, so it has to say which one it is serving. A sheet titled
- * „Einsatzleitung setzen" does; a bare field under three buttons would not.
+ * The picker itself: a sheet holding chapter 12's combobox, titled for the write it serves.
  *
  * @param members the actions and the picker's state.
  */
 @Composable
 fun MemberPickerSheet(members: MissionMemberActions) {
     val target = members.state.target ?: return
-    // The combobox is stateless and the caller owns expansion. Held here rather than in the view
-    // model: the list is open for as long as the sheet is, and nothing outside it cares.
     var expanded by remember(target) { mutableStateOf(true) }
     KrtBottomSheet(
         onDismiss = members.onDismiss,
@@ -277,9 +265,6 @@ fun MemberPickerSheet(members: MissionMemberActions) {
             modifier = Modifier.fillMaxWidth(),
             label = stringResource(R.string.mission_member_search),
             placeholder = stringResource(R.string.mission_member_search_hint),
-            // Stated when it bites and silent when it does not (ADR-0104). The old line named the
-            // cap on every search, which reads as a warning about a list that is in fact complete
-            // — and said nothing different on the search where somebody really was missing.
             notice =
                 when {
                     members.state.searching -> stringResource(R.string.mission_member_searching)

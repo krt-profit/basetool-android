@@ -15,12 +15,9 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * The claims the app reads out of an ID token.
+ * The claims the app reads out of an ID token, its only source of profile claims.
  *
- * **This is the only source of profile claims.** Under the realm's refresh-only DPoP policy
- * Keycloak answers `/userinfo` with **HTTP 500** for this client (security concept §4,
- * constraint 1), so the endpoint that would normally serve them is not merely redundant here — it
- * is broken by design, and `OidcConfiguration` deliberately does not name it.
+ * `/userinfo` answers HTTP 500 under the realm's refresh-only DPoP policy and is never called.
  *
  * @property subject the stable user id (`sub`); the same value the backend scopes data by
  * @property nonce the value the realm copied from the authorization request
@@ -35,11 +32,7 @@ data class IdTokenClaims(
     val email: String? = null,
 ) {
     /**
-     * Renders the claims **without** the member's name or address.
-     *
-     * The logging rule this app inherits (main repo REQ-OBS-004) forbids names and e-mail
-     * addresses in any log sink, and a data class's generated `toString` is the quiet way they get
-     * there.
+     * Renders the claims with only the opaque subject, keeping names and e-mail addresses out of logs (REQ-OBS-004).
      *
      * @return a description carrying only the opaque subject
      */
@@ -53,17 +46,10 @@ data class IdTokenClaims(
         private val JSON = Json { ignoreUnknownKeys = true }
 
         /**
-         * Reads the payload of an ID token.
+         * Reads the payload of an ID token without verifying its signature.
          *
-         * **The signature is not verified, and that is a decision rather than an omission.** OIDC
-         * Core §3.1.3.7 permits skipping it when the token was received directly from the token
-         * endpoint over TLS — which is the only way this app ever obtains one. The token never
-         * travels through the browser, so there is no untrusted hop between the realm and here.
-         * Verifying it would mean fetching and caching JWKS and tracking key rotation to re-prove a
-         * property TLS already gives.
-         *
-         * A token that cannot be read is `null` rather than an exception: it means the same thing
-         * as an absent one — no claims — and the caller has to handle that case regardless.
+         * OIDC Core §3.1.3.7 permits this for a token received directly from the token endpoint over TLS,
+         * the only way this app obtains one.
          *
          * @param idToken the compact JWT as issued
          * @return the parsed claims, or `null` when the token is not a readable JWT

@@ -12,12 +12,8 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Every Material 3 shape slot is square.
- *
- * The design system is square-first: cards, buttons, inputs, modals, sheets and tables all have a
- * corner radius of 0 dp. Rounding is reserved for [PillShape] (the squadron badge and the sheet drag
- * handle) and for genuinely circular controls — radio button, spinner and the presence dot. Status
- * dots are square 8 dp squares, not circles.
+ * Every Material 3 shape slot is square (0 dp); rounding is reserved for [PillShape] and genuinely
+ * circular controls.
  */
 val KrtShapes =
     Shapes(

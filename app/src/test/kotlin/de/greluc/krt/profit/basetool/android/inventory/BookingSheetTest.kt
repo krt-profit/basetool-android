@@ -155,10 +155,7 @@ class BookingSheetTest {
         )
 
         compose.onNodeWithTag(BOOKING_KIND_TAG).assertExists()
-        // The grade field is gone rather than disabled: the server refuses a quality on an item
-        // row, so every value it could hold would be a rejection.
         compose.onNodeWithText("Qualität", substring = true).assertDoesNotExist()
-        // And the amount says what it counts, in German rather than in the wire's word.
         compose.onNodeWithText("Menge (Stück)").assertExists()
     }
 
@@ -171,29 +168,14 @@ class BookingSheetTest {
             ),
         )
 
-        // cSCU and µSCU are SCU words. Over a field counting pieces the hint offered fractions
-        // of a thing that has none — the rule the merge opt-in beside it already follows.
         compose.onNodeWithTag(BOOKING_SCU_HINT_TAG).assertDoesNotExist()
     }
 
     @Test
     fun `an entry is offered booking out and its note, and no rebooking`() {
-        // „Umbuchen" is a KIND of booking out here, not a mode of its own — exactly as the web's
-        // org-wide Lager has it, where the Umbuchen dialog is the TRANSFER (Nutzer / Ort /
-        // Org-Einheit). So the word belongs in the out-kind segment and must appear there once.
-        //
-        // What is deliberately absent is the OTHER rebooking, private stock ↔ shared: the Lager
-        // reads exclude private stock entirely, so no entry that could be rebooked that way ever
-        // reaches this sheet. It is owner-scoped and lives on „Mein Lager" — which is why finding
-        // „Umbuchen" as a top-level mode here would be the defect, and finding it in the out-kind
-        // segment is the fix.
         show(BookingState(mode = BookingMode.OUT, entry = entry()))
 
         compose.onAllNodesWithText("Umbuchen", ignoreCase = true).assertCountEquals(1)
-        // Three now: the sheet's title, the segment half, and the CTA — which names the move it
-        // makes rather than a generic "Buchen" (design ch. 09 artboard 2). On a form with three
-        // modes, a button that reads the same in all three is the one control that does not say
-        // which one is armed.
         compose.onAllNodesWithText("Ausbuchen", ignoreCase = true).assertCountEquals(OUT_MENTIONS)
         compose.onNodeWithText("Notiz", ignoreCase = true).assertIsDisplayed()
     }
@@ -241,7 +223,6 @@ class BookingSheetTest {
             ),
         )
 
-        // The price is grouped like every other figure in the app.
         compose.onNodeWithText("Area18 TDD · 170.000").assertIsDisplayed()
     }
 
@@ -273,8 +254,6 @@ class BookingSheetTest {
 
     @Test
     fun `offline the form says so and offers no save`() {
-        // The app never queues a booking: one taken offline would land against a Lager that has
-        // moved on, and the member would never see the conflict.
         show(
             BookingState(
                 mode = BookingMode.OUT,
@@ -301,9 +280,6 @@ class BookingSheetTest {
             ),
         )
 
-        // The sheet scrolls, so the line can sit below the fold — that it is there and that the
-        // save is refused is the point. The wording is the design spec's (ch. 09 artboard 16),
-        // which takes it from the web frontend's own bundle rather than inventing an app phrasing.
         compose.onNodeWithText("Ziel muss Mitglied oder Ort ändern.").assertExists()
         compose.onNodeWithTag(BOOKING_SAVE_TAG).assertIsNotEnabled()
     }

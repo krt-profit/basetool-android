@@ -37,15 +37,10 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * Which org unit the app acts in — the three-step rule, and the two ways a stored answer goes bad.
+ * Tests which org unit the app acts in: the three-step rule and the two ways a stored answer goes bad.
  *
- * The rule matters more than it looks. The pin becomes `X-Active-Org-Unit-Id` on **every** request,
- * so getting it wrong does not produce an error message: it produces a screen full of somebody
- * else's data, or an empty one, with no indication that the scope is the reason.
- *
- * The store is the **real** one over the app's preference file rather than a fake. Its whole job
- * is to survive a restart and to answer synchronously off an OkHttp thread; a fake would assert the
- * view model's arithmetic and none of that.
+ * Uses the real preference-backed store, because the pin becomes `X-Active-Org-Unit-Id` on every
+ * request and must survive a restart.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -75,7 +70,6 @@ class OrgUnitViewModelTest {
 
         override suspend fun serverDefault(): ApiResult<String?> = ApiResult.Success(default)
 
-        // The switcher never reads the all-kinds catalogue; only the order form does.
         override suspend fun activeAllKinds(): ApiResult<List<OrgUnit>> = ApiResult.Success(units)
     }
 
@@ -126,7 +120,6 @@ class OrgUnitViewModelTest {
             advanceUntilIdle()
 
             assertEquals(kommando.id, viewModel.state.value.activeId)
-            // Written back, or the badge would name one unit while the header carried none.
             assertEquals(kommando.id, store.current())
         }
 
@@ -146,9 +139,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `a pin naming a membership that is gone is dropped`() =
         runTest(dispatcher) {
-            // An administrator can remove a membership. Keeping the pin would send the header for
-            // a unit the backend refuses, which reads as "everything is empty" rather than as
-            // "you are not in that unit any more".
             store.pin("removed-unit")
             val source = FakeSource(units = listOf(staffel), default = null)
             val viewModel = OrgUnitViewModel(source, store, member)
@@ -208,7 +198,6 @@ class OrgUnitViewModelTest {
             advanceUntilIdle()
 
             assertEquals(kommando.id, viewModel.state.value.activeId)
-            // A fresh store over the same file is what the next cold start does.
             assertEquals(
                 kommando.id,
                 ActiveOrgUnitStore(ApplicationProvider.getApplicationContext<Application>()).current(),
@@ -233,8 +222,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `a failed read leaves the shell usable`() =
         runTest(dispatcher) {
-            // The switcher is part of the frame around every screen. Blocking on it would turn one
-            // failed request into an app that cannot be opened.
             val viewModel = OrgUnitViewModel(FakeSource(fails = true), store, member)
 
             viewModel.load()
@@ -303,14 +290,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `an admin with nothing pinned starts on all org units, not on the first of the catalogue`() =
         runTest(dispatcher) {
-            // The defect this pins is the one that defeats the whole point of giving the app the
-            // Admin role. An admin is offered the entire catalogue rather than a membership list,
-            // ordered top-down, so the "first membership" fallback would pin the
-            // Organisationsleitung on the very first launch — and a pinned admin is then excluded
-            // from ownerless rows, because those are granted only while the header is absent. The
-            // administrator would start narrower than a plain member and nothing on screen would
-            // say why. The server names no default for them either, which is what lets the
-            // fallback fire.
             val ol = OrgUnit("z9", "Organisationsleitung", "OL", OrgUnitKind.ORGANISATIONSLEITUNG)
             val source = FakeSource(units = listOf(ol, staffel, kommando), default = null)
             val viewModel = OrgUnitViewModel(source, store, admin)
@@ -325,8 +304,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `the admin default is written to the store, not only to the state`() =
         runTest(dispatcher) {
-            // Otherwise the badge would say „Alle" while the interceptor still sent a header, or
-            // the next cold start would resolve a unit again. The two must not be able to disagree.
             val ol = OrgUnit("z9", "Organisationsleitung", "OL", OrgUnitKind.ORGANISATIONSLEITUNG)
             val viewModel =
                 OrgUnitViewModel(FakeSource(units = listOf(ol, staffel)), store, admin)
@@ -341,9 +318,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `an admin who has pinned a unit keeps it`() =
         runTest(dispatcher) {
-            // The widening is a default, not an override: choosing one unit is still a choice, and
-            // re-widening it on every launch would make the switcher useless to the one caller who
-            // has the most units to choose between.
             store.pin(staffel.id)
             val viewModel =
                 OrgUnitViewModel(FakeSource(units = listOf(staffel, kommando)), store, admin)
@@ -358,8 +332,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `a member with nothing pinned still lands on their first unit`() =
         runTest(dispatcher) {
-            // The unchanged half. A single-unit member should see their unit's name, not „Alle" for
-            // a scope that was never in doubt — the widening must not leak onto them.
             val viewModel =
                 OrgUnitViewModel(FakeSource(units = listOf(staffel, kommando)), store, member)
 
@@ -373,8 +345,6 @@ class OrgUnitViewModelTest {
     @Test
     fun `a failed identity read does not widen the default`() =
         runTest(dispatcher) {
-            // Unknown takes the narrower path. Widening on the strength of a request that did not
-            // come back would hand an ordinary member the all-units read on every offline start.
             val viewModel =
                 OrgUnitViewModel(
                     FakeSource(units = listOf(staffel, kommando)),

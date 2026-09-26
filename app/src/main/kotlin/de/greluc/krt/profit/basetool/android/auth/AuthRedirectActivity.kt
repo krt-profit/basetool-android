@@ -14,24 +14,12 @@ import de.greluc.krt.profit.basetool.android.MainActivity
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 
 /**
- * Catches the redirect the browser sends at the end of a login and hands it back to the app.
+ * Catches the browser's login redirect and hands it back to the running `MainActivity`.
  *
- * **Why a separate activity rather than another intent filter on `MainActivity`.** When the Custom
- * Tab is open it sits on top of this task, so `MainActivity` is not the activity the redirect would
- * be delivered to; with `singleTop` the system would create a *second* `MainActivity` on top of the
- * browser instead of returning to the running one. `singleTask` here brings the task forward and
- * clears the Custom Tab off it, and re-launching `MainActivity` with `CLEAR_TOP` lands on the
- * instance that was already there — or creates one, which is exactly right after the process was
- * killed behind the browser. Putting `singleTask` on `MainActivity` itself would have changed the
- * launch semantics of every deep link and notification in the app to fix one flow.
- *
- * **It has no UI and finishes immediately.** Anything drawn here would flash between the browser
- * closing and the app appearing.
- *
- * The redirect carries the authorization code, which is worthless without the PKCE verifier held in
- * `PendingAuthorization` — so this activity being exported (it must be, the browser starts it) does
- * not let another app complete a login. A redirect that does not match the pending attempt's `state`
- * is discarded further along, in `AuthorizationRequest.readRedirect`.
+ * `singleTask` clears the Custom Tab off the task, and `MainActivity` is relaunched with `CLEAR_TOP`
+ * so the existing instance receives it. It has no UI and finishes immediately. It is exported, but
+ * the code is worthless without the PKCE verifier in `PendingAuthorization`, and a mismatched
+ * `state` is discarded in `AuthorizationRequest.readRedirect`.
  */
 class AuthRedirectActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,8 +40,6 @@ class AuthRedirectActivity : Activity() {
     private fun deliver(source: Intent?) {
         val redirect = source?.data
         if (redirect == null) {
-            // Nothing to act on. Reached by a manual launch of an exported activity, not by the
-            // browser; opening the app empty-handed is a better answer than a crash.
             KrtLog.w(LOG_TAG) { "auth redirect activity started without a redirect URI" }
         }
         val next =

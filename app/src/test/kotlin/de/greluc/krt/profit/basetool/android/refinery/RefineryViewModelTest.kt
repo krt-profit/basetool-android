@@ -47,23 +47,14 @@ import org.robolectric.annotation.Config
 import java.time.OffsetDateTime
 
 /**
- * The Raffinerie list and detail rules.
- *
- * Two of them cannot be checked anywhere else. The list's „In Arbeit"/„Abholbereit" split is a
- * device-side reading of one server answer, so only a test that moves the clock can tell it works;
- * and a booking has to announce three rooms, because it changes the order, the queue and the Lager
- * it just wrote entries into.
+ * Tests the Raffinerie list and detail: the device-side „In Arbeit"/„Abholbereit" split as the clock moves, and a
+ * booking that announces changes to the order, the queue and the Lager.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class RefineryViewModelTest {
     private val dispatcher = StandardTestDispatcher()
-
-    // Against a server that stays busy the retry ladder never stops, by design: the member is
-    // looking at the screen and chapter 14 keeps telling them how long. That makes it a coroutine
-    // the test has to end itself -- `runTest` drains the scheduler at teardown, so a live ladder
-    // hangs the run instead of failing it. Every test below that starts one cancels the scope.
 
     private companion object {
         val BEFORE: OffsetDateTime = OffsetDateTime.parse("2026-08-16T23:00:00Z")
@@ -215,8 +206,6 @@ class RefineryViewModelTest {
             model.onFilterChanged(RefineryFilter.READY)
             advanceUntilIdle()
 
-            // The server has no "ready" status, so asking for one of the pair would drop half the
-            // rows either filter is made of.
             val expected = setOf(RefineryServerStatus.OPEN, RefineryServerStatus.IN_PROGRESS)
             assertEquals(expected, source.requestedStatuses[1])
             assertEquals(expected, source.requestedStatuses[2])
@@ -232,10 +221,7 @@ class RefineryViewModelTest {
 
             model.onFilterChanged(RefineryFilter.RUNNING)
             advanceUntilIdle()
-            // Same row, same server answer; only the clock differs. Before the end it is running.
             assertEquals(1, model.state.value.copy(now = BEFORE).orders.size)
-            // After it, the RUNNING filter must no longer show it — which is the whole point of
-            // recomputing the phase rather than freezing it at mapping time.
             assertTrue(model.state.value.copy(now = AFTER).orders.isEmpty())
         }
 
@@ -260,15 +246,8 @@ class RefineryViewModelTest {
             val model = RefineryViewModel(source, clock = emptyFlow())
 
             model.loadOnce()
-            // runCurrent, NOT advanceUntilIdle: against a server that stays busy the ladder is
-            // deliberately endless, so advancing the virtual clock until idle never returns and
-            // the test hangs instead of failing. Measured — it is why this rule had no test
-            // before. Running the tasks already queued is enough: the first countdown value is
-            // published before the first delay.
             runCurrent()
 
-            // The countdown, not the empty state: 503 is the one class of failure where asking
-            // again is meaningful, and chapter 14 wants the member told how long.
             assertTrue(model.state.value.phase is RefineryPhaseState.Failed)
             assertEquals(FIRST_RUNG, model.state.value.retryIn)
             model.viewModelScope.cancel()
@@ -282,7 +261,6 @@ class RefineryViewModelTest {
             model.loadOnce()
             runCurrent()
 
-            // Let the first wait elapse; the automatic retry fails again and the ladder steps up.
             advanceTimeBy(FIRST_STEP_MS)
             runCurrent()
             assertEquals(SECOND_RUNG, model.state.value.retryIn)
@@ -290,8 +268,6 @@ class RefineryViewModelTest {
             model.onRetry()
             runCurrent()
 
-            // Back to the bottom. A member pressing the button is new information, and inheriting
-            // a longer wait from an attempt they did not make would punish them for waiting.
             assertEquals(FIRST_RUNG, model.state.value.retryIn)
             model.viewModelScope.cancel()
         }
@@ -305,9 +281,6 @@ class RefineryViewModelTest {
             model.loadOnce()
             advanceUntilIdle()
 
-            // A 403 answers the same in three seconds. A countdown in front of it promises the
-            // member something that will not happen — and, unlike the 503 above, nothing is
-            // scheduled, so advancing until idle is safe here.
             assertNull(model.state.value.retryIn)
         }
 
@@ -324,8 +297,6 @@ class RefineryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf("r1"), source.stored)
-            // Three rooms. Announcing only the order would leave every open Lager — browser tab or
-            // phone — showing a stock figure the booking has already made wrong.
             assertEquals(
                 listOf("refinery-order:r1", "refinery", "inventory"),
                 liveSync.announced.map { it.first },
@@ -339,8 +310,6 @@ class RefineryViewModelTest {
             val model = RefineryDetailViewModel(source, null, "r1", clock = emptyFlow())
             advanceUntilIdle()
 
-            // Booking a run that has not ended books a yield that does not exist yet, and the
-            // server would happily mark the order stored.
             assertFalse(model.state.value.copy(now = BEFORE).storable)
             assertTrue(model.state.value.copy(now = AFTER).storable)
             assertEquals(
@@ -386,9 +355,6 @@ class RefineryViewModelTest {
                     source,
                     null,
                     "r1",
-                    // Deleting is gated on ownership since design round 16, and the fixture run
-                    // is owned by "u1" — without an identity every write would be locked, which is
-                    // the safe default and not what this case is about.
                     seams = RefineryDetailSeams(delete = deletes, identity = FixedIdentity("u1")),
                     clock = emptyFlow(),
                 )

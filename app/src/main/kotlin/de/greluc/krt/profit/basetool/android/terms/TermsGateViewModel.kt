@@ -22,9 +22,7 @@ import kotlinx.coroutines.launch
 /**
  * Decides whether the consent gate stands in the member's way, and gets them past it.
  *
- * The order of the two reads is the part worth stating. The status is asked first, and the document
- * is fetched **only if consent is missing** — a member who accepted months ago should not pay for a
- * document download on every app start to be told they already agreed.
+ * Reads the status first and fetches the document only when consent is missing.
  *
  * @property source reads the status and the document, and records consent
  */
@@ -59,9 +57,6 @@ class TermsGateViewModel(
                 }
             }
 
-            // Consent is missing, so the wording has to be shown — and a document that cannot be
-            // read is a hard stop rather than an emptier gate. Asking somebody to agree to a blank
-            // page is not asking for consent at all.
             when (val document = source.document()) {
                 is ApiResult.Success -> {
                     mutableState.value = TermsGateState.Required(document.value, accepting = false, errorRes = null)
@@ -90,9 +85,6 @@ class TermsGateViewModel(
                         if (result.value.accepted) {
                             TermsGateState.Cleared
                         } else {
-                            // The server answered 200 and still reports no consent. Nothing the
-                            // member can do differently, so say so rather than looping them back
-                            // through the same button.
                             current.copy(accepting = false, errorRes = R.string.terms_error)
                         }
                 }

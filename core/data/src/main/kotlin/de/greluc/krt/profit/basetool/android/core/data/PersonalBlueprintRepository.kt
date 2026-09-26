@@ -40,8 +40,7 @@ import okhttp3.OkHttpClient
  * @property productName the product, as the catalogue names it
  * @property note the member's own note, or `null`
  * @property acquiredAt when they got it, as the server wrote it, or `null`
- * @property removable whether the server will let this entry go — an entry it holds on to must not
- *   be offered a delete that then answers 409
+ * @property removable whether the server allows deleting this entry
  * @property version the optimistic lock, echoed on the next save
  */
 data class OwnedBlueprint(
@@ -67,8 +66,7 @@ typealias OwnedBlueprintPage = Page<OwnedBlueprint>
  * @property requiredScu how much one build needs
  * @property availableScu how much the member can reach
  * @property missingScu the shortfall, or `null` when the server did not state one
- * @property missingScuWithRefinery the shortfall once refining is allowed for — its own field,
- *   because refining changes which materials fall short and by how much
+ * @property missingScuWithRefinery the shortfall once refining is allowed for
  */
 data class CraftabilityMaterial(
     val name: String,
@@ -82,13 +80,13 @@ data class CraftabilityMaterial(
  * Whether a blueprint can be built, and what stops it.
  *
  * @property blueprintId which owned entry this belongs to
- * @property recipeResolved whether the server could resolve a recipe at all; when it could not,
- *   nothing below it means anything
+ * @property recipeResolved whether the server could resolve a recipe; when not, nothing below it
+ *   is meaningful
  * @property craftable how many can be built from what is reachable now
  * @property craftableWithRefinery the same count once refining is allowed for
  * @property limitingMaterial the material that runs out first, or `null`
  * @property limitingMaterialWithRefinery the same, with refining
- * @property materials the breakdown, for the member who wants to know why
+ * @property materials the per-material breakdown
  */
 data class Craftability(
     val blueprintId: String,
@@ -113,10 +111,7 @@ data class Craftability(
 }
 
 /**
- * One overview page as the screen holds it.
- *
- * A row without a product key is dropped: the key is how its owners are asked for, so a row
- * without one is a card that can never fill in its own second line.
+ * One overview page as the screen holds it, dropping rows without a product key.
  *
  * @receiver what the server sent.
  * @param page which page was asked for; the response does not always echo it.
@@ -145,11 +140,8 @@ private fun PageResponseBlueprintOverviewEntryDto.toModel(page: Int): BlueprintO
  * @property productKey what a create sends
  * @property name the product
  * @property manufacturer who makes it, or `null`
- * @property owned whether the member already has this one — offering it again would be a create
- *   the server refuses
- * @property variantCount how many blueprint variants produce it. Informational: no write carries a
- *   variant, and the Materialbörse's item half shows it so a product with several can be named
- *   precisely in the remark.
+ * @property owned whether the member already has it; the server refuses a second create
+ * @property variantCount how many blueprint variants produce it; informational only
  */
 data class BlueprintProduct(
     val productKey: String,
@@ -164,8 +156,8 @@ data class BlueprintProduct(
  *
  * @property productKey the catalogue key, which is also how its owners are asked for.
  * @property productName what it is called.
- * @property ownerCount how many members in the caller's oversight scope hold it. `0` is a real
- *   answer — „nicht erfasst" — and not a missing one.
+ * @property ownerCount how many members in the caller's oversight scope hold it; `0` is a real
+ *   answer.
  */
 data class BlueprintOverviewEntry(
     val productKey: String,
@@ -187,10 +179,8 @@ typealias BlueprintOverviewPage = Page<BlueprintOverviewEntry>
  * One member who holds a blueprint.
  *
  * @property name their display name, as the server rendered it.
- * @property orgUnitMember whether they belong to the org unit the caller is looking at. `false`
- *   means the row is visible through the **global blueprint sharing** rather than through the
- *   unit, which the screen says in so many words — otherwise a stranger's name in a unit list
- *   reads as a bug.
+ * @property orgUnitMember whether they belong to the org unit being viewed; `false` means the row
+ *   is visible through global blueprint sharing.
  */
 data class BlueprintOwner(
     val name: String,
@@ -198,16 +188,11 @@ data class BlueprintOwner(
 )
 
 /**
- * What a batch add did.
- *
- * The server answers with three counts rather than with rows, and the sheet reports them verbatim:
- * design ch. 17 artboard 5 draws „2 übernommen · 1 bereits vorhanden", and inventing a total from
- * the number sent would hide exactly the case the line exists for.
+ * What a batch add did, as the three counts the server answers with.
  *
  * @property added how many were taken over.
  * @property alreadyOwned how many the member already had.
- * @property unresolved how many keys the catalogue could not resolve — normally zero, because the
- *   keys come from its own search, and worth showing when it is not.
+ * @property unresolved how many keys the catalogue could not resolve.
  */
 data class BlueprintBatchResult(
     val added: Int,
@@ -226,16 +211,13 @@ data class BlueprintBatchResult(
  */
 interface BlueprintImportSource {
     /**
-     * Reads an export file and answers what it found — **without writing anything**.
+     * Reads an export file and answers what it found, **without writing anything**; the first of two
+     * import steps.
      *
-     * The first of two steps. A one-step import would be a mass write with no preview, which is
-     * exactly what design ch. 18 §2 refuses.
-     *
-     * @param fileName the name the member picked it under; servers log it, so it says where the
-     *   bytes came from rather than being invented.
+     * @param fileName the name the member picked it under, logged by the server.
      * @param bytes the file's content, read on the device and sent once.
-     * @return what the file contains, or the classified failure. A file the server cannot parse
-     *   comes back as an ordinary failure, not as an empty preview.
+     * @return what the file contains, or the classified failure; an unparseable file is a failure,
+     *   not an empty preview.
      */
     suspend fun importPreview(
         fileName: String,
@@ -243,7 +225,7 @@ interface BlueprintImportSource {
     ): ApiResult<BlueprintImportPreview>
 
     /**
-     * Writes the lines the preview resolved. The only step of the two that writes.
+     * Writes the lines the preview resolved; the only import step that writes.
      *
      * @param entries the resolved lines to take over; each carries its own product key.
      * @return what was written, or the classified failure.
@@ -322,10 +304,8 @@ interface PersonalBlueprintSource {
     suspend fun products(query: String): ApiResult<List<BlueprintProduct>>
 
     /**
-     * Takes over several products at once.
-     *
-     * `POST /personal-blueprints/batch`, which carries **only** the keys — no note, no acquisition
-     * date. A single add keeps [add], which does carry both.
+     * Takes over several products at once; the batch carries only the keys, no note or acquisition
+     * date.
      *
      * @param productKeys which products; the server skips the ones already owned.
      * @return what it did, or the classified failure.
@@ -333,10 +313,8 @@ interface PersonalBlueprintSource {
     suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult>
 
     /**
-     * Reads one page of the org-wide blueprint overview.
-     *
-     * Officer and above, in the caller's oversight scope — the server decides, and the app asks
-     * `GET /me/capabilities` (`canSeeBlueprintOverview`) before offering the screen at all.
+     * Reads one page of the org-wide blueprint overview, limited to the caller's oversight scope
+     * (Officer and above).
      *
      * @param query a blueprint-name fragment, or blank for everything.
      * @param page the zero-based page index.
@@ -350,11 +328,7 @@ interface PersonalBlueprintSource {
     ): ApiResult<BlueprintOverviewPage>
 
     /**
-     * Reads who holds one blueprint.
-     *
-     * A **separate** call per row, as the web does it: the overview page carries counts only, and
-     * one row's failure must not take the list with it (design ch. 17 artboard 6 draws all three
-     * states — loading, empty, failed — per row).
+     * Reads who holds one blueprint, one call per overview row.
      *
      * @param productKey which blueprint.
      * @return its owners, or the classified failure.
@@ -370,11 +344,7 @@ interface PersonalBlueprintSource {
     suspend fun recipe(id: String): ApiResult<BlueprintRecipe>
 
     /**
-     * Deletes **every** blueprint the member owns, in one call.
-     *
-     * The endpoint takes neither ids nor a body: it is all or nothing. That is why the screen
-     * reaches it through „Alles wählen" rather than through a menu entry — deleting 41 rows is for
-     * somebody who has seen the 41 rows (design ch. 18 §3).
+     * Deletes **every** blueprint the member owns in one call; the endpoint takes no ids.
      *
      * @return how many were deleted, or the classified failure.
      */
@@ -384,10 +354,8 @@ interface PersonalBlueprintSource {
 /**
  * How one line of an import file resolved against the product catalogue.
  *
- * Five states on the wire, three buckets on screen. `MATCHED` and `MATCHED_BY_ALIAS` are ready to
- * write; `ALREADY_OWNED` is not a result; `UNMATCHED` is skipped. `SUGGESTED` is the awkward one:
- * the server found fuzzy candidates but resolved nothing, so those rows need a human pick that this
- * app has no picker for — see [BlueprintImportPreview.unresolved].
+ * `MATCHED` and `MATCHED_BY_ALIAS` are ready to write, `ALREADY_OWNED` and `UNMATCHED` are
+ * skipped, and `SUGGESTED` needs a pick the app does not offer ([BlueprintImportPreview.unresolved]).
  */
 enum class BlueprintImportStatus {
     /** Resolved outright. */
@@ -424,10 +392,9 @@ enum class BlueprintImportStatus {
 /**
  * One line of the file, and what became of it.
  *
- * @property externalName the name exactly as it stood in the export — what is shown when nothing
- *   resolved, because it is the only thing the member can recognise the line by.
+ * @property externalName the name exactly as it stood in the export.
  * @property status how it resolved.
- * @property productKey the resolved product, or `null`. `SUGGESTED` and `UNMATCHED` carry none.
+ * @property productKey the resolved product, or `null`; `SUGGESTED` and `UNMATCHED` carry none.
  * @property productName what the resolved product is called, or `null`.
  * @property acquiredAt when the export says it was acquired, or `null`.
  */
@@ -455,12 +422,8 @@ data class BlueprintImportPreview(
     val alreadyOwned: Int get() = entries.count { it.status == BlueprintImportStatus.ALREADY_OWNED }
 
     /**
-     * The lines the server found **candidates** for and resolved none of — „Zu klären".
-     *
-     * Its own figure since design ch. 18 §2 (B2, ratified 2026-08-30), because it is not the same
-     * fact as „unbekannt": the server did find something, it just cannot choose. The app does not
-     * choose either — auto-accepting the top suggestion would write a decision nobody made — so
-     * these are skipped and the member is pointed at the web portal.
+     * The lines the server found candidates for but resolved none of („Zu klären"); they are skipped,
+     * not auto-accepted.
      */
     val unclear: List<BlueprintImportEntry>
         get() = entries.filter { it.status == BlueprintImportStatus.SUGGESTED }
@@ -743,10 +706,7 @@ class PersonalBlueprintRepository(
 }
 
 /**
- * Maps a page of rows.
- *
- * A row without an id is dropped for the same reason as everywhere else: it cannot be edited or
- * removed, so offering it produces a tap that does nothing.
+ * Maps a page of rows, dropping rows without an id.
  *
  * @param page the requested index.
  * @return the page.
@@ -836,12 +796,8 @@ data class BlueprintRecipe(
 )
 
 /**
- * One ingredient of a recipe.
- *
- * **Both quantities are carried, not one plus a conversion.** They are the same amount in two
- * scales, and converting between them in the client is exactly the mistake that produced the
- * refinery's hundred-fold stock bug. A column labelled SCU renders [quantityScu]; a column
- * labelled units renders [quantityUnits].
+ * One ingredient of a recipe, carrying both server-stated quantities without converting between
+ * them.
  *
  * @property name the material.
  * @property kind what sort of ingredient it is, as the server names it.
@@ -849,8 +805,7 @@ data class BlueprintRecipe(
  * @property quantityUnits the amount in whole units, when the server states one.
  * @property minQuality the lowest quality grade that still satisfies the requirement, or `null`
  *   when the ingredient has no quality dimension.
- * @property groupName the requirement group it came from, kept so a grouped recipe can still be
- *   read as one list without losing which alternative an ingredient belongs to.
+ * @property groupName the requirement group it came from.
  */
 data class BlueprintIngredient(
     val name: String,
@@ -864,9 +819,7 @@ data class BlueprintIngredient(
 /**
  * Maps the wire recipe onto the model, flattening the requirement groups.
  *
- * The server sends ingredients twice over: once at the top level and once inside each requirement
- * group. Both are taken, keyed by name and group so an ingredient that appears in two groups stays
- * two rows — collapsing them would hide that the recipe offers a choice.
+ * Ingredients are keyed by name and group, so one appearing in two groups stays two rows.
  *
  * @return the model.
  */

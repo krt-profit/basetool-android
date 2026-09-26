@@ -28,15 +28,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Where a detail pane's published head goes on a tablet.
- *
- * A pushed detail publishes a [ScreenTopBar] and the shell draws it as the app bar's title, which
- * is right on a phone because the detail *is* the destination. In a list-detail it is a pane of a
- * section the rail is still highlighting, so a selected row used to leave the bar naming the row
- * while the rail named the section — the two disagreeing about where the member was.
- *
- * Both halves are pinned, because fixing only the first one is worse than the bug: a pane that
- * publishes nothing identifies nothing, and the list does not mark its selection either.
+ * Tests where a detail pane's head goes on a tablet: in a list-detail the app bar keeps naming the section, while the
+ * pane shows its own head and the list marks its selection.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "de-w1280dp-h800dp-xhdpi")
@@ -57,8 +50,6 @@ class ListDetailHeadTest {
 
     @Test
     fun `the detail pane's head does not reach the shell`() {
-        // The whole point: the slot the shell reads must still be empty. If this ever fails, the
-        // app bar has gone back to naming a row while the rail names the section.
         lateinit var shellSlot: MutableState<ScreenTopBar?>
         composeRule.setContent {
             shellSlot = remember { mutableStateOf<ScreenTopBar?>(null) }
@@ -75,8 +66,6 @@ class ListDetailHeadTest {
 
     @Test
     fun `the list still publishes to the shell`() {
-        // Only the detail slot is redirected. The Lager's selection bar is published by the list,
-        // and it has to keep reaching the shell — it replaces the whole bar by design.
         lateinit var shellSlot: MutableState<ScreenTopBar?>
         composeRule.setContent {
             shellSlot = remember { mutableStateOf<ScreenTopBar?>(null) }

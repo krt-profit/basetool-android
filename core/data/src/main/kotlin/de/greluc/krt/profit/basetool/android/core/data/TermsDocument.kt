@@ -8,18 +8,10 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 /**
- * The Terms-of-Use wording in force, as the backend serves it.
+ * The Terms-of-Use wording in force, as the backend serves it (ADR-0138).
  *
- * **The app carries no copy of this text.** It used to be unshippable any other way: the wording
- * lived in the web frontend's message bundle, and bundling it in the APK would have shown the member
- * the version this build was compiled with while the server recorded consent against whatever it has
- * in force. With distribution over GitHub Releases and Obtainium, adoption is slow and uneven, so
- * that drift would not have been a risk — it would have been the steady state, and a member reading
- * one wording while agreeing to another is not informed consent. The backend now serves it (main
- * repo ADR-0138), and this is the shape it arrives in.
- *
- * [version] travels with the text on purpose: it is the value an acceptance is recorded against, so
- * a client can display and accept in one exchange without the two referring to different wordings.
+ * The app carries no copy of the text; [version] travels with it so display and acceptance refer to
+ * the same wording.
  *
  * @property version content digest of this wording
  * @property title the document's own heading

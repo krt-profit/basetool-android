@@ -190,8 +190,6 @@ class InventoryScreenTest {
 
     @Test
     fun `a group the server sent without an id offers no tap`() {
-        // It still holds something and is therefore shown, but it cannot be asked for — and a tap
-        // that does nothing is how a member concludes the app is broken.
         val toggled = mutableListOf<String>()
         show(
             InventoryState(
@@ -218,9 +216,6 @@ class InventoryScreenTest {
             ),
         )
 
-        // Two levels now, not one: the holder heads their own stacks and a stack names its place.
-        // Merged into "Rhea · ARC-L1" they read as one thing, and a member holding one material at
-        // two places got two unrelated rows with no total (REQ-APP-INV-017, artboard 1).
         compose.onNodeWithText("Rhea").assertIsDisplayed()
         compose.onNodeWithText("ARC-L1").assertIsDisplayed()
         compose.onNodeWithText("1 Eintrag").assertIsDisplayed()
@@ -246,8 +241,6 @@ class InventoryScreenTest {
             ),
         )
 
-        // One heading for the two places, carrying what they add up to. The two stacks keep their
-        // own figures beneath it.
         compose.onNodeWithText("Rhea").assertIsDisplayed()
         compose.onNodeWithText("642").assertIsDisplayed()
         compose.onNodeWithText("442").assertIsDisplayed()
@@ -274,8 +267,6 @@ class InventoryScreenTest {
             ),
         )
 
-        // A subtotal quietly missing one of its parts is worse than no subtotal: it would read as
-        // 442 and be wrong by however much "viele" is.
         compose.onNodeWithText("Rhea").assertIsDisplayed()
         compose.onAllNodesWithText("442").assertCountEquals(1)
     }
@@ -338,7 +329,6 @@ class InventoryScreenTest {
 
         compose.onAllNodesWithText("12,5").assertCountEquals(1)
         compose.onNodeWithText("Reserviert").assertIsDisplayed()
-        // The stack and the entry state it; the group deliberately does not.
         compose.onAllNodesWithText("Q 880").assertCountEquals(QUALITY_ROWS)
     }
 

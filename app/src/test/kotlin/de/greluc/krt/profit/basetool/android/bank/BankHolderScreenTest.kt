@@ -24,12 +24,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * What the holder detail renders — design chapter 12, artboard 8.
- *
- * The claim under test is the one the handoff had to correct on 27.08.2026: custody is kept at
- * **org-unit level** and is not allocated to accounts. A screen that quietly implied otherwise —
- * by printing an account beside the figure, or by leaving the sentence off — would be wrong in the
- * one way this screen can be wrong.
+ * Tests the holder detail (design chapter 12, artboard 8), which shows custody at org-unit level without allocating it
+ * to an account.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -127,7 +123,6 @@ class BankHolderScreenTest {
     fun `a single page of postings carries no pager`() {
         render(totalPages = 1)
 
-        // A pager that cannot go anywhere is furniture that suggests there is more to see.
         assertEquals(
             0,
             compose.onAllNodesWithText("Weiter", ignoreCase = true).fetchSemanticsNodes().size,

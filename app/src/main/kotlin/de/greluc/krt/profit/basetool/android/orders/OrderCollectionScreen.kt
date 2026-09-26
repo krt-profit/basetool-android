@@ -50,21 +50,11 @@ const val ORDER_COLLECTION_TAG: String = "order-collection"
 /**
  * „Materialsammelübersicht" — the stock rows linked to one Auftrag (design ch. 10 artboard 16).
  *
- * > **It belongs to the Auftrag**, which is what `material.collection.back` („Zurück zum Auftrag")
- * > says and what chapter 16 corrected itself about.
+ * - **Lieferstatus** — `PATCH /inventory/{id}/delivered` marks material as handed over.
+ * - **Verknüpfung lösen** — removes the link and keeps the stock; a row with no earmarked amount is
+ *   unlinked without confirmation.
  *
- * Two things can be changed here and one cannot:
- *
- * - **Lieferstatus** — `PATCH /inventory/{id}/delivered`, a Logistician shortcut that marks
- *   material as handed over without the book-out machinery.
- * - **Die Verknüpfung lösen** — the link goes, the stock stays, which is why the confirmation is
- *   one sentence and why a row with no earmarked amount is unlinked without asking at all.
- *
- * > **Besitzer and Standort are not editable here, and that is deliberate.** The web's inline
- * > selects post to `/inventory/{id}/transfer`, which is a proxy onto the backend's **book-out** —
- * > moving stock, not editing a field. The app offers that in the Lager's own book-out sheet, where
- * > the amount and the earmark reductions are visible before anything moves. A silent inline picker
- * > would move stock without showing what moves. On the design gap list (ch. 10 artboard 16).
+ * Besitzer and Standort are not editable here; moving stock happens in the Lager's book-out sheet.
  *
  * @param state what to draw.
  * @param actions what the rows report.
@@ -127,7 +117,6 @@ fun OrderCollectionScreen(
             }
         }
         item(key = "transfer-note") {
-            // Said once, at the foot: the two fields the web edits inline are a stock move here.
             KrtHint(explanation = stringResource(R.string.order_collection_transfer_note))
         }
     }
@@ -173,9 +162,6 @@ private fun CollectionRow(
                     enabled = state.allowed && !state.saving,
                 )
             }
-            // Owner and place read as one line because that is one fact — where the material is.
-            // A redacted owner is left out rather than drawn as an empty field: a requesting-side
-            // viewer is told nothing about owners at all (`canSeeJobOrderInventoryOwners`).
             Muted(text = listOfNotNull(row.owner, row.location).joinToString(" · "))
             Muted(
                 text =
@@ -243,10 +229,7 @@ private fun UnbackedRow(
 }
 
 /**
- * The one question this page asks: a link with an amount behind it.
- *
- * It names what goes and what stays, because those are different things and the difference is the
- * whole reason this is one sentence rather than a danger flow.
+ * Confirms unlinking a row with an earmarked amount, naming what goes and what stays.
  *
  * @param state the screen.
  * @param actions the answer.

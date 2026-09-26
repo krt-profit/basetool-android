@@ -28,13 +28,11 @@ private const val LOG_TAG = "OrderHandover"
  * @property materialName what it is called, for the sheet's subtitle.
  * @property needed how much the order asked for, as the server rendered it.
  * @property alreadyDone how much has already changed hands, as the server rendered it.
- * @property unit `SCU` or `PIECE` — the material's own. Carried so the sheet never labels a
- *   piece-counted position „SCU", which is the rule `RefineryScreen` writes down and this sheet
- *   broke: „Menge (SCU)" over a field counting medical stations.
+ * @property unit `SCU` or `PIECE`, the material's own; the sheet labels amounts with it.
  * @property amount how much this handover carries, as typed.
  * @property stock the rows it can be booked out of.
  * @property stockId the chosen row, or `null` while none is.
- * @property recipient who receives it, as typed. The server requires a non-blank handle.
+ * @property recipient who receives it, as typed; the server requires a non-blank handle.
  * @property recipientSquadron their unit, as typed, blank for none.
  * @property loading whether the candidate rows are still being read.
  * @property saving whether the write is in flight.
@@ -90,14 +88,10 @@ data class OrderHandoverDraft(
 }
 
 /**
- * Recording that material changed hands.
+ * Records that material of an Auftrag changed hands, which is what closes it.
  *
- * > **The parity gap that stopped an Auftrag being finished from the app.** Until this existed, the
- * > app could take an Auftrag on and never close it; in the web the handover is what closes it.
- *
- * > **„Ohne Lagerbezug erfassen" is not built.** Design ch. 10 artboard 14 offers it, and the
- * > endpoint cannot serve it: `JobOrderHandoverItemCreateDto.inventoryItemId` is `@NotNull`, and
- * > the web's own form refuses to submit without a row. Flagged rather than coded around.
+ * Every handover is booked out of a stock row; the endpoint requires `inventoryItemId`, so there is
+ * no „Ohne Lagerbezug erfassen" option.
  *
  * @property source where the read and the write go.
  * @property scope the view model's scope.
@@ -116,10 +110,10 @@ class OrderHandover(
      * Opens the sheet for one material line and reads its candidate stock rows.
      *
      * @param orderId the Auftrag.
-     * @param material the line. A line the server sent without a material id cannot be handed over
-     *   — the write is addressed by it — so the sheet does not open.
-     * @param alreadyDone how much of it has actually changed hands, from `JobOrder.krtHandedOver`.
-     *   Never `amount - openAmount`: that counts claims, not deliveries.
+     * @param material the line; one without a material id cannot be handed over, so the sheet does not
+     *   open.
+     * @param alreadyDone how much has actually changed hands, from `JobOrder.krtHandedOver`; never
+     *   `amount - openAmount`, which counts claims rather than deliveries.
      */
     fun open(
         orderId: String,
@@ -143,8 +137,6 @@ class OrderHandover(
                     write(
                         current.copy(
                             stock = result.value,
-                            // One candidate is not a choice. Preselecting it turns the common case
-                            // into a single tap instead of two.
                             stockId = result.value.singleOrNull()?.id,
                             loading = false,
                         ),
@@ -193,8 +185,6 @@ class OrderHandover(
                     amount = draft.amount,
                     recipientHandle = draft.recipient.trim(),
                     recipientSquadron = draft.recipientSquadron.trim().takeIf { it.isNotEmpty() },
-                    // The device's clock, not the server's — the member is the one who witnessed
-                    // the handover, which is why the web fills this in the browser too.
                     handoverTime = Instant.now().toString(),
                 )
             when (result) {

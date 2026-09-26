@@ -20,11 +20,9 @@ import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * The list's overflow — one entry, and not a navigation item.
+ * The order list's overflow menu, holding the single „Materialbedarf" entry.
  *
- * „Materialbedarf" is a planning view read before an Einsatz, not daily (design ch. 18 §1), so it
- * hangs off the list it summarises rather than taking a place in the bottom bar. Not gated: the
- * screen is a read, and it reads exactly the orders this list already shows.
+ * Not gated: the Materialbedarf screen only reads the orders this list already shows.
  *
  * @param onOpenDemand open the Materialbedarf.
  */

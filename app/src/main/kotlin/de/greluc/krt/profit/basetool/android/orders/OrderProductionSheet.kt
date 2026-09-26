@@ -94,18 +94,10 @@ data class ProductionBookInActions(
 )
 
 /**
- * „Herstellung erfassen" — the write that moves an item line's „hergestellt" figure.
+ * „Herstellung erfassen": the write that moves an item line's „hergestellt" figure.
  *
- * Design ch. 10 artboard 15. The artboard draws a smaller form than the endpoint can take, and the
- * three differences are deliberate and listed on the design gap list rather than coded around:
- *
- * - **Per material, not one switch.** The artboard offers a single „Zutaten aus dem Lager
- *   ausbuchen"; the server takes a plan over named stock rows that must cover each material's
- *   demand *exactly*, so the sheet carries the web's per-material „Nicht ausbuchen" instead.
- * - **The Einlagerung section is not in the artboard** and cannot be left out: produced units have
- *   to land somewhere, and `bookIn.locationId` is `@NotNull`.
- * - **„Verwendete Variante" and „Übergeben an" have no field here.** The variant is an order-level
- *   setting and handing over is the separate item-handover write.
+ * Carries a per-material „Nicht ausbuchen" plan over named stock rows that must cover each demand
+ * exactly, and an Einlagerung section for where the produced units land.
  *
  * @param actions the draft and what it reports.
  */
@@ -148,10 +140,7 @@ fun OrderProductionSheet(actions: OrderProductionActions) {
 }
 
 /**
- * How many whole units this run produced, capped at what the line still owes.
- *
- * A stepper rather than a bare field: the common case is one, and the second most common is „one
- * more than last time" — both are a tap.
+ * How many whole units this run produced, as a stepper capped at what the line still owes.
  *
  * @param draft what is filled in.
  * @param onAmount the count changed.
@@ -300,10 +289,9 @@ private fun MaterialRows(
 }
 
 /**
- * „benötigt X · zugewiesen Y · Rest Z" — the gate, said out loud.
+ * „benötigt X · zugewiesen Y · Rest Z": the reconcile gate for one material.
  *
- * Green only at an exact match, because that is the only plan the server accepts; red once more is
- * assigned than is needed, so an over-assignment is not read as „nearly there".
+ * Green only at an exact match; red once more is assigned than needed.
  *
  * @param material the material's own plan.
  * @param units how many are being built.
@@ -372,9 +360,8 @@ private fun Muted(
 /**
  * What the last booking returned, in the app's own words.
  *
- * A `409` here means the line moved while the sheet was open — somebody else booked production on
- * it — so it reads as a conflict rather than as a generic failure. A `422` is the coverage gate,
- * which the sheet's own gate should have caught first; saying so plainly beats „Fehler".
+ * A `409` means somebody else booked production on the line while the sheet was open; a `422` is
+ * the server's coverage gate.
  *
  * @param error the refusal.
  */

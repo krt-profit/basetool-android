@@ -21,14 +21,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * The board on a tablet, where it lays its cards out in two columns.
- *
- * Two things are easy to lose in the swap from a column to a grid and neither shows up as a crash:
- * a row can go missing when the keys collide, and the footer can end up inside one column instead
- * of under both. Both are pinned here, at the width that selects the grid.
- *
- * The column count itself is not asserted — Robolectric measures, so a count would only re-state
- * `BOARD_WIDE_COLUMNS`. What is asserted is that nothing is dropped by taking that path.
+ * Tests the board at tablet width, where it uses two columns: no row is dropped by colliding keys and the footer spans
+ * both columns.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w1280dp-h800dp-xhdpi")
@@ -91,8 +85,6 @@ class MaterialBoardWideTest {
 
     @Test
     fun `every card survives the grid`() {
-        // An odd count on purpose: the last row of a two-column grid is half empty, which is where
-        // a span or a key mistake shows first.
         board(
             listOf(
                 entry("o1", "Quantainium"),
@@ -115,13 +107,9 @@ class MaterialBoardWideTest {
 
     @Test
     fun `the load-more action reaches the grid too`() {
-        // It lives in the same spanning footer slot, so a grid that lost the span would lose this
-        // with it and the board would simply stop at page one with nothing saying so.
         board(listOf(entry("o1", "Quantainium")), hasMore = true)
 
         compose.onNodeWithTag(BOARD_LIST_TAG).assertIsDisplayed()
-        // ignoreCase: KrtGhostButton uppercases its label, as every button in the design
-        // system does.
         compose.onNodeWithText("mehr laden", substring = true, ignoreCase = true).assertIsDisplayed()
     }
 }

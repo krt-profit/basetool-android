@@ -64,10 +64,7 @@ data class BankRequestRowActions(
 )
 
 /**
- * The Anträge tab — design chapter 12, artboard 1.
- *
- * One list for both reads. A row raised by the member carries their own actions; a row on an
- * account they are responsible for carries the approval.
+ * The Anträge tab: the caller's own requests and those awaiting their approval, in one list.
  *
  * @param state what the tab holds.
  * @param onRefresh a pull-to-refresh.
@@ -115,12 +112,9 @@ fun BankRequestsTab(
 }
 
 /**
- * One request, on either surface.
+ * One request card, shared by the member and staff surfaces.
  *
- * The facts are the same wherever a request is shown — the signed amount, the movement, the chip,
- * the purpose, who raised it against which account, and a refusal's reason. Only what may be
- * *done* about it differs, so that is the slot: a member grants or withdraws, a bank employee
- * books or refuses.
+ * The facts are fixed; [actions] is the slot for what the surface lets the caller do.
  *
  * @param request the request.
  * @param actions what this surface offers on it; empty for a decided one.
@@ -194,11 +188,10 @@ private fun RequestHeader(request: BankBookingRequest) {
 }
 
 /**
- * The actions this caller has on this request.
+ * The member's actions on one request: grant or revoke the owner approval, or edit and withdraw
+ * their own.
  *
- * Deliberately **no reject**: the member surface can grant an owner approval and take it back
- * (`POST` / `DELETE .../owner-approval`), and that is all. Refusing a request outright is a bank
- * employee's act on their own surface — a holder who disagrees simply does not grant.
+ * There is no reject; refusing a request is a bank employee's act.
  *
  * @param row the request plus who the caller is to it.
  * @param busy whether a write against it is in flight.
@@ -240,8 +233,6 @@ private fun RowScope.MemberRequestActions(
             }
 
             row.mine -> {
-                // The server refuses an edit once the approval is in, so offering it would build
-                // a sheet whose save always comes back refused.
                 if (!request.ownerApprovalGranted) {
                     KrtGhostButton(
                         text = stringResource(R.string.bank_request_edit),
@@ -317,16 +308,10 @@ internal fun BankBookingRequest.statusTone(): KrtChipTone =
     }
 
 /**
- * The approval chip, or `null` when the request needs no approval.
+ * The approval chip naming the approver class the request waits on (REQ-BANK-047).
  *
- * **This is where the artboard's „1 / 2 FREIGABEN" counter used to be, and it is gone on purpose.**
- * The API models a single owner approval, not a tally: `requiresOwnerApproval` says whether one is
- * needed and `ownerApprovalGranted` whether it has been given. What *does* vary is which class of
- * approver must give it — for the KRT account that class escalates with the amount (REQ-BANK-047)
- * — so the chip names the class it is waiting on rather than counting votes that do not exist.
- *
- * Returns `null` once the request is decided: at that point the verdict is the fact worth a chip,
- * and the approval is history.
+ * A request needs at most one owner approval, so there is no counter. A decided request shows its
+ * plain status instead.
  *
  * @return the chip's label and tone, or `null` when the plain status should be shown instead.
  */

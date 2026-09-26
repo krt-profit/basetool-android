@@ -14,22 +14,14 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 
 /**
- * Creates the DataStore that holds the encrypted refresh token, and — more importantly — owns the
- * file name that the backup exclusions have to match.
+ * Creates the DataStore holding the encrypted refresh token and owns its file name.
  *
- * The name is a published constant rather than a string literal at the call site because the
- * protection depends on two files agreeing: this one and `data_extraction_rules.xml` (API 31+, the
- * whole supported range, in **both** its `cloud-backup` and `device-transfer` sections). A rename
- * here with no matching edit there does not fail anything at build time; it
- * just starts uploading a refresh token to Google Drive. `BackupExclusionTest` in `:app` reads the
- * XML and compares it against [RELATIVE_PATH] for exactly that reason.
+ * The name must match the `cloud-backup` and `device-transfer` exclusions in
+ * `data_extraction_rules.xml`; `BackupExclusionTest` checks them against [RELATIVE_PATH].
  */
 object AuthDataStore {
     /**
-     * Preferences DataStore name, without the extension.
-     *
-     * Chosen to match the exclusions that were written before this store existed, rather than
-     * renaming those and hoping every copy was found.
+     * Preferences DataStore name, without the extension; matches the backup exclusions.
      */
     const val STORE_NAME: String = "krt_tokens"
 

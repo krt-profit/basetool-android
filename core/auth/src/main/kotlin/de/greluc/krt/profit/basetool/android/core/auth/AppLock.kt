@@ -28,12 +28,10 @@ interface AppLock {
     /**
      * Creates the key and returns the cipher a prompt must authenticate before [completeArm].
      *
-     * Two-phase because the lock key is auth-per-use: Keystore refuses to encrypt with it without
-     * an authentication, exactly as it refuses to decrypt. Arming is therefore a prompt, not a
-     * silent toggle — which also makes "armed" imply "satisfiable".
+     * The auth-per-use key refuses to encrypt without an authentication, so arming is a prompt.
      *
      * @return the cipher to hand to the prompt
-     * @throws SecretCipherException if the device cannot create an auth-bound key at all
+     * @throws SecretCipherException if the device cannot create an auth-bound key
      */
     suspend fun prepareArm(): Cipher
 
@@ -69,21 +67,11 @@ interface AppLock {
 }
 
 /**
- * The real lock: an auth-bound Keystore key sealing the session key that the token store's outer
- * layer is built from.
+ * The real lock: an auth-bound Keystore key sealing the session key from which [SessionEnvelope] builds the token
+ * store's outer layer (REQ-APP-AUTH-010).
  *
- * **What the authentication buys, precisely.** [SessionEnvelope] wraps the token cipher's output
- * with a random session key; that session key exists on disk only as ciphertext under the auth-bound
- * Keystore key, and in memory only after an unlock. So the refresh token at rest is unreadable
- * without a user authentication — which is the half of `REQ-APP-AUTH-010` a screen-only lock left
- * open. Nothing about the inner token key changes: it stays non-exportable, device-bound and
- * `setUnlockedDeviceRequired`.
- *
- * **Arming and disarming rewrite the stored token, and that is the delicate part.** A member arming
- * the lock mid-session already has an unsealed blob; one disarming has a sealed one. Both are
- * rewritten through the store so the two forms never disagree with the setting. Every failure path
- * below prefers *losing the stored session* over leaving an unreadable blob behind — the cost of the
- * first is one login, and the cost of the second is a member who cannot get in at all.
+ * Arming and disarming rewrite the stored token to match the setting; every failure path prefers
+ * losing the stored session over leaving an unreadable blob.
  *
  * @property key the Keystore side
  * @property setting the sealed session key, stored beside the refresh token
@@ -101,12 +89,8 @@ class KeystoreAppLock(
     /**
      * Seals the session key and re-seals the stored token.
      *
-     * The order matters. The refresh token is read **before** the envelope is opened, while the
-     * stored blob is still unsealed; it is written back **after**, which seals it. Reversing the two
-     * would try to open a blob that has no outer layer yet.
-     *
-     * A token that cannot be read here is not an error to report: the member simply has no usable
-     * session, and arming a lock over nothing is perfectly valid.
+     * The refresh token is read before the envelope is opened and written back after, which seals it. A
+     * token that cannot be read means there is no session, and arming proceeds.
      */
     override suspend fun prepareArm(): Cipher = key.sealCipher()
 
@@ -121,12 +105,10 @@ class KeystoreAppLock(
     }
 
     /**
-     * Disarms the lock.
+     * Disarms the lock, mirroring [arm]: reads while the envelope is open, closes it and writes the token back
+     * unsealed.
      *
-     * Mirrors [arm]: read while the envelope is still open, close it, write back unsealed. If the
-     * envelope is **not** open — the member disarmed from a state this process never unlocked, which
-     * the gate makes unlikely but not impossible — the sealed blob would be unreadable afterwards,
-     * so it is cleared instead. One login, rather than a token nothing can open.
+     * If this process never opened the envelope, the sealed blob is cleared instead.
      */
     override suspend fun disarm() {
         val existing =

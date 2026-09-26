@@ -19,13 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * What the gate tells a member it is holding them for.
- *
- * The screen is one layout with three sets of words, and the words are the entire product: a
- * member who is waiting for an administrator, one who was refused, and one who is approved but
- * holds no role can each do something different about it — and only if they are told which of the
- * three they are. A wrong headline here is not a cosmetic defect, it is an instruction to wait for
- * something that is not coming.
+ * Tests the gate's three messages: waiting for approval, refused, and approved without a role.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -68,11 +62,7 @@ class ApprovalPendingScreenTest {
     }
 
     /**
-     * The role-less state (main repo REQ-SEC-053) is its own copy.
-     *
-     * This is the case D13 exists for: before it, a role-less account fell through to the generic
-     * refusal and was told its approval was pending — which is false, and points the member at an
-     * administrator who has already approved them.
+     * A role-less account (REQ-SEC-053) gets its own copy instead of the pending-approval one.
      */
     @Test
     fun `a role-less account is told a role is missing, not an approval`() {
@@ -83,9 +73,6 @@ class ApprovalPendingScreenTest {
 
     /**
      * An unrecognised server status falls back to the waiting copy, not to the refused one.
-     *
-     * "Not cleared" is all an unknown status means, and the refused wording would tell a member
-     * their account was turned down on the strength of a value this build simply predates.
      */
     @Test
     fun `an unknown status reads as waiting`() {

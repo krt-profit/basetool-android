@@ -57,9 +57,8 @@ private const val CLOSED_ALPHA = 0.55f
  * @property onPrompt a lifecycle decision was reached for.
  * @property onOpenHolder a holder row was tapped.
  * @property onAddHolder a new holder is to be registered.
- * @property onLocked a locked action was tapped by someone without Bank-Management. The control
- *   answers rather than doing nothing, because a lock that says nothing is indistinguishable from
- *   a broken button.
+ * @property onLocked a locked action was tapped by someone without Bank-Management, so the control
+ *   can explain the lock.
  */
 data class BankLifecycleActions(
     val onExpand: (String?) -> Unit,
@@ -70,13 +69,10 @@ data class BankLifecycleActions(
 )
 
 /**
- * The Verwaltung scope's Konten tab — design chapter 12, artboard 6.
+ * The Verwaltung scope's Konten tab: account lifecycle and holder register.
  *
- * Reads are a bank employee's; every action here is **Bank-Management's**. Whether the caller has
- * that comes from the server rather than from a role the app worked out — and without it the
- * actions are drawn **locked**, not hidden. A member who cannot see a control cannot learn that the
- * surface exists or which role opens it; the chapter-09 pattern is a padlock that answers when
- * tapped.
+ * Every action requires Bank-Management, as reported by the server; without it the actions are drawn
+ * locked, not hidden, and explain the lock when tapped.
  *
  * @param state what the tab holds.
  * @param management whether the caller may change anything.
@@ -226,9 +222,8 @@ private fun LifecycleAccountRow(
 /**
  * What Bank-Management may do to one account.
  *
- * **Closing needs a zero balance**, which the server enforces and the row states in advance rather
- * than letting the button find out. Closing is reversible, so neither it nor its counterpart asks
- * the member to type anything.
+ * Closing requires a zero balance, which the row states in advance. Closing is reversible, so no
+ * type-to-confirm is asked.
  *
  * @param account the account.
  * @param closed whether it is closed.
@@ -243,8 +238,6 @@ private fun AccountActions(
     actions: BankLifecycleActions,
 ) {
     val settled = (account.balance?.toDoubleOrNull() ?: 0.0) == 0.0
-    // Drawn for everyone, locked for those without the role. A lock a member can see and tap is
-    // what tells them the surface exists and which role opens it; hiding it tells them nothing.
     val lockIcon = DesignR.drawable.ic_krt_lock.takeIf { !management }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
@@ -284,8 +277,6 @@ private fun AccountActions(
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    // A non-zero balance is the server's own refusal and applies to everyone; the
-                    // lock is about the role and stays tappable so it can explain itself.
                     enabled = settled || !management,
                     iconRes = lockIcon ?: DesignR.drawable.ic_krt_lock,
                 )
@@ -314,8 +305,6 @@ private fun HolderSectionHeader() {
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = KrtPalette.White,
         )
-        // Verwahrung is kept at unit level; a holder belongs to no single account, and the design
-        // marks that so nobody reads the section as "the holders of the account above".
         KrtChip(
             text = stringResource(R.string.bank_lifecycle_holders_unbound),
             tone = KrtChipTone.Muted,

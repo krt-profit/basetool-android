@@ -185,8 +185,6 @@ class PersonalBlueprintsScreenTest {
 
     @Test
     fun `no craftability means no chip, not a claim`() {
-        // The read has not answered, or it failed. Saying "nicht baubar" would be a statement
-        // about the member's stock made out of an outage.
         show(
             BlueprintsState(items = listOf(entry()), total = 1, phase = BlueprintsPhase.Ready),
         )
@@ -211,8 +209,6 @@ class PersonalBlueprintsScreenTest {
 
     @Test
     fun `an entry the server will not release is offered no remove action`() {
-        // Showing it would produce a button that answers 409 — a rule the member cannot see,
-        // rendered as a failure.
         show(
             BlueprintsState(
                 items = listOf(entry(removable = false)),
@@ -271,8 +267,6 @@ class PersonalBlueprintsScreenTest {
             }
         }
 
-        // Not in the list at all (design ch. 17 artboard 5), and the notice line says why — so a
-        // missing hit does not read as a broken search.
         compose.onNodeWithText("F7A Hornet", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Bereits vorhandene", substring = true).assertIsDisplayed()
         compose.onNodeWithTag(BLUEPRINTS_SAVE_TAG).assertIsNotEnabled()

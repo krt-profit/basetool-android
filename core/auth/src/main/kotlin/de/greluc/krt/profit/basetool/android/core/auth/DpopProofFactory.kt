@@ -23,19 +23,10 @@ import java.util.Date
 import java.util.UUID
 
 /**
- * Builds the DPoP proof JWTs the token endpoint expects (RFC 9449).
+ * Builds the DPoP proof JWTs for token-endpoint requests only (RFC 9449, ADR-0131).
  *
- * **Only token requests carry a proof.** Under the refresh-only binding policy the realm uses
- * (main repo ADR-0131), a *voluntarily* sent proof makes Keycloak bind the access token too — and
- * the backend's bearer filter rejects an access token carrying `cnf.jkt`. Sending a proof on an
- * ordinary API call would therefore break the very next request. The proof belongs on
- * `/token` and nowhere else, which is why this class is used by the token client and is not an
- * interceptor.
- *
- * **`iat` comes from [ServerClock], not the device clock.** Keycloak allows a 10 s proof lifetime
- * with 15 s of skew; a phone a minute off produces proofs that are rejected, and the member sees
- * "login broken" rather than "clock wrong". The desktop extractor records clock drift as its
- * primary DPoP failure mode (main repo REQ-INGEST-012).
+ * A proof on an ordinary API call would make Keycloak bind the access token, which the backend
+ * rejects. `iat` comes from [ServerClock], since Keycloak tolerates only seconds of skew.
  *
  * @property keyPair the per-install P-256 key; its private half signs, its public half is embedded
  *   in the header as the `jwk` the server binds the refresh token to
@@ -45,10 +36,6 @@ class DpopProofFactory(
     private val keyPair: DpopKeyPair,
     private val serverClock: ServerClock,
 ) {
-    // The (PrivateKey, Curve) constructor, not the ECPrivateKey one: a key that lives in the
-    // Android Keystore implements PrivateKey and ECKey but NOT java.security.interfaces.ECPrivateKey,
-    // because it cannot expose its scalar. Nimbus provides this overload for exactly that case, and
-    // the curve has to be named since it can no longer be read off the key.
     private val signer: JWSSigner = ECDSASigner(keyPair.privateKey, Curve.P_256)
 
     private val publicJwk: ECKey =
@@ -62,9 +49,8 @@ class DpopProofFactory(
      *
      * @param httpMethod the request method, upper case — `htm`
      * @param httpUri the request URI **without** query or fragment, as RFC 9449 requires — `htu`
-     * @param nonce the value of the last `DPoP-Nonce` the server issued, or `null` when it has
-     *   issued none; RFC 9449 §8 lets a server start demanding one at any time, and a client that
-     *   cannot echo it back would be locked out by a server-side setting change
+     * @param nonce the last `DPoP-Nonce` the server issued, or `null` when it has issued none
+     *   (RFC 9449 §8)
      * @return the serialised proof JWT for the `DPoP` header
      */
     fun createProof(
@@ -92,14 +78,8 @@ class DpopProofFactory(
     }
 
     /**
-     * The JWK SHA-256 thumbprint of the public key, base64url-encoded (RFC 7638).
-     *
-     * This is the `dpop_jkt` parameter of the authorization request (RFC 9449 §10): it tells the
-     * realm, before any token exists, which key the eventual grant must be bound to. Under the
-     * refresh-only policy it is defence in depth rather than a requirement — it closes the window
-     * in which an intercepted authorization code could be redeemed against a different key.
-     *
-     * Computed here rather than by the caller so the key never has to leave this class.
+     * The base64url JWK SHA-256 thumbprint of the public key (RFC 7638), sent as the authorization request's `dpop_jkt`
+     * (RFC 9449 §10).
      *
      * @return the thumbprint, ready to send as a query parameter
      */
@@ -121,18 +101,10 @@ class DpopProofFactory(
 }
 
 /**
- * The per-install DPoP key pair.
+ * The per-install DPoP key pair: Keystore-backed in production, an in-memory P-256 pair in tests.
  *
- * Production creates it in the Android Keystore (non-exportable, StrongBox where available); tests
- * generate an ordinary in-memory P-256 pair. The distinction lives at the provider that produced
- * the keys, not in this type — which is what lets the proof format be tested on a JVM while the
- * key's hardware binding is an instrumented concern.
- *
- * @property privateKey signs the proof. Typed as [PrivateKey] rather than `ECPrivateKey` on
- *   purpose: the production key lives in the Android Keystore, which hands out a handle that
- *   implements `PrivateKey` and `ECKey` but never `ECPrivateKey` — it has no scalar to expose. A
- *   narrower type compiles, passes every JVM test with an in-memory key, and throws
- *   `ClassCastException` on the first real device
+ * @property privateKey signs the proof; typed as [PrivateKey] because a Keystore handle never
+ *   implements `ECPrivateKey`
  * @property publicKey embedded in each proof header as the `jwk` claim
  */
 data class DpopKeyPair(

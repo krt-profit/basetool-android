@@ -15,13 +15,10 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * One login attempt: the URL to open in the Custom Tab, and the three secrets that have to survive
- * until the browser comes back.
+ * One login attempt: the Custom Tab URL and the three per-attempt secrets that must survive until the browser returns.
  *
- * All three are per-attempt and none may be reused. [state] ties the redirect to *this* attempt,
- * [PkceChallenge.verifier] is what redeems the code, and [nonce] ties the ID token to it. Keeping
- * them together in one object is what makes losing one of them a compile error rather than a
- * silently weakened login.
+ * [state] ties the redirect to this attempt, [PkceChallenge.verifier] redeems the code, and [nonce]
+ * ties the ID token to it. None may be reused.
  *
  * @property url the absolute authorization URL for the browser
  * @property state CSRF value echoed by the realm; a redirect that does not carry it is not ours
@@ -46,8 +43,6 @@ data class AuthorizationRequest(
         val error = parameters[PARAM_ERROR]
         val code = parameters[PARAM_CODE]
         return when {
-            // Checked before anything else is read: a redirect that is not ours must not be able
-            // to steer the flow, not even into an error screen of its choosing.
             returnedState != state -> {
                 KrtLog.w(LOG_TAG) { "authorization redirect carried a foreign state, ignoring it" }
                 AuthorizationResponse.StateMismatch
@@ -68,12 +63,8 @@ data class AuthorizationRequest(
     }
 
     /**
-     * Splits a redirect's query string.
-     *
-     * Deliberately string-level rather than `HttpUrl`: production redirects to a verified App Link
-     * (`https://…`), but the dev realm registers the custom scheme `de.kartell.basetool:/…`, which
-     * `HttpUrl` refuses to parse at all. A URL parser here would make every dev-flavour login fail
-     * with "redirect is not a URL" — on the build the login flow is developed against.
+     * Splits a redirect's query string at string level, because `HttpUrl` cannot parse the dev realm's custom scheme
+     * `de.kartell.basetool:/…`.
      *
      * @param redirect the redirect URI as delivered
      * @return its decoded query parameters; empty when there are none
@@ -86,8 +77,6 @@ data class AuthorizationRequest(
             .filter { it.contains("=") }
             .associate { pair ->
                 val (name, value) = pair.split("=", limit = 2)
-                // The (String, Charset) overload is API 33+ and minSdk is 31 — on a device at
-                // the floor it would be a NoSuchMethodError at the moment of login.
                 URLDecoder.decode(name, CHARSET_UTF_8) to URLDecoder.decode(value, CHARSET_UTF_8)
             }
 
@@ -125,10 +114,8 @@ class AuthorizationRequestFactory(
     /**
      * Starts a login attempt.
      *
-     * The request carries `dpop_jkt` (RFC 9449 §10) although the realm binds only the refresh
-     * token: it names the key the eventual grant must be bound to *before* any token exists, which
-     * closes the window in which an intercepted code could be redeemed against a different key.
-     * Keycloak accepts the parameter under the refresh-only policy (security concept §4).
+     * The request carries `dpop_jkt` (RFC 9449 §10), naming the key the eventual grant must be bound to
+     * before any token exists.
      *
      * @param scopes the scopes to request; the default is the set the client is configured for
      * @return the request to open, together with the secrets its redirect will be checked against

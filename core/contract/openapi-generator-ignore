@@ -1,20 +1,4 @@
-# Files the generator must NOT write, and why. Same syntax as .gitignore.
-#
-# The document is generated from a Spring backend, and a few of its schemas describe the
-# framework rather than the API. Generating them produces types that are strictly worse than
-# the ones this app already has — and worse in a way that is invisible until runtime.
-
-# Spring's RFC 7807 model, whose fields the document declares without types: every property
-# comes out `@Contextual kotlin.Any?`, which compiles and then throws when it is decoded.
-# `core:network` carries the typed one the app actually reads — with the stable `code`, the
-# `correlationId` and the `fieldErrors` array the generated model does not describe at all
-# (REQ-API-004). Two types with the same name, one of them unusable, is worse than one.
 **/ProblemDetail.kt
 
-# The GDPR self-export (`GET /api/v1/users/me/export`): each section's `rows` is an array of
-# free-form objects, which the generator can only render as `Any?` — and kotlinx.serialization
-# refuses to compile that without a contextual serializer. The app does not offer the export (it is
-# a web feature), so neither model is generated. Consuming it one day means a typed row model here
-# first, not a serializer for `Any`. Added 2026-09-22 with the contract refresh from basetool#1999.
 **/DataExport.kt
 **/ExportSection.kt

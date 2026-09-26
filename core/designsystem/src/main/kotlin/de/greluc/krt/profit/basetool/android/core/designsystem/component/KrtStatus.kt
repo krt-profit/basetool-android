@@ -110,11 +110,6 @@ fun KrtOrgBadge(
     kind: KrtOrgBadgeKind = KrtOrgBadgeKind.Own,
     onClick: (() -> Unit)? = null,
 ) {
-    // Chapter 02 §3 draws all four side by side and they are NOT the same pill: „Bereich Profit"
-    // is orange through and through, „SK VANGUARD" and „Alle Einheiten" are a grey ring around
-    // white text, and a foreign org is the cross-org yellow. A Spezialkommando was drawn orange —
-    // the same as the member's own unit — so the queue's FÜR and DURCH pills read as one kind of
-    // thing when the chapter distinguishes them at a glance (ch. 10, artboard 1).
     val border =
         when (kind) {
             KrtOrgBadgeKind.Own -> MaterialTheme.colorScheme.primary
@@ -175,11 +170,7 @@ enum class KrtChipTone {
 }
 
 /**
- * A squared data chip — the counterpart to the rounded org badge.
- *
- * Chips label a record; they are not buttons and never carry a tap handler. The toned variants take
- * their hue for border and text with a faint tint fill behind, which keeps them legible at 11 sp
- * without becoming loud.
+ * A squared, non-interactive data chip labelling a record.
  *
  * @param text chip label; uppercased for display except in the [KrtChipTone.Data] tone, where the
  *   value's own formatting must survive.
@@ -225,27 +216,16 @@ fun KrtChip(
 }
 
 /**
- * A tappable filter chip — the interactive counterpart to the deliberately inert [KrtChip].
+ * A tappable filter chip — the interactive counterpart to [KrtChip].
  *
- * [KrtChip] labels a record and documents that it "never carries a tap handler"; a filter row needs
- * the opposite, so it gets its own component rather than an optional handler bolted onto that
- * contract. Same squared geometry, so a chip row still reads as one family.
- *
- * The selected state is carried by **border and text colour**, not by a filled background: a filled
- * orange chip would claim the visual weight of a primary action, and a row of filters is not a row
- * of calls to action.
- *
- * A chip that carries a **value** rather than a yes/no can also be cleared: pass [onClear] and the
- * chip grows an ✕ that removes the filter, while a tap on the label still opens whatever set it.
- * Design ch. 02 §11 d asks for exactly that for the date range („Zeitraum ✕") so the picker itself
- * does not need a reset button.
+ * Selection is shown by border and text colour, not a fill. With [onClear] the chip grows an ✕
+ * that removes the filter.
  *
  * @param text the filter's label; uppercased for display like every other chip.
  * @param selected whether this filter is currently applied.
  * @param onClick invoked on tap.
  * @param modifier layout modifier.
- * @param enabled whether the chip responds; a disabled chip dims rather than disappearing, so the
- *   row does not reflow while a load is in flight.
+ * @param enabled whether the chip responds; a disabled chip dims rather than disappearing.
  * @param onClear removes the filter this chip carries, or `null` for a chip that only toggles.
  * @param clearLabel what a screen reader calls the ✕; required whenever [onClear] is given.
  */
@@ -277,10 +257,6 @@ fun KrtFilterChip(
                     .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
-            // A chip's label is one word or one short phrase and is atomic: it either fits or the
-            // layout around it is wrong. Without this a squeezed chip breaks „Abgebrochen" into
-            // „ABGEB ROCHE N", which is unreadable and looks like corruption rather than a layout
-            // that ran out of room. Callers lay chips out in a FlowRow so this never has to clip.
             maxLines = 1,
             softWrap = false,
         )
@@ -306,23 +282,15 @@ fun KrtFilterChip(
 private val CHIP_CLEAR_GLYPH = 12.dp
 
 /**
- * A **choice** chip: hairline while it is on offer, filled orange with black text once it is taken.
- *
- * Its own component rather than a fill option on [KrtFilterChip], because design ch. 18 §3 (E6)
- * ratified the two as deliberately different and they are: a filter narrows a list and must not
- * claim the weight of a primary action, while a choice **is** the value — „Funktion an Bord", a
- * crew role. A chip that looks like a value and behaves like a switch is the worse mistake of the
- * two, so the difference is drawn rather than configured.
- *
- * Filled orange carries black text, which is the system's rule for every filled orange surface.
+ * A choice chip: hairline while on offer, filled orange with black text once taken; unlike
+ * [KrtFilterChip], it is the value itself.
  *
  * @param text the option's name; uppercased for display like every other chip.
  * @param selected whether this option is the chosen one.
  * @param onClick invoked on tap.
  * @param modifier layout modifier.
  * @param enabled whether the chip responds; a disabled chip dims rather than disappearing.
- * @param suffix what stands behind the name in the muted tint — the holder of a role already
- *   taken, which is what makes „vergeben" readable instead of merely dim.
+ * @param suffix muted text behind the name, e.g. the holder of a role already taken.
  */
 @Composable
 fun KrtChoiceChip(
@@ -364,10 +332,7 @@ fun KrtChoiceChip(
 }
 
 /**
- * A department tag in its frozen Bereichsfarbe.
- *
- * Only ever used where that department actually applies. The colour values are fixed by the
- * corporate design manual and must not be altered or reused decoratively.
+ * A department tag in its fixed Bereichsfarbe, used only where that department applies.
  *
  * @param text department name.
  * @param color the department's frozen hue, taken from `KrtTheme.colors`.
@@ -435,25 +400,16 @@ private fun KrtStatusTone.color(): Color =
     }
 
 /**
- * The hue a status is drawn in, for callers outside this file.
+ * The hue a status is drawn in, for callers outside this file, e.g. a card washed in its status
+ * tone.
  *
- * A **surface** can carry a status as well as a chip: design ch. 06 (F2) draws the lifecycle band as
- * a card washed in its own status tone, so the state, the countdown and the action read as one thing
- * rather than as a chip with two strangers beside it.
- *
- * @return the tone's colour — always the *text* tint, which is what stays legible on the dark
- *   ground and what a border drawn from it has to match.
+ * @return the tone's text tint, legible on the dark ground.
  */
 @Composable
 fun KrtStatusTone.krtColor(): Color = color()
 
 /**
  * The design system's `.status-dot` — an 8 dp square saying whether one row is „on".
- *
- * Square, like everything else here: a circle would be the only round thing on the screen. The dot
- * carries no text, so it takes a description of its own — in a roster it is the **only** thing
- * saying whether that member has checked in, and a screen reader would otherwise read the row
- * without its state.
  *
  * @param on whether the row is in the positive state.
  * @param stateLabel what the current state means, in words, for a screen reader.
@@ -475,13 +431,8 @@ fun KrtStatusDot(
 }
 
 /**
- * The row-level status indicator: a square 8 dp dot plus the label as written.
- *
- * Deliberately quiet — inside a list the status must not compete with the record's name, which is
- * also why the label is **not** uppercased. Chapter 02 §3 draws the five of them as
- * „Geplant · Aktiv · Briefing · Abgeschlossen · Abgesagt", and every list and detail head that uses
- * one follows suit (ch. 06 artboards 1 and 2, ch. 10 artboard 2, ch. 11 artboard 2). Uppercase is
- * the louder [KrtStatusBadge]'s, where the status IS the page's subject.
+ * The quiet row-level status indicator: a square 8 dp dot plus the label as written, not
+ * uppercased.
  *
  * @param text status label, drawn as given.
  * @param tone the lifecycle state.
@@ -511,17 +462,8 @@ fun KrtStatusPill(
 /**
  * The page-level status badge — the louder sibling of [KrtStatusPill].
  *
- * **Four parts, all load-bearing** (ch. 02 §3, settled in round 14 · S24 against the stylesheet,
- * which draws all four):
- *
- * 1. a **10 %** tint fill in the state's hue,
- * 2. a **hairline border** in Gray3,
- * 3. a **3 dp leading edge** in the state's tint,
- * 4. a **10 dp square dot** in that tint — and then the label in **white**.
- *
- * The label is white, not tinted: the hue is carried by the edge and the dot, so the word stays as
- * legible as any other title. This build had only the fill and the edge, with the label in the
- * tint — two of the four missing, which the chapter says reads as a different component.
+ * Draws a 10 % tint fill, a Gray3 hairline border, a 3 dp leading edge and a 10 dp square dot in the
+ * state's hue, with the label in white.
  *
  * @param text status label; uppercased for display.
  * @param tone the lifecycle state.
@@ -565,10 +507,8 @@ fun KrtStatusBadge(
 }
 
 /**
- * The live-presence indicator: a pulsing orange dot plus the names of the peers editing right now.
- *
- * Presence is ambient information and must never block input or steal focus — it only tells the
- * user that someone else is in the same record.
+ * The live-presence indicator: a pulsing orange dot plus the names of the peers editing right now;
+ * it never blocks input or takes focus.
  *
  * @param text the presence sentence, e.g. "Wird gerade bearbeitet von Rhea, Dorn".
  * @param modifier layout modifier.
@@ -580,10 +520,6 @@ fun KrtPresenceIndicator(
     modifier: Modifier = Modifier,
     count: Int? = null,
 ) {
-    // Unlike the loading spinner, this pulse carries no information the text does not already
-    // give — it is the one purely decorative animation in the app, so reduced motion stops it
-    // outright rather than shortening it. A zero-duration infinite repeat would spin the
-    // animation clock forever without ever settling, so the transition is skipped entirely.
     val reducedMotion = KrtTheme.motionMs == 0
     val pulse by
         if (reducedMotion) {
@@ -630,9 +566,7 @@ fun KrtPresenceIndicator(
 }
 
 /**
- * The "updates available" pill shown when live data changed underneath an open editor.
- *
- * The app never yanks state out from under an active edit: the peer's change is signalled here and
+ * The "updates available" pill shown when live data changed under an open editor; the change is
  * applied only when the user taps.
  *
  * @param text the invitation, e.g. "Aktualisierung verfügbar — Antippen zum Laden".

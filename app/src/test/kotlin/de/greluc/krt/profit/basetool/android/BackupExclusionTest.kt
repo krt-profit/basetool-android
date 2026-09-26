@@ -14,21 +14,10 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The refresh token must not leave the device through a backup — in **either** section of the rule
- * set every supported device reads.
+ * Checks that the refresh-token DataStore file is excluded from both the `cloud-backup` and `device-transfer` sections
+ * of `data_extraction_rules.xml` (REQ-APP-AUTH-004).
  *
- * This is the failure that reports nothing when it happens. Renaming the DataStore file, or
- * excluding a path that turns out not to exist, breaks no build and shows no symptom; it simply
- * starts copying an encrypted refresh token into Google Drive or onto the next phone.
- * `data_extraction_rules.xml` (API 31+, the whole supported range since ADR-0015) needs the
- * exclusion in both its `cloud-backup` and `device-transfer` sections, because `allowBackup=false`
- * alone does not reliably stop a device-to-device transfer.
- *
- * The legacy `backup_rules.xml` half of this class went with the file on 2026-09-22: only API ≤ 30
- * read it, and there `allowBackup=false` already stops both paths (REQ-APP-AUTH-004).
- *
- * Reading the XML as text is crude on purpose: the assertion should fail when the *file the app
- * writes* stops matching the *path the rules exclude*, which is a string-level fact.
+ * Reads the XML as text, because the fact under test is a path string.
  */
 class BackupExclusionTest {
     private val extractionRules = File("src/main/res/xml/data_extraction_rules.xml")
@@ -52,11 +41,6 @@ class BackupExclusionTest {
 
     @Test
     fun `both sections exclude the org-unit pin as well`() {
-        // The source comments promised this test covers it — the data_extraction_rules and
-        // ActiveOrgUnitStore itself — and at first it did not. The exclusions were correct,
-        // so nothing was exposed; what was missing is the guard that keeps them correct. A renamed
-        // FILE_NAME would otherwise start shipping one member's org scope into cloud backup and
-        // device-to-device transfer, silently.
         val rules = read(extractionRules)
         val cloudBackup = section(rules, "cloud-backup")
         val deviceTransfer = section(rules, "device-transfer")
@@ -73,10 +57,6 @@ class BackupExclusionTest {
 
     @Test
     fun `backup is off outright, not merely narrowed by exclusions`() {
-        // The exclusions above are the belt; this is the braces. With both persisted files
-        // excluded a restore produces an empty app anyway, so leaving backup on bought a member
-        // nothing and cost a standing invariant: every file added later has to be remembered in
-        // every rule section, and forgetting one is invisible.
         val manifest = read(File("src/main/AndroidManifest.xml"))
         assertTrue(
             "the manifest must set android:allowBackup=\"false\"",
@@ -86,8 +66,6 @@ class BackupExclusionTest {
 
     @Test
     fun `the excluded path is the one DataStore actually writes`() {
-        // preferencesDataStoreFile puts the store under files/datastore/, so excluding the bare
-        // store name — the obvious-looking rule — would match nothing at all.
         assertTrue(
             "the exclusion must name the datastore/ subdirectory",
             AuthDataStore.RELATIVE_PATH.startsWith("datastore/"),

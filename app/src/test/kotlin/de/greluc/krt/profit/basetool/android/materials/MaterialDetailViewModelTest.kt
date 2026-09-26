@@ -71,7 +71,6 @@ class MaterialDetailViewModelTest {
             listOf(
                 MaterialTerminalPrice("1", "ARC-L1 · Refinery", BigDecimal("81.00"), BEST_SELL),
                 MaterialTerminalPrice("2", "Lorville · TDD", BEST_BUY, BigDecimal("84.60")),
-                // Buys but does not sell — a row that must not become the "cheapest seller".
                 MaterialTerminalPrice("3", "HUR-L2 · Refinery", null, BigDecimal("80.20")),
             ),
         )

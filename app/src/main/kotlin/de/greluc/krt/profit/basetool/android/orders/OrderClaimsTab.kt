@@ -49,13 +49,10 @@ const val ORDER_CLAIMS_TAG: String = "order-claims"
 const val ORDER_CLAIM_SUBMIT_TAG: String = "order-claim-submit"
 
 /**
- * Zusagen — which Staffel has signed up for how much of each material (design ch. 10 artboard 13).
+ * Zusagen — which Staffel has pledged how much of each material (design ch. 10 artboard 13).
  *
- * > **Only on a Spezialkommando order.** The server refuses a claim on anything else, so the tab
- * > is not offered on a Staffel's own order at all.
- *
- * A claim is an **intention**, never a booking: nothing moves in the Lager, delivery is the
- * Übergabe, and withdrawing one therefore needs no confirmation.
+ * Offered only on a Spezialkommando order. A pledge moves nothing in the Lager, so withdrawing
+ * needs no confirmation.
  *
  * @param state the buckets and the pledges.
  * @param actions what the rows report.
@@ -84,8 +81,6 @@ internal fun LazyListScope.claimsTab(
     }
     if (state.units.isEmpty()) {
         item(key = "claims-no-unit") {
-            // Not a permission toast: the caller may simply belong to no profit-eligible Staffel,
-            // which is a fact about their memberships rather than a missing grant.
             Body(text = stringResource(R.string.order_claims_no_unit))
         }
     }
@@ -135,8 +130,6 @@ private fun ClaimBucketRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 bucket.claims.forEach { claim ->
-                    // The caller's own pledge carries the brand tone; another Staffel's is a data
-                    // chip and is not tappable, because there is nothing here to do with it.
                     KrtChip(
                         text =
                             stringResource(
@@ -173,10 +166,6 @@ private fun ClaimBucketRow(
 /**
  * The sheet that sets, changes and withdraws one Staffel's pledge.
  *
- * One sheet for all three, which is what the artboard draws: setting and changing are the same
- * upsert on the wire, and withdrawing is the quiet danger action inside it rather than a screen of
- * its own.
- *
  * @param actions the draft and what it reports.
  */
 @Composable
@@ -203,7 +192,6 @@ fun OrderClaimSheet(actions: ClaimActions) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 tabularFigures = true,
             )
-            // The sentence that keeps a pledge from being read as a delivery.
             KrtHint(explanation = stringResource(R.string.order_claims_intent_hint))
             draft.error?.let { ClaimError(error = it) }
             KrtCtaButton(
@@ -214,7 +202,6 @@ fun OrderClaimSheet(actions: ClaimActions) {
                 enabled = draft.submittable,
             )
             if (draft.claimId != null) {
-                // No confirmation: a claim books nothing, so this is undone by pledging again.
                 KrtQuietDangerButton(
                     text = stringResource(R.string.order_claims_withdraw),
                     onClick = actions.onWithdraw,

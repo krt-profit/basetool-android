@@ -49,8 +49,8 @@ private const val CARTEL_TYPE = "CARTEL"
  *
  * @property onSelectAccount a different account's matrix was asked for.
  * @property onSetGrant a member's capabilities changed.
- * @property onRevoke a member's standing is to be removed entirely — a confirmation, because it
- *   is what takes their sight of the account away.
+ * @property onRevoke a member's entry is to be removed after confirmation, taking away their sight
+ *   of the account.
  * @property onAdd a new entry is to be made on the shown account.
  * @property onLocked a locked control was tapped by someone without Bank-Management.
  */
@@ -63,21 +63,11 @@ data class BankGrantsActions(
 )
 
 /**
- * The Verwaltung scope's Grants tab — design chapter 12, artboard 7.
+ * The Verwaltung scope's Grants tab: one card per member with the deposit, withdrawal and transfer
+ * flags (REQ-BANK-009).
  *
- * **The matrix has three columns, not the drawn two.** `REQ-BANK-009` gives a grant three
- * independent flags — deposit, withdrawal, transfer — and no approval flag at all: who may approve
- * a request is decided by `requiredApprover`, per request, not per member. The artboard's „SEHEN"
- * column is right in substance, though: **the row's existence is the view grant**, so a member with
- * all three flags off may see the account and book nothing, and taking sight away means removing
- * the row.
- *
- * A per-member card rather than the drawn table: three capability columns plus a name do not fit a
- * phone's width the way two short ones did.
- *
- * One account escapes the sight rule: `CARTEL` is seen by every KRT member by rule (REQ-BANK-037),
- * so there the entry only ever carried booking rights — the note and the removal modal say so
- * rather than promising a sight they cannot take away.
+ * An entry's existence is the view grant, so removing it takes sight away. `CARTEL` is seen by every
+ * KRT member regardless (REQ-BANK-037), so there an entry only carries booking rights.
  *
  * @param state what the tab holds.
  * @param accounts the accounts whose matrices can be shown.
@@ -103,8 +93,6 @@ fun BankGrantsTab(
             )
             return@Column
         }
-        // A chip per account, as artboard 7 draws it. Scrollable, because a unit with many
-        // accounts would otherwise push the last one off the edge.
         Row(
             modifier =
                 Modifier
@@ -139,8 +127,6 @@ fun BankGrantsTab(
         ) {
             state.error?.let { error ->
                 item(key = "error") {
-                    // A refused flag change used to snap the checkbox back and say nothing, which
-                    // reads as "the app is broken" rather than "the server said no".
                     Text(
                         text = bankRequestErrorMessage(error),
                         style = MaterialTheme.typography.bodySmall,

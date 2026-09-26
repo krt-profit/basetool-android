@@ -24,11 +24,8 @@ private const val CLOSE = '}'
 private fun Char.isPlaceholderName(): Boolean = isLetterOrDigit() || this == '_'
 
 /**
- * Whether a brace's contents name a parameter at all.
- *
- * A name has to **start** with a letter or an underscore, which every key the server sends does.
- * That is what keeps `{12}` a literal — wording contains figures in braces far more often than it
- * contains a parameter called `12`.
+ * Whether a brace's contents name a parameter: non-empty, starting with a letter or underscore, so
+ * `{12}` stays literal.
  *
  * @return `true` when this is a parameter name rather than text that happens to sit in braces.
  */
@@ -36,11 +33,8 @@ private fun String.isPlaceholder(): Boolean =
     isNotEmpty() && (this[0].isLetter() || this[0] == '_') && all { it.isPlaceholderName() }
 
 /**
- * The string resource that words a notification type.
- *
- * Mirrors the web app's `notifications.type.*` keys one for one. A type this build has never seen
- * falls to the generic wording — the server may add a notification rule at any time, and a member
- * must still be told that something happened.
+ * The string resource that words a notification type, mirroring the web's `notifications.type.*`
+ * keys; an unknown type gets the generic wording.
  *
  * @param type the server's type constant.
  * @return the resource id.
@@ -93,21 +87,11 @@ internal fun notificationTypeRes(type: String): Int =
     }
 
 /**
- * Fills a template with a notification's parameters.
+ * Fills a template's `{name}` placeholders with a notification's parameters.
  *
- * **Scanned, not matched by a regular expression.** `Regex("\\{([A-Za-z0-9_]+)}")` compiles on the
- * JVM and throws on Android, whose ICU engine rejects the unescaped closing brace — the whole unit
- * suite runs on the JVM through Robolectric, so it stayed green while the app crashed on launch for
- * any member with a notification. Escaping the brace would fix that instance; scanning removes the
- * class, because there is no regex dialect left to disagree with.
- *
- * A brace that does not enclose a valid name is a literal and is copied through, so wording may
- * contain one.
- *
- * **An unfilled placeholder falls back to the generic wording.** The alternative — printing
- * "Neuer Auftrag #{displayId}" with the braces showing — is a sentence that looks like a bug to the
- * member and hides which notification it was. This happens when the server renames a parameter,
- * which no schema check can catch: the contract freezes that `params` exists, not what is in it.
+ * Uses a character scan rather than a regex, which Android's ICU engine would parse differently. A
+ * brace that does not enclose a valid name is copied through; any unfilled placeholder makes the
+ * result fall back to [fallback].
  *
  * @param template the resource text, containing `{name}` placeholders.
  * @param params the values to substitute.
@@ -133,7 +117,6 @@ internal fun fillTemplate(
             out.append(value)
             index = close + 1
         } else {
-            // Not a placeholder — a literal brace in the wording. Copied through untouched.
             out.append(char)
             index++
         }

@@ -13,8 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * How the switcher names a unit — the two forms design ch. 02, artboard 7 draws, and the case the
- * artboard could not show because it depends on how a unit was named by hand.
+ * Tests how the switcher names a unit: the two forms of design ch. 02, artboard 7, and a hand-named unit.
  */
 class OrgUnitLabelsTest {
     private fun unit(

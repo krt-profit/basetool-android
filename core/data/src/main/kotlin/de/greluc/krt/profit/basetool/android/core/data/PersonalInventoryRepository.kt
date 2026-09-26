@@ -93,10 +93,7 @@ data class PersonalItem(
 typealias PersonalItemPage = Page<PersonalItem>
 
 /**
- * What a save carries.
- *
- * A value type rather than five parameters, because the editor holds exactly this and the 409
- * dialog has to hand the same thing back unchanged when the member retries.
+ * What a save carries; the 409 dialog hands the same value back unchanged on a retry.
  *
  * @property name the item's name
  * @property quantity how many
@@ -176,13 +173,8 @@ interface PersonalInventorySource {
 /**
  * Reads and writes the member's own stock.
  *
- * **Everything here is me-scoped by the server.** No path in this family names a user, so the
- * repository never sends an id of one — which is what makes this the safest place to build the
- * app's first writes (owner decision, 2026-08-23: phase 3 in ascending order of risk).
- *
- * Nothing is cached. A member edits this list from the web app too, and a stale row would be saved
- * with a stale `version` — the conflict the optimistic lock exists to catch, manufactured by the
- * client instead of by two people.
+ * Every path is me-scoped by the server, so no user id is ever sent. Nothing is cached, because a
+ * stale row would be saved with a stale `version`.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -281,17 +273,10 @@ class PersonalInventoryRepository(
         const val LOCATION_LIMIT: Int = 25
 
         /**
-         * How many places are actually asked for: one more than are shown.
+         * How many places are asked for: one more than are shown.
          *
-         * `/uex/locations/search` answers a **bare array** with no total, so unlike every other
-         * picker in the app there is no `totalElements` to compare against. The overflow was
-         * therefore read off `rows.size >= LOCATION_LIMIT`, which is exactly the comparison the
-         * rest of the codebase warns about: a result set of exactly 25 is indistinguishable from
-         * a truncated one, so a complete list claimed to be hiding something.
-         *
-         * The extra row is the sentinel and is never rendered — the same trick the web's
-         * `PickerSearch.PAGE_SIZE = RENDER_CAP + 1` plays for the same reason. The endpoint clamps
-         * `limit` to `[1, 2000]`, so asking for one more is safe.
+         * `/uex/locations/search` answers a bare array with no total, so the extra row is a sentinel that
+         * signals overflow and is never rendered.
          */
         private const val LOCATION_PROBE: Int = LOCATION_LIMIT + 1
 
@@ -306,11 +291,7 @@ class PersonalInventoryRepository(
 }
 
 /**
- * Maps a page of rows.
- *
- * A row without an id is dropped: it cannot be opened, edited or deleted, so offering it would
- * produce a tap that does nothing. The server's own total is kept, because quietly lowering it
- * would hide the fault.
+ * Maps a page of rows, dropping any row without an id while keeping the server's total.
  *
  * @param page the requested index, which the envelope does not always echo.
  * @return the page.
@@ -357,9 +338,8 @@ private fun UexLocationDto.toModel(): PersonalLocation =
 /**
  * Narrows the app's kind onto the generated create enum.
  *
- * [PersonalLocationKind.UNKNOWN] cannot be saved — it only ever comes from a server value this
- * build does not know, and the editor never offers it — so it falls back to the city, which is
- * unreachable in practice and keeps the mapping total.
+ * [PersonalLocationKind.UNKNOWN], which the editor never offers, falls back to the city so the
+ * mapping stays total.
  *
  * @return the generated constant.
  */

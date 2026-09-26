@@ -153,7 +153,6 @@ class NotificationRepositoryTest {
     @Test
     fun `a row without a type is kept, because the screen has a sentence for it`() =
         runTest {
-            // Dropping it would hide a notification the server thought worth raising.
             respond("""{"content": [{"id": "n1", "params": {}}], "page": 0, "totalElements": 1, "totalPages": 1}""")
 
             val page = (repository.inbox() as ApiResult.Success).value
@@ -170,8 +169,6 @@ class NotificationRepositoryTest {
 
             repository.inbox()
 
-            // Without this parameter the server sorts createdAt ASCENDING, which opened the inbox
-            // on the oldest notification a member ever received and put today's on the last page.
             assertEquals("createdAt,desc", requestedUrl().queryParameter("sort"))
         }
 
@@ -206,9 +203,6 @@ class NotificationRepositoryTest {
     @Test
     fun `only a notification event is a reason to re-read`() =
         runTest {
-            // `connected`, `heartbeat` and `replaced` are the stream's own bookkeeping. A caller
-            // re-reading on every heartbeat would poll every twenty seconds while believing it was
-            // using push.
             respond(
                 "event: connected\ndata: ok\n\n" +
                     "event: heartbeat\ndata: ok\n\n" +

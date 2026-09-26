@@ -181,8 +181,6 @@ class PersonalBlueprintsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ------------------------------------------------- selection mode and import (ch. 18 §§2-3)
-
     /**
      * „Alles wählen" goes through the one call that means everything.
      *
@@ -274,11 +272,7 @@ class PersonalBlueprintsViewModelTest {
         }
 
     /**
-     * The preview splits four ways, not three.
-     *
-     * „Zu klären" is not „Unbekannt": the server found candidates for those rows and simply could
-     * not choose. Counting them together would tell a member their file had two unreadable names
-     * when it has one unreadable name and one the web portal can finish (design ch. 18 §2, B2).
+     * The import preview counts „Zu klären" rows separately from „Unbekannt" ones (design ch. 18 §2).
      */
     @Test
     fun `the preview separates unclear rows from unknown ones`() =
@@ -358,8 +352,6 @@ class PersonalBlueprintsViewModelTest {
     @Test
     fun `a failed craftability read leaves the list standing`() =
         runTest(dispatcher) {
-            // The rows are still true. A chip that said "nicht baubar" because a request did not
-            // come back would be a claim about the member's stock made out of an outage.
             val source = FakeSource(craftabilityAnswer = ApiResult.Failure(ApiError.Forbidden()))
             val model = viewModel(source)
 
@@ -374,7 +366,6 @@ class PersonalBlueprintsViewModelTest {
     @Test
     fun `the refining switch changes the answer without a second read`() =
         runTest(dispatcher) {
-            // Both counts come from the same call, which is why it asks for them together.
             val source = FakeSource()
             val model = viewModel(source)
             model.loadOnce()
@@ -390,10 +381,6 @@ class PersonalBlueprintsViewModelTest {
     @Test
     fun `a product the member already owns is not offered`() =
         runTest(dispatcher) {
-            // Design ch. 17 artboard 5, which is the web's behaviour: what the member already has
-            // does not appear in the list at all, and the sheet's notice line says so. This
-            // replaces the earlier rule, which listed it greyed out with „hast du schon" beside it
-            // — the server would refuse the create either way.
             val owned = BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true)
             val free = BlueprintProduct("drake.cutlass", "Cutlass Black", "Drake", owned = false)
             val source = FakeSource()
@@ -425,7 +412,6 @@ class PersonalBlueprintsViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf(listOf("a", "b", "c")), source.batches)
-            // The single create carries the note and is a different call; it must not have run.
             assertEquals(emptyList<Pair<String, String?>>(), source.added)
             val adding = model.state.value.editor as BlueprintEditor.Adding
             assertEquals(2, adding.outcome?.added)

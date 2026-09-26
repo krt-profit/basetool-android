@@ -70,14 +70,9 @@ const val MATERIALS_LIST_TAG: String = "materials-list"
 const val MATERIALS_SEARCH_TAG: String = "materials-search"
 
 /**
- * „Handel" — the material catalogue with its UEX prices (design spec ch. 16, artboard 1).
+ * „Handel": the read-only material catalogue with its UEX prices.
  *
- * Read-only throughout: prices come from the UEX sync, and nothing on this screen writes.
- *
- * > **The subtitle is the category, not „Veredelt · SCU".** The artboard reads type and unit into
- * > the row, and `MaterialPriceOverviewDto` carries neither — it carries the category, which is
- * > what the web itself groups by. On the design gap list rather than filled with a second request
- * > per row.
+ * Each row's subtitle is the material's category.
  *
  * @param state what to draw.
  * @param actions what the filters report back.
@@ -96,9 +91,6 @@ fun MaterialsScreen(
     onOpenProfit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Chapter 16 puts the other two trade surfaces in THIS screen's overflow rather than in the
-    // „Mehr" list: all three answer the same question at different resolutions, and three sibling
-    // menu entries would suggest three unrelated areas.
     MaterialsOverflow(onOpenMatrix = onOpenMatrix, onOpenProfit = onOpenProfit)
     when (state.phase) {
         is MaterialsPhase.Loading -> {
@@ -203,10 +195,7 @@ private fun MaterialsFailure(
 }
 
 /**
- * Search, the two price bounds and the category chips — the artboard's whole filter band.
- *
- * Two number fields, not sliders: the artboard says so, and a slider over a range that spans four
- * orders of magnitude cannot be aimed.
+ * The filter band: search, two number fields for the price bounds, and the category chips.
  *
  * @param state what is filtered.
  * @param actions what the fields report.
@@ -254,8 +243,6 @@ private fun MaterialFilters(
                 selected = state.category == null,
                 onClick = { actions.onCategory(null) },
             )
-            // The chips are the categories the data actually has, so they can never offer a
-            // narrowing that yields nothing.
             state.categories.forEach { category ->
                 KrtFilterChip(
                     text = category,
@@ -311,9 +298,6 @@ private fun MaterialRows(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MATERIALS_LIST_TAG),
-        // A gutter, not a hairline-separated full-bleed list: artboard 16-1 draws each material as
-        // its own bordered card. Without the gutter the prices ran into the right edge of the
-        // screen with nothing between them and it.
         contentPadding =
             PaddingValues(
                 horizontal = contentGutter().coerceAtLeast(KrtSpacing.s12),
@@ -328,10 +312,7 @@ private fun MaterialRows(
 }
 
 /**
- * One material: what it is called, which family it belongs to, and what the market does with it.
- *
- * Sell above buy, the way the artboard stacks them — the figure a member is usually after is what
- * they can get for it.
+ * One material: its name, its category, and its sell price above its buy price.
  *
  * @param row the material.
  * @param onClick open its price page.
@@ -376,8 +357,6 @@ private fun MaterialRow(
                     color = KrtPalette.DangerText,
                 )
             }
-            // The artboard closes every row with the chevron: on a card whose whole surface is the tap
-            // target it is the only thing saying the card HAS one.
             KrtIcon(
                 id = DesignR.drawable.ic_krt_chevron_right,
                 contentDescription = null,
@@ -388,10 +367,7 @@ private fun MaterialRow(
 }
 
 /**
- * One price, or the design's em dash.
- *
- * **Never `0,00` for a missing price.** „Nobody trades it" and „it is worth nothing" are different
- * facts, and only one of them is true.
+ * One price, or an em dash when the server sent none; never `0,00`.
  *
  * @param text the rendered price, or `null` when the server sent none.
  * @param color the side's colour.

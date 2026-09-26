@@ -25,22 +25,11 @@ import kotlin.time.Duration.Companion.minutes
 internal val BACKGROUND_GRACE: Duration = 5.minutes
 
 /**
- * Decides when the app is locked, and holds that decision across configuration changes.
+ * Decides when the app is locked and holds that decision across configuration changes.
  *
- * **Opening is a cryptographic act, not a state assignment.** [unlock] takes the cipher the platform
- * authenticated and only opens the gate if the lock's sentinel decrypts with it. There is
- * deliberately no method that simply sets the state to open: a lock whose gate can be opened by a
- * boolean is one mis-ordered transition away from opening on its own, which is what CodeQL's
- * "insecure local authentication" describes and what the earlier revision of this class did.
- *
- * The rule for *when* to lock is the design chapter's "cold start **plus** after 5 minutes in the
- * background", and both halves matter for different reasons. Cold start is the obvious one. The
- * grace period is what makes the feature usable: a member who switches to Discord to read a
- * briefing and comes back four seconds later must not be re-prompted, or the lock is off within a
- * day.
- *
- * **Elapsed time comes from the caller**, as a monotonic timestamp, so the grace period cannot be
- * defeated by changing the device clock and the whole rule is testable without waiting.
+ * Opening is cryptographic: [unlock] opens the gate only if the lock's sentinel decrypts with the
+ * authenticated cipher. The app locks on cold start and after 5 minutes in the background, measured
+ * with a monotonic timestamp supplied by the caller.
  *
  * @property lock the auth-bound Keystore key and its sentinel
  */
@@ -55,17 +44,10 @@ class AppLockViewModel(
     private var backgroundedAt: Long? = null
 
     /**
-     * Reads the armed state and locks if the lock is on.
+     * Reads the armed state and locks if the lock is on; called from the activity's `onCreate`.
      *
-     * Called from the activity's `onCreate`, which is what makes the cold-start half of the rule
-     * true: a process that has just started has no unlocked state to inherit.
-     *
-     * **Idempotent, and that is the point.** `onCreate` runs again whenever the activity is
-     * recreated — a rotation, a font-size change, a language change — none of which restarted the
-     * process. Re-reading the setting there would re-lock an app the member unlocked seconds ago
-     * and demand a fingerprint for changing the language, which is neither of the two triggers the
-     * rule names. The guard is on [AppLockState.Unknown], the state only a fresh view model has;
-     * this one survives a recreate, so a second call finds a decision already made.
+     * Idempotent: only a fresh view model in [AppLockState.Unknown] decides, so an activity recreate does
+     * not re-lock.
      */
     fun start() {
         if (mutableState.value !is AppLockState.Unknown) {
@@ -93,9 +75,6 @@ class AppLockViewModel(
     fun onForegrounded(elapsedRealtimeMillis: Long) {
         val away = backgroundedAt ?: return
         backgroundedAt = null
-        // The one decision in this class with no visible trace when it goes wrong: too eager and
-        // the lock is unusable, too lax and it silently stops guarding. The reading is a monotonic
-        // duration, not a wall clock, so it carries nothing about the member.
         KrtLog.d(LOG_TAG) { "away for ${elapsedRealtimeMillis - away} ms, state=${mutableState.value}" }
         if (mutableState.value !is AppLockState.Open) {
             return
@@ -112,9 +91,8 @@ class AppLockViewModel(
     /**
      * Prepares the cipher a prompt has to authenticate.
      *
-     * A `null` means the key is gone or was invalidated by a new biometric enrolment. That is not a
-     * failed attempt — it is a lock that can never be satisfied again, so the screen switches to the
-     * one action that still works.
+     * `null` means the key is gone or was invalidated by a new biometric enrolment, so the lock can
+     * never be satisfied again.
      *
      * @return the initialised cipher, or `null` when the lock can no longer be opened
      */
@@ -137,8 +115,6 @@ class AppLockViewModel(
                 if (lock.open(cipher)) {
                     AppLockState.Open
                 } else {
-                    // The platform said yes and the session key still did not come back, so
-                    // the key no longer matches the blob. Not something the member did.
                     KrtLog.w(LOG_TAG) { "authentication succeeded but the sentinel did not open" }
                     AppLockState.Locked(R.string.lock_error_generic)
                 }
@@ -146,10 +122,7 @@ class AppLockViewModel(
     }
 
     /**
-     * Records that an unlock attempt failed or was dismissed.
-     *
-     * The app stays locked — the screen keeps its retry button. This exists so the screen can say
-     * something rather than looking as though the tap did nothing.
+     * Records that an unlock attempt failed or was dismissed; the app stays locked.
      *
      * @param messageRes the string to show, or `null` to clear a previous one
      */
@@ -158,11 +131,9 @@ class AppLockViewModel(
     }
 
     /**
-     * Disarms the lock. Arming goes through [prepareArm] and [completeArm] instead.
+     * Disarms the lock; arming goes through [prepareArm] and [completeArm] instead.
      *
-     * Arming does **not** lock immediately either: the member is holding an unlocked device at that
-     * moment, and sealing the app in their face would be a strange reward for switching a security
-     * feature on. It takes effect at the next cold start or background timeout.
+     * Arming takes effect at the next cold start or background timeout, not immediately.
      *
      * @param value `false` to disarm; `true` is ignored here, because arming needs a prompt
      */
@@ -176,10 +147,8 @@ class AppLockViewModel(
     /**
      * Creates the lock key and returns the cipher a prompt must authenticate.
      *
-     * Arming is two-phase because the key is auth-per-use: Keystore refuses to encrypt with it
-     * without an authentication, exactly as it refuses to decrypt. An earlier revision sealed
-     * inline here and failed on every device with `Key user not authenticated` while every unit
-     * test stayed green — the Keystore is not exercised off a device.
+     * Arming is two-phase because the key is auth-per-use, so encrypting the sentinel also needs an
+     * authentication.
      *
      * @return the cipher for the prompt, or `null` when the device cannot create the key at all
      */
@@ -232,12 +201,10 @@ sealed interface AppLockState {
     ) : AppLockState
 
     /**
-     * The lock exists but can never be opened again.
+     * The lock exists but can never be opened again, because a new biometric enrolment invalidated the
+     * key.
      *
-     * Reached when a new biometric enrolment invalidated the key
-     * (`setInvalidatedByBiometricEnrollment`, security concept §4). Kept apart from [Locked] because
-     * retrying is pointless: the only route on is a fresh login, and offering an unlock button here
-     * would send the member round a loop that cannot end.
+     * Unlike [Locked], no retry is offered; the only way on is a fresh login.
      */
     data object Unsatisfiable : AppLockState
 }

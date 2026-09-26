@@ -63,15 +63,10 @@ data class KrtTableColumn(
 )
 
 /**
- * The dense data table — the **tablet** representation of a record list.
+ * The dense data table — the tablet representation of a record list; phones use [KrtRecordCard].
  *
- * On phones a table is the wrong shape: the design system collapses the same record into
- * [KrtRecordCard] instead, because horizontal page scrolling is forbidden. Pick by window size
- * class, never by squeezing columns.
- *
- * The header carries the system's signature: input-fill background, uppercase micro-labels and a
- * 2 dp orange under-rule. Rows alternate with an almost invisible zebra so the eye can track a line
- * across wide columns without the stripes becoming decoration.
+ * The header has the input fill, uppercase micro-labels and a 2 dp orange under-rule; rows carry a
+ * faint zebra.
  *
  * @param columns the column definitions; their weights must match the cells supplied per row.
  * @param rowCount number of rows to render.
@@ -138,10 +133,6 @@ fun KrtTable(
                         .defaultMinSize(minHeight = TABLE_ROW_HEIGHT),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // The table owns the grid, not its caller. This was a `RowScope` lambda and the
-                // weight was the caller's to apply, which two of four callers forgot: their cells
-                // sized to their own content while the header row — which does apply it — stayed
-                // on the grid, so figures drifted left of the titles they belong under.
                 columns.forEachIndexed { columnIndex, column ->
                     Box(modifier = Modifier.weight(column.weight)) { cell(rowIndex, columnIndex) }
                 }
@@ -162,9 +153,8 @@ fun KrtTable(
  * @param emphasis whether this is the row's identifying value (bright white bold) rather than a
  *   secondary attribute.
  * @param unit optional unit rendered after the value in a quieter tone.
- * @param tone the colour of the value where the column carries a meaning of its own — a buy price
- *   is a cost and a sell price is a return, and chapter 16 draws them in the danger and success
- *   tints for exactly that reason. `null` keeps the default, which is what a neutral column wants.
+ * @param tone the value's colour where the column carries a meaning, e.g. danger for buy and
+ *   success for sell prices; `null` keeps the default.
  */
 @Composable
 fun KrtTableCell(
@@ -176,9 +166,6 @@ fun KrtTableCell(
     tone: Color? = null,
 ) {
     Row(
-        // Fills its column, so a numeric cell's `Arrangement.End` ends at the column's right edge
-        // — the same edge the header is aligned to. Sized to content it sat at the column's START
-        // and every figure hung to the left of the title above it.
         modifier =
             modifier
                 .fillMaxWidth()
@@ -211,11 +198,8 @@ fun KrtTableCell(
 }
 
 /**
- * The **phone** representation of a table record: a card with a headline, its key figure and the
- * remaining attributes as label/value pairs.
- *
- * Carries exactly the same data as one [KrtTable] row. Collapsing rather than scrolling is a
- * binding rule — the page must never scroll horizontally.
+ * The phone representation of a table record: a card with a headline, its key figure and the
+ * remaining attributes as label/value pairs, carrying the same data as one [KrtTable] row.
  *
  * @param title the record's identifying name.
  * @param value the record's key figure, already formatted.

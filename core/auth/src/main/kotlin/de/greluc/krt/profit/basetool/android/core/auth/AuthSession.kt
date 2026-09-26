@@ -17,30 +17,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * The signed-in session: the access token in memory, the refresh that keeps it alive, and the
- * logout that takes it apart.
+ * The signed-in session: the in-memory access token, its single-flight refresh, and logout.
  *
- * **This is what makes [AccessTokenProvider] synchronous** (ADR-0001). The provider is read from an
- * OkHttp interceptor, which cannot suspend; wrapping a coroutine there would mean `runBlocking` on
- * a network thread. So the current access token is a field, and keeping it fresh is a separate,
- * suspending job the caller does before a request rather than inside one.
- *
- * **Refreshing is single-flight.** Several screens loading at once would otherwise each notice the
- * expiry and each start a refresh — several token requests where one belongs, each one a DPoP proof
- * the realm has to verify, and all but one of the results thrown away. The mutex plus the
- * re-check inside it means concurrent callers wait for the first refresh and then find it done.
- *
- * **Only `invalid_grant` ends a session.** A refresh that fails because the phone is on a train
- * leaves the stored token exactly where it is: wiping it would turn a tunnel into a logout, and the
- * member would be asked for a password they did not need. That distinction is [SessionState.Stale]
- * against [SessionState.SignedOut], and it is the reason the token client separates those states in
- * the first place.
- *
- * **[SessionState.Stale] is a start-up state.** It is published when the session could not be proven
- * and there is nothing else to show. Once a session is established, a refresh that fails for those
- * same transport reasons leaves it standing: the screens handle a failed request themselves, and
- * demoting the whole app over a blip is how a member who was signed in the entire time gets told
- * their session is unconfirmed.
+ * The access token is a field so [AccessTokenProvider] can be read synchronously from an OkHttp
+ * interceptor (ADR-0001); refreshing is a separate suspending call made before a request. Only
+ * `invalid_grant` ends a session: a transport failure yields [SessionState.Stale] at start-up and
+ * leaves an established session standing.
  *
  * @property tokenClient talks to the realm's token endpoint
  * @property refreshTokenStore the encrypted refresh token at rest
@@ -74,21 +56,14 @@ class AuthSession(
     /**
      * Restores the session from the stored refresh token, if there is one.
      *
-     * Called once at start-up. A stored token that no longer works is cleared here rather than at
-     * the first API call, so the member meets the login screen instead of an error.
+     * Called once at start-up; a stored token that no longer works is cleared here.
      *
      * @return the resulting state, also published on [state]
      */
     suspend fun restore(): SessionState =
         refreshMutex.withLock {
-            // Under the same single-flight rule as every other refresh path, which this one used to
-            // sit outside of. An unlock starts this restore while the screens behind the lock start
-            // their loads, so two refreshes of the same token could be in flight at once -- and the
-            // loser publishes its failure over the winner's session.
             val current = mutableState.value
             if (current is SessionState.SignedIn && !needsRefresh()) {
-                // Someone established the session while this call waited for the lock. Spending a
-                // second round trip to learn the same thing is what the mutex exists to avoid.
                 return@withLock current
             }
             when (val stored = refreshTokenStore.read()) {
@@ -106,10 +81,6 @@ class AuthSession(
                 }
 
                 StoredRefreshToken.Locked -> {
-                    // Nothing is decided here, and deliberately nothing is published: the
-                    // session is still unread, not ended. The gate calls this again once the member
-                    // has authenticated. Reaching this branch means a caller ran ahead of the lock,
-                    // which is worth a line because it used to be the silent half of a logout.
                     KrtLog.i(LOG_TAG) { "session cannot be restored while the app lock is closed" }
                     mutableState.value
                 }
@@ -117,11 +88,8 @@ class AuthSession(
         }
 
     /**
-     * Completes a login by redeeming the authorization code.
-     *
-     * The ID token's `nonce` is checked against the one this attempt sent. Without that check the
-     * `nonce` parameter is decoration: it exists so a token minted for a *different* authorization
-     * request cannot be injected into this one.
+     * Completes a login by redeeming the authorization code, checking the ID token's `nonce` against the one this
+     * attempt sent.
      *
      * @param request the attempt the redirect belongs to; supplies the PKCE verifier and the nonce
      * @param code the authorization code from the redirect
@@ -138,8 +106,6 @@ class AuthSession(
         }
         val claims = result.tokens.idToken?.let(IdTokenClaims::parse)
         return if (claims?.nonce != request.nonce) {
-            // Either a replayed ID token or a realm that dropped the nonce. Both mean this token
-            // was not minted for this login, so nothing is stored and no session starts.
             KrtLog.e(LOG_TAG) { "ID token nonce does not match the authorization request" }
             publish(SessionState.SignedOut)
             LoginResult.NonceMismatch
@@ -153,8 +119,7 @@ class AuthSession(
     /**
      * Refreshes the access token if it is spent, at most once at a time.
      *
-     * Call it before a batch of API calls, not inside the interceptor: the interceptor is
-     * synchronous, and this suspends.
+     * Call it before a batch of API calls, not inside the synchronous interceptor.
      *
      * @return the refresh outcome, or `null` when the current token was still good and nothing was
      *   sent
@@ -162,8 +127,6 @@ class AuthSession(
     suspend fun refreshIfNeeded(): TokenResult? {
         if (!needsRefresh()) return null
         return refreshMutex.withLock {
-            // Re-checked inside the lock: by the time a queued caller gets here, the refresh it was
-            // waiting for has usually already happened, and repeating it would defeat the point.
             if (!needsRefresh()) {
                 null
             } else {
@@ -179,13 +142,6 @@ class AuthSession(
                         null
                     }
 
-                    // The call that brought us here runs on an OkHttp thread, and on a cold start
-                    // it can be a request made *above* the lock gate — the version check is one.
-                    // Publishing SignedOut here is what logged a member out before they had even
-                    // been offered the fingerprint prompt: the session was never read, so there is
-                    // nothing to conclude. The request goes out unauthenticated and fails on its
-                    // own terms, which is the honest outcome for a request nobody could have
-                    // authorised yet.
                     StoredRefreshToken.Locked -> {
                         null
                     }
@@ -195,15 +151,10 @@ class AuthSession(
     }
 
     /**
-     * Renews the access token the server has just refused.
+     * Renews the access token the server has just refused, skipping the local freshness check of [refreshIfNeeded].
      *
-     * The freshness check [refreshIfNeeded] makes is deliberately skipped: the server's `401` is a
-     * harder fact than the local expiry estimate, and the two disagree whenever the device clock is
-     * off or the token was revoked early.
-     *
-     * @param refused the token that was rejected. When the session already holds a different one,
-     *   another caller refreshed while this one was in flight and that token is returned unused —
-     *   which is what keeps a burst of parallel 401s to a single refresh.
+     * @param refused the rejected token; when the session already holds a different one, that one is
+     *   returned without a new refresh
      * @return a usable access token, or `null` when the session could not be renewed
      */
     suspend fun refreshFor(refused: String?): String? =
@@ -214,7 +165,6 @@ class AuthSession(
             }
             val stored = storedRefreshToken()
             if (stored is StoredRefreshToken.Locked) {
-                // Same reasoning as refreshIfNeeded: a sealed token is not an ended session.
                 return@withLock null
             }
             if (stored !is StoredRefreshToken.Present) {
@@ -229,29 +179,21 @@ class AuthSession(
     /**
      * Ends the session and returns the URL that ends it at the realm too.
      *
-     * The order is deliberate. The in-memory state is dropped **first**, so "log out" is instant
-     * and cannot be undone by a slow network; the revocation is attempted next, while the token is
-     * still known; the local wipe follows. Opening the returned URL is what kills the realm's SSO
-     * cookie — without it the next login silently reuses the browser session, and "log out, then
-     * log in as someone else" does not work.
+     * Drops the in-memory state first, then attempts revocation, then wipes locally. Opening the returned
+     * URL ends the realm's SSO cookie.
      *
      * @return the RP-initiated logout URL to open in a browser, or `null` when no ID token was held
-     *   and there is therefore nothing to end
      */
     suspend fun logout(): String? {
         val ending = tokens
         tokens = null
         publish(SessionState.SignedOut)
 
-        // Sealed or absent are the same thing here: there is no token to revoke, and the wipe
-        // below happens either way. A logout must never depend on the lock being open.
         val refreshToken = ending?.refreshToken ?: refreshTokenStore.readTokenOrNull()
         if (refreshToken != null) {
             tokenClient.revokeRefreshToken(refreshToken)
         }
         refreshTokenStore.clear()
-        // The key as well as the blob: a key left behind can decrypt any copy of the ciphertext
-        // that escaped, and a wipe should not depend on having found every copy.
         cipher.deleteKey()
 
         return ending?.idToken?.let(tokenClient::endSessionUri)
@@ -296,8 +238,6 @@ class AuthSession(
             }
 
             is TokenResult.SessionEnded -> {
-                // The only outcome that destroys anything. The grant is gone at the realm; keeping
-                // the blob would just fail again on every start-up.
                 KrtLog.i(LOG_TAG) { "refresh token is no longer accepted, signing out" }
                 tokens = null
                 refreshTokenStore.clear()
@@ -305,20 +245,7 @@ class AuthSession(
             }
 
             else -> {
-                // Offline, a realm outage, a misconfiguration. The session may well still be
-                // valid, so nothing is cleared.
                 KrtLog.w(LOG_TAG) { "session could not be refreshed: ${result::class.simpleName}" }
-                // And an established session is not torn down either. Stale replaces the entire app
-                // with "the session could not be confirmed", which is the right answer at start-up
-                // -- there is nothing else to show -- and the wrong one afterwards. Coming back to a
-                // sleeping phone, the first refresh after the biometric unlock regularly fails while
-                // the radio is still reconnecting, and the next caller's refresh succeeds a second
-                // later: the member watched the whole app turn into an error that repaired itself.
-                //
-                // A failed request is handled per screen everywhere else in this app -- cached
-                // content, the offline rule of design ch. 14, the connectivity retry -- and that is
-                // where a transient token failure belongs too. Only invalid_grant still ends the
-                // session, and it does so above.
                 mutableState.value as? SessionState.SignedIn ?: SessionState.Stale(result)
             }
         }
@@ -326,9 +253,8 @@ class AuthSession(
     /**
      * Takes a fresh grant into memory and onto disk.
      *
-     * A refresh response that carries no `refresh_token` keeps the one that was spent — the realm
-     * does not rotate them (main repo REQ-SEC-012), and overwriting the field with `null` would
-     * throw away the only way back into the session.
+     * A response without `refresh_token` keeps the previous one, since the realm does not rotate them
+     * (REQ-SEC-012).
      *
      * @param granted the new token set
      * @param previousRefreshToken the refresh token in play before this exchange
@@ -382,11 +308,9 @@ sealed interface SessionState {
     ) : SessionState
 
     /**
-     * A stored session that could not be proven **at start-up**, for a reason that is not a refusal.
+     * A stored session that could not be proven at start-up, for a reason that is not a refusal.
      *
-     * Not reachable from [SignedIn]: once the session is established a failed refresh leaves it
-     * alone, because the alternative is replacing a working app with an error over a dropped
-     * connection.
+     * Not reachable from [SignedIn]: a failed refresh leaves an established session alone.
      *
      * @property cause the token-endpoint outcome, typically [TokenResult.Unreachable]
      */
@@ -418,10 +342,8 @@ sealed interface LoginResult {
     ) : LoginResult
 
     /**
-     * Tokens were granted, but the ID token belongs to a different authorization request.
-     *
-     * Nothing is stored and no session starts: an ID token whose `nonce` does not match was not
-     * minted for this login, and accepting it is the injection the nonce exists to prevent.
+     * Tokens were granted, but the ID token's `nonce` belongs to a different authorization request; nothing is stored
+     * and no session starts.
      */
     data object NonceMismatch : LoginResult
 }

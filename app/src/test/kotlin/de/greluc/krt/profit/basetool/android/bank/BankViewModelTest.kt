@@ -38,11 +38,7 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * The bank's two screens.
- *
- * The rule with teeth on the detail: the account and its first ledger page fail **together**. A
- * balance over a missing ledger reads as an account with no history rather than one that did not
- * load.
+ * Tests the bank's two screens; on the detail, the account and its first ledger page fail together.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -157,8 +153,6 @@ class BankViewModelTest {
 
     @Test
     fun `a counter-booking is a reversal, not a reversed row`() {
-        // The wire field names the transaction a row NEGATES. Read the other way round it labels
-        // the Storno as reversed and leaves the original offering an action the server refuses.
         val storno = BankBooking("p2", "t2", "REVERSAL", "-1.0", null, null, null, "t-p1")
         assertTrue(storno.isReversal)
         assertEquals("t-p1", storno.reversesTransactionId)
@@ -244,8 +238,6 @@ class BankViewModelTest {
     @Test
     fun `a failed ledger fails the screen rather than showing a history-less account`() =
         runTest(dispatcher) {
-            // Both reads carry the same gate, so a split state would model a case the server cannot
-            // produce — and a balance over a missing ledger reads as an account with no history.
             val source =
                 RecordingSource(
                     mutableListOf(ApiResult.Success(emptyList())),
@@ -394,7 +386,6 @@ class BankViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf(BankLimitTarget.Role("OFFICER") to "500000"), source.limitsSet)
-            // The sheet closes on send; the settings come back from the write itself.
             assertNull(model.state.value.limitDraft)
         }
 
@@ -425,8 +416,6 @@ class BankViewModelTest {
             advanceUntilIdle()
 
             model.limits.remove(BankLimitTarget.User("u1"), "Rhea", "25000")
-            // Asked, not done: the confirmation names the limit that applies afterwards, because
-            // removing one is not the same as setting it to zero.
             assertTrue(source.limitsCleared.isEmpty())
             assertEquals("25000", model.state.value.limitRemoval?.fallback)
 
@@ -438,7 +427,6 @@ class BankViewModelTest {
     @Test
     fun `the settings editor opens on a target the field can hold`() =
         runTest(dispatcher) {
-            // The wire carries `250000.0000` and the field takes digits alone.
             val source = accountSource()
             source.settingsAnswers.add(ApiResult.Success(settings()))
             val model = BankAccountViewModel(source, AlwaysOnline, "a1")
@@ -487,8 +475,6 @@ class BankViewModelTest {
     @Test
     fun `nothing is written when the server says the caller may not`() =
         runTest(dispatcher) {
-            // The flags are per-account facts the server states. The app works out no role of its
-            // own, and a member who is not the responsible holder writes nothing.
             val source = accountSource()
             source.settingsAnswers.add(
                 ApiResult.Success(settings(canSetTarget = false, canConfigureVisibility = false)),
@@ -518,8 +504,6 @@ class BankViewModelTest {
             model.load()
             advanceUntilIdle()
 
-            // One at a time: a second write while the first is in flight is dropped, which is
-            // the same guard that keeps a double tap from booking twice.
             model.onToggleRole("OFFICER")
             advanceUntilIdle()
             model.onToggleRole("LOGISTICIAN")
@@ -550,8 +534,6 @@ class BankViewModelTest {
     @Test
     fun `a settings read that fails costs the controls, not the screen`() =
         runTest(dispatcher) {
-            // The account and its ledger are the screen's subject. Losing the settings leaves the
-            // flags at "may not", which is the safe direction.
             val source = accountSource()
             source.settingsAnswers.add(ApiResult.Failure(ApiError.Forbidden()))
             val model = BankAccountViewModel(source, AlwaysOnline, "a1")

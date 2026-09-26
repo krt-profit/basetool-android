@@ -63,15 +63,12 @@ enum class MissionSectionState {
 }
 
 /**
- * A refused save, named by the section it belongs to.
- *
- * The Einsatz carries four independent counters, so a `409` must say **which** section was changed
- * underneath — a shared error slot at the foot of the form cannot (design ch. 06 artboard 11).
+ * A refused save (`409`), named by the section it belongs to.
  *
  * @property section which section collided.
  * @property mine what the member had typed, for the modal's lower half.
- * @property theirs what the server holds, for the upper half — `null` when the answer carried no
- *   readable value, in which case the modal shows only the member's own.
+ * @property theirs what the server holds, for the upper half, or `null` when the answer carried no
+ *   readable value.
  */
 data class MissionSectionConflict(
     val section: MissionSection,
@@ -82,10 +79,7 @@ data class MissionSectionConflict(
 /**
  * The Verwaltung form, as typed.
  *
- * Times are held as **date and time halves**, never as ISO text. Design ch. 06 artboard 8 draws
- * every timestamp as a pair (the web's own `.datetime-split-inputs`), and the wire value is built
- * from the two — an earlier build made all four free `KrtTextField`s, which is what made the
- * schedule read as paperwork.
+ * Timestamps are held as date and time halves; the wire value is built from the two.
  *
  * @property name the title; the server requires one.
  * @property description the briefing, blank for none.
@@ -96,8 +90,7 @@ data class MissionSectionConflict(
  * @property plannedStartClock its time.
  * @property plannedEndDate the scheduled end's date.
  * @property plannedEndClock its time.
- * @property actualStart when it actually began, as the wire string, blank while it has not. Not a
- *   field — a state line plus an action (artboard 8).
+ * @property actualStart when it actually began, as the wire string, blank while it has not.
  * @property actualEnd when it actually ended, as the server sent it; blank while it runs.
  * @property endingNow whether the „Einsatz beenden" pair is open.
  * @property endDate that pair's date half.
@@ -106,12 +99,9 @@ data class MissionSectionConflict(
  * @property correctStartDate that pair's date half.
  * @property correctStartClock that pair's time half.
  * @property internal whether only the owning unit sees it.
- * @property operationId which Operation the Einsatz belongs to, or `null` for none. The Kern
- *   section is the **only** place this can be set: the Operation's own form has no such field
- *   because the wire has none, and the app used to offer it in neither.
+ * @property operationId which Operation the Einsatz belongs to, or `null` for none; set only here.
  * @property operations what that picker may offer, read once with the tab.
- * @property partyLeadSet whether an Einsatzleitung is named — the first figure of the Personen
- *   head's „Leitung · Manager · Teilnehmer" count.
+ * @property partyLeadSet whether an Einsatzleitung is named.
  * @property managerCount how many managers there are.
  * @property participantCount how many have signed up.
  * @property expanded which sections are open; Kern starts open and the rest closed.
@@ -120,10 +110,7 @@ data class MissionSectionConflict(
  * @property saving which section is being written, or `null`.
  * @property conflict the refused save, or `null`.
  * @property error a refusal that is not a conflict.
- * @property errorSection which section [error] belongs to, or `null` when it belongs to the tab
- *   rather than to one section. The same reasoning as [MissionSectionConflict]: four sections
- *   save independently, so a refusal at the foot of all four says nothing about which one was
- *   refused — and on a scrolled tab it is not even on screen.
+ * @property errorSection which section [error] belongs to, or `null` when it belongs to the tab.
  */
 data class MissionAdminForm(
     val name: String = "",
@@ -172,12 +159,7 @@ data class MissionAdminForm(
         get() = actualEnd.isNotBlank()
 
     /**
-     * Whether **this** section's fields may be edited right now.
-     *
-     * A write locks only the section that is writing. Locking the whole tab froze the Ziele while
-     * the Zeitplan saved, which is exactly what design ch. 18 §3 (E4) rules out: the sections carry
-     * independent version counters and are saved independently, so they have to be editable
-     * independently too.
+     * Whether this section's fields may be edited right now; a write locks only the section writing.
      *
      * @param writable whether a write may run at all — online, and the screen not otherwise busy.
      * @param section the section being drawn.
@@ -216,13 +198,8 @@ data class MissionAdminContext(
 )
 
 /**
- * Editing the Einsatz itself — four folded sections, each saved on its own.
- *
- * Composition ratified by the designer on 2026-08-29 (ch. 06 artboards 7–12): four panel headers,
- * Kern open and the rest closed, each head carrying its own state chip so the fold hides nothing;
- * the save button **inside** its section rather than at the form's foot; the schedule's timestamps
- * as date/time pairs; the start as a confirmed action rather than a typed field; and a `409` that
- * names the section it belongs to.
+ * Edits the Einsatz itself as four folded sections, each saved on its own with its own version
+ * counter (design ch. 06 artboards 7–12).
  *
  * @property missionId the Einsatz.
  * @property source where the section writes go.
@@ -247,9 +224,6 @@ class MissionAdmin(
             return
         }
         write(formFor(detail))
-        // After the form, not before: the tab opens on what is already known, and the Operation
-        // picker fills in when its list arrives. A read the member waits for would make attaching
-        // an Einsatz feel like the reason the tab is slow.
         scope.launch {
             val options = source.operationOptions()
             write(read().form?.copy(operations = options))
@@ -299,8 +273,6 @@ class MissionAdmin(
         val context = read()
         val form = context.form
         val detail = context.detail
-        // Personen has no save: its three writes fire on the pick. The branch is here rather than
-        // absent so a new section cannot be added without a decision about what it writes.
         if (form == null || detail == null || section == MissionSection.PEOPLE) {
             return
         }
@@ -320,13 +292,7 @@ class MissionAdmin(
         write(open.copy(correctingStart = false))
     }
 
-    /**
-     * Opens the „Einsatz beenden" pair, filled with **now**.
-     *
-     * Now rather than blank because that is what ending an Einsatz means in practice, and because
-     * the alternative is a member typing today's date into a field they opened by pressing „end".
-     * It stays editable: a run written up the next morning ended when it ended.
-     */
+    /** Opens the „Einsatz beenden" date/time pair, prefilled with the current time and editable. */
     fun endMission() {
         val open = read().form ?: return
         val (date, clock) = Instant.now().toString().toKrtDateTime()
@@ -388,11 +354,7 @@ class MissionAdmin(
     }
 
     /**
-     * Saves one section, and only that one.
-     *
-     * The sections carry **independent** version counters on the server, so saving them together
-     * would throw that away and turn any concurrent edit into a 409 the member cannot make sense
-     * of. Each save therefore sends its own section's counter and nothing else's.
+     * Saves one section only, sending that section's version counter and no other.
      *
      * @param section which one.
      * @param form what is typed.
@@ -409,10 +371,6 @@ class MissionAdmin(
             when (result) {
                 is ApiResult.Success -> {
                     onSaved(result.value)
-                    // Re-fill from the answer rather than keeping what was typed: the write returns
-                    // the whole Einsatz, so the other sections' counters arrive fresh and a manager
-                    // can make a second edit without a 409 from a version they never saw. The fold
-                    // state and the receipt survive the re-fill — they belong to the sitting.
                     val current = read().form ?: form
                     write(
                         formFor(result.value).copy(
@@ -483,13 +441,8 @@ class MissionAdmin(
                     name = form.name.trim(),
                     description = form.description.blankToNull(),
                     meetingPoint = form.meetingPoint.blankToNull(),
-                    // Echoed, not edited. The Kern PATCH replaces the section, so leaving the link
-                    // out cleared it on every rename - the app does not show the field at all.
                     calendarLink = detail.calendarLink,
-                    // The status is the badge's business (F2), never this form's.
                     status = null,
-                    // The only place an Einsatz joins an Operation: the Operation's own form has
-                    // no such field, because the wire has none. Blank means „keiner".
                     operationId = form.operationId,
                     version = detail.coreVersion,
                 )
@@ -507,9 +460,6 @@ class MissionAdmin(
                         } else {
                             form.actualStart.blankToNull()
                         },
-                    // Echoed when it is not being edited, for the same reason as the start: this
-                    // PATCH replaces the section, and an omitted end would reopen an Einsatz that
-                    // had been closed — together with every participant's end-time it closed.
                     actualEndTime =
                         if (form.endingNow) {
                             krtWireInstant(form.endDate, form.endClock)
@@ -524,8 +474,6 @@ class MissionAdmin(
                 source.patchFlags(missionId, internal = form.internal, version = detail.flagsVersion)
             }
 
-            // Guarded by `save`; the branch exists so a new section cannot be added without a
-            // decision about what it writes.
             MissionSection.PEOPLE -> {
                 error("the Personen section has no save")
             }

@@ -77,8 +77,6 @@ internal fun LazyListScope.financesTab(
 
         is MissionFinancesPhase.Failed -> {
             item {
-                // A refusal here is ordinary — a member may see the Einsatz and not its books — so
-                // it gets its own sentence rather than the generic outage copy.
                 KrtEmptyState(
                     iconRes = DesignR.drawable.ic_krt_bank,
                     title = stringResource(R.string.mission_detail_tab_finances),
@@ -120,9 +118,6 @@ private fun LazyListScope.financeContent(
         item { EmptyTab(R.string.mission_detail_empty_finances) }
     } else {
         item {
-            // One flush card holding every booking and closing on the per-head line — the entries
-            // and the share they add up to are one thing, and a gap between them would let the
-            // share read as a fourth booking.
             KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
                 finances.entries.forEach { entry ->
                     FinanceEntryRow(
@@ -168,8 +163,6 @@ private fun FinanceBand(finances: MissionFinances) {
             modifier = Modifier.weight(1f),
             compact = true,
         )
-        // The net carries no sign of its own: it is a balance, and a leading plus on a positive
-        // result would read as a third booking rather than as the sum of the two above it.
         KrtFigureTile(
             label = stringResource(R.string.mission_detail_finance_net),
             value = formatAmount(finances.total.orEmpty()),
@@ -181,11 +174,7 @@ private fun FinanceBand(finances: MissionFinances) {
 }
 
 /**
- * Booking, and the reason it is not offered.
- *
- * A booking needs a participant to hang off, and the only one the app may name is the caller's
- * own — so a member who has not signed up is told that rather than shown a button that answers
- * 403.
+ * The booking action, or a line explaining that the caller must sign up first.
  *
  * @param state the screen, for the caller's own row and the write gate.
  * @param actions what it reports back.
@@ -203,8 +192,6 @@ private fun FinanceAction(
                 color = KrtPalette.TextMuted,
             )
         } else {
-            // Outline, not filled: the one filled button on this screen belongs to the sign-up bar
-            // below it, and artboard 06-2 draws this action with an orange border.
             KrtOutlineButton(
                 text = stringResource(R.string.mission_detail_finance_add),
                 onClick = actions.onAdd,
@@ -224,14 +211,8 @@ private fun FinanceAction(
 /**
  * „Anteil je Auszahlung (12 von 14)" — the card's closing line.
  *
- * **Computed, and the divisor is on screen.** The wire carries no per-head figure, so this is the
- * net divided by the people who actually take one — round 14 (S6) settled that the divisor is the
- * **payout takers**, not everybody registered: a member who gives their share to the Org-Kasse is
- * not paid, and counting them made every other share too small.
- *
- * Both numbers are named, because „12 von 14" is the only way to see that two people donated
- * without opening the roster. A roster that has not loaded yet falls back to the registered count,
- * which is the same figure it always was.
+ * Computed on the device as the net divided by the payout takers, with both numbers shown; falls
+ * back to the registered count while the roster has not loaded.
  *
  * @param finances the totals.
  * @param detail the Einsatz, for the roster and the registered count.
@@ -243,8 +224,6 @@ private fun PerHeadShare(
 ) {
     val registered = detail?.registeredParticipants ?: 0
     val roster = detail?.participants.orEmpty()
-    // `donating == null` is „the server did not say", which is not the same as „donates" — an
-    // unknown preference still expects a payout, so it counts.
     val takers = if (roster.isEmpty()) registered else roster.count { it.donating != true }
     val heads = takers
     val net = finances.total?.takeIf { it.isNotBlank() }?.let { runCatching { BigDecimal(it) }.getOrNull() }
@@ -265,9 +244,6 @@ private fun PerHeadShare(
             text =
                 stringResource(
                     R.string.mission_detail_finance_per_head,
-                    // As strings, like every other figure the app prints: „%d von %d" reads to
-                    // Android Lint as a quantity phrase that needs plural forms, and this one
-                    // never inflects — „von" is the same word after 1 and after 12.
                     heads.toString(),
                     maxOf(registered, roster.size, heads).toString(),
                 ).krtUppercase(),
@@ -276,8 +252,6 @@ private fun PerHeadShare(
             modifier = Modifier.weight(1f),
         )
         KrtDataValue(
-            // Rounded DOWN: a share is what everybody can actually be paid, and rounding up would
-            // promise, across fourteen people, money the Einsatz did not make.
             text =
                 stringResource(
                     R.string.mission_detail_finance_per_head_value,
@@ -289,10 +263,7 @@ private fun PerHeadShare(
 }
 
 /**
- * One booking, with the two actions the caller has on their own.
- *
- * Someone else's booking is theirs to change: the server refuses an edit by anyone but the owner
- * or an admin, and the app does not offer what it knows will be refused.
+ * One booking, with edit and delete offered only on the caller's own.
  *
  * @param entry the booking.
  * @param mine whether it hangs off the caller's own sign-up.
@@ -325,9 +296,6 @@ private fun FinanceEntryRow(
                 Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
             }
         }
-        // The amount as tinted figures, not as a chip: artboard 06-2 draws the money itself in the
-        // success or danger tint, and a chip around every row's number turns a ledger into a wall
-        // of boxes.
         Text(
             text = formatSignedAmount(entry.amount, entry.income),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
@@ -353,10 +321,7 @@ private fun FinanceEntryRow(
 }
 
 /**
- * The booking form.
- *
- * The direction is a segment rather than a signed amount: a minus typed into a number field is a
- * character a member can lose, and the sign is what decides whether the Einsatz earned or spent.
+ * The booking form, with the direction as a segment rather than a signed amount.
  *
  * @param draft what the form holds.
  * @param state the screen, for the save gate and the last refusal.
@@ -368,9 +333,6 @@ internal fun FinanceEntrySheet(
     state: MissionDetailState,
     actions: MissionFinanceActions,
 ) {
-    // Artboard 06.4 gives the entry one tone throughout: green for an Einnahme, red for an Ausgabe,
-    // on the chosen segment and on the amount alike. The sign is never typed - it IS the segment -
-    // and the hint under the field says so, which is why it changes with the choice.
     val tone = if (draft.income) KrtPalette.Success else KrtPalette.Danger
     val amountTone = if (draft.income) KrtPalette.SuccessText else KrtPalette.DangerText
     KrtBottomSheet(
@@ -378,9 +340,6 @@ internal fun FinanceEntrySheet(
         modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
         title = stringResource(R.string.mission_detail_finance_title),
     ) {
-        // The sheet scrolls: with the keyboard up on a small phone the form is taller than what is
-        // left of the screen, and a save button that cannot be reached is a form that cannot be
-        // submitted.
         Column(
             modifier =
                 Modifier

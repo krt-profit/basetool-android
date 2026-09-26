@@ -155,17 +155,15 @@ internal val STATUS_CHOICES =
     )
 
 /**
- * The Auftrag queue (design spec ch. 10 §1), read-only.
+ * The Auftrag queue, with a „+" that opens [OrderCreateScreen].
  *
- * **No priority drag.** Reordering is a logistician's write against `PUT /orders/{id}/priority` and
- * needs a drag affordance the design has not drawn; it is still outstanding. Creating an order is
- * built — the „+" the artboard draws opens [OrderCreateScreen].
+ * Offers no drag reordering.
  *
  * @param state what to draw.
  * @param onStatusToggled a status chip was tapped; the screen sends the resulting whole set.
  * @param onToggleMaterials a row's material list was opened or closed.
  * @param onRefresh pull-to-refresh.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the retry countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpenOrder a row was tapped.
  * @param onCreate the „+" was tapped; opens the create form.
@@ -192,8 +190,6 @@ fun OrdersScreen(
             if (!state.online) {
                 OfflineBand()
             }
-            // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
-            // breaks character by character („ABG ESC HLO SSE N").
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -222,9 +218,6 @@ fun OrdersScreen(
                 }
 
                 is OrdersPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -278,8 +271,6 @@ fun OrdersScreen(
             iconRes = DesignR.drawable.ic_krt_plus,
             label = stringResource(R.string.orders_create),
             onClick = onCreate,
-            // Offline the „+" leads to a form that can only refuse, so it is dimmed here the way
-            // every other list in the app dims its create action.
             enabled = state.online,
             modifier =
                 Modifier
@@ -292,21 +283,10 @@ fun OrdersScreen(
 }
 
 /**
- * Moving the order in the queue — a Logistician's write.
+ * Moves the order in the queue, a Logistician's write, with buttons rather than a drag.
  *
- * **Buttons, not a drag.** The web reorders by dragging a row, which needs the whole queue on
- * screen and a pointer that can hold one row while the rest scrolls. Neither is true on a phone.
- * What a Logistician actually decides is „this one sooner" or „this one later", and the endpoint
- * takes an absolute position, so the buttons express the intent and compute the position.
- *
- * Design ch. 18 §3 (E5/E8) ratified that for the Ablauf and said the queue takes **the same two
- * buttons at the same size**, so the stepwise pair is now the 40 × 44 icon pair, dimmed at the
- * front of the queue where „nach vorn" has nowhere to go — validation, not a lock.
- *
- * „An den Anfang" stays beside them as a labelled button: it is a jump rather than a step, the
- * ratified pair does not cover it, and it has no counterpart at the other end because the back of
- * the queue is a page count away and a control that guessed at its length would drop the order
- * somewhere nobody asked for.
+ * A step-forward / step-back icon pair (step-forward dimmed at the front of the queue) and a
+ * labelled „An den Anfang" jump; the buttons compute the absolute position the endpoint takes.
  *
  * @param state what the detail holds.
  * @param actions what it reports back.
@@ -352,10 +332,6 @@ private fun PriorityControls(
         )
     }
 }
-
-// The 40 × 44 pair was the ABLAUF row's exception, and round 14 (S3) says so in as many words:
-// an icon button is 48 dp, and the Ablauf's move buttons are the one ratified departure from it —
-// they share a row with a tick and a ⋮, which this pair does not.
 
 /**
  * The paginated queue.
@@ -414,8 +390,7 @@ private fun OrdersList(
 /**
  * One order in the queue.
  *
- * The material list is collapsed by default, as the web app has it. Its toggle is a separate tap
- * target from the card, so opening the list and opening the order cannot be confused.
+ * The material list is collapsed by default, and its toggle is a separate tap target from the card.
  *
  * @param order the order.
  * @param expanded whether its material list is open.
@@ -456,21 +431,11 @@ private fun OrderCard(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // The row-level pill, not the page badge: a queue of twenty orders each
-                    // shouting its status in a filled frame cannot be scanned, and artboard 10-1
-                    // draws the dot-plus-word form here.
                     KrtStatusPill(text = order.statusLabel(), tone = order.statusTone())
                     order.createdAt?.let { created ->
                         Text(
-                            // A day count, not a date. The shared `relativeToNow` switches to
-                            // „15.08., 18:17" from two days out, which makes the reader do the
-                            // arithmetic the colour beside it has already done — and the age is
-                            // the whole point of this line. Artboard 1 draws „vor 94 Tagen".
                             text = ageText(created),
                             style = MaterialTheme.typography.bodySmall,
-                            // The colour IS the information: an order nobody has picked up in
-                            // three months has to look different from one raised yesterday, and
-                            // the thresholds are the operator's (see JobOrderAgeThresholds).
                             color = ageThresholds.toneFor(created),
                         )
                     }
@@ -483,9 +448,6 @@ private fun OrderCard(
                 tint = KrtPalette.Gray2,
             )
         }
-        // An order carries one kind of line or the other, and the disclosure names whichever it
-        // has. An item order used to show no disclosure at all, so its positions were reachable
-        // only by opening the order.
         if (order.materials.isNotEmpty()) {
             MaterialsDisclosure(
                 labelRes = R.string.orders_materials_label,
@@ -511,11 +473,7 @@ private fun OrderCard(
 }
 
 /**
- * The queue position, as the design draws it: the number first, its meaning underneath.
- *
- * A chip reading "Prio 1" was the earlier form and it buried the one figure the queue is sorted
- * by among the other chips on the card. Rendered as a block it is scannable down the list, which
- * is what a priority is for.
+ * The queue position as a block: the number first, its meaning underneath.
  *
  * @param priority the position, or `null` for an order that carries none.
  */
@@ -540,10 +498,6 @@ private fun PriorityBlock(priority: Int?) {
 
 /**
  * Who the order is for and who is doing it, as two labelled org badges.
- *
- * These used to be one muted sentence, which lost the distinction the badge carries: a
- * Spezialkommando is drawn differently from a Staffel because "who owns this work" is the
- * question the queue is read for.
  *
  * @param order the order whose parties to draw.
  */
@@ -575,10 +529,9 @@ private fun PartiesRow(order: JobOrder) {
 }
 
 /**
- * The material list's disclosure row.
+ * The material list's disclosure row, a tap target separate from the card.
  *
- * A separate tap target from the card, so opening the list and opening the order cannot be
- * confused; the chevron turns to say which of the two a tap will do.
+ * The chevron turns to show whether a tap opens or closes the list.
  *
  * @param labelRes what the row is called; the two order kinds name their own lines.
  * @param count how many lines the order has.
@@ -645,9 +598,6 @@ private fun orgBadgeKind(unit: String?): KrtOrgBadgeKind =
  */
 @Composable
 internal fun MaterialLine(material: JobOrderMaterial) {
-    // A card, as artboard 10-2 draws every position: the name, the two figures, the bar, and the
-    // two facts underneath as chips. It was four loose lines between hairlines, which is what made
-    // an order of five materials read as one paragraph.
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -662,10 +612,6 @@ internal fun MaterialLine(material: JobOrderMaterial) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            // The booked figure is the data and stays bright; what was asked for is the scale it
-            // is read against and stays muted. A figure the server did not send reads as a dash —
-            // left empty it became „ / 500", which looks like a rendering fault rather than an
-            // absent number (found on a device, on a material nothing is stocked of).
             KrtDataValue(text = material.inStock.orDash(), style = MaterialTheme.typography.titleMedium)
             Text(
                 text = stringResource(R.string.orders_material_of, material.needed.orDash(), material.unitWord()),
@@ -680,15 +626,9 @@ internal fun MaterialLine(material: JobOrderMaterial) {
                     if (progress >= 1f) KrtPalette.SuccessText else MaterialTheme.colorScheme.primary,
                 trackColor = KrtPalette.Gray3,
                 modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s8).height(POSITION_BAR),
-                // No stop indicator: Material3 draws a dot at the far end of the track, which on an
-                // empty bar is the only thing on it and reads as a value rather than as a scale.
-                // The design system's meters are a filled rectangle and nothing else.
                 drawStopIndicator = {},
             )
         }
-        // Design ch. 10 artboard 2 puts both facts under the bar as chips: what is booked, and what
-        // is already promised. „Who has already promised part of this" is what turns an open figure
-        // into a plan.
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s8),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -702,8 +642,6 @@ internal fun MaterialLine(material: JobOrderMaterial) {
                     ),
             )
             KrtChip(
-                // „Zugesagt: —" when nobody has promised anything: the artboard writes the dash
-                // alone, without a unit, because there is no quantity for the unit to belong to.
                 text =
                     material.claimedAmount
                         ?.let { stringResource(R.string.orders_material_claimed, it, material.unitWord()) }
@@ -730,12 +668,10 @@ data class ItemProduceGate(
 )
 
 /**
- * „Herstellung erfassen" on one item line — **drawn even when it is refused**.
+ * „Herstellung erfassen" on one item line, drawn even when it is refused.
  *
- * Hiding it was the alternative and is the thing this project's own gate rule forbids: this
- * organisation grants roles by hand, and a control nobody can see is a grant nobody asks for. So a
- * caller without the Logistician role gets the button at 45 %, the lock ahead of the label (design
- * ch. 09 artboard 13), and a tap that names the grant instead of writing anything.
+ * A caller without the Logistician role gets the button dimmed with a lock ahead of the label, and a
+ * tap names the missing grant instead of writing anything.
  *
  * @param gate whether the caller may, and what to do about it.
  * @param labelRes what the button says.
@@ -765,15 +701,13 @@ private fun ProduceAction(
 }
 
 /**
- * One item line of an order.
+ * One item line of an order: built over ordered, with the handed-over count when any have moved.
  *
- * The figures are counts, not quantities: built over asked-for, with the handed-over count under
- * them when any have moved. A blueprint the server flagged as changed since the order was raised
- * carries the web's warning chip — what will be built may no longer be what was costed.
+ * A blueprint the server flagged as changed since the order was raised carries a warning chip.
  *
  * @param item the line.
  * @param produce the production action's gate and callback, or `null` on a line that cannot carry
- *   one at all — nothing left to build, or a row the server sent without an id or a version.
+ *   one: nothing left to build, or a row without an id or a version.
  * @param handOver the item-handover action's gate and callback, or `null` on a line with nothing
  *   built and undelivered.
  */
@@ -837,12 +771,7 @@ internal fun ItemLine(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        // The write that moves this line's own figure. It sits on the line rather than in a tab
-        // of its own because a production run is booked against one line, and the count above is
-        // exactly what it changes.
         produce?.let { ProduceAction(gate = it) }
-        // The other half of the same line's work: what was built, handed to somebody. Drawn beside
-        // the Herstellung because both are booked against this one line.
         handOver?.let {
             ProduceAction(
                 gate = it,
@@ -934,10 +863,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
     }
 
 /**
- * One order in full (design spec ch. 10 §2), read-only.
- *
- * The design's four tabs become one scrolling page for the reason the Operation detail gives: three
- * short sections a member reads together are worse behind a control than beneath each other.
+ * One order in full, as a single scrolling page.
  *
  * @param state what to draw.
  * @param handover the Übergabe sheet's own state and callbacks.
@@ -979,14 +905,8 @@ fun OrderDetailScreen(
                     claims = claims,
                     denials = denials,
                 )
-                // At the screen, never inside the list: a LazyColumn recycles its rows, and a
-                // toast owned by one would vanish the moment that row scrolled away.
                 DenialToast(state = denials)
             }
-            // Design ch. 14's conflict dialog -- but NOT for the note, which already has the
-            // richer recovery chapter 10 draws: a refused note comes back as `rejectedNote` with
-            // „Meine Fassung übernehmen", and a generic „Neu laden" over it would offer to throw
-            // away the very text that flow exists to preserve.
             ConflictOn(
                 error = state.error?.takeIf { state.rejectedNote == null },
                 onReload = onRefresh,
@@ -1004,9 +924,6 @@ fun OrderDetailScreen(
         }
 
         phase is OrderDetailPhase.Failed -> {
-            // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-            // failure state, because a countdown in front of a 403 promises a retry that will
-            // answer exactly the same.
             val retryIn = state.retryIn
             if (retryIn != null) {
                 KrtRetryCountdown(
@@ -1078,13 +995,10 @@ data class OrderDetailActions(
 )
 
 /**
- * The order's own „⋮" — today it holds one entry, „Auftrag bearbeiten".
+ * The order's own „⋮" menu, holding „Auftrag bearbeiten".
  *
- * **Drawn even when it cannot be used**, in both of its two ways. A caller with neither edit gate
- * gets the entry with the Logistician reason; an **item** order gets it with a different one, since
- * that form is a capability this build does not have rather than a permission the caller lacks
- * (`PUT /orders/{id}/items` needs the blueprint-variant picker and the sub-assembly tree of
- * artboard 12). Hiding either would turn a rule into a mystery.
+ * The entry is always drawn: without an edit gate it shows the Logistician reason, and on an item
+ * order it shows that this build cannot edit item orders.
  *
  * @param state what the order is and who is reading it.
  * @param actions what the entry reports.
@@ -1133,9 +1047,6 @@ private fun OrderOverflow(
         onExpandedChange = { open = it },
         items =
             listOfNotNull(
-                // „Status change + Zuständigen setzen im Overflow" (ch. 10, artboard 2's handoff).
-                // They were a filled CTA and a ghost button under the head, which put two controls
-                // in front of every member on a screen most of them only read.
                 KrtMenuItem(
                     label = assignment,
                     iconRes = DesignR.drawable.ic_krt_user_plus,
@@ -1143,9 +1054,6 @@ private fun OrderOverflow(
                     open = false
                     actions.onToggleAssignment()
                 }.takeIf { state.writable },
-                // Only a Logistician is offered this, and only because the app can ask whether the
-                // caller is one. The grant is also per order, so the refusal is named rather than
-                // assumed away.
                 KrtMenuItem(
                     label = status,
                     iconRes = DesignR.drawable.ic_krt_swap,
@@ -1162,8 +1070,6 @@ private fun OrderOverflow(
                     open = false
                     click()
                 },
-                // Not gated: the collection is a READ for anyone who may see the order. Only its
-                // own writes are gated, and the screen draws those.
                 KrtMenuItem(
                     label = collection,
                     iconRes = DesignR.drawable.ic_krt_crate,
@@ -1192,20 +1098,8 @@ private fun OrderDetailBody(
     claims: ClaimActions,
     denials: DenialState,
 ) {
-    // The order's number and status live in the TOP BAR (design ch. 10 artboard 2), the same rule
-    // the Einsatz detail follows. The parties move to the facts bar.
-    //
-    // **Published from outside the list, and exactly once.** It was published from inside a
-    // `LazyColumn` item, and a lazy item's `onDispose` — which clears the slot — raced its own
-    // `SideEffect` on every recomposition, so the shell kept falling back to the route's „Auftrag"
-    // and neither the number nor the status ever appeared. A second call for the overflow alone,
-    // with a null title, would have wiped them again even if the first had landed: the slot holds
-    // one bar and the last writer wins.
     ProvideScreenTopBar(
         title = stringResource(R.string.orders_number, order.displayId),
-        // What kind of order this is, beside its number — artboard 10-2 draws it there because a
-        // Material order and an Item order are read and worked differently, and the number alone
-        // says neither. The model carried `type` and nothing drew it.
         titleBadge = order.kindLabel()?.let { kind -> { KrtChip(text = kind, tone = order.kindTone()) } },
         actions = { OrderOverflow(state = state, actions = actions, denials = denials) },
         subtitle = {
@@ -1214,15 +1108,7 @@ private fun OrderDetailBody(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 2.dp),
             ) {
-                // A dot and tinted text, not a filled badge: ch. 02 §3 defines the status pill as
-                // „square 8 dp dot + tint text", and every detail head in the chapters (06-2,
-                // 10-2, 11, 12) draws that one. The louder badge belongs where a status is the
-                // page's whole subject.
                 KrtStatusPill(text = order.statusLabel(), tone = order.statusTone())
-                // „Prio 1 · angelegt 12.07." — the chapter's own head line. It used to end with
-                // „fällig 21.08.", which round 14 struck: `JobOrderDto` carries `createdAt` and no
-                // due date at all, so the head says the date the order actually has (S21, and the
-                // backend ask G9 if a due date is ever wanted).
                 order.priority?.let {
                     Text(
                         text = stringResource(R.string.order_detail_priority, it),
@@ -1232,8 +1118,6 @@ private fun OrderDetailBody(
                 }
                 order.createdAt?.let { raised ->
                     Text(
-                        // „Prio 1 · angelegt 12.07." — one line with a middot, as the chapter writes
-                        // it, not three words with spaces between them.
                         text =
                             HEAD_DOT + stringResource(R.string.order_detail_created, raised.krtShortDay()),
                         style = MaterialTheme.typography.labelMedium,
@@ -1256,9 +1140,6 @@ private fun OrderDetailBody(
                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             ) {
                 state.error?.let { error -> WriteError(error = error) }
-                // „Status change + Zuständigen setzen im Overflow" (ch. 10, artboard 2's handoff).
-                // They were a filled CTA and a ghost button under the head, which put two controls
-                // in front of every member on a screen most of them only read.
                 if (state.priorityChangeable) {
                     PriorityControls(state = state, actions = actions)
                 }
@@ -1267,8 +1148,6 @@ private fun OrderDetailBody(
         item(key = "facts") { OrderFactsBar(order = order) }
         item(key = "redaction") { RedactionNotice(order = order) }
         item(key = "tabs") {
-            // Not `OrderTab.entries`: Zusagen exist only on a Spezialkommando order, so the tab
-            // set is the order's own rather than the enum's.
             val tabs = state.tabs
             KrtPageTabs(
                 tabs =
@@ -1313,8 +1192,7 @@ private fun OrderDetailBody(
 /**
  * One member on the order, with their own note under their name.
  *
- * The caller's own row is the only one that offers anything: the note is theirs to write, and
- * putting someone else on an order is a Logistician action this app does not carry.
+ * Only the caller's own row offers an action: editing their note.
  *
  * @param assignee the row.
  * @param mine whether it is the caller's own.
@@ -1379,17 +1257,12 @@ private fun NoteSheet(
     KrtBottomSheet(
         onDismiss = actions.onDismissNote,
         modifier = Modifier.testTag(ORDER_NOTE_SHEET_TAG),
-        // „Notiz zur Zuweisung", as artboard 10-5 heads it — not „Notiz". The order already
-        // carries the requester's Anmerkung, and a sheet titled with the bare word left it open
-        // which of the two was being written.
         title = stringResource(R.string.order_detail_note_title),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
-            // Whose note this is, on the sheet itself: the API only ever lets a member write their
-            // own, and the sheet is reached from a list of everybody's (design ch. 10 artboard 5).
             state.order?.let { order ->
                 Text(
                     text = stringResource(R.string.order_detail_note_scope, order.displayId),
@@ -1407,9 +1280,6 @@ private fun NoteSheet(
                 value = draft,
                 onValueChange = { typed -> actions.onNoteChanged(typed.take(NOTE_MAX_LENGTH)) },
                 label = stringResource(R.string.order_detail_note),
-                // The example the chapter writes into the empty field: a note is free text and
-                // the field alone says nothing about what belongs in it. Four lines high, as
-                // artboard 10-5 draws it — a single-line box invites a single word.
                 placeholder = stringResource(R.string.order_detail_note_placeholder),
                 minLines = NOTE_LINES,
                 enabled = !state.saving,
@@ -1417,15 +1287,10 @@ private fun NoteSheet(
             Text(
                 text = stringResource(R.string.order_detail_note_counter, draft.length, NOTE_MAX_LENGTH),
                 style = MaterialTheme.typography.labelSmall,
-                // Design ch. 10 artboard 6: the counter turns warning-yellow before the ceiling,
-                // not at it. A limit a member only learns about when the field stops accepting
-                // characters costs them the sentence they were in the middle of.
                 color =
                     if (draft.length >= NOTE_WARN_LENGTH) KrtPalette.Warning else KrtPalette.TextMuted,
                 modifier = Modifier.align(Alignment.End),
             )
-            // The conflict is drawn above as its own block, so it does not also arrive as a bare
-            // error line saying the same thing twice.
             state.error?.takeIf { state.rejectedNote == null }?.let { error -> WriteError(error = error) }
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
@@ -1437,10 +1302,6 @@ private fun NoteSheet(
                     text = stringResource(R.string.personal_inventory_save),
                     onClick = actions.onSaveNote,
                     modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
-                    // Design ch. 10: the CTA is live only when the draft differs from what the
-                    // server holds. An enabled "Speichern" over an untouched field offers a write
-                    // that would change nothing — and on a first, empty note it invites one that
-                    // says nothing at all.
                     enabled =
                         state.writable &&
                             !state.saving &&
@@ -1454,9 +1315,8 @@ private fun NoteSheet(
 /**
  * What the last write returned.
  *
- * A validation refusal is shown in the server's own words, which name the field it rejected. A
- * `403` is ordinary here rather than exceptional: the Logistician grant is per order, so a
- * Logistician outside this order's slice is refused exactly like a member without it.
+ * A validation refusal is shown in the server's words. A `403` is expected here, since the
+ * Logistician grant is scoped per order.
  *
  * @param error the refusal.
  */
@@ -1638,9 +1498,6 @@ fun OrderDetailRoute(
                 onDismissStatusConfirm = viewModel::onDismissStatusConfirm,
                 onTabSelected = viewModel::onTabSelected,
                 onRecordHandover = { material ->
-                    // The delivered figure comes from the handover LINES, never from
-                    // `amount - openAmount`: the server's open remainder counts claims, not
-                    // deliveries, so that subtraction would overstate every claimed line.
                     viewModel.handover.open(
                         orderId = state.orderId,
                         material = material,
@@ -1648,18 +1505,12 @@ fun OrderDetailRoute(
                     )
                 },
                 onRecordItemHandover = viewModel.itemHandover::open,
-                // The mode the detail screen worked out, carried rather than re-derived. Null
-                // cannot reach here — the control is gated on editing being offered at all —
-                // but a silent no-op beats opening the wrong form.
                 onEditOrder = { state.editMode?.let { mode -> onEditOrder(state.orderId, mode) } },
                 onOpenCollection = { onOpenCollection(state.orderId) },
                 onRecordProduction = { line ->
                     viewModel.production.open(
                         orderId = state.orderId,
                         item = line,
-                        // The unit working the Auftrag is the book-in pool the web preselects —
-                        // but only when the owner belongs to it, which is why the holder checks
-                        // rather than the screen.
                         responsibleOrgUnitId = state.order?.responsibleOrgUnitId,
                     )
                 },
@@ -1698,11 +1549,10 @@ private fun JobOrderAgeThresholds.toneFor(createdAt: Instant): Color =
     }
 
 /**
- * What a lost optimistic-lock race looks like on the note sheet.
+ * The note sheet's view of a lost optimistic-lock race.
  *
- * Design ch. 10 artboard 7. The field above has already been reset to what the server holds; this
- * shows the text that was refused and offers to put it back, because the alternative — dropping it
- * — loses a paragraph the member wrote to a colleague who happened to save first.
+ * The field already shows what the server holds; this shows the refused text and offers to put it
+ * back.
  *
  * @param refused the text the server would not take.
  * @param actions what the sheet reports back.
@@ -1741,12 +1591,7 @@ private fun NoteConflict(
 private const val HEAD_DOT = " · "
 
 /**
- * How long a note may be.
- *
- * The **contract's** limit, not the mockup's. `AssigneeNoteRequest.note` is capped at 500 on the
- * wire; design ch. 10 draws the counter at 250. Enforcing 250 here would refuse text the server
- * accepts, which is a worse failure than a counter that reads differently from an artboard — the
- * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
+ * The maximum note length, matching the server's cap on `AssigneeNoteRequest.note`.
  */
 private const val NOTE_MAX_LENGTH = 500
 
@@ -1761,10 +1606,7 @@ private const val NOTE_LINES = 4
 private const val NOTE_WARN_LENGTH = 470
 
 /**
- * How long ago an order was raised, as a day count.
- *
- * Today and yesterday keep their words — „heute" reads better than „vor 0 Tagen" — and everything
- * older counts days, because that is what the queue is judging and what its colour already says.
+ * How long ago an order was raised, as „heute", „gestern" or a day count.
  *
  * @param created when it was raised.
  * @return the wording.

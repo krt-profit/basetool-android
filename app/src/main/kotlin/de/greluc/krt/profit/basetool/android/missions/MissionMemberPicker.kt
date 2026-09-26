@@ -22,14 +22,7 @@ private const val LOG_TAG = "MissionMemberPicker"
 /** How long typing must pause before a search goes out. */
 private const val DEBOUNCE_MS = 300L
 
-/**
- * What the picker asks the server for.
- *
- * The notice used to repeat this number on **every** search — „3 von höchstens 25 Treffern" —
- * which states a cap that is not biting and says nothing about whether one is. The picker now
- * reports the server's own `totalElements` instead, so the line appears when members are actually
- * being withheld and stays away when they are not (ADR-0104).
- */
+/** The page size the member picker requests from the server (ADR-0104). */
 const val MEMBER_PICKER_CAP: Int = 50
 
 /**
@@ -72,16 +65,10 @@ data class MissionMemberPickerState(
 }
 
 /**
- * The one member picker behind the party lead, the managers and „Teilnehmer hinzufügen".
+ * The one member picker (chapter 12's remote combobox) behind the party lead, the managers and
+ * „Teilnehmer hinzufügen".
  *
- * > **This closes round 10's § 10e.** The question was whether chapter 12's remote combobox is the
- * > right control for naming a member, and it is: it is the drawn control for exactly this — type,
- * > the list narrows, a muted notice states what the cap hid. Nothing about a member list argues
- * > for a different shape. What is **not** drawn is where the three entry points sit on the
- * > Verwaltung tab, which round 11 asks for.
- *
- * The search is debounced and single-flight: a new keystroke cancels the request in flight, so a
- * slow answer to „Ma" can never land on top of a fresh answer to „Marc".
+ * The search is debounced and single-flight: a new keystroke cancels the request in flight.
  *
  * @property source where the lookup goes.
  * @property scope the view model's scope.
@@ -155,8 +142,6 @@ class MissionMemberPicker(
                 when (val result = source.members(query)) {
                     is ApiResult.Success -> {
                         val current = read()
-                        // Only if the picker is still open for the same target. A pick or a dismiss
-                        // during the round trip must not repopulate a closed picker.
                         if (current.open) {
                             write(
                                 current.copy(
@@ -170,9 +155,6 @@ class MissionMemberPicker(
 
                     is ApiResult.Failure -> {
                         KrtLog.w(LOG_TAG) { "the member lookup failed: ${result.error}" }
-                        // An empty list rather than a refusal banner: the picker's own notice says
-                        // how many matched, and „0" reads correctly for a lookup that could not
-                        // run. The write the member is heading for reports its own failure.
                         write(read().copy(options = emptyList(), searching = false))
                     }
                 }

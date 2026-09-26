@@ -70,8 +70,6 @@ class FleetImportViewModelTest {
     @Test
     fun `a picked file wins over text left in the box`() =
         runTest(dispatcher) {
-            // The member chose the file second, so the file is what they meant. Sending the box's
-            // content instead would import something they had scrolled past and forgotten.
             val source = RecordingSource()
             val viewModel = FleetImportViewModel(source, AlwaysOnline)
 
@@ -115,8 +113,6 @@ class FleetImportViewModelTest {
     @Test
     fun `a refusal keeps what the member typed`() =
         runTest(dispatcher) {
-            // Clearing the box on a 400 would make the member fetch the export again to fix a typo
-            // the server just told them about.
             val source = RecordingSource()
             source.result =
                 ApiResult.Failure(

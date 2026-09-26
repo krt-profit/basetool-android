@@ -70,10 +70,7 @@ data class NotificationsState(
 /**
  * A delete the member can still take back.
  *
- * The server has no way to un-delete a notification, so an undo offered *after* the call would be
- * a button that cannot do what it says. The row leaves the list at once and the call is what
- * waits: five seconds later it goes, and the undo cancels it before then. That makes the take-back
- * real, at the cost of the delete landing five seconds late — which nothing depends on.
+ * The row leaves the list at once; the server call runs after five seconds unless undone.
  *
  * @property notification the row that vanished, kept so it can come back unchanged.
  * @property index where it was, so it returns to its place rather than to the top.
@@ -84,20 +81,10 @@ data class PendingDelete(
 )
 
 /**
- * Drives the inbox and the bell badge.
+ * Drives both the inbox and the bell badge, so the two cannot disagree.
  *
- * **One view model for both, deliberately.** The badge and the list are two views of the same
- * question, and two sources would let them disagree — a member seeing "3 neu" over a list whose top
- * three rows are already read has been told something false by the app itself.
- *
- * **Push and polling both run, which is what the design asks for.** The stream is best-effort: the
- * server closes it every thirty minutes, evicts the oldest connection when a member has six, and
- * any proxy in between may drop it. A badge that went stale in those cases would be worse than one
- * extra request a minute, so the poll runs regardless and the stream makes the common case
- * immediate rather than up-to-a-minute late.
- *
- * Both stop when the app leaves the foreground. Holding a socket open for a screen nobody is
- * looking at spends the member's battery to learn something they cannot see.
+ * The server stream and a periodic poll both run while the app is in the foreground, and both stop
+ * when it leaves.
  *
  * @property source where the notifications come from
  */
@@ -165,10 +152,7 @@ class NotificationsViewModel(
     }
 
     /**
-     * Loads the first page of the inbox, once.
-     *
-     * Called when the screen is opened. Coming back to a list that is already there shows it;
-     * pull-to-refresh is how a member asks for fresh rows.
+     * Loads the first page of the inbox, once; later refreshes are by pull-to-refresh.
      */
     fun loadOnce() {
         if (inboxLoaded) {
@@ -189,9 +173,7 @@ class NotificationsViewModel(
     /**
      * Marks one notification read, optimistically.
      *
-     * The row flips and the badge drops before the call goes out, because the member has already
-     * seen the result they asked for. A failure restores the previous read flag rather than
-     * setting "unread", so a race cannot invent an unread row out of one that was already read.
+     * On failure the previous read flag is restored.
      *
      * @param id the notification to mark.
      */
@@ -208,7 +190,6 @@ class NotificationsViewModel(
                 unread = (before.unread - 1).coerceAtLeast(0),
             )
         viewModelScope.launch {
-            // Only the failure path does anything: success is the state the list already shows.
             val result = source.markRead(id)
             if (result is ApiResult.Failure) {
                 KrtLog.w(LOG_TAG) { "mark-read failed: ${result.error}" }
@@ -226,11 +207,7 @@ class NotificationsViewModel(
     }
 
     /**
-     * Marks every unread notification read.
-     *
-     * The badge takes the server's own number rather than assuming zero: another device may have
-     * produced an unread row while this call was in flight, and claiming zero would hide it until
-     * the next poll.
+     * Marks every unread notification read and sets the badge to the unread count the server returns.
      */
     fun onMarkAllRead() {
         val before = mutableState.value
@@ -258,11 +235,9 @@ class NotificationsViewModel(
     }
 
     /**
-     * Removes one notification from the list and schedules its delete.
+     * Removes one notification from the list and schedules its delete (see [PendingDelete]).
      *
-     * See [PendingDelete] for why the call waits. Starting a second delete commits the first at
-     * once: two pending rows would mean two toasts competing for one corner, and the toast should
-     * be about the member's most recent action.
+     * Starting a second delete commits the first at once.
      *
      * @param id the notification to delete.
      */
@@ -340,10 +315,8 @@ class NotificationsViewModel(
     }
 
     /**
-     * Sends a pending delete now instead of waiting out its window.
-     *
-     * Runs when another delete starts and when the screen stops being looked at. Without it a
-     * member who deleted a row and immediately left would find it still there on return.
+     * Sends a pending delete now instead of waiting out its window; runs when another delete starts
+     * and when the screen stops being visible.
      */
     private fun flushPendingDelete() {
         val pending = mutableState.value.pendingDelete ?: return
@@ -354,10 +327,7 @@ class NotificationsViewModel(
     }
 
     /**
-     * Performs the delete and clears the undo state.
-     *
-     * A failure puts the row back. The list already said it was gone; leaving it gone while the
-     * server still holds it would show a state that no reload agrees with.
+     * Performs the delete and clears the undo state; a failure puts the row back.
      *
      * @param id the notification to delete.
      */
@@ -433,19 +403,8 @@ class NotificationsViewModel(
                 if (inboxLoaded) {
                     reload(keepRows = true)
                 }
-                // The shade half of chapter 14. Posted here rather than from the screen, because
-                // the point is to reach a member who is NOT looking at the inbox; a screen-level
-                // hook would fire exactly when it is least needed.
-                //
-                // The signal goes through whole: the notifier owns the wording, the channel and the
-                // deep link, because all three are decided by the same two fields and splitting
-                // them across two files would give the shade and the inbox a way to disagree about
-                // what one push is.
                 notifier?.notify(signal)
             }
-            // A stream that carried at least one event was working, so the next attempt starts
-            // from the short delay; one that carried none may be refused outright — a 401 after a
-            // sign-out, say — and must not be retried in a tight loop.
             if (!received) {
                 backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
             }
@@ -462,8 +421,6 @@ class NotificationsViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // Zeroing the badge on a failed read would tell the member their inbox is
-                    // clear, which is a claim about their notifications made out of an outage.
                     KrtLog.w(LOG_TAG) { "unread count could not be read: ${result.error}" }
                 }
             }

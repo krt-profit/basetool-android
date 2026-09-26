@@ -39,19 +39,15 @@ sealed interface DashboardPhase {
 }
 
 /**
- * Everything the dashboard draws that it has to fetch.
+ * Everything the dashboard draws that it has to fetch; the greeting's name and org unit come from the
+ * shell.
  *
- * The greeting is not here: the member's name comes from the ID token and the org unit from the
- * switcher, both of which the shell already holds. Copying them into this state would give the
- * screen two sources for one fact.
- *
- * @property announcementRead whether the caller has marked the current notice read. Defaults to
- *   `true` so the band never flashes „UNGELESEN" during the frames before the answer lands —
- *   claiming something is unread and taking it back is worse than being a beat late to say so.
- * @property announcement the org-wide notice, or `null` when there is none — an ordinary answer
+ * @property announcementRead whether the caller has marked the current notice read; defaults to
+ *   `true` so the band never flashes „UNGELESEN" before the answer lands.
+ * @property announcement the org-wide notice, or `null` when there is none
  * @property missions the Einsätze starting within the next seven days
- * @property unread the newest unread notifications, capped at [UNREAD_PREVIEW]; the band's
- *   „Alle ansehen" is the way past the cap, so it is never a silent truncation
+ * @property unread the newest unread notifications, capped at [UNREAD_PREVIEW]; „Alle ansehen" leads
+ *   past the cap
  * @property phase how far that read has got
  * @property refreshing whether a pull-to-refresh is running over content already on screen
  */
@@ -67,13 +63,8 @@ data class DashboardState(
 /**
  * Drives the dashboard.
  *
- * **The announcement and the Einsätze fail independently.** They are unrelated reads behind
- * unrelated permissions, and one outage must not blank the other: a member who cannot reach the
- * announcement still needs to know what is starting tonight.
- *
- * The seven-day window is computed against the **server's** clock, like the Einsatz list's "past"
- * bound. A phone running a few minutes fast would otherwise drop an Einsatz that is about to start
- * — the one a member most needs to see.
+ * The announcement and the Einsätze fail independently. The seven-day window is computed against the
+ * server-corrected clock.
  *
  * @property missions where the Einsätze come from
  * @property announcements where the notice comes from
@@ -178,8 +169,6 @@ class DashboardViewModel(
         }
         mutableState.update { it.copy(announcementRead = true) }
         viewModelScope.launch {
-            // Only the refusal needs handling: the state already says read, which is the whole
-            // point of marking it optimistically.
             val result = announcements.markRead(notice.id)
             if (result is ApiResult.Failure) {
                 KrtLog.w(LOG_TAG) { "the announcement could not be marked read: ${result.error}" }
@@ -196,17 +185,11 @@ class DashboardViewModel(
                     val notice = result.value
                     mutableState.update { it.copy(announcement = notice) }
                     if (notice != null) {
-                        // Sequential, and only when there is something to be unread about: the
-                        // read flag costs a second request and answers a question that does not
-                        // arise on a dashboard with no notice on it.
                         readState(notice.id)
                     }
                 }
 
                 is ApiResult.Failure -> {
-                    // No banner is the same rendering as "nothing announced", and that is the
-                    // honest one: the app does not know of an announcement. An error strip over a
-                    // working dashboard would be louder than the thing it is reporting.
                     KrtLog.w(LOG_TAG) { "announcement could not be read: ${result.error}" }
                     mutableState.update { it.copy(announcement = null) }
                 }

@@ -22,11 +22,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The hand-rolled SSE reader.
- *
- * Written by hand rather than pulled in as `okhttp-sse`, so the framing rules are this project's
- * responsibility and are asserted here: what ends an event, what a comment line does, and that the
- * flow completes rather than hangs when the server closes the stream.
+ * The hand-rolled SSE reader: what ends an event, what a comment line does, and that the flow
+ * completes when the server closes the stream.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -83,7 +80,6 @@ class SseStreamTest {
     @Test
     fun `a blank line is what ends an event, not a newline`() =
         runTest {
-            // Two events in one body. Flushing on every newline would deliver four half-events.
             respond("event: connected\ndata: ok\n\nevent: notification\ndata: new\n\n")
 
             val events = stream.events("/stream").toList()
@@ -94,8 +90,6 @@ class SseStreamTest {
     @Test
     fun `a comment line keeps the connection alive without producing an event`() =
         runTest {
-            // The SSE keep-alive. Treating it as data would deliver an empty event every few
-            // seconds, and a caller that re-reads on every event would then poll instead of push.
             respond(": keep-alive\n\nevent: notification\ndata: new\n\n")
 
             val events = stream.events("/stream").toList()
@@ -126,8 +120,6 @@ class SseStreamTest {
     @Test
     fun `a refused stream completes rather than throwing`() =
         runTest {
-            // A 401 here means the token expired. The caller must be able to stop, and an
-            // exception would push that decision into a crash instead.
             respond("", status = HTTP_UNAUTHORIZED)
 
             val events = stream.events("/stream").toList()

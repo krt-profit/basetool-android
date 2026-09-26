@@ -115,12 +115,7 @@ private val GROUP_RAIL = 4.dp
 private val STACK_RAIL = 2.dp
 
 /**
- * The leaf row's darkening, straight from the artboard's `.tree-row--leaf`:
- * `background-color: rgba(0, 0, 0, 0.35)`.
- *
- * Laid **over** [KrtPalette.Gray4] rather than replacing it, because in the artboard the tree is a
- * table with its own `--color-bg-dark-gray` ground and the leaf only darkens it. Composing the two
- * the way CSS does keeps the pair honest if either token moves; a hard-coded `#0D0D0D` would not.
+ * The leaf row's darkening, laid over [KrtPalette.Gray4] as `rgba(0, 0, 0, 0.35)`.
  */
 private val TREE_LEAF_SHADE = Color.Black.copy(alpha = 0.35f)
 
@@ -140,11 +135,7 @@ const val INVENTORY_BOOK_TAG: String = "inventory-book"
 private val RAIL_HEIGHT = 44.dp
 
 /**
- * The Lager tree (design spec ch. 09 §1), read-only.
- *
- * Two levels: a **material group** with an orange rail, and the **stacks** inside it with a grey
- * one. The design's third level — the individual entry — is not drawn: it is where booking happens,
- * and booking is Phase 3.
+ * The Lager tree: material groups with an orange rail, and the stacks and entries inside them.
  *
  * @param state what to draw.
  * @param onToggleGroup a group row was tapped.
@@ -157,7 +148,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param denials where a tapped lock raises its refusal.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param modifier layout modifier.
  * @param pane what the tablet pane is showing, or `null` while nothing is selected.
@@ -181,9 +172,6 @@ fun InventoryScreen(
     onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
-    // Defaulted, and after the modifier because Android Lint requires that one to come first among
-    // the optional parameters. The pane exists only on a tablet, and a test that draws the tree is
-    // not asking about it; the route always passes all three.
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -207,9 +195,6 @@ fun InventoryScreen(
                 }
 
                 is InventoryPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -245,12 +230,6 @@ fun InventoryScreen(
                                 )
                             }
                         } else {
-                            // No detail pane, at any width — design ch. 18 §3 (E9) settles the
-                            // Lager on „rail + table": the tree IS the detail depth, and a fourth
-                            // level to its right would tell the same indentation twice. What
-                            // appears beside the tree on a tablet is the booking sheet, nothing
-                            // else. The pane and its `/inventory/material/{id}` read are gone
-                            // rather than hidden behind a flag.
                             InventoryTree(
                                 state = state,
                                 onToggleGroup = onToggleGroup,
@@ -269,13 +248,8 @@ fun InventoryScreen(
                 }
             }
         }
-        // „FAB und Bottom-Nav weichen der Aktionsleiste" (design ch. 09, artboard 5). Two floating
-        // affordances at the same corner is one too many, and the one that belongs to a mode wins.
         if (selection.isEmpty()) {
             KrtFab(
-                // The download glyph, not „+". Chapter 05's „EINBUCHEN (LAGER)" tile draws exactly
-                // this arrow, which settles what artboard 09.1 meant by it: ⤓ is Einbuchen. It was
-                // read here as Ausbuchen once, and „+" put in its place.
                 iconRes = DesignR.drawable.ic_krt_download,
                 label = stringResource(R.string.booking_mode_in),
                 onClick = onBookIn,
@@ -327,7 +301,6 @@ private fun InventoryTree(
     ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
-            // Per group, because the unit is the group's; everything else in it is tree-wide.
             val entryRowContext =
                 EntryRowContext(
                     unit = group.unit,
@@ -343,23 +316,13 @@ private fun InventoryTree(
                 val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
                 GroupRow(
                     group = group,
-                    // A group the server sent without a material id cannot be asked for, so it does
-                    // not offer a tap that would do nothing.
-                    //
-                    // One gesture does both on a tablet: opening a material and reading its full
-                    // table beside the tree are the same intent, and a second affordance on the row
-                    // would be a control whose only job is to say "and also over there".
                     onClick = materialId?.let { { onToggleGroup(it) } },
                     onLongClick = materialId?.let { { onToggleBranch(it, null) } },
                     expanded = materialId != null && materialId in state.opened,
                     selected = picked,
-                    // Only while the group is open does „n/m" mean anything: a collapsed group's
-                    // total is whatever was loaded before, not what it holds now.
                     total = known.takeIf { materialId in state.opened },
                 )
             }
-            // A group nobody opened contributes nothing, which is the point of loading one only
-            // when it is asked for — so the whole block is skipped rather than branching on null.
             val openedId = materialId?.takeIf { state.opened.containsKey(it) }
             if (openedId != null) {
                 openedGroup(
@@ -403,9 +366,6 @@ private fun InventoryTree(
 /**
  * What the levels beneath an opened material need.
  *
- * A holder rather than seven parameters: the tree passes the same five values down two levels, and
- * threading them individually is how one of them ends up out of step with the others.
- *
  * @property unit the material's unit, which every figure beneath it is in.
  * @property openedStacks which stacks have their entries showing.
  * @property rows what an entry row needs.
@@ -422,10 +382,6 @@ private data class OpenedGroupContext(
 
 /**
  * Everything under an opened material: the holder headings, their stacks, and any opened entries.
- *
- * Extracted from the tree's own loop, which had grown past what one function may branch on. The
- * split is where the tree's shape changes — above it a flat list of materials, below it three
- * nested levels — and not at an arbitrary line count.
  *
  * @param materialId which material was opened; its stacks are keyed by it.
  * @param phase where the stack read stands.
@@ -461,8 +417,6 @@ private fun LazyListScope.openedGroup(
                         HolderRow(holder = holder, unit = context.unit)
                     }
                     holder.stacks.forEach { stack ->
-                        // Counted across holders, not within one: the key has to stay stable when
-                        // a stack moves between holders, which a per-holder index would not.
                         val at = index++
                         item(key = "stack-$materialId-$at") {
                             StackRow(
@@ -508,27 +462,18 @@ private fun GroupRow(
             Modifier
                 .fillMaxWidth()
                 .then(
-                    // Long-press on a branch is shorthand for its leaves (artboard 5). The plain
-                    // tap keeps opening and closing it, because collapsing is a change of view and
-                    // must stay reachable while a selection runs.
                     if (onClick != null) {
                         Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
                     } else {
                         Modifier
                     },
                 )
-                // Design ch. 09 fills the group header rather than leaving it on the page ground:
-                // it is what separates a group from the stacks underneath it in a long tree. The
-                // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
                 .background(KrtPalette.SurfaceInput)
                 .padding(end = KrtSpacing.s12, top = KrtSpacing.s8, bottom = KrtSpacing.s8),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = GROUP_RAIL, color = MaterialTheme.colorScheme.primary)
-        // The chapter's group toggle turns a chevron — right when folded, down when open. It was
-        // hardcoded to the right-pointing one, so an opened group looked exactly like a closed one
-        // and the only thing saying it was open were the rows underneath it.
         if (onClick != null) {
             KrtIcon(
                 id =
@@ -549,9 +494,6 @@ private fun GroupRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        // What this group contributes to a running selection. „1/3" while it is open, „1" once it
-        // is collapsed — collapsing is a change of view, not of selection, and the count has to
-        // keep saying so or a member loses track of rows they can no longer see (artboard 5).
         if (selected > 0) {
             KrtChip(
                 text =
@@ -563,20 +505,12 @@ private fun GroupRow(
                 tone = KrtChipTone.Primary,
             )
         }
-        // The group row carries no quality in artboard 09.1 — a material's aggregate quality is an
-        // average of stacks that may be far apart, and the number that matters is the one on the
-        // stack a member is about to book. The gauge lives on the rows below.
         Amount(value = group.amount, unit = group.unit)
     }
 }
 
 /**
- * Everything an entry row needs that the tree decides rather than the row.
- *
- * These seven travelled as seven forwarded parameters through [entryRows], which does nothing with
- * them but hand them on. Naming the bundle says the true thing about them: they are one decision
- * the tree makes per group, identical for every entry under it, and adding an eighth is a change to
- * that decision rather than to the plumbing between two functions.
+ * What the tree decides once per group for every entry row beneath it.
  *
  * @property unit the group's quantity unit.
  * @property online whether a booking can be sent at all.
@@ -598,10 +532,7 @@ private data class EntryRowContext(
 )
 
 /**
- * The entries of one open stack.
- *
- * A `LazyListScope` extension rather than a composable, so the rows stay siblings of the stack they
- * belong to: nesting a second list inside a lazy item is what makes a tree scroll like two.
+ * The entries of one open stack, emitted as siblings of the stack row in the same lazy list.
  *
  * @param phase how far the read has got, or `null` when the stack is closed.
  * @param keyPrefix what makes the item keys unique within the tree.
@@ -613,7 +544,6 @@ private fun LazyListScope.entryRows(
     rows: EntryRowContext,
 ) {
     when (phase) {
-        // A closed stack contributes no rows at all.
         null -> {
             return
         }
@@ -684,9 +614,6 @@ private fun EntryRow(
     onToggleSelected: () -> Unit,
     denials: DenialState,
 ) {
-    // Long-press starts selection mode and a plain tap continues it (design ch. 02 §4): once the
-    // mode is on, having to keep long-pressing every further row makes selecting twelve stacks a
-    // chore nobody finishes. A selected row wears the orange rail and a fill, as the artboard has it.
     Row(
         modifier =
             Modifier
@@ -712,9 +639,6 @@ private fun EntryRow(
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
-            // the figure on the right. Only the amount and the note were drawn, so two entries of
-            // the same material in different hangars read as duplicates of each other.
             entry.locationName?.takeIf { it.isNotBlank() }?.let { place ->
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
@@ -745,8 +669,6 @@ private fun EntryRow(
                 )
             }
             if (released) {
-                // The web's tree marks every released row; the app marked none, so a member could
-                // offer the same stack twice or hunt for an offer they had already made.
                 Text(
                     text = stringResource(R.string.inventory_entry_on_board),
                     style = MaterialTheme.typography.bodySmall,
@@ -757,8 +679,6 @@ private fun EntryRow(
         entry.quality?.let { quality ->
             QualityMark(quality = quality)
         }
-        // Selection mode replaces the row's own actions with its checkbox: with both on screen a
-        // tap would mean two things at once (design ch. 09, artboard 5: „Buchen/Zuordnen inaktiv").
         if (selecting) {
             KrtSelectionCheckbox(checked = selected)
         } else {
@@ -774,18 +694,11 @@ private fun EntryRow(
 }
 
 /**
- * The two writes a stock row offers, each behind the lock that actually governs it.
+ * The two writes a stock row offers, each behind its own lock (ADR-0011).
  *
- * *Buchen* asks whether the row is the caller's — own row, or edit rights on its org unit.
- * *Zuordnen* asks for the Logistiker grant and stays locked even on the caller's own row (design
- * ch. 09, artboard 11: „Buchen: eigene Zeile → aktiv; Zuordnen: Rolle Logistiker → gesperrt").
- * Two locks, the same picture, different copy — only the refusal's wording separates them.
- *
- * Neither is `enabled = false`: both keep a live tap target so the refusal can name the grant to
- * ask for, instead of arriving as a 403 after the write was already attempted (ADR-0011).
- *
- * A **personal** entry carries no allocation at all (design ch. 09 §3), so the split is not offered
- * on one — offering it would be offering a refusal that no grant could ever lift.
+ * *Buchen* needs the caller's own row or edit rights on its org unit; *Zuordnen* needs the Logistiker
+ * grant. A locked action stays tappable and explains the refusal. A personal entry offers no
+ * Zuordnung.
  *
  * @param entry the row.
  * @param online whether writes are possible at all right now.
@@ -817,8 +730,6 @@ private fun EntryActions(
         )
     if (!entry.personal) {
         val (dim, click) = rememberGated(roleGate, onAllocate, denials)
-        // The badge sits on the button's corner and is never dimmed with it: alpha alone reads as
-        // "loading", and the lock is what makes it read as "you may not" (artboard 14).
         Box {
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_target,
@@ -843,18 +754,12 @@ private fun EntryActions(
 }
 
 /**
- * A quality reading: the number, and a 44 dp bar showing where it sits on the 0–1000 scale.
- *
- * Design ch. 09: "Quality = value + 44 dp mini-gauge (0–1000)". The number alone is only meaningful
- * to somebody who already knows the scale — the bar makes "Q 874" readable as *high* at a glance,
- * which is the judgement a member makes when choosing which stack to book out.
+ * A quality reading: the number and a 44 dp bar showing where it sits on the 0–1000 scale.
  *
  * @param quality the reading, 0–1000.
  */
 @Composable
 private fun QualityMark(quality: String) {
-    // The reading arrives as a string on the wire; a value the app cannot parse still shows its
-    // number and simply draws no bar, rather than guessing a position on the scale.
     val share = quality.trim().toDoubleOrNull()?.div(QUALITY_MAX)?.toFloat()?.coerceIn(0f, 1f)
     Column(horizontalAlignment = Alignment.Start) {
         Text(
@@ -889,8 +794,7 @@ private fun QualityMark(quality: String) {
  * @param stack the stack.
  * @param unit the group's quantity unit, since a stack carries none of its own.
  * @param onClick opens its entries.
- * @param onLongClick selects every entry in it — a stack row carries no selection of its own
- *   (design ch. 09, artboard 5).
+ * @param onLongClick selects every entry in it; a stack row carries no selection of its own.
  */
 @Composable
 private fun StackRow(
@@ -940,8 +844,7 @@ private fun StackRow(
 /**
  * One holder's stacks inside a material, and what they add up to.
  *
- * @property key stable across recompositions; the holder's id where the server sent one, and their
- *   name otherwise, because a tree keyed on a list position re-animates every row when one opens.
+ * @property key stable list key: the holder's id where the server sent one, otherwise their name.
  * @property name whose stock it is, or `null` for stock the server did not attribute.
  * @property stacks their stacks, in the order the server sent them.
  * @property subtotal what those stacks add up to, or `null` when they cannot be added.
@@ -954,20 +857,10 @@ private data class HolderStacks(
 )
 
 /**
- * Splits a material's stacks by whose they are, which is the level artboard 1 draws.
+ * Groups a material's stacks by holder, in first-seen server order.
  *
- * The wire has no holder level — `/inventory/all/grouped` answers stacks keyed by
- * (holder, place, quality) — so the app builds it. A member holding one material at two places was
- * two unrelated rows, and nothing on the screen said how much they held in total.
- *
- * **The subtotal is the sum of the rows directly beneath it, and nothing more.** That is what a
- * subtotal is, and it is not the invented arithmetic this app refuses elsewhere: no figure here is
- * derived from anything the member cannot also see. It is summed as `BigDecimal`, from the strings
- * the server sent, so a quarter-SCU does not drift; and if **any** of the stacks carries an amount
- * this build cannot parse, the whole subtotal is dropped rather than shown short. A total that is
- * quietly missing one of its parts is worse than no total.
- *
- * Order is the server's, first-seen: re-sorting would move rows a member had just looked at.
+ * The subtotal is the `BigDecimal` sum of the holder's stacks; if any amount does not parse, the
+ * subtotal is `null` rather than short.
  *
  * @param stacks the material's stacks, as the server sent them.
  * @return one entry per holder.
@@ -991,10 +884,7 @@ private fun byHolder(stacks: List<InventoryStack>): List<HolderStacks> =
         }
 
 /**
- * The holder level of the tree: whose stock, and how much of it in total.
- *
- * It does not open or close. The stacks beneath it are already visible — it is a heading with a
- * figure, and a chevron on it would promise a fourth thing to unfold that does not exist.
+ * The holder level of the tree: whose stock and its total; a heading that does not open or close.
  *
  * @param holder whose stacks these are.
  * @param unit the material's unit.
@@ -1022,19 +912,14 @@ private fun HolderRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        // No subtotal rather than a wrong one: see byHolder.
         holder.subtotal?.let { Amount(value = it, unit = unit) }
     }
 }
 
 /**
- * The stack's headline.
+ * The stack's headline, naming its place; the holder is shown by [HolderRow].
  *
- * The holder moved up to [HolderRow], so this names the place alone. Repeating the holder on every
- * stack under their own name was the earlier form and it made two stacks of one member read as two
- * members.
- *
- * @return the place, or the holder when the server attributed no place — a row has to say something.
+ * @return the place, or the holder when the server attributed no place.
  */
 private fun InventoryStack.title(): String =
     (location?.takeIf { it.isNotBlank() } ?: holder?.takeIf { it.isNotBlank() }).orEmpty()
@@ -1140,20 +1025,13 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // One refusal at a time, at the foot of the screen — the design settled the open question of
-    // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
     val denials = rememberDenialState()
-    // While rows are being picked the whole head becomes „✕ n gewählt" and the bottom navigation
-    // steps aside for the action bar (design ch. 09, artboard 5). Published rather than drawn here,
-    // because both surfaces belong to the shell.
     ProvideScreenTopBar(
         selection =
             state.selection
                 .takeIf { it.isNotEmpty() }
                 ?.let { SelectionBar(count = it.size, onClear = viewModel::onSelectionCleared) },
     )
-    // Two ways out and no third: the ✕ in the head, and the system back gesture. Deselecting the
-    // last row also ends the mode, but nobody leaves twelve rows one tap at a time.
     BackHandler(enabled = state.selection.isNotEmpty(), onBack = viewModel::onSelectionCleared)
     InventoryScreen(
         state = state,
@@ -1173,8 +1051,6 @@ fun InventoryRoute(
         modifier = modifier,
     )
 
-    // The bottom action bar of chapter 02 §4: it exists only while something is selected, which is
-    // what makes the mode self-evident — nothing to leave, nothing to notice you are in.
     if (state.selection.isNotEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             KrtBottomCtaBar {
@@ -1183,8 +1059,6 @@ fun InventoryRoute(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // The artboard splits the count in two: the figure heavy and white, the word
-                    // small, muted and uppercase. One `Text` would have to pick one of them.
                     Row(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(SELECTION_COUNT_GAP),
@@ -1205,10 +1079,6 @@ fun InventoryRoute(
                         text = stringResource(R.string.inventory_selection_clear),
                         onClick = viewModel::onSelectionCleared,
                     )
-                    // A selection may span rows that are not the caller's, and the same lock the
-                    // individual rows wear applies to the batch (design ch. 09, artboard 5:
-                    // „Enthält die Auswahl fremde Zeilen, rendert Umbuchen im Gesperrt-Stil …
-                    // die Auswahl bleibt bestehen"). Refusing does not clear what was picked.
                     val ownsEveryRow =
                         state.selectedEntries().all { mayEditRowOf(it.canEdit, it.holderId) }
                     val bulkGate =
@@ -1219,9 +1089,6 @@ fun InventoryRoute(
                         )
                     val (bulkDim, bulkClick) =
                         rememberGated(bulkGate, viewModel::onBulkMoveRequested, denials)
-                    // The same gate: the endpoint refuses a foreign row and takes the whole call
-                    // down with it, so a selection that spans someone else's stock cannot be
-                    // booked out either.
                     val (outDim, outClick) =
                         rememberGated(bulkGate, viewModel.checkoutActions::request, denials)
                     KrtGhostButton(
@@ -1253,9 +1120,6 @@ fun InventoryRoute(
         }
     }
 
-    // The drawn refusal, shared with every other screen that locks a control (design ch. 09,
-    // artboards 12 and 14). It was inlined here until the Einsatz roster needed the same thing —
-    // two copies of one artboard drift, so it moved into GatedAction beside the gate it belongs to.
     DenialToast(state = denials)
 
     state.checkout?.let { checkout ->
@@ -1280,8 +1144,6 @@ fun InventoryRoute(
     }
 
     state.allocation?.let { allocation ->
-        // Design ch. 14's conflict dialog: a refused save must not be a line under a
-        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
         ConflictOn(
             error = allocation.error,
             onReload = {
@@ -1326,17 +1188,10 @@ private const val QUALITY_MAX = 1_000.0
 private val SELECT_RAIL = 3.dp
 
 /**
- * „Sammel-Ausbuchen" — design ch. 09 artboard 20.
+ * „Sammel-Ausbuchen": books out whole selected rows.
  *
- * **Whole rows only**, which is what the endpoint does: every listed row is deleted in full and its
- * earmarks cascade away with it. A member who needs a part of a stack uses the single book-out,
- * which is the call that carries an amount.
- *
- * > **Three things the artboard draws that `POST /inventory/bulk-checkout` cannot carry.**
- * > It takes the ids and nothing else — no „Grund" („Verbraucht" / „Verworfen"), no note, and no
- * > per-row Herkunft planner. And it is **all or nothing**: a foreign row or an unknown id refuses
- * > the whole call, so there is no „ausgebucht / übersprungen" outcome to draw the way the bulk
- * > rebooking beside it has one. All on the design gap list.
+ * Every listed row is deleted in full and its earmarks cascade with it. The call is all or nothing
+ * and carries only the ids, with no reason, note or Herkunft plan.
  *
  * @param checkout what the sheet holds.
  * @param entries the rows it is about, so the member can see what they picked.
@@ -1379,8 +1234,6 @@ private fun BulkCheckoutSheet(
                 )
                 return@KrtBottomSheet
             }
-            // The artboard's own sentence, and the reason this is not a delete: the rows leave the
-            // stock, the audit log keeps the event.
             Text(
                 text = stringResource(R.string.inventory_bulk_checkout_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -1400,8 +1253,6 @@ private fun BulkCheckoutSheet(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    // „vollständig" per row, because the endpoint knows no partial amount and a
-                    // member who expected one has to be told before the CTA, not after.
                     KrtChip(text = stringResource(R.string.inventory_bulk_checkout_full))
                 }
             }
@@ -1428,11 +1279,7 @@ private fun BulkCheckoutSheet(
 }
 
 /**
- * „Umbuchen" over a selection.
- *
- * One place for every selected row, because that is what the endpoint takes and what a member who
- * has just moved a hangar's worth of stock actually wants. The count is in the CTA: a bulk action
- * that does not say how much it will touch is one nobody should press.
+ * „Umbuchen" over a selection: moves every selected row to one place, with the count in the CTA.
  *
  * @param bulk the open sheet.
  * @param count how many rows are selected.
@@ -1451,8 +1298,6 @@ private fun BulkMoveSheet(
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     KrtBottomSheet(
-        // A finished batch is dismissed by finishing it, not by swiping past its own result: the
-        // skipped count is the one figure the tree cannot show afterwards.
         onDismiss = if (bulk.result == null) onDismiss else onFinished,
         title =
             if (bulk.result == null) {
@@ -1467,8 +1312,6 @@ private fun BulkMoveSheet(
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (bulk.result != null) {
-                // No "n entries will be moved" over a batch that already ran — the tiles below say
-                // what happened, and the line above them would still be promising it.
                 BulkMoveOutcome(result = bulk.result, place = bulk.place?.name, onFinished = onFinished)
                 return@KrtBottomSheet
             }
@@ -1491,16 +1334,11 @@ private fun BulkMoveSheet(
                 enabled = !bulk.saving,
             )
             PickerOverflowNote(more = bulk.morePlaces)
-            // Said before the write rather than after it: a member told afterwards that four rows
-            // were skipped reads it as four failures (design ch. 09, artboard 6).
             Text(
                 text = stringResource(R.string.inventory_bulk_move_skip_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
-            // A refusal keeps the sheet open and the selection standing: nothing was changed, and
-            // re-picking twelve rows to retry punishes the member for the server's answer
-            // (artboard 10).
             bulk.error?.let { KrtFieldError(text = stringResource(R.string.inventory_bulk_move_refused)) }
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
@@ -1521,12 +1359,9 @@ private fun BulkMoveSheet(
 }
 
 /**
- * What the batch did — its own step in the sheet, rather than a toast on the way out.
+ * The bulk move's result step: moved and skipped counts with a sentence.
  *
- * Two figures and a sentence (design ch. 09, artboard 9). The skipped one is **not** an error: a row
- * already standing at the target needs no move, and saying so in words is the difference between a
- * member reading "1" as a failure and reading it as nothing to do. A toast is too fleeting to carry
- * that sentence, which is why the result is a step and not a notification.
+ * A skipped row was already at the target and is not an error.
  *
  * @param result the counts the server returned.
  * @param place where the rows were sent, for the sentence.

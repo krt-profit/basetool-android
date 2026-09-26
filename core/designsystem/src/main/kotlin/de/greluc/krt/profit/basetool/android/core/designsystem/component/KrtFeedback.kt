@@ -77,11 +77,9 @@ private val BANNER_EDGE = 4.dp
 private val TOTAL_BAR = 4.dp
 
 /**
- * The orange loading ring.
+ * The orange loading ring, used instead of the platform's circular progress indicator.
  *
- * The app never shows the platform's circular progress indicator: its Material styling and easing
- * do not belong to this system. Pair it with [KrtLoadingIndicator] whenever the wait is longer than
- * an instant, so the user learns *what* is loading.
+ * Pair it with [KrtLoadingIndicator] for any wait longer than an instant.
  *
  * @param modifier layout modifier.
  * @param color ring colour; orange by default.
@@ -151,16 +149,8 @@ fun KrtLoadingIndicator(
 /**
  * The offline banner, pinned under the top bar while the device has no connection.
  *
- * It states the one fact the app actually knows: there is no connection, so writing is locked.
- * While it is visible, every action that needs the network renders disabled — the banner is the
- * reason, so the disabled controls never look broken. Mutations are never queued for later: the
- * ledgers behind them are append-only and a replayed write would corrupt them.
- *
- * There is deliberately **no** „Zuletzt aktualisiert" stamp and no CACHE chip. Both were drawn, and
- * design §D (round 12) struck them rather than deferring them: this app holds no cache and measures
- * no load time, so either one would be invented. The second line is a [reason], never a timestamp —
- * it was called `lastUpdated` until that correction landed, which is exactly the slot a stamp would
- * have crept back into.
+ * While it shows, every network action renders disabled; mutations are never queued. It carries no
+ * timestamp or cache claim, since the app holds no cache.
  *
  * @param title the banner headline; uppercased for display.
  * @param modifier layout modifier.
@@ -187,8 +177,6 @@ fun KrtOfflineBanner(
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The edge spans whatever the banner turns out to be, not one touch target: a two-line
-        // reason left the bar stopping short of the text it belongs to.
         Box(
             modifier =
                 Modifier
@@ -228,17 +216,11 @@ fun KrtOfflineBanner(
 }
 
 /**
- * Fills the viewport with a short body that pull-to-refresh can still reach.
- *
- * `PullToRefreshBox` hears the gesture through nested scroll, so a child that does not scroll never
- * forwards one - and the state a member most wants to re-read, an empty list, is exactly the one
- * with nothing to scroll. The pull then does nothing at all, which reads as a frozen screen. A
- * scroll container whose content fits consumes no drag and passes the whole of it upwards, which is
- * what the refresh box is waiting for.
+ * Fills the viewport with a short body that pull-to-refresh can still reach, by wrapping it in a
+ * scroll container that forwards the drag.
  *
  * @param modifier layout modifier.
- * @param content the body. It must not fill the height: a scrolling column is measured without an
- *   upper bound, and `fillMaxSize` inside one is an error.
+ * @param content the body; must not use `fillMaxSize`, since it is measured without an upper bound.
  */
 @Composable
 fun KrtRefreshableFill(
@@ -277,9 +259,6 @@ fun KrtEmptyState(
         modifier =
             modifier
                 .fillMaxWidth()
-                // Dashed, not solid: an empty state marks a place something goes, and a
-                // solid border reads as a filled surface that happens to be blank
-                // (print edition § 3, "Empty = dashed border").
                 .krtDashedBorder(KrtPalette.Gray3, KrtSpacing.hairline)
                 .padding(vertical = KrtSpacing.s24, horizontal = KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -321,9 +300,6 @@ fun KrtTotalTile(
     modifier: Modifier = Modifier,
     unit: String? = null,
 ) {
-    // `IntrinsicSize.Min` and `fillMaxHeight` are load-bearing: a Box given only a width is zero
-    // pixels tall, so the orange bar — the one thing that marks this figure as the screen's total —
-    // rendered as nothing at all. Invisible until something finally used the component.
     Row(
         modifier =
             modifier
@@ -345,9 +321,6 @@ fun KrtTotalTile(
                 color = KrtPalette.TextMuted,
             )
             Row(verticalAlignment = Alignment.Bottom) {
-                // The screen's one hero number, on the figure ladder rather than a heading
-                // style (round 15 · R2/R3): a heading rung carries letter-spacing, which on
-                // digits reads as spaced-out numerals.
                 KrtDataValue(text = value, style = KrtFigure.total)
                 if (unit != null) {
                     Text(
@@ -363,17 +336,10 @@ fun KrtTotalTile(
 }
 
 /**
- * One figure with a label and a coloured rail — a batch's outcome, or a screen's KPI band.
+ * One figure with a label and a coloured rail, one of a row of equals — a batch's outcome or a
+ * screen's KPI band; unlike [KrtTotalTile], not a screen's total.
  *
- * Not [KrtTotalTile]: that one is a screen's *total*, framed and carrying the orange bar that marks
- * it as such. This is one of a row of equals — „Umgebucht 11 / Übersprungen 1" after a batch
- * (design ch. 09, artboard 9), „Schiffe 42 / Fitted 31" over an aggregate (ch. 08, artboard 1) —
- * so it is bare except for a 4 dp rail in the tone of the number beside it. Give each sibling
- * `Modifier.weight(1f)`.
- *
- * **Three across a phone need [compact].** The Finanzen band (ch. 06 artboard 2) puts Einnahmen,
- * Ausgaben and Netto side by side on 411 dp, and the artboard drops the figure to 15 px to make
- * that fit — at the full size a five-digit sum wraps inside its own tile.
+ * Give each sibling `Modifier.weight(1f)`, and use [compact] when three share a phone's width.
  *
  * @param label what the figure counts, drawn small and muted above it.
  * @param value the figure.
@@ -454,10 +420,8 @@ private val FIGURE_RAIL = 4.dp
 private val FIGURE_PAD = 10.dp
 
 /**
- * A KPI tile with an optional delta and sparkline.
- *
- * Deltas take the semantic text tints — positive green, negative red — matching the price rule of
- * the system (buy prices red with a minus, sell prices green with a plus).
+ * A KPI tile with an optional delta and sparkline; deltas are green when positive, red when
+ * negative.
  *
  * @param title what the figure measures.
  * @param value the formatted figure.
@@ -480,9 +444,6 @@ fun KrtKpiCard(
     sparklineDescription: String? = null,
 ) {
     KrtCard(modifier = modifier, onClick = onClick) {
-        // `.kpi-card .kpi-title` is **bold and white**, not muted: the card names an entity — a
-        // bank account, a ship, a material — and the name is what a member scans a column of them
-        // for. Drawn muted it read as a caption under the figure instead of a heading over it.
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
@@ -491,7 +452,6 @@ fun KrtKpiCard(
         KrtDataValue(
             text = value,
             modifier = Modifier.padding(top = KrtSpacing.s4),
-            // A figure in a CARD is the ladder's middle rung, not the hero one (round 15).
             style = KrtFigure.card,
         )
         if (delta != null || sparkline != null) {
@@ -516,16 +476,12 @@ fun KrtKpiCard(
 }
 
 /**
- * A sparkline drawn by hand — the app ships no charting library.
- *
- * Values are normalised across their own min/max, so the line shows shape rather than absolute
- * level; the figure above it carries the number.
+ * A hand-drawn sparkline, normalised across its own min/max so it shows shape, not level.
  *
  * @param values the series, oldest first. Fewer than two points render nothing.
  * @param modifier layout modifier.
  * @param color line colour; orange by default.
- * @param contentDescription what a screen reader is told the line shows; a chart with none
- *   is a blank to anyone not looking at it.
+ * @param contentDescription what a screen reader is told the line shows.
  */
 @Composable
 fun KrtSparkline(
@@ -545,9 +501,6 @@ fun KrtSparkline(
         val max = values.max()
         val span = (max - min).takeIf { it > 0f }
         val stepX = size.width / (values.size - 1)
-        // A flat series has no span to scale by. Halfway up is the honest picture of "it did not
-        // move"; dividing by a substituted 1f pins every point to the bottom edge and draws a fall
-        // that never happened.
         val yFor = { value: Float ->
             span?.let { size.height - (value - min) / it * size.height } ?: (size.height / 2f)
         }

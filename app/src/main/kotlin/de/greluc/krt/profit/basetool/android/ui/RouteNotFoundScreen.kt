@@ -20,22 +20,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * Where a link this build does not know ends up: the in-fiction 404 of design chapter 14.
+ * The in-fiction 404 for a `basetool://` link this build does not know, reached through the catch-all deep link on
+ * `KrtDestination.NotFound`.
  *
- * Reached through the catch-all deep link on `KrtDestination.NotFound`, so the only way here is a
- * `basetool://…` address nothing in the graph declares — a notification from a newer server, a
- * hand-typed link, a web link into an area this build predates.
- *
- * Distinct from [PlaceholderScreen] on purpose. That one says "this area has no screen yet", which
- * is true and is not a failure; this one says the address itself goes nowhere. Chapter 14 reserves
- * the in-fiction wording for real failures precisely so it keeps meaning something.
- *
- * The title stays English in both locales — it is product canon, like „Access Denied" and
- * „System Malfunction" — over one plain German line, which is the shape every other error state in
- * this app already uses.
- *
- * @param onBackToBase invoked by the single action; goes to Übersicht and drops this screen from
- *   the back stack, because there is nothing to come back to.
+ * @param onBackToBase invoked by the single action; goes to Übersicht and drops this screen from the
+ *   back stack.
  * @param modifier layout modifier.
  */
 @Composable

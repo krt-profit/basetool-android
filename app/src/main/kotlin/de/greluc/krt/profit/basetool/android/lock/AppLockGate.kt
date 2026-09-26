@@ -22,16 +22,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import kotlinx.coroutines.launch
 
 /**
- * Seals the app behind the lock screen, and composes [content] only once it is open.
+ * Seals the app behind the lock screen and composes [content] only once it is open.
  *
- * The outermost gate of the app, ahead of the session and the account gate. That order is the point:
- * the lock protects what is **already on the device**, so it must not wait on a network round trip
- * to find out whether the member is approved — a locked app shows nothing while the account gate is
- * still asking.
- *
- * [content] is a lambda rather than something drawn underneath an overlay, for the same reason it is
- * in `AccountGate`: composed behind the lock it would start its loads, and a screen that renders
- * itself invisibly is one system-UI bug away from being visible.
+ * The outermost gate after the update gate, ahead of the session and account gates, so the lock never
+ * waits on the network.
  *
  * @param viewModel holds the locked/open decision across configuration changes
  * @param activity the host the system prompt attaches to
@@ -49,8 +43,6 @@ fun AppLockGate(
     val scope = rememberCoroutineScope()
 
     when (val current = state) {
-        // Neither locked nor open until the armed state has been read. Rendering the app for that
-        // one frame would flash its contents past exactly the person the lock exists to exclude.
         AppLockState.Unknown -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 KrtLoadingIndicator(text = stringResource(R.string.lock_title))
@@ -62,9 +54,6 @@ fun AppLockGate(
                 messageRes = current.messageRes,
                 onUnlock = {
                     scope.launch {
-                        // Preparing the cipher first is what makes the prompt meaningful: without
-                        // one there is nothing for the platform to authenticate, and a null here
-                        // means the key is gone rather than that the member failed.
                         viewModel.prepareUnlock()?.let { cipher ->
                             BiometricGate.prompt(
                                 activity = activity,
@@ -79,9 +68,6 @@ fun AppLockGate(
         }
 
         AppLockState.Unsatisfiable -> {
-            // No unlock button: a new biometric enrolment destroyed the key, so retrying can only
-            // fail. Signing out is the documented route back (security concept §4), and offering
-            // anything else would send the member round a loop with no exit.
             LockScreen(
                 messageRes = R.string.lock_error_invalidated,
                 onUnlock = null,

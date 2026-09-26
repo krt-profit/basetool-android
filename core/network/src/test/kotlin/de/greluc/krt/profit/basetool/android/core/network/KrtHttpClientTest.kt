@@ -23,13 +23,8 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * How the two clients differ, and why the difference is not cosmetic.
- *
- * The API client and the token client talk to two different servers with two different ideas of
- * what a header means. Keycloak treats an `Authorization` header on its token endpoint as client
- * authentication and answers `invalid_client` — so an app that reused the API client for refreshes
- * would log in once and then be unable to renew a session, which is the kind of defect that only
- * appears after the access token's first five minutes.
+ * The API client and the token client differ in their headers; the token client sends no
+ * `Authorization`.
  */
 class KrtHttpClientTest {
     private lateinit var server: MockWebServer
@@ -65,9 +60,6 @@ class KrtHttpClientTest {
 
     @Test
     fun `the token client still observes the server clock`() {
-        // This traffic is the only kind that observes *Keycloak's* clock, and Keycloak is the
-        // party that judges a DPoP proof's iat. Dropping the interceptor here would leave the
-        // proof timed against the backend's clock instead.
         val tokenClient = KrtHttpClient.createTokenClient(apiClient(), clock)
         val serverTime = Instant.now().plusSeconds(DRIFT_SECONDS)
         server.enqueue(MockResponse.Builder().code(HTTP_OK).setHeader("Date", httpDate(serverTime)).build())
@@ -84,8 +76,6 @@ class KrtHttpClientTest {
 
     @Test
     fun `the api client keeps sending them`() {
-        // The counterpart assertion: the token client's emptiness has to come from deriving it,
-        // not from the API client having been misconfigured in the first place.
         server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
 
         apiClient().newCall(Request.Builder().url(server.url("/api/v1/me")).build()).execute().use { }

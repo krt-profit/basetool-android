@@ -11,16 +11,10 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import kotlinx.serialization.Serializable
 
 /**
- * What the server's `notification` event says arrived.
+ * What the server's `notification` event says arrived (REQ-NOTIF-021).
  *
- * The event carried the literal string `new` until the backend's REQ-NOTIF-021. That is enough to
- * refetch a badge and not enough to file a shade entry under the right channel or open the screen
- * the message is about — the two things design chapters 14 and 03 ask of this app.
- *
- * **Absence is a normal answer, not a failure.** A push whose inbox was only *cleared* still carries
- * the historic `new`, and so does every degraded path on the server: an unserialisable signal, a
- * peer replica on an older build, a notification type it does not know. [refreshOnly] is that case,
- * and it is what this app must keep working with — it is exactly the payload it had before.
+ * A bare `new` payload, sent on every degraded server path, is a normal answer and maps to
+ * [refreshOnly].
  *
  * @property type the server's type constant, e.g. `JOB_ORDER_CREATED`; `null` for a bare refresh.
  * @property entityType what the message is about, e.g. `JOB_ORDER`; `null` for a bare refresh.
@@ -41,12 +35,8 @@ data class NotificationSignal(
         fun refreshOnly(): NotificationSignal = NotificationSignal()
 
         /**
-         * Reads an event's data.
-         *
-         * Anything that is not a signal — the literal `new`, an empty body, a shape this build does
-         * not understand — reads as [refreshOnly]. That is not defensive coding for its own sake:
-         * the server deliberately degrades to `new` on several paths, and a client that treated an
-         * unreadable payload as an error would drop a push it was meant to act on.
+         * Reads an event's data; the literal `new`, an empty body or an unknown shape reads as
+         * [refreshOnly].
          *
          * @param data the event's `data:` lines, newline-joined.
          * @return the signal, or [refreshOnly] when the payload carries none.

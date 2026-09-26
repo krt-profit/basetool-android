@@ -29,13 +29,7 @@ import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
 
 /**
- * The login attempt has to survive the browser, and the browser can outlive the process.
- *
- * That is the whole reason this class exists rather than a field on a ViewModel: while the Custom
- * Tab is in front, Android may kill this app, and on a low-memory phone it does. A field-based
- * implementation works on every developer's device and fails on a member's, once, unreproducibly —
- * so the "survives process death" case is the one worth writing first, and it is expressed here as
- * a second instance reading what the first one wrote.
+ * Tests that the pending login attempt survives process death, as a second instance reading what the first one wrote.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -67,8 +61,6 @@ class PendingAuthorizationTest {
     @Test
     fun `an attempt survives the process that started it`() =
         runTest {
-            // The Custom Tab is in front, the app is killed, the redirect brings it back: a new
-            // instance over the same file has to find the state, nonce and verifier.
             store().save(request)
 
             val restored = store().peek()
@@ -84,16 +76,10 @@ class PendingAuthorizationTest {
     @Test
     fun `taking an attempt consumes it`() =
         runTest {
-            // A code can be redeemed exactly once, so a consumed attempt is finished. Leaving it
-            // behind would let a stale or replayed redirect be acted on a second time.
             val store = store()
             store.save(request)
 
             assertNotNull(store.peek())
-            // peek() no longer consumes: reading is what an exported activity can be made to do by
-            // any installed app, and consuming on read let one of them end a login in flight. The
-            // single-use property now belongs to clear(), which the caller runs once the redirect
-            // has been judged to be this attempt's.
             assertNotNull("a peek must not consume the attempt", store.peek())
             store.clear()
             assertNull("a second redirect must find nothing", store.peek())
@@ -108,9 +94,6 @@ class PendingAuthorizationTest {
     @Test
     fun `an unreadable attempt is discarded rather than thrown`() =
         runTest {
-            // Same three ordinary states as the stored refresh token — key invalidated by a new
-            // biometric enrolment, locked device, blob from elsewhere. All of them mean the login
-            // starts over, and none of them is worth a crash on the way back from the browser.
             store().save(request)
             cipher.failDecryption = true
 

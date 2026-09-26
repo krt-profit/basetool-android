@@ -92,22 +92,14 @@ sealed interface BlueprintEditor {
         val count: Int get() = chosen.size
 
         /**
-         * Whether the note field applies.
+         * Whether the note field applies: only when at most one product is picked.
          *
-         * `POST /personal-blueprints/batch` carries **only** the keys, so a note typed against
-         * several products would be silently dropped. With one picked the single create is used
-         * and the note goes with it; with several the field is drawn locked with that reason
-         * rather than removed.
+         * The batch create carries only the keys, so with several picked the field is drawn locked.
          */
         val noteApplies: Boolean get() = chosen.size <= 1
 
         /**
-         * The catalogue rows this sheet offers.
-         *
-         * What the member already owns is **not offered** — design ch. 17 artboard 5, which is the
-         * web's behaviour, and the sheet's notice line says so, so a missing hit does not read as
-         * a broken search. This reverses the earlier choice to list an owned product greyed out
-         * with „hast du schon" beside it.
+         * The catalogue rows this sheet offers: the results the member does not already own.
          */
         val offered: List<BlueprintProduct> get() = results.filterNot { it.owned }
     }
@@ -132,8 +124,7 @@ sealed interface BlueprintEditor {
  * Everything the Blueprints tab draws.
  *
  * @property items the rows.
- * @property craftability what can be built, keyed by row id; empty while it is still loading or
- *   after it failed — the chip then says nothing rather than claiming "nicht baubar".
+ * @property craftability what can be built, keyed by row id; empty while loading or after a failure.
  * @property total how many the server says there are.
  * @property query the list's search term.
  * @property withRefinery whether refining counts towards what is reachable.
@@ -202,11 +193,9 @@ sealed interface RecipeState {
 }
 
 /**
- * Drives the Blueprints tab of "Mein Inventar".
+ * Drives the Blueprints tab of „Mein Inventar".
  *
- * **Craftability is a second, independent read.** It fails on its own without taking the list with
- * it: a member who cannot see whether something is buildable can still see what they own, and a
- * chip that guessed "nicht baubar" from a failed request would be worse than no chip.
+ * Craftability is a separate read that can fail without failing the list.
  *
  * @property repository the member's own blueprints.
  * @property connectivity whether there is a network at all.
@@ -256,9 +245,7 @@ class PersonalBlueprintsViewModel(
         /**
          * A row was ticked or unticked.
          *
-         * Unticking anything drops [BlueprintSelection.everything]: the one-call delete removes
-         * every blueprint the member owns, so it may only run while the member has actually asked
-         * for all of them.
+         * Unticking any row clears [BlueprintSelection.everything].
          *
          * @param id the row.
          */
@@ -303,10 +290,8 @@ class PersonalBlueprintsViewModel(
         /**
          * Deletes what is ticked.
          *
-         * **Everything** goes through the one call that means everything; a partial selection is
-         * looped row by row, because the endpoint takes no ids. A loop can half-succeed, so what
-         * came back is counted and the rows that refused stay ticked — the same shape „Mein
-         * Inventar" uses, and the reason backend ask G6 exists.
+         * A full selection uses the one delete-all call; a partial one is deleted row by row, and rows the
+         * server refused stay ticked.
          */
         fun confirm() {
             val open = mutableState.value.selection ?: return
@@ -352,11 +337,7 @@ class PersonalBlueprintsViewModel(
         }
 
     /**
-     * Deletes row by row, because the endpoint takes no ids.
-     *
-     * The outcomes are collected first and counted afterwards rather than tallied inside the loop:
-     * a counter mutated in a lambda is invisible to static analysis, and this is the shape that
-     * survived that review once already.
+     * Deletes the given rows one at a time.
      *
      * @param ids what to delete.
      * @return the ids that refused.
@@ -391,8 +372,8 @@ class PersonalBlueprintsViewModel(
          * A file was picked and read off the device.
          *
          * @param fileName what it is called; the server logs it.
-         * @param bytes its content, or `null` when the device could not read it — which is not an
-         *   HTTP state, so it gets plain German rather than the fiction canon.
+         * @param bytes its content, or `null` when the device could not read it, which gets a plain German
+         *   message.
          */
         fun onFile(
             fileName: String,
@@ -404,8 +385,6 @@ class PersonalBlueprintsViewModel(
             }
             mutableState.update { it.copy(import = BlueprintImportStep.Reading(fileName)) }
             viewModelScope.launch {
-                // The request and its log line run once, outside `update`: its lambda is re-run
-                // whenever a concurrent write wins, and a network call inside it would be repeated.
                 val step =
                     when (val result = imports.importPreview(fileName, bytes)) {
                         is ApiResult.Success -> {
@@ -511,9 +490,9 @@ class PersonalBlueprintsViewModel(
     }
 
     /**
-     * Switches the chip between "from what I hold" and "once I refine".
+     * Switches the craftability chip between „from what I hold" and „once I refine".
      *
-     * No re-read: both answers come from the same call, which is why it asks for them together.
+     * Needs no re-read; both answers arrive in the same call.
      *
      * @param enabled whether refining counts.
      */
@@ -546,13 +525,9 @@ class PersonalBlueprintsViewModel(
     }
 
     /**
-     * Selects a blueprint and reads its recipe.
+     * Selects a blueprint and reads its recipe, for the tablet's master-detail only.
      *
-     * Only the tablet's master-detail calls this; on a phone the row does nothing of the sort,
-     * because the design gives the phone no recipe screen to go to.
-     *
-     * Re-selecting the same row is ignored rather than re-read: the pane already shows it, and a
-     * second read would blank a recipe the member is looking at.
+     * Re-selecting the row already shown is ignored.
      *
      * @param id the owned blueprint to show.
      */
@@ -564,8 +539,6 @@ class PersonalBlueprintsViewModel(
         viewModelScope.launch {
             when (val result = repository.recipe(id)) {
                 is ApiResult.Success -> {
-                    // Guarded: a slow read for a row the member has since left must not overwrite
-                    // the recipe of the one they are looking at now.
                     if (mutableState.value.selectedId == id) {
                         mutableState.update { it.copy(recipe = RecipeState.Ready(result.value)) }
                     }
@@ -627,8 +600,6 @@ class PersonalBlueprintsViewModel(
         update<BlueprintEditor.Adding> { adding ->
             val already = adding.chosen.any { it.productKey == product.productKey }
             adding.copy(
-                // A second tap takes it back off: the row is a checkbox, and a checkbox that only
-                // ever ticks is a trap on a list the member is still narrowing down.
                 chosen =
                     if (already) {
                         adding.chosen.filterNot { it.productKey == product.productKey }
@@ -681,8 +652,6 @@ class PersonalBlueprintsViewModel(
         }
         mutableState.update { it.copy(editor = editor.copy(saving = true, error = null)) }
         viewModelScope.launch {
-            // One product keeps the single create, because that is the call that carries the note.
-            // Several go through the batch, which carries none.
             val single = picked.singleOrNull()
             if (single != null) {
                 addOne(editor, single)
@@ -718,9 +687,8 @@ class PersonalBlueprintsViewModel(
     /**
      * Adds several products at once.
      *
-     * The sheet **stays open** on success and shows what the server did — „2 übernommen · 1
-     * bereits vorhanden", design ch. 17 artboard 5. Closing on a partial result would hide the
-     * skipped ones, which is the one thing the line exists to say.
+     * The sheet stays open on success and shows what the server did („2 übernommen · 1 bereits
+     * vorhanden").
      *
      * @param editor the open sheet.
      * @param picked the chosen products.

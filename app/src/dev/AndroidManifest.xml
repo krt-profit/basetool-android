@@ -1,23 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  dev-flavor additions.
-
-  The component showcase gets its own launcher entry so the design system can be checked on a
-  device without going through the app shell. It exists only in the dev flavor — a release build
-  ships no development surfaces.
--->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-      Repeated from the main manifest rather than inherited.
-
-      The merge already resolves `allowBackup` to false for every build, so this changes no
-      artifact — it changes what a reader of *this* file sees. A flavor manifest that declares
-      `<application>` without the attribute reads as "backup is fine here", and CodeQL says so
-      too (java/android/backup-enabled, open since 2026-08-18): the analysis reads the file, not
-      the merge. The dev flavor writes an encrypted refresh token to DataStore exactly as prod
-      does, so it is the last place to leave that implicit.
-    -->
     <application android:allowBackup="false">
         <activity
             android:name=".ShowcaseActivity"
@@ -30,21 +13,6 @@
             </intent-filter>
         </activity>
 
-        <!--
-          The dev realm's redirect. A custom scheme is claimable by any installed app, which is why
-          it is registered on this realm only — PKCE stops a stolen code from being redeemed, but
-          the phishing/confusion surface is free to close in production and is (security concept
-          section 3).
-
-          Scheme only, no path: Android ignores android:path when no android:host is given, so a
-          path here would look like a tightening and be none. The post-logout return
-          (de.kartell.basetool:/logout) therefore lands here too — it carries no code, is read as an
-          unusable redirect, and simply brings the app forward, which is what it should do.
-        -->
-        <!--
-          The login screen on a device, before anything is wired to it. Compose previews render the
-          tree; they do not answer what it is like at 412 dp with the system bars in place.
-        -->
         <activity
             android:name=".LoginPreviewActivity"
             android:exported="true"
@@ -56,13 +24,6 @@
             </intent-filter>
         </activity>
 
-        <!--
-          Einstellungen on a device without a session in front of it. The screen sits behind the
-          login in the running app, and the login cannot be completed on an emulator at the minSdk
-          floor (Chrome below 89 drops Keycloak's SameSite=None auth cookies over loopback) — so
-          without this entry the language switch could only be seen where it is least likely to
-          break. AppCompatActivity, like the real one: see the class KDoc.
-        -->
         <activity
             android:name=".SettingsPreviewActivity"
             android:exported="true"

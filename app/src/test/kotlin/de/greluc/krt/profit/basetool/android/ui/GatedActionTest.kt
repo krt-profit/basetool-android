@@ -13,12 +13,10 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * What the refusal holder guarantees.
+ * Tests the refusal holder behind the singleton lock toast whose clock restarts on every tap (design ch. 09, artboard
+ * 14).
  *
- * Both properties here are load-bearing for the design's rule that the lock toast is a singleton
- * whose clock restarts on every tap (design ch. 09, artboard 14). Neither is visible from a
- * screenshot, and the second one is the reason [Denial] carries a serial at all: keying the
- * dismissal effect on the text alone would let the first tap's timer expire under the second.
+ * [Denial] carries a serial so a second tap restarts the dismissal timer.
  */
 class GatedActionTest {
     private val role =

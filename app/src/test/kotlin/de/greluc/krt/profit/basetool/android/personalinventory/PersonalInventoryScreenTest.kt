@@ -242,9 +242,6 @@ class PersonalInventoryScreenTest {
 
     @Test
     fun `the editor scrolls, so its actions cannot be pushed off the screen`() {
-        // Found on a device: with a place chosen and the keyboard up, the action row sat past the
-        // bottom edge and the sheet could not be submitted at all. A fixed-height sheet is only
-        // ever as tall as the shortest phone it runs on.
         compose.setContent {
             KrtTheme {
                 PersonalInventoryEditor(
@@ -288,8 +285,6 @@ class PersonalInventoryScreenTest {
             }
         }
 
-        // The list only opens once the member types, so open it the way they would: the point of
-        // this test is that a full list of hits cannot bury the save button.
         compose.onNodeWithContentDescription("Ort").performTextInput("lor")
         compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag(PERSONAL_INVENTORY_SAVE_TAG))
         compose.onNodeWithTag(PERSONAL_INVENTORY_SAVE_TAG).assertIsDisplayed()
@@ -329,9 +324,6 @@ class PersonalInventoryScreenTest {
         }
 
         compose.onNodeWithText("Medpens, neu benannt").assertIsDisplayed()
-        // The short line, not the dialog's sentence. The editor itself renders only this; the
-        // conflict dialog lives at the host, so the long wording appearing here would mean the two
-        // had started saying the same thing twice under one another.
         compose.onAllNodesWithText("Nicht gespeichert — gleichzeitig geändert.").assertCountEquals(1)
     }
 
@@ -376,9 +368,6 @@ class PersonalInventoryScreenTest {
 
     @Test
     fun `a rejected field is named in the server's own words`() {
-        // The sheet has no per-field error slots, so „Konnte nicht gespeichert werden." was the
-        // whole of what a member saw when the server had already said which value it rejected and
-        // why (design ch. 02 §6 draws that sentence under the field).
         openEditor(
             error =
                 ApiError.Validation(
@@ -389,17 +378,12 @@ class PersonalInventoryScreenTest {
                 ),
         )
 
-        // Asserted as rendered rather than as on-screen: what is under test is which sentence the
-        // sheet chose, and the sheet scrolls — where the error sits on a 411 dp phone is the
-        // separate concern the scroll test above already covers.
         compose.onNodeWithText("Menge muss größer als 0 sein.").assertExists()
         compose.onAllNodesWithText("Konnte nicht gespeichert werden.").assertCountEquals(0)
     }
 
     @Test
     fun `a conflict keeps the sheet's own sentence`() {
-        // A 409 body describes the row that moved; the member needs to be told to reload, which is
-        // the screen's to say and not the server's.
         openEditor(error = ApiError.OptimisticLock(ProblemDetail(detail = "Row version 7 is stale")))
 
         compose.onNodeWithText("Nicht gespeichert — gleichzeitig geändert.").assertExists()
@@ -408,7 +392,6 @@ class PersonalInventoryScreenTest {
 
     @Test
     fun `the delete confirmation names the entry`() {
-        // "Are you sure?" without the name is a question the member cannot answer.
         compose.setContent {
             KrtTheme {
                 PersonalInventoryDeleteModal(

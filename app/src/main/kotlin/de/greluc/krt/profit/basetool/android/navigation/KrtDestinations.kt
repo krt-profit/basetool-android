@@ -17,25 +17,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 const val KRT_DEEP_LINK_SCHEME = "basetool"
 
 /**
- * A destination of the app.
- *
- * Routes double as deep-link paths so a notification, a web link and an in-app navigation all end
- * up at the same entry — there is exactly one address per screen.
- *
- * Titles are **string resources, not literals**. They are the app's most visible copy — the bottom
- * bar, the rail, the top bar and the "Mehr" list all render them — so a literal here would leave the
- * whole navigation in German for a member who switched the app to English, which is the one place
- * the gap is impossible to miss and the easiest to overlook while writing the enum.
+ * A destination of the app; its route doubles as its deep-link path.
  *
  * @property route navigation route, without a leading slash.
  * @property titleRes screen title shown in the top bar and beside the glyph.
  * @property iconRes glyph used in the bottom bar, the rail and the "Mehr" list.
- * @property orgScoped whether everything this screen shows is bounded by the **active org unit**.
- *   Such a screen keeps the unit pill in its bar even when it was pushed rather than navigated to
- *   (design ch. 03, round 14 · S13): there the pill names the *scope* the numbers were read under,
- *   which a member cannot otherwise tell — „0 aUEC" means something different for one unit than
- *   for all of them. A screen about **one record** never gets it: there the pill would look like a
- *   property of the record.
+ * @property orgScoped whether everything this screen shows is bounded by the active org unit; such
+ *   a screen keeps the unit pill in its bar even when pushed (design ch. 03).
  */
 @Immutable
 enum class KrtDestination(
@@ -71,9 +59,6 @@ enum class KrtDestination(
         "exchange",
         R.string.nav_exchange,
         DesignR.drawable.ic_krt_swap,
-        // „BÖRSE" on the rail, „Materialbörse" everywhere else. Both the navigation map (ch. 03)
-        // and the tablet dashboard (ch. 05) label the rail entry with the short form, while the
-        // „Mehr" list spells it out — a rail column is 88 dp wide and the compound crowds it.
         navTitleRes = R.string.nav_exchange_short,
     ),
 
@@ -105,12 +90,8 @@ enum class KrtDestination(
     Licenses("licenses", R.string.licenses_title, DesignR.drawable.ic_krt_list),
 
     /**
-     * Where a link this build does not know ends up — design ch. 03, „Unbekannte Route → 404
-     * in-fiction", drawn in ch. 14.
-     *
-     * Reached only through the catch-all deep link the graph registers for it, never by tapping
-     * anything. It carries the in-fiction wording rather than the placeholder's, because a link
-     * that goes nowhere *is* a failure, whereas an area with no screen yet is not.
+     * Where a link this build does not know ends up — the in-fiction 404 (design ch. 03, drawn in
+     * ch. 14); never reached by tapping.
      */
     NotFound("not-found", R.string.route_not_found_title, DesignR.drawable.ic_krt_warning),
 
@@ -332,9 +313,6 @@ val TABLET_DESTINATIONS =
  */
 val MORE_DESTINATIONS =
     listOf(
-        // Operationen is NOT here: round 14 (S30) settled it as the second half of the Einsätze
-        // surface — same entry, same list-detail — reached through that screen's own segment.
-        // Listing it here as well offered one surface under two names.
         KrtDestination.Hangar,
         KrtDestination.Exchange,
         KrtDestination.Refinery,
@@ -347,24 +325,15 @@ val MORE_DESTINATIONS =
     )
 
 /**
- * Destinations that are **pushed from another screen** rather than being reachable on their own,
- * mapped to the destination they belong to.
+ * Destinations pushed from another screen, mapped to the destination they belong to.
  *
- * Two things read this. The navigation bar highlights the parent's root while a sub-page is open,
- * so the bar never claims the member is somewhere they are not; and the top bar shows a back arrow.
- * Without the mapping the open-source notice would light up "Übersicht" — the fallback for an
- * unknown destination — while showing a page reached from "Mehr".
+ * Used to highlight the parent's navigation item and to show the top bar's back arrow.
  */
 val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
     mapOf(
         KrtDestination.Licenses to KrtDestination.Settings,
-        // Pushed from the Hangar's overflow, so the bar keeps saying Hangar while it is open.
         KrtDestination.FleetImport to KrtDestination.Hangar,
-        // Without this the bar would light up "Übersicht" — the fallback for an unknown
-        // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,
-        // Without this the bar would light up „Übersicht" while a member reads a material they
-        // opened from „Handel".
         KrtDestination.MaterialDetail to KrtDestination.Materials,
         KrtDestination.OrderEdit to KrtDestination.Orders,
         KrtDestination.OrderCollection to KrtDestination.Orders,
@@ -372,10 +341,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.OperationEdit to KrtDestination.Operations,
         KrtDestination.MaterialMatrix to KrtDestination.Materials,
         KrtDestination.MaterialProfit to KrtDestination.Materials,
-        // Same reason, one list over: an Operation is opened from „Operationen".
         KrtDestination.OperationDetail to KrtDestination.Operations,
-        // And Operationen itself belongs to Einsätze — they are two halves of one surface behind
-        // one segment (round 14 · S30), so the rail keeps EINSÄTZE lit while the other half shows.
         KrtDestination.Operations to KrtDestination.Missions,
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.BankHolder to KrtDestination.Bank,
@@ -411,16 +377,10 @@ fun materialDetailRoute(materialId: String): String = "material/" + materialId
 const val MATERIAL_ID_ARG: String = "materialId"
 
 /**
- * The route that opens the edit form for one Auftrag.
+ * The route that opens the edit form for one Auftrag in the given mode.
  *
- * The mode travels with the id and is not re-derived by the form. Which of the two writes a member
- * may perform — the Logistician's `PUT /orders/{id}` or the requester's narrower
- * `PUT /orders/{id}/requested` — is decided where the order and the caller's standing are both
- * known, which is the detail screen. The form is told what it opened.
- *
- * It used to be hardcoded to [OrderFormMode.EDIT] at the view-model factory, so the requester's
- * mode existed, was computed correctly on the detail screen, and could never reach the form: a
- * requester silently sent the Logistician's path (audit 2026-09-03).
+ * The mode — the Logistician's `PUT /orders/{id}` or the requester's `PUT /orders/{id}/requested`
+ * — is decided on the detail screen and passed through, not re-derived by the form.
  *
  * @param orderId the Auftrag to rewrite.
  * @param mode which of the two edits this is.
@@ -527,11 +487,6 @@ fun rootOf(destination: KrtDestination): KrtDestination = SUB_DESTINATIONS[desti
  * Resolves a route back to its destination.
  *
  * @param route the route to look up, or `null` while the graph is still settling.
- * @return the destination, or `null` while the graph is still settling — the caller falls back to
- *   Übersicht for the **top bar's** identity, which is a question about chrome and not about
- *   routing. An unknown *link* is a different question and is answered before the graph is asked
- *   at all: `UnknownLinkGuard` sends it to [NotFound]. This KDoc used to claim the fallback was the
- *   404, next to a call site reading `?: KrtDestination.Home`, and that mismatch is why the rule
- *   went unimplemented for as long as it did.
+ * @return the destination, or `null` when the route is unknown or `null`.
  */
 fun destinationOf(route: String?): KrtDestination? = KrtDestination.entries.firstOrNull { it.route == route }

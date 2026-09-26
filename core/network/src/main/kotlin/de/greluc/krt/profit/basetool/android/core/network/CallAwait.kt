@@ -18,24 +18,8 @@ import kotlin.coroutines.resumeWithException
 /**
  * Awaits this call's response, cancelling the underlying socket when the coroutine is cancelled.
  *
- * The alternative — `withContext(Dispatchers.IO) { execute() }` — looks equivalent and is not: a
- * cancelled coroutine there leaves the request running to completion, holding a connection and a
- * thread for the full read timeout. On a screen a member navigated away from that is the difference
- * between an abandoned request and a 30-second one.
- *
- * A response that arrives after cancellation is **closed rather than dropped**. An unclosed
- * [Response] leaks its connection out of the pool, and OkHttp reports it only as a `StrictMode`-ish
- * warning much later, in an unrelated call.
- *
- * **This resumes on the caller's dispatcher, which for a ViewModel is the main thread — so the
- * caller must move the response handling off it.** `ApiReader` wraps both of its handling blocks in
- * `withContext(Dispatchers.IO)` for that reason, and the reason is not theoretical: closing an
- * HTTP/2 response whose body was never read makes OkHttp write an `RST_STREAM` to the socket, and
- * that is a `NetworkOnMainThreadException` that crashes the app. Found on a device, on the one
- * write that returns a body the app does not parse. Reads only escaped it because a body already
- * buffered in memory needs no socket. Note that this is a different point from the paragraph
- * above: the objection there is to replacing `enqueue` with `withContext { execute() }`, which
- * would break cancellation. Wrapping the *handling* keeps both properties.
+ * A response arriving after cancellation is closed. This resumes on the caller's dispatcher, so the
+ * caller must handle the response off the main thread.
  *
  * @return the response; the caller owns it and must close it
  * @throws IOException if the call fails before a response was received

@@ -23,18 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Signing up must go to `…/join` — the path the API vhost actually exposes.
- *
- * Not a style preference and not a tidier URL. The vhost in front of the backend is a
- * **default-deny allow-list**, and for participants it exposes `…/join` plus three `…/slim` paths.
- * It does **not** expose `…/participants/add`, which is where this app used to send its sign-ups:
- * every one of them was refused at the edge and never reached the backend, so signing up failed
- * with the sheet's generic „Konnte nicht gespeichert werden." while signing *off* — which uses an
- * allow-listed `…/slim` path — kept working. Reported 2026-09-02, after release; backend ADR-0154.
- *
- * The path is therefore an assertion, not an implementation detail. Nothing else in this repository
- * can see the allow-list: it lives in the main repo's vhost runbook, and the test stack has no vhost
- * at all, which is exactly why the original choice was verified and still wrong.
+ * Signing up goes to `…/join`, the participant path the API vhost's allow-list admits (ADR-0154).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -95,8 +84,6 @@ class MissionJoinRequestTest {
             val body = server.takeRequest().body?.utf8().orEmpty()
             assertTrue("the desired Funktion travels", body.contains("\"desiredJobTypeId\""))
             assertTrue("the payout choice travels", body.contains("DONATE"))
-            // `join` derives the member from the token. A body that could name somebody else is
-            // what forced the old route onto the add-anybody endpoint in the first place.
             assertFalse("a sign-up names nobody", body.contains("\"userId\""))
             assertFalse("nor a guest", body.contains("\"guestName\""))
         }
@@ -109,9 +96,6 @@ class MissionJoinRequestTest {
             repository.join(missionId = "m1", desiredJobTypeId = null, donate = false)
 
             val body = server.takeRequest().body?.utf8().orEmpty()
-            // An omitted payoutPreference would mean "no answer" and hand the decision back to the
-            // profile default (REQ-MISSION-002) — which is not what a member who unticked the box
-            // asked for.
             assertTrue("PAYOUT is an answer, not an absence", body.contains("PAYOUT"))
         }
 

@@ -89,15 +89,8 @@ const val OPERATION_EDIT_MENU_TAG: String = "operation-edit-menu"
 const val OPERATION_PAID_OUT_TAG: String = "operation-paid-out"
 
 /**
- * One Operation in full (design spec ch. 06 §5), read-only.
- *
- * **One scrolling page, not tabs.** The Einsatz detail has seven tabs because it carries seven
- * unrelated collections; an Operation carries three short sections that a member reads together —
- * what it earned, which Einsätze earned it, and who gets what. Tabs would hide two thirds of a
- * screenful behind a control.
- *
- * The manager payout toggles of the design mock are mutations and belong to Phase 3. This screen
- * shows the payout **state** and no action.
+ * One Operation in full (design spec ch. 06 §5), as one scrolling page: what it earned, which
+ * Einsätze earned it, and who gets what.
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
@@ -117,7 +110,6 @@ fun OperationDetailScreen(
     onEdit: (() -> Unit)? = null,
 ) {
     val overview = state.overview
-    // Bound so the smart cast survives the branch; `state.phase` is a property read.
     val phase = state.phase
     Column(modifier = modifier.fillMaxSize()) {
         when {
@@ -144,9 +136,6 @@ fun OperationDetailScreen(
             }
 
             phase is OperationDetailPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // failure state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
                 val retryIn = state.retryIn
                 if (retryIn != null) {
                     KrtRetryCountdown(
@@ -185,9 +174,6 @@ private fun OperationDetailHead(
     overview: OperationOverview,
     onEdit: (() -> Unit)?,
 ) {
-    // Artboard 06.5 puts the Operation's own name in the TOP BAR with its status and counts under
-    // it, the way every other detail in this app now reads. The bar used to say "OPERATION" - the
-    // category, which the member picked two taps ago and already knows.
     val facts =
         pluralStringResource(
             R.plurals.operation_detail_missions,
@@ -199,9 +185,6 @@ private fun OperationDetailHead(
                 overview.payouts.participants,
                 overview.payouts.participants,
             )
-    // Drawn for everyone rather than hidden from those who may not write: whether the caller is a
-    // Missions-Manager is the server's answer, and an action that is simply absent teaches nobody
-    // what to ask for (ADR-0011). A refusal comes back as the form's 403.
     val editLabel = stringResource(R.string.operation_form_edit_title)
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     ProvideScreenTopBar(
@@ -242,8 +225,6 @@ private fun OperationDetailHead(
             }
         },
     )
-    // Shown only when the server said so. `null` means the flag was not computed, and a warning
-    // invented from an absent field would put a caveat on a figure that may well be final.
     if (detail.payoutPreliminary == true) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
@@ -318,9 +299,6 @@ private fun OperationDetailBody(
                 MissionResultRow(result = result, onOpenMission = onOpenMission)
             }
         }
-        // ADR-0104 in the main repo: a capped list says so. The net figure above is computed over
-        // every Einsatz regardless, so the note has to draw that distinction rather than imply the
-        // total is short too.
         if (overview.rollup.truncated) {
             item(key = "missions-truncated") {
                 Text(
@@ -331,8 +309,6 @@ private fun OperationDetailBody(
                 )
             }
         }
-        // The rollup follows the Einsätze it is a rollup OF (artboard 06.5). Above them it was a
-        // total with nothing yet to total.
         item(key = "rollup-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_rollup),
@@ -361,11 +337,10 @@ private fun OperationDetailBody(
 }
 
 /**
- * "Dein Anteil", or an honest sentence when there is nothing to point at.
+ * "Dein Anteil" — the amount the caller actually receives, or a sentence when there is nothing to
+ * show.
  *
- * A donating member's share is zero by construction — it went to the org treasury — so the amount
- * shown is what they actually receive, and the label says where the rest went. Showing the share
- * would read as money they are owed.
+ * A donating member's amount is zero and the label says where the share went.
  *
  * @param payout the caller's row, or `null`.
  * @param identityKnown whether the caller's id could be read.
@@ -375,9 +350,6 @@ private fun MyShareBand(
     payout: OperationPayout?,
     identityKnown: Boolean,
 ) {
-    // The band the artboard leads with: a HUD box behind an orange rail, saying in one line what
-    // the member is owed and whether it has been paid. It was a muted caption and a plain number,
-    // which on a screen of other people's money did not read as the member's own row.
     Box(modifier = Modifier.padding(KrtSpacing.s12)) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
@@ -425,12 +397,9 @@ private fun MyShareBand(
 }
 
 /**
- * The line under "DEIN ANTEIL" - what state the member's own payout is in.
+ * The line under "DEIN ANTEIL": the state of the member's own payout.
  *
- * Split out because the three cases it distinguishes are not the same kind of statement: two are
- * facts about the payout, and the third is an admission that the identity read failed. Only the
- * identity case may claim the member took no part; a failed request saying so would be a statement
- * about them made out of an outage.
+ * Only a known identity with no matching row may claim the member took no part.
  *
  * @param payout the member's own row, if it could be found.
  * @param identityKnown whether the caller's own id was read at all.
@@ -452,11 +421,7 @@ private fun MyShareSubline(
 }
 
 /**
- * The Finanz-Rollup: net, donations and the per-head share.
- *
- * **No income/expense split.** The design mock shows one; the server's roll-up has no such field,
- * and deriving it would mean fetching every entry of every Einsatz and adding money up on the
- * device. The web page shows the same net-plus-donations pair.
+ * The Finanz-Rollup: net, donations and the per-head share, without an income/expense split.
  *
  * @param overview everything loaded.
  */
@@ -471,9 +436,6 @@ private fun RollupBlock(overview: OperationOverview) {
             label = stringResource(R.string.operation_detail_rollup_donations),
             value = formatAmount(overview.payouts.totalDonations.orEmpty()),
         )
-        // The server's own per-row figures, not the net divided by the head count: the split is
-        // weighted by how long each member actually took part. When the rows disagree the two ends
-        // are named, because one number would be contradicted by the payout list below it.
         overview.payouts.shareRange?.let { (lowest, highest) ->
             KrtKeyValueRow(
                 label =
@@ -524,8 +486,6 @@ private fun MissionResultRow(
             color = KrtPalette.White,
             modifier = Modifier.weight(1f),
         )
-        // Signed and tinted, as the artboard has it: on a list of results the direction is the
-        // fact, and a column of unsigned figures makes a losing Einsatz look like a winning one.
         Text(
             text = signedAmount(result.total),
             style = MaterialTheme.typography.bodyMedium,
@@ -544,9 +504,6 @@ private fun MissionResultRow(
 
 /**
  * An amount with its sign in front of it.
- *
- * The server sends a plain decimal; a positive result carries no `+`, and on a list where the next
- * row may be negative that absence is easy to read as "no change" rather than "gain".
  *
  * @param raw the amount as the server rendered it.
  * @return the formatted amount, prefixed with `+` when it is positive.
@@ -575,12 +532,8 @@ private fun amountTone(raw: String): androidx.compose.ui.graphics.Color =
 /**
  * One participant's payout row.
  *
- * The confirmation is offered to a mission manager alone. Whether they may take one **back** needs
- * an officer or an admin on top, which `/users/me` does not answer — so both directions are
- * offered and a refusal on the second is named rather than predicted.
- *
- * A row the server sent without a participant key cannot be addressed and is shown without the
- * action rather than with one that would 400.
+ * The confirmation is offered to a mission manager in both directions; a refused rescind is named
+ * when it happens. A row without a participant key is shown without the action.
  *
  * @param row the payout.
  * @param state the screen, for the grant and whether a write may be sent.
@@ -606,8 +559,6 @@ private fun PayoutRow(
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.White,
             )
-            // "Anteil 4.150 · Auszahlung" (artboard 06.5): the row's own amount and where it goes.
-            // A bare name beside a chip left the figure to be inferred from the column heading.
             Text(
                 text =
                     stringResource(
@@ -634,11 +585,7 @@ private fun PayoutRow(
 }
 
 /**
- * „ (12,5 %)" after the share, when the server said what proportion it was.
- *
- * The percentage is what makes the amount checkable: a member can see their attendance was
- * weighted the way they expected, instead of taking the figure on trust. Absent on the wire for
- * rows the server did not weight, and then this adds nothing.
+ * „ (12,5 %)" after the share, when the server sent the proportion.
  *
  * @return the suffix, or an empty string.
  */
@@ -649,10 +596,7 @@ private fun OperationPayout.percentSuffix(): String {
 }
 
 /**
- * Renders a participation percentage without trailing noise.
- *
- * The wire carries a `Double`, so a clean half prints as `12.5` and a whole one as `25.0`; the
- * latter reads as false precision on a figure that is exactly a quarter.
+ * Renders a participation percentage without a trailing `,0`.
  *
  * @param value the percentage as sent.
  * @return the rendered number, decimal comma, at most one decimal place.
@@ -672,15 +616,10 @@ private fun formatPercent(value: Double): String {
 private const val PERCENT_ROUNDING = 10.0
 
 /**
- * What the transferred figure is made of, and who closed it.
+ * What the transferred figure is made of — participation percentage, reimbursed outlay, deducted
+ * in-game fee — and who closed it.
  *
- * The server sends the participation percentage, the reimbursed outlay carried **inside** the
- * payout, and the in-game fee already deducted from it — and the app dropped all three, leaving a
- * member with a total and no way to check it. „Du bekommst 45.000" and „davon 12.000 erstattete
- * Auslagen, 2.250 Gebuehr" are different statements about the same money.
- *
- * Every part is optional on the wire, so each is rendered only when it is there; a row with
- * nothing to add draws nothing rather than an empty line.
+ * Each optional part is rendered only when present.
  *
  * @param row the payout row.
  */
@@ -713,10 +652,7 @@ private fun PayoutComposition(row: OperationPayout) {
 }
 
 /**
- * „Ausgezahlt am … von …", once a manager has closed the row.
- *
- * The name is shown because the web shows it — an audit fact the member is entitled to see. It is
- * never logged.
+ * „Ausgezahlt am … von …", once a manager has closed the row; the name is never logged.
  *
  * @return the line, or `null` while the payout is still open or the server named no time.
  */
@@ -740,11 +676,8 @@ private fun OperationPayout.paidOutLine(): String? {
 private const val PAYOUT_PART_SEPARATOR = " · "
 
 /**
- * The manager's confirm box on a payout row.
- *
- * Asymmetric on purpose, and the design chapter is explicit about it: marking a payout is one tap,
- * taking the mark back goes through a modal that names what it undoes. The two directions are not
- * equally recoverable - the member has been told they were paid.
+ * The manager's confirm box on a payout row: marking is one tap, unmarking goes through a modal
+ * that names what it undoes.
  *
  * @param row the payout row.
  * @param state the screen, for the write gate.
@@ -836,8 +769,7 @@ private fun OperationPayout.payoutLabel(): String =
 /**
  * The chip tone for a payout row.
  *
- * @return success once paid, muted for a donation, neutral while open. "Open" is not a problem and
- *   must not be drawn as one.
+ * @return success once paid, muted for a donation, neutral while open.
  */
 private fun OperationPayout.payoutTone(): KrtChipTone =
     when {
@@ -875,11 +807,7 @@ private fun OperationDetail.statusLabel(): String =
     }
 
 /**
- * The whole-screen failure, worded by cause.
- *
- * A refusal and an outage are different facts: one says the Operation is not the member's to see,
- * the other says the app could not ask. One message for both would leave a member retrying
- * something that will never succeed.
+ * The whole-screen failure, worded differently for a refusal and an outage.
  *
  * @param error what went wrong.
  */

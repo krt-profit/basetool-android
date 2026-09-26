@@ -41,17 +41,10 @@ const val OPERATION_FORM_SUBMIT_TAG: String = "operation-form-submit"
 private const val DESCRIPTION_LINES = 4
 
 /**
- * „Operation anlegen" and „Operation bearbeiten" (design ch. 06, artboards 15 and 16).
+ * „Operation anlegen" and „Operation bearbeiten" in one screen (design ch. 06, artboards 15 and 16).
  *
- * One screen for both: the two writes take the same three fields, and a second layout would be two
- * places to keep in step.
- *
- * > **Two things the artboards draw that the API cannot serve, and that are therefore absent.**
- * > „Beginn" / „Ende (geplant)" have no field on either DTO — an Operation has no times of its own,
- * > they live on its Einsätze. And „Einsätze zuordnen" is not a field either: a mission joins an
- * > Operation through **its own** core section, which needs that mission's name and core version.
- * > The form says where the assignment happens instead of drawing a control that reaches nothing.
- * > Both are on the design gap list.
+ * The planned times and the Einsatz assignment are not fields: an Operation has no times of its
+ * own, and an Einsatz joins an Operation through its own Kern section.
  *
  * @param state what the form holds.
  * @param actions what it reports.
@@ -98,14 +91,10 @@ fun OperationFormScreen(
             )
         }
         item(key = "status") {
-            // Shown on both, not only on the edit: the status is required by both writes, so a
-            // create that hid it would be sending a value nobody chose.
             KrtSegmentedControl(
                 options = OPERATION_FORM_STATUSES.map { stringResource(it.krtLabel()) },
                 selectedIndex = OPERATION_FORM_STATUSES.indexOf(state.status).coerceAtLeast(0),
                 onSelect = { actions.onStatus(OPERATION_FORM_STATUSES[it]) },
-                // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
-                // the control is one row high, so they wrapped instead of fitting.
                 stretch = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -114,13 +103,9 @@ fun OperationFormScreen(
             KrtHint(explanation = stringResource(R.string.operation_form_status_hint))
         }
         item(key = "missions-note") {
-            // Where the Einsatz assignment actually lives. Saying it is the difference between a
-            // missing feature and a feature somewhere else.
             KrtHint(explanation = stringResource(R.string.operation_form_missions_hint))
         }
         item(key = "cta") {
-            // In the server's words when it named the field it rejected; this form has one error
-            // slot for every field, and „Konnte nicht gespeichert werden." names none of them.
             state.error?.let { error ->
                 KrtFieldError(
                     text = error.writeFailureText(R.string.write_failed),

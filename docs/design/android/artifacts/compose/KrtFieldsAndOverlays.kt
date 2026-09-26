@@ -25,12 +25,6 @@ import androidx.compose.ui.window.Dialog
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.*
 import kotlinx.coroutines.delay
 
-/* ═════════════════════════════ 5 · FIELDS ═════════════════════════════
- * Labels are NEUTRAL grey, never orange — the VALUE should be the brightest thing in a form.
- * Fill #1C1C1C, hairline border, orange border + focus glow while focused. Radius 0.
- * Numeric fields accept BOTH separators: a German keyboard sends a comma.
- */
-
 @Composable
 fun KrtTextField(
     value: String,
@@ -44,7 +38,7 @@ fun KrtTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text,
-    counter: Pair<Int, Int>? = null, // current to max — shown bottom-right, tabular
+    counter: Pair<Int, Int>? = null,
 ) {
     Column(modifier.fillMaxWidth()) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.Gray1, modifier = Modifier.padding(bottom = 4.dp))
@@ -89,12 +83,10 @@ fun KrtTextField(
 }
 
 /**
- * The WARNING variant of the field's error line — same shape, different tint (ch. 02 §1,
- * ratified 30.08.2026). The distinction carries meaning and must not be blurred:
- *   error   #F2564B  something is invalid; submitting is blocked
- *   warning #FFD23F  something is notable but allowed; NOTHING is blocked
- * Never both at once — the error supersedes the warning. First call site: a timestamp in the
- * past, on the date field (ch. 02 §11).
+ * The warning variant of the field's error line, in `#FFD23F`: something notable but allowed,
+ * blocking nothing.
+ *
+ * An error (`#F2564B`) blocks submitting and supersedes the warning; never show both.
  */
 @Composable
 fun KrtFieldWarning(text: String, modifier: Modifier = Modifier) {
@@ -176,14 +168,6 @@ fun KrtCombobox(
         }
     }
 }
-
-/* ═════════════════════════════ 6 · OVERLAYS ═════════════════════════════
- * NO native dialogs. Ever. No AlertDialog default styling, no Toast, no Snackbar chrome.
- * Sheet  = 3 dp orange top edge, #141414, 32 × 4 dp grab handle, 20 dp gutter, overlay glow.
- * Modal  = orange top edge + HUD brackets on an 80 % black + 4 dp blur scrim; ONE filled CTA,
- *          ghost cancel; a destructive modal NAMES the consequence in numbers.
- * Scrim  = KrtPalette.Black.copy(alpha = .8f) everywhere.
- */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

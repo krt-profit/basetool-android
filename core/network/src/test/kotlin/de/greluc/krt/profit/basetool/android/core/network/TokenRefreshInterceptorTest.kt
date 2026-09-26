@@ -17,12 +17,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * What happens to a call whose access token has run out.
- *
- * The failure this guards against was found on a device and is invisible in a short test run: the
- * app worked for the realm's access-token lifespan — an hour — and then every screen said "Signal
- * Lost" at once, because nothing ever exchanged the spent token. A session that dies while the
- * member is still signed in is not a network problem and must not be rendered as one.
+ * A call whose access token has run out is refreshed rather than failing.
  */
 class TokenRefreshInterceptorTest {
     private lateinit var server: MockWebServer
@@ -66,8 +61,6 @@ class TokenRefreshInterceptorTest {
 
     @Test
     fun `a session that cannot be renewed keeps the rejection`() {
-        // The member is signed out, not offline: the 401 has to reach the caller so the app can
-        // say so rather than retrying forever.
         server.enqueue(MockResponse.Builder().code(HTTP_UNAUTHORIZED).build())
         val client = client(refreshAfterRejection = { null })
 
@@ -79,8 +72,6 @@ class TokenRefreshInterceptorTest {
 
     @Test
     fun `a second rejection is not retried again`() {
-        // The server is refusing a token it has just minted. Retrying that in a loop would hammer
-        // the realm from every screen at once.
         server.enqueue(MockResponse.Builder().code(HTTP_UNAUTHORIZED).build())
         server.enqueue(MockResponse.Builder().code(HTTP_UNAUTHORIZED).build())
         val client =
@@ -99,7 +90,6 @@ class TokenRefreshInterceptorTest {
 
     @Test
     fun `a spent token is exchanged before the call goes out`() {
-        // The ordinary case costs no failed request: the expiry is known locally.
         server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
         val client =
             client(
@@ -118,7 +108,6 @@ class TokenRefreshInterceptorTest {
 
     @Test
     fun `an anonymous call is never retried`() {
-        // Nothing was signed, so the 401 is the server's answer to the request itself.
         token = null
         server.enqueue(MockResponse.Builder().code(HTTP_UNAUTHORIZED).build())
         var exchanges = 0

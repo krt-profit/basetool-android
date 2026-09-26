@@ -14,13 +14,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * What „Neuer Auftrag" may and may not send.
- *
- * Two rules carry the weight. **A half-filled line blocks the submit** rather than being dropped:
- * `POST /orders` takes whatever lines it is handed, so a form that quietly discarded a line the
- * member had typed a material into would raise an order missing that material and say nothing. And
- * **a typed name is not a material** — the wire wants an id, and a query left behind by an
- * abandoned pick carries none.
+ * Tests what „Neuer Auftrag" may send: a half-filled line blocks the submit rather than being dropped, and a typed name
+ * without a picked material carries no id.
  */
 class OrderCreateTest {
     private companion object {
@@ -80,8 +75,6 @@ class OrderCreateTest {
 
     @Test
     fun `a trailing empty line does not block the submit`() {
-        // The form always keeps one empty line at the end. Treating it as unfinished would make
-        // every order unsendable until the member removed a line they never filled in.
         assertTrue(state(FULL, OrderLineDraft()).submittable)
     }
 
@@ -97,8 +90,6 @@ class OrderCreateTest {
 
     @Test
     fun `a typed material name without a pick is not a material`() {
-        // Only `query` is set — what a member sees after typing and not choosing. The line carries
-        // no id, so it would be dropped, and the form must not look sendable because of it.
         assertFalse(state(OrderLineDraft(query = "Quant")).submittable)
     }
 
@@ -109,7 +100,6 @@ class OrderCreateTest {
 
     @Test
     fun `a decimal comma is an amount`() {
-        // A German keyboard produces „12,5". Every earlier form in this app read that as zero.
         val draft = state(FULL.copy(amount = "12,5")).toDraft()
         assertEquals(TWELVE_AND_A_HALF, draft?.lines?.single()?.amount)
     }
@@ -123,8 +113,6 @@ class OrderCreateTest {
 
     @Test
     fun `a blank comment is sent as nothing at all`() {
-        // An empty string would be stored as an empty comment; the field is optional and „absent"
-        // is what the member meant.
         assertNull(state(FULL).copy(comment = "   ").toDraft()?.comment)
     }
 
@@ -143,9 +131,6 @@ class OrderCreateTest {
 
     @Test
     fun `a fresh line asks for the grade the web form asks for`() {
-        // `JobOrderForm.JobOrderMaterialForm` starts at 650. The app started at „keine", so the
-        // same order raised on a phone quietly asked for ungraded ore — a difference in what gets
-        // delivered, not in how the form looks. „Keine" is still one tap away.
         assertEquals(DEFAULT_MIN_QUALITY, OrderLineDraft().minQuality)
         assertEquals(GRADE, DEFAULT_MIN_QUALITY)
     }
@@ -162,8 +147,6 @@ class OrderCreateTest {
 
     @Test
     fun `the kind decides which lines are judged`() {
-        // The two line sets both survive a switch, so a finished material line must not make an
-        // unfinished item form look sendable — nor the other way round.
         val mixed = itemState(OrderItemLineDraft()).copy(lines = listOf(FULL))
         assertFalse(mixed.submittable)
         assertTrue(mixed.copy(kind = OrderKind.MATERIAL).submittable)
@@ -171,8 +154,6 @@ class OrderCreateTest {
 
     @Test
     fun `an item without a blueprint blocks the submit`() {
-        // The server derives the materials from the blueprint; a line without one is not an order,
-        // and dropping it silently would raise an order missing what the member asked for.
         assertFalse(itemState(ITEM.copy(blueprintId = null)).submittable)
     }
 

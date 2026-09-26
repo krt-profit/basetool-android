@@ -17,16 +17,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Pins the Star Citizen Fan Kit compliance wording.
+ * Pins the verbatim Star Citizen Fan Kit compliance wording: the Guidelines' trademark line and the
+ * Agreement's clause 2(g) notice.
  *
- * **Two CIG documents bind the band and they apply cumulatively**: the Fan Kit Guidelines
- * (section 2b) prescribe the short trademark line, and the Fankit Agreement (clause 2(g))
- * prescribes a second, longer notice. Both are legal wording, not UI copy. A well-meaning German
- * translation, a "corrected" spacing before a registered sign or a typographic clean-up would each
- * break compliance while passing every other check in the build — this test is the tripwire that
- * turns such an edit into a red build.
- *
- * The mirror of this test in the web app is `FanKitComplianceMvcTest`; both must stay in sync.
+ * Kept in sync with the web app's `FanKitComplianceMvcTest`.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [ROBOLECTRIC_SDK])
@@ -40,13 +34,10 @@ class KrtFanKitBandTest {
             "are registered trademarks of Cloud Imperium Rights LLC"
 
     /**
-     * The Fankit Agreement clause 2(g) notice, verbatim from
-     * `06_Fankit_Agreement_2025_11_19.pdf` and byte-identical across the three archived kit
-     * versions (2024-04-25, 2025-06-03, 2025-11-19).
+     * The Fankit Agreement clause 2(g) notice, verbatim.
      *
-     * Three details read as typing mistakes and are none of them: `Ltd..` has two full stops, there
-     * is **no** space before any of its four registered signs, and there is an Oxford comma before
-     * "and Cloud Imperium®".
+     * `Ltd..` has two full stops, no registered sign has a space before it, and there is an Oxford
+     * comma before "and Cloud Imperium®".
      */
     private val requiredAgreementNotice =
         "This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space " +

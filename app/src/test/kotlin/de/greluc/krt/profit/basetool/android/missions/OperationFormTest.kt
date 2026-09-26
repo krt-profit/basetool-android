@@ -37,16 +37,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Operation form's rules (REQ-APP-OPS-014).
+ * Tests the Operation form (REQ-APP-OPS-014): a blank name cannot be sent, an empty description is sent as absent, an
+ * edit echoes the read version, and a refusal keeps what was typed.
  *
- * Four are worth a test each: a blank name cannot be sent, an empty description is sent as absent
- * rather than as an empty line, the edit reads the Operation first and echoes its **version**
- * (without which a concurrent edit would be a silent overwrite instead of a 409), and a refusal
- * keeps what was typed instead of clearing the form.
- *
- * Robolectric, not plain JUnit: the failure path logs, and an unmocked `android.util.Log` throws
- * inside `viewModelScope` where nothing reports it — the write then looks as if it had simply not
- * failed. That cost one debugging round here.
+ * Uses Robolectric because the failure path logs through `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -147,8 +141,6 @@ class OperationFormTest {
 
             assertEquals(1, source.created.size)
             assertEquals("Operation Rotschild", source.created.first().name)
-            // Absent rather than an empty string: the server stores what it is sent, and a blank
-            // line reads as "somebody deliberately wrote nothing here".
             assertNull(source.created.first().description)
             assertEquals(OperationStatus.ACTIVE, source.created.first().status)
             assertEquals("op-9", model.state.value.saved)

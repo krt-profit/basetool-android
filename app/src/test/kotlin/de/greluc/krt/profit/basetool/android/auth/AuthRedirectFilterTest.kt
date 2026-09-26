@@ -20,18 +20,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The redirect URI this flavour was compiled with must be one this app can actually receive.
+ * Checks that the flavour's compiled `BuildConfig.OIDC_REDIRECT_URI` is one its intent filter can receive.
  *
- * This is the second failure in this app with no symptom of its own. If `BuildConfig
- * .OIDC_REDIRECT_URI` and the flavour's intent filter drift apart, nothing fails to build and
- * nothing fails at launch: the login works right up to the moment the browser tries to come back,
- * and then simply doesn't. The member sees a browser tab sitting on the realm's success page and an
- * app that never noticed. The realm would also refuse a redirect it has not registered, so the
- * value is pinned on both ends and only this end can be checked here.
- *
- * The test runs once per flavour — `testDevDebugUnitTest` sees the custom scheme,
- * `testProdDebugUnitTest` the verified App Link — so both filters are covered by one assertion
- * against whatever that flavour was built with.
+ * Runs once per flavour, covering both the dev custom scheme and the prod App Link.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -50,9 +41,6 @@ class AuthRedirectFilterTest {
 
     @Test
     fun `the post-logout redirect comes back to the app too`() {
-        // Without this the member is left looking at a browser tab after logging out. It resolves
-        // to the same activity, which reads it as a redirect carrying no code and simply brings the
-        // app forward.
         assertTrue(
             "${BuildConfig.OIDC_POST_LOGOUT_REDIRECT_URI} must resolve to this app",
             resolve(BuildConfig.OIDC_POST_LOGOUT_REDIRECT_URI).isNotEmpty(),
@@ -61,11 +49,6 @@ class AuthRedirectFilterTest {
 
     @Test
     fun `the post-logout redirect is one the realm accepts`() {
-        // The client sets post.logout.redirect.uris = "+", which in Keycloak means "the same list
-        // as redirectUris" (main repo scripts/provision-keycloak-mobile-client.py). Any other value
-        // is refused with "Invalid post logout redirect uri" — at the realm, before the browser
-        // comes back, so nothing on this side can observe it. Pinning the equality here is the only
-        // check this repo can make, and it stops the two from being tidied apart.
         assertEquals(
             "post-logout must equal the redirect URI while the client uses \"+\"",
             BuildConfig.OIDC_REDIRECT_URI,
@@ -75,8 +58,6 @@ class AuthRedirectFilterTest {
 
     @Test
     fun `the redirect activity is the only exported auth surface`() {
-        // It has to be exported — the browser starts it. What keeps that safe is that the code it
-        // carries is worthless without the PKCE verifier, which never leaves the app.
         val matches = resolve(BuildConfig.OIDC_REDIRECT_URI)
 
         assertTrue(

@@ -31,12 +31,8 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * „Materialbedarf" — design ch. 18 §1.
- *
- * The three things worth pinning are the ones the screen is *for*: the working chip must show only
- * what is still open, „Nach Menge" must sort by the outstanding amount rather than by name, and a
- * group whose rows all fall away must disappear with them — a heading over nothing reads as a
- * loading failure. Coverage is checked too, because it is the one figure the app computes itself.
+ * Tests „Materialbedarf" (design ch. 18 §1): the working chip shows only open rows, „Nach Menge" sorts by outstanding
+ * amount, emptied groups disappear, and coverage is computed correctly.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)

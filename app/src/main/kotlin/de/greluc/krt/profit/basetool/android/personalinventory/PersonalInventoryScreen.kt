@@ -75,23 +75,18 @@ const val PERSONAL_INVENTORY_BULK_TAG: String = "personal-inventory-bulk"
 const val PERSONAL_INVENTORY_BULK_MODAL_TAG: String = "personal-inventory-bulk-modal"
 
 /**
- * "Mein Inventar" — the member's own stock, read and written (design ch. 09 § 4).
- *
- * **No segment yet.** The design pairs Items with Blueprints behind one; the Blueprints half is its
- * own slice (owner decision, 2026-08-23), and a segment with one reachable tab would be a control
- * that does nothing.
+ * „Mein Inventar": the member's own stock, read and written.
  *
  * @param state what to draw.
  * @param onQueryChanged the search box changed.
  * @param onRefresh pull-to-refresh.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the retry countdown.
  * @param onLoadMore the next page was asked for.
  * @param onCreate the new-entry action was taken.
  * @param onEdit a row was tapped.
  * @param onDelete a row's delete action was taken.
  * @param modifier layout modifier.
- * @param selection the bulk actions of design ch. 17 artboard 4, or `null` where they are not
- *   wired — which leaves the list exactly as it was.
+ * @param selection the bulk actions, or `null` where they are not wired.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,9 +129,6 @@ fun PersonalInventoryScreen(
                 }
 
                 is PersonalInventoryPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -194,17 +186,10 @@ fun PersonalInventoryScreen(
                 }
             }
         }
-        // „FAB und Bottom-Nav weichen der Aktionsleiste" (design ch. 02 §4): while a selection
-        // runs, the bar owns the bottom of the screen and the FAB steps aside.
-        // The bar also survives a finished deletion, because it carries the one number a member
-        // cannot reconstruct: how many rows were skipped („Leiste bleibt, Ergebnis nennt
-        // gelöscht/übersprungen", artboard 4).
         if ((state.selecting || state.bulkResult != null) && selection != null) {
             SelectionActionBar(state = state, selection = selection)
             return@Box
         }
-        // Disabled, not hidden: a member offline has to be able to see that the action exists
-        // and why it cannot be taken, which a missing control cannot say.
         KrtFab(
             iconRes = DesignR.drawable.ic_krt_plus,
             label = stringResource(R.string.personal_inventory_create),
@@ -221,9 +206,7 @@ fun PersonalInventoryScreen(
 }
 
 /**
- * The bulk actions of design ch. 17 artboard 4.
- *
- * A bag rather than four parameters: they travel together from the route to the list and the bar.
+ * The bulk actions of the personal inventory list.
  *
  * @property onToggle a row was long-pressed, or tapped while the mode runs.
  * @property onSelectAll „Alles wählen".
@@ -238,10 +221,7 @@ data class PersonalSelectionActions(
 )
 
 /**
- * The bottom bar the selection mode owns.
- *
- * It exists only while something is selected, which is what makes the mode self-evident — nothing
- * to leave, nothing to notice you are in (design ch. 02 §4, taken over unchanged from the Lager).
+ * The selection mode's bottom bar, shown only while something is selected.
  *
  * @param state what the screen holds.
  * @param selection the four actions.
@@ -311,10 +291,7 @@ private fun BoxScope.SelectionActionBar(
 }
 
 /**
- * The bulk deletion's confirmation.
- *
- * A danger modal naming the count, and **no undo** — unlike the inbox, whose undo hangs on a
- * server row that is gone here (design ch. 17 artboard 4).
+ * The bulk deletion's confirmation: a danger modal naming the count, with no undo.
  *
  * @param count how many rows.
  * @param busy whether the deletion is running.
@@ -345,7 +322,7 @@ fun PersonalBulkDeleteModal(
 }
 
 /**
- * The rows.
+ * The list of personal inventory entries.
  *
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
@@ -369,8 +346,6 @@ private fun ItemList(
             ItemRow(
                 item = item,
                 online = state.online,
-                // While the mode runs a tap picks rather than edits: two meanings for one tap is
-                // how a member deletes the row they meant to open.
                 onEdit = {
                     if (state.selecting && selection != null) {
                         selection.onToggle(item)
@@ -404,10 +379,7 @@ private fun ItemList(
 private val LOADING_ROW_HEIGHT = 64.dp
 
 /**
- * One entry.
- *
- * The whole row opens the editor; deleting has its own action, because a mis-tap that edits is
- * recoverable and a mis-tap that deletes is not.
+ * One entry; the row opens the editor and deleting has its own action.
  *
  * @param item the entry.
  * @param online whether writes are possible.
@@ -425,8 +397,6 @@ private fun ItemRow(
     selected: Boolean = false,
     onLongPress: (() -> Unit)? = null,
 ) {
-    // A card, not a padded Row: every design chapter draws its list items as bordered tiles.
-    // See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(
         modifier =
             Modifier
@@ -434,8 +404,6 @@ private fun ItemRow(
                 .combinedClickable(
                     enabled = online,
                     onClick = onEdit,
-                    // The long press is what starts the mode (design ch. 02 §4); the card's own
-                    // `onClick` cannot carry it, so the whole gesture moves onto the modifier.
                     onLongClick = onLongPress,
                 ),
     ) {
@@ -463,9 +431,6 @@ private fun ItemRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            // Amount and unit, as artboard 09.4 sets them: the figure bright, the unit dimmed
-            // beside it. A bare "24" leaves a member to guess whether it is pieces or SCU, and on
-            // an item list it is always pieces — which is exactly why saying so costs nothing.
             Row(
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.Bottom,
@@ -481,9 +446,6 @@ private fun ItemRow(
                     color = KrtPalette.TextMuted,
                 )
             }
-            // Icon buttons, not a labelled "LÖSCHEN": the artboard's row ends in a 44 dp pencil,
-            // and a wide destructive label made deletion the loudest thing on every row of a list
-            // whose usual action is a correction.
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_edit,
                 label = stringResource(R.string.personal_inventory_edit),

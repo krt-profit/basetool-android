@@ -102,9 +102,6 @@ class AnnouncementRepositoryTest {
     @Test
     fun `a blank announcement is no announcement`() =
         runTest {
-            // The backend suppresses blank ones with a 204 already, but the field is nullable on
-            // the wire and a banner made of whitespace would be a visible defect for the sake of
-            // trusting a shape.
             respond(HTTP_OK, """{"id": "a1", "content": "   "}""")
 
             assertNull((repository.current() as ApiResult.Success).value)

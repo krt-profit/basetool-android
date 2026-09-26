@@ -55,8 +55,6 @@ class LiveSyncRepositoryTest {
             LiveSyncRepository(
                 stream = SseStream(httpClient = client, baseUrl = baseUrl),
                 reader = ApiReader(httpClient = client, baseUrl = baseUrl, json = KrtJson, logTag = "test"),
-                // Collapsed so the coalescing assertions cost milliseconds rather than the real
-                // 1500 ms of a global window each.
                 timing = collapsedTiming(),
             )
     }
@@ -82,8 +80,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `reports only the rooms the server accepted, so a screen can tell live from refused`() =
         runBlocking {
-            // Two asked for, one granted. Silence from the refused room is indistinguishable from
-            // silence from a quiet one, so this list is the only thing that tells them apart.
             enqueueStream(subscribed("inventory"))
 
             val accepted =
@@ -107,7 +103,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `folds frames inside one window into a single event carrying the union`() =
         runBlocking {
-            // The bound that matters: the relay is cheap, the re-fetch herd it triggers is not.
             enqueueStream(
                 subscribed("mission:$MISSION_ID") +
                     changed("mission:$MISSION_ID", "crew") +
@@ -139,9 +134,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `reconnects after the server closes the stream, because it closes every one of them`() =
         runBlocking {
-            // Thirty minutes is the server's design, and a phone drops far more often than that.
-            // A client that treated the end of a stream as the end of live sync would be live for
-            // half an hour and silently stale after it.
             enqueueStream(subscribed("inventory"))
             enqueueStream(subscribed("inventory") + changed("inventory", "stock"))
 
@@ -167,8 +159,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `drops a frame for a room this build does not know rather than inventing one`() =
         runBlocking {
-            // Only a newer server can send this. A screen has nothing to do with a room it has no
-            // code for, and a synthesised topic would be a room key nobody is listening on.
             enqueueStream(
                 subscribed("inventory") +
                     changed("members", "grid") +
@@ -215,8 +205,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `answers a failure without raising, because the write it follows already committed`() =
         runBlocking {
-            // A screen reporting this would be reporting somebody else's refresh as the member's
-            // own save having failed.
             server.enqueue(MockResponse(code = 429))
 
             val result = repository.publish(LiveSyncTopic.INVENTORY, setOf("stock"))
@@ -228,9 +216,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `two screens share one connection instead of opening one each`() =
         runBlocking {
-            // Found on a device: the app's ViewModels are activity-scoped, so several are alive at
-            // once. A stream per caller meant three concurrent TLS connections, three reconnect
-            // loops, and eviction at the server's per-member cap of four.
             val reader = CountingStream(subscribed("inventory", "materialboard"))
             val shared = repositoryWith(reader)
 
@@ -250,9 +235,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `a refused stream is not retried for the life of the app`() =
         runBlocking {
-            // Measured on a device: a member without the Auftrags-queue capability re-asked every
-            // thirty seconds for as long as the app ran. A 403 is a verdict, not a hiccup — the
-            // caller's rights will not change while the screen is open.
             val reader = RefusingStream()
             val shared = repositoryWith(reader)
 
@@ -267,12 +249,6 @@ class LiveSyncRepositoryTest {
     @Test
     fun `a rejected request is not retried either, and a 400 is one`() =
         runBlocking {
-            // Production, 2026-08-25: one member's union of open screens crossed the backend's
-            // per-stream topic cap. That endpoint refuses the whole request rather than the
-            // surplus, and a 400 used to fall into the "dropped socket, try again" branch — so
-            // live sync was dead on every screen for as long as the app was open, and the app
-            // re-asked on the backoff for hours. Re-sending a request the server has already
-            // called malformed cannot make it well-formed.
             val reader = RefusingStream(status = 400)
             val shared = repositoryWith(reader)
 
@@ -287,15 +263,9 @@ class LiveSyncRepositoryTest {
     @Test
     fun `a server hiccup is still retried, so a stale token does not kill the stream`() =
         runBlocking {
-            // The mirror image, and the reason this is an allow-list rather than "any 4xx": a 401
-            // is exactly the refusal a retry fixes, once the interceptor beneath this has renewed
-            // the token. Giving up on it would leave the app un-live until the next navigation.
             val reader = RefusingStream(status = 401)
             val shared = repositoryWith(reader)
 
-            // Stops the moment the point is proven rather than waiting out the window: with the
-            // collapsed backoff this loop reconnects every few milliseconds, and leaving it
-            // running for two seconds would starve the dispatcher the next test needs.
             val job = launch { shared.observe(setOf(LiveSyncTopic.ORDERS)).collect { } }
             val keptTrying =
                 withTimeoutOrNull(SETTLE_MS) {
@@ -322,8 +292,6 @@ class LiveSyncRepositoryTest {
                     shared.observe(setOf(LiveSyncTopic.ORDERS)).first()
                 } as? LiveSyncEvent.Subscribed
 
-            // An empty acceptance list is the screen's cue to fall back to polling. Silence would
-            // be indistinguishable from a live but quiet room.
             assertEquals(emptySet<LiveSyncTopic>(), verdict?.topics)
         }
 
@@ -404,11 +372,8 @@ class LiveSyncRepositoryTest {
     }
 
     /**
-     * Collects the first [count] events and lets the flow go.
-     *
-     * [LiveSyncSource.observe] never completes on its own — it reconnects — so a test has to say
-     * how many events it is waiting for. The timeout is the whole point of the helper: without it a
-     * regression that stops emitting hangs the suite instead of failing it.
+     * Collects the first [count] events under a timeout and lets the flow go, since
+     * [LiveSyncSource.observe] never completes on its own.
      *
      * @param topics the rooms to ask for.
      * @param count how many events to wait for.
@@ -461,11 +426,7 @@ class LiveSyncRepositoryTest {
 }
 
 /**
- * Splits a canned SSE body into events, so a substituted reader replays the same fixtures the
- * socket-backed tests use.
- *
- * File scope rather than the test's companion: the reader doubles are nested classes, and a nested
- * class cannot reach its outer class's companion.
+ * Splits a canned SSE body into events, so a substituted reader replays the socket-backed fixtures.
  *
  * @param body the framed text.
  * @return the events it contains.

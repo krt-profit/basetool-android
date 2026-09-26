@@ -70,21 +70,11 @@ private val BLOOM_HEIGHT = 260.dp
 private const val BLOOM_ALPHA = 0.25f
 
 /**
- * The one screen a member sees before they have a session.
+ * The login screen, shown before a member has a session.
  *
- * Layout is a single centred column on every form factor: the design spec makes the tablet the same
- * 480 dp column rather than a split, because there is nothing here to put beside it and a
- * half-empty split reads as a broken layout.
- *
- * The [KrtFanKitBand] above the footer is **mandatory and coupled** — artwork and CIG notice are a
- * legal unit and neither may be moved or dropped on its own (Fan Kit Guidelines §2/§2b/§3). It sits
- * here and on the settings screen, nowhere else.
- *
- * Two entries from the design chapter are absent, for different reasons. **"Als Gast fortfahren"**
- * is gone for good: guest mode was dropped (owner decision, 2026-08-18) and every user signs in.
- * **"Mit Discord anmelden"** waits — the design chapter shows it only when the realm has the IdP
- * configured, and that is a capability answer the app has no endpoint for yet; a button that fails
- * after the tap is worse than one that is not there.
+ * A single centred column on every form factor. The [KrtFanKitBand] above the footer is a mandatory
+ * legal unit and must not be moved or dropped (Fan Kit Guidelines §2/§2b/§3). There is no guest
+ * entry and no Discord sign-in button.
  *
  * @param state what the login is currently doing
  * @param onSignIn starts the Custom Tab flow
@@ -111,9 +101,6 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .topBloom()
-                // Drawn edge to edge so the bloom reaches the top of the display, but the content
-                // is inset: without this the org line sits on the status bar clock, which a
-                // preview cannot show because it renders no system bars.
                 .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
     ) {
@@ -124,28 +111,10 @@ fun LoginScreen(
                     .fillMaxSize()
                     .padding(horizontal = KrtSpacing.s24),
         ) {
-            // The PAGE scrolls as a whole — not the band, and the notice is never folded behind a
-            // disclosure (design ch. 04 artboard 1). At the drawn 412×812 dp nothing scrolls: the
-            // artboard's content measures exactly one viewport and the band sits above the fold.
-            // The scroll exists for what the drawing cannot show — font scale 1.3, a shorter
-            // display, a taller status bar.
             val viewport = maxHeight
-            // What the legal block actually needs, measured rather than guessed: it is two
-            // prescribed notices whose height depends on the font scale, the locale's line
-            // breaking and the display width. The space above it is whatever is left of the
-            // viewport, so the call to action reads as centred at the drawn size and moves up as
-            // the band grows instead of being covered by it.
             var legalHeightPx by remember { mutableIntStateOf(0) }
             val legalHeight = with(LocalDensity.current) { legalHeightPx.toDp() }
             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                // One viewport's worth, holding the brand at the top and the call to action at
-                // exactly half the height. Aligned children rather than spacers: a spacer's share
-                // depends on what is above it, and the button's position is meant to be a fixed
-                // fraction of the screen rather than a consequence of the brand's line count.
-                //
-                // `heightIn(min = ...)` and not `height(...)`: when the first section itself
-                // outgrows the viewport — a long refusal message at font scale 1.3 — it has to be
-                // allowed to grow rather than clip its own content.
                 Box(
                     modifier =
                         Modifier
@@ -164,10 +133,6 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        // Chapter 04, offline: the banner from ch. 14 and a dimmed sign-in with
-                        // its reason. There is no server-status dot to go with it — a network
-                        // state is not a server state, and before the first tap the app has asked
-                        // the server nothing (round 15 · R1).
                         if (!online) {
                             OfflineBand()
                             Spacer(Modifier.height(KrtSpacing.s12))
@@ -182,8 +147,6 @@ fun LoginScreen(
                                     .alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
                         )
 
-                        // The message occupies its own slot rather than replacing the button: a
-                        // member whose login was refused still needs the button to try again.
                         state.messageRes?.let { message ->
                             Spacer(Modifier.height(KrtSpacing.s12))
                             Text(
@@ -202,9 +165,6 @@ fun LoginScreen(
                     }
                 }
 
-                // In the flow, after the call to action — never over it. The Fan Kit band is a
-                // legally coupled unit of three elements and is never folded behind a disclosure,
-                // so when it does not fit the PAGE scrolls (design ch. 04 artboard 1).
                 Column(
                     modifier =
                         Modifier
@@ -241,19 +201,10 @@ private fun Brand() {
 }
 
 /**
- * The two legal links the login screen has to carry — and it is exactly two.
+ * The login screen's two legal links, privacy policy and imprint.
  *
- * Privacy and imprint belong **here**, before the login, because that is where their duty lives:
- * the privacy notice has to be available before any processing begins, and processing begins with
- * the sign-in tap rather than after it; the imprint has to be permanently and immediately
- * reachable, which a link found only after logging in is not.
- *
- * The terms of use are deliberately **not** here (owner decision, 2026-08-18). They are a
- * contractual document whose binding moment is the acceptance gate — mandatory, versioned and with
- * an explicit checkbox (design spec ch. 04) — so a link in front of it is neither a legal
- * substitute nor practically useful, and the design chapter's third button is dropped with that
- * reasoning. There is no guest who could miss the gate: guest mode was dropped (owner decision,
- * 2026-08-18), so every user of this app passes it.
+ * They must be reachable before the sign-in tap starts any processing. The terms of use are not
+ * linked here; they are accepted at the acceptance gate.
  *
  * @param onOpenPrivacy opens the privacy policy
  * @param onOpenImprint opens the imprint
@@ -263,11 +214,6 @@ private fun Footer(
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
 ) {
-    // FlowRow, not Row: three equal shares of one line fit "Privacy / Imprint / Terms of use" and
-    // tore "Nutzungsbedingungen" into "NUTZUN GSBEDIN GUNGEN". German is the sizing baseline here —
-    // its compounds are the long ones, so a label that only fits in English is a defect waiting for
-    // the locale to change. Each button now takes the width its own text needs and the row wraps
-    // when they no longer fit beside each other.
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -279,12 +225,9 @@ private fun Footer(
 }
 
 /**
- * The version footer.
+ * The version footer, showing the app version and the API version it was compiled against.
  *
- * The design chapter pairs this with a "Server bereit" status. That half is deliberately not drawn:
- * the app has no health endpoint yet, and a status line that always says "ready" is worse than none
- * — it is the one element a member would trust during an outage. The API version, by contrast, needs
- * no signal at all: it is the contract this build was compiled against, so it is drawn.
+ * No server status is drawn, since the app has no health signal for it.
  *
  * @param versionName the app's version name
  * @param versionCode the build number
@@ -315,11 +258,6 @@ private fun Modifier.topBloom(): Modifier =
     drawBehind {
         val width = BLOOM_WIDTH.toPx()
         val height = BLOOM_HEIGHT.toPx()
-        // A rectangle, not an oval, and the gradient makes the shape. Drawing an oval clipped the
-        // gradient at the oval's edge while it was still around 40 % opaque along the short axis,
-        // which put a hard arc across the top of the screen — visible on a device, invisible in a
-        // preview. Over a rectangle whose corners lie outside the gradient radius, the falloff
-        // reaches transparent on its own and there is no edge to see.
         drawRect(
             brush =
                 Brush.radialGradient(
@@ -335,11 +273,8 @@ private fun Modifier.topBloom(): Modifier =
 /**
  * What the login is doing, as the screen needs to know it.
  *
- * An interface rather than a sealed class, and not only for consistency with the 46 other sealed
- * hierarchies in this app. The Compose compiler puts a `$stable` marker field on every class it
- * touches, so a sealed *class* gets one on the parent and one on each member — which is what
- * CodeQL reported as `java/field-masks-super-field`. The shadowing is compiler-generated, but the
- * query was right about the shape: an interface carries no such field. See ADR-0020.
+ * An interface rather than a sealed class so the Compose compiler's `$stable` field does not shadow a
+ * parent field (ADR-0020).
  */
 sealed interface LoginUiState {
     /** A string to show under the button, or `null` when there is nothing to say. */

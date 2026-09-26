@@ -33,13 +33,8 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * What the app says to the token endpoint, and — more to the point — what it makes of the answers.
- *
- * The token endpoint is the one surface where a wrong reading of a response is invisible until it
- * is a support case: an `invalid_grant` misread as a hard error strands a member on an error screen
- * they can only leave by reinstalling, and a hard error misread as `invalid_grant` produces a login
- * loop that looks like their password is wrong. Each of those readings is asserted separately
- * rather than through one happy path.
+ * Tests what the app sends to the token endpoint and how it reads each answer, with `invalid_grant` and hard errors
+ * asserted separately.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -112,8 +107,6 @@ class TokenClientTest {
     @Test
     fun `invalid_grant means the session ended, not that something went wrong`() =
         runTest {
-            // The distinction the whole error model exists for: this one, and only this one, sends
-            // the member to the login screen.
             server.enqueue(errorResponse(HTTP_BAD_REQUEST, "invalid_grant", "Session not active"))
 
             val result = client.refresh("refresh-value")
@@ -124,8 +117,6 @@ class TokenClientTest {
     @Test
     fun `any other oauth error stays a rejection`() =
         runTest {
-            // `unauthorized_client` means the realm is misconfigured. Reading it as a dead session
-            // would send the member back to a login that cannot succeed — a loop, not an error.
             server.enqueue(errorResponse(HTTP_BAD_REQUEST, "unauthorized_client", "Client not allowed"))
 
             val result = client.refresh("refresh-value")
@@ -136,8 +127,6 @@ class TokenClientTest {
     @Test
     fun `a refusal without an oauth body keeps its status`() =
         runTest {
-            // What an edge proxy answers when the realm is down. No `error` field to key on, and
-            // silently calling it a dead session would log the member out on an outage.
             server.enqueue(MockResponse.Builder().code(HTTP_BAD_GATEWAY).body("<html>502</html>").build())
 
             val result = client.refresh("refresh-value")
@@ -148,9 +137,6 @@ class TokenClientTest {
     @Test
     fun `a bound access token is named instead of handed on`() =
         runTest {
-            // token_type DPoP means the per-client binding switch overrode the refresh-only policy.
-            // The backend rejects such an access token, so every later API call would 401 — this
-            // state exists so the cause is reported at the moment it is knowable.
             server.enqueue(grantResponse(tokenType = "DPoP"))
 
             val result = client.refresh("refresh-value")
@@ -161,8 +147,6 @@ class TokenClientTest {
     @Test
     fun `retries once with the nonce the realm demanded`() =
         runTest {
-            // RFC 9449 §8.3. The realm does not require nonces today; without this the day it
-            // starts to would be the day every login stops working.
             server.enqueue(
                 errorResponse(HTTP_BAD_REQUEST, "use_dpop_nonce", "Missing nonce")
                     .newBuilder()
@@ -182,8 +166,6 @@ class TokenClientTest {
     @Test
     fun `it gives up after one nonce retry`() =
         runTest {
-            // A realm that rejects the nonce it just issued is broken; looping on it would turn one
-            // failing device into a load generator on the token endpoint.
             repeat(2) {
                 server.enqueue(
                     errorResponse(HTTP_BAD_REQUEST, "use_dpop_nonce", "Missing nonce")
@@ -202,8 +184,6 @@ class TokenClientTest {
     @Test
     fun `a 2xx that is not a grant is malformed, not an empty session`() =
         runTest {
-            // The captive-portal case. Parsed leniently this would be a session with no tokens in
-            // it, and the failure would surface much later and somewhere else.
             server.enqueue(MockResponse.Builder().code(HTTP_OK).body("<html>sign in to wifi</html>").build())
 
             val result = client.refresh("refresh-value")
@@ -214,7 +194,6 @@ class TokenClientTest {
     @Test
     fun `a realm that never answers is not a refusal`() =
         runTest {
-            // Only this state may read as "you are offline"; a refusal must never.
             server.close()
 
             val result = client.refresh("refresh-value")
@@ -226,8 +205,6 @@ class TokenClientTest {
     @Test
     fun `access token expiry is stamped in server time`() =
         runTest {
-            // A device 45 s behind would otherwise consider its token valid 45 s too long and spend
-            // that window sending requests the backend rejects.
             val deviceNow = Instant.now()
             serverClock.observe(serverTime = deviceNow.plusSeconds(DRIFT_SECONDS), deviceTime = deviceNow)
             server.enqueue(grantResponse())
@@ -246,8 +223,6 @@ class TokenClientTest {
     @Test
     fun `revocation is best effort and carries no proof`() =
         runTest {
-            // A proof here would claim something the realm does not check, and a refused revocation
-            // must never keep a member logged in on a device they are trying to hand over.
             server.enqueue(MockResponse.Builder().code(HTTP_BAD_REQUEST).body("{}").build())
 
             val revoked = client.revokeRefreshToken("refresh-value")
@@ -264,8 +239,6 @@ class TokenClientTest {
     @Test
     fun `the end-session url carries the hint keycloak requires`() =
         runTest {
-            // Keycloak accepts post_logout_redirect_uri only alongside an id_token_hint or a
-            // client_id; without one it drops the redirect and the member is left in the browser.
             val url = client.endSessionUri("id-token-value")
 
             assertTrue(url.startsWith(configuration.endSessionEndpoint))

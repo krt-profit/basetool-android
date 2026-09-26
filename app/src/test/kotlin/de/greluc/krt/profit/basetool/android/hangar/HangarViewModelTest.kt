@@ -216,8 +216,6 @@ class HangarViewModelTest {
     @Test
     fun `switching to the org half reads it from page zero`() =
         runTest(dispatcher) {
-            // Keeping whatever was last loaded would show a member an aggregate from ten minutes
-            // ago under a header that says it is current.
             val model = viewModel()
             model.loadOnce()
             advanceUntilIdle()
@@ -253,7 +251,6 @@ class HangarViewModelTest {
             model.onSegmentSelected(HangarSegment.ORG)
             advanceUntilIdle()
 
-            // The ships are still there, untouched, and the aggregate did not overwrite them.
             assertEquals(1, model.state.value.ships.size)
             assertEquals(1, model.state.value.types.size)
         }
@@ -363,7 +360,6 @@ class HangarViewModelTest {
     @Test
     fun `an edit is seeded from the row, hull and place included`() =
         runTest(dispatcher) {
-            // A member who only flips "fitted" must not have to pick the hull again.
             val model = viewModel()
             advanceUntilIdle()
 
@@ -379,8 +375,6 @@ class HangarViewModelTest {
     @Test
     fun `a month count outside the server's range cannot be submitted`() =
         runTest(dispatcher) {
-            // The server accepts LTI or 0..120 and refuses everything else. Offering a save it will
-            // reject teaches the member that the app is unreliable.
             val model = viewModel()
             model.onCreate()
             model.onHullChosen(ShipTypeOption("t1", "Carrack", "Anvil Aerospace"))
@@ -476,10 +470,7 @@ class HangarViewModelTest {
         }
 
     /**
-     * An emptied hangar and a hangar that was always empty look the same.
-     *
-     * The count is the only thing that says the write landed, and it has to be taken before the
-     * write — afterwards the list is gone (design ch. 08, artboard 6).
+     * Emptying the hangar reports how many ships went, counted before the write (design ch. 08, artboard 6).
      */
     @Test
     fun `emptying the hangar reports how many ships went`() =

@@ -49,9 +49,8 @@ sealed interface MaterialsPhase {
 /**
  * Everything the Material-Übersicht draws.
  *
- * **The whole catalogue is held.** The two price filters are not query parameters on
- * `/materials/prices-overview`, so a filter over a partially loaded list would answer from a
- * fraction of the universe and look complete (ADR-0104). Two hundred rows cost nothing to hold.
+ * The whole catalogue is held, because the price filters are applied on the device rather than
+ * by the server (ADR-0104).
  *
  * @property rows every material, as the server sorted them.
  * @property query the search term, as typed.
@@ -114,8 +113,7 @@ private fun MaterialPriceRow.matches(term: String): Boolean = term.isEmpty() || 
 /**
  * Whether the row's buy price clears the „Min. Einkaufspreis" bound.
  *
- * A row with no buy price is **dropped** by an active bound rather than kept: „mindestens 30" is a
- * question about a price, and a material nobody sells has no answer to it.
+ * A row with no buy price is dropped by an active bound.
  *
  * @receiver the row.
  * @param floor the bound, or `null` when none is set.
@@ -135,12 +133,10 @@ private fun MaterialPriceRow.atMost(ceiling: BigDecimal?): Boolean =
     ceiling == null || (maxPriceSell?.let { it <= ceiling } == true)
 
 /**
- * Reads a price bound somebody typed, whichever separator their keyboard offers.
+ * Reads a typed price bound, accepting either `,` or `.` as the decimal separator.
  *
  * @receiver what was typed.
- * @return the bound, or `null` when the field is empty or not a number — an unparseable bound
- *   filters nothing rather than emptying the list, because a half-typed „3," is a moment in typing
- *   and not an instruction.
+ * @return the bound, or `null` when the field is empty or not a number, which filters nothing.
  */
 private fun String.krtPrice(): BigDecimal? =
     trim().replace(',', '.').takeIf { it.isNotEmpty() }?.toBigDecimalOrNull()
@@ -190,10 +186,7 @@ class MaterialsViewModel(
     }
 
     /**
-     * The search term changed.
-     *
-     * Filtered on the device — the catalogue is already here, and a round trip per keystroke would
-     * be slower and no more correct.
+     * Updates the search term; the list is filtered on the device.
      *
      * @param value what was typed.
      */

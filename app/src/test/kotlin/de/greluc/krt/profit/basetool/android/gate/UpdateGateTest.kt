@@ -115,8 +115,6 @@ class UpdateGateTest {
     @Test
     fun `an unconfigured server locks nobody out`() =
         runTest(dispatcher) {
-            // Zero means no floor, and it is what a server nobody has configured answers. Any other
-            // reading of it would refuse every installed build the first time this code shipped.
             val model = UpdateGateViewModel(FixedSource(ApiResult.Success(policy(0))), THIS_BUILD)
 
             model.start()
@@ -128,9 +126,6 @@ class UpdateGateTest {
     @Test
     fun `a failed read runs the app rather than walling it off`() =
         runTest(dispatcher) {
-            // A member on a train must not lose the whole tool because one request timed out.
-            // There is no screen for "we could not check whether you may run", and inventing one
-            // would be the same wall with a different sentence.
             val model =
                 UpdateGateViewModel(
                     FixedSource(ApiResult.Failure(ApiError.Network(IOException("offline")))),
@@ -153,16 +148,12 @@ class UpdateGateTest {
             model.start()
             advanceUntilIdle()
 
-            // A wall that appears mid-session, over work in progress, is worse than one that waits
-            // for the next start — and the floor does not move often enough to justify polling.
             assertEquals(1, source.reads)
         }
 
     @Test
     fun `a newer build being available is not the same as this one being refused`() =
         runTest(dispatcher) {
-            // floor 8, latest 25, this build 12: an update exists and this build is still served.
-            // Collapsing the two numbers would make every release a forced one.
             val model =
                 UpdateGateViewModel(FixedSource(ApiResult.Success(policy(OLDER_FLOOR))), THIS_BUILD)
 

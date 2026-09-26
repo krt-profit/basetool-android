@@ -13,15 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Which of design chapter 14's five channels a push is filed under.
- *
- * The chapter's point is that a member can silence one kind and keep another, which only works if
- * the five are actually distinct in practice — a mapping that collapsed two kinds onto one channel
- * would look right in the settings list and silence more than the member asked for.
- *
- * The classification itself is `NotificationKind`, which the inbox already uses to pick a row's
- * glyph. One classification, two uses; these tests pin that the channel mapping does not quietly
- * grow a second opinion.
+ * Tests which of design chapter 14's five channels a push is filed under, keeping each kind distinct and the mapping
+ * consistent with `NotificationKind`.
  */
 class NotificationChannelRoutingTest {
     @Test
@@ -67,10 +60,7 @@ class NotificationChannelRoutingTest {
     }
 
     /**
-     * The shade entry and the inbox row must agree on where a notification leads.
-     *
-     * They resolve it through the same function now; this pins that the pair-taking overload the
-     * shade uses answers what the row-taking one does.
+     * The shade entry and the inbox row resolve a notification to the same destination.
      */
     @Test
     fun `the shade and the inbox resolve the same destination`() {

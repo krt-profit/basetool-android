@@ -63,12 +63,10 @@ data class BankHolderActions(
 )
 
 /**
- * One holder's custody — design chapter 12, artboard 8.
+ * One holder's custody and the postings behind it.
  *
- * **Custody is kept at org-unit level, with no allocation to individual accounts.** The screen says
- * so under the total rather than leaving the reader to wonder which account the figure belongs to:
- * the handoff's correction of 27.08.2026 exists because that is exactly the wrong assumption to
- * make here.
+ * Custody is kept at org-unit level with no allocation to individual accounts, and the screen says so
+ * under the total.
  *
  * @param state what the screen holds.
  * @param management whether the caller may move custody.
@@ -157,9 +155,6 @@ private fun HolderBookingRow(booking: BankHolderBooking) {
                     )
                 }
             }
-            // No account column: a holder-to-holder move touches none, and printing an empty one
-            // would suggest the custody figure is account-scoped, which is the misreading the
-            // handoff corrected.
             val counter = booking.counterHolder ?: booking.counterAccount
             counter?.let {
                 Text(
@@ -176,8 +171,6 @@ private fun HolderBookingRow(booking: BankHolderBooking) {
                 )
             }
             booking.createdAt?.let {
-                // The wire is UTC; the reader is not. `relativeToNow()` is what the ledger beside
-                // this screen already shows, and a raw instant is not a time anyone reads.
                 Text(
                     text =
                         runCatching { Instant.parse(it) }.getOrNull()?.relativeToNow() ?: it,
@@ -190,10 +183,7 @@ private fun HolderBookingRow(booking: BankHolderBooking) {
 }
 
 /**
- * Walks the pages of postings.
- *
- * States the total rather than only offering arrows: a page count with no total reads as "there
- * might be more", which ADR-0104 asks screens not to do.
+ * Walks the pages of postings and states their total (ADR-0104).
  *
  * @param state what page is showing and how many there are.
  * @param onPage asks for another page.

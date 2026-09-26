@@ -15,33 +15,18 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
 
 /**
- * The server's own words for a validation refusal, when it named what was wrong.
+ * The server's own words for a validation refusal or an [ApiError.Conflict], when it sent any.
  *
- * RFC 7807 bodies from this backend carry `fieldErrors` — a localised sentence per offending field
- * („numerischer Wert außerhalb des gültigen Bereichs (<3 digits>.<2 digits> erwartet)") — and the
- * app was throwing every one of them away in favour of „Konnte nicht gespeichert werden." Design
- * ch. 02 §6 draws the field error naming the fault („Menge muss größer als 0 sein."), which is
- * exactly what the server already sent.
- *
- * [ApiError.Conflict] is answered too, and for the same reason. It is a `409` that is **not** a
- * concurrent edit — a rule refusing, such as an account that still holds a balance or a request
- * that has already been decided. What rule fired is something only the server knows, so its
- * `detail` is the whole message; the screen has no sentence of its own that would be true.
- *
- * [ApiError.OptimisticLock] is deliberately still excluded: there the member's next step („reload
- * and save again") matters more than the server's phrasing, and the reload modal carries it.
- * A 403 or a dropped connection likewise needs the screen's own copy.
+ * Uses the RFC 7807 `fieldErrors` or a conflict's `detail`. [ApiError.OptimisticLock], a 403 and
+ * network failures return `null` so the screen's own copy applies.
  *
  * @return the sentence to show, or `null` when the server named nothing and the caller's own copy
  *   has to stand in.
  */
 fun ApiError.fieldMessage(): String? =
     when (this) {
-        // A rule refused: the server's `detail` names which one, and nothing else can.
         is ApiError.Conflict -> problem?.detail?.takeIf { it.isNotBlank() }
-
         is ApiError.Validation -> problem?.namedFields()
-
         else -> null
     }
 
@@ -73,18 +58,8 @@ private const val FIELD_MESSAGE_SEPARATOR = " · "
 /**
  * What a write surface shows when a write fails.
  *
- * The server's own sentence when there is one ([fieldMessage]); otherwise the screen's copy **plus
- * the technical reference** — the HTTP status and the correlation id.
- *
- * That suffix is not decoration. Until 2026-09-03 every refusal a member could hit read the same:
- * „Konnte nicht gespeichert werden." An edge refusal, an authorisation refusal and a parse failure
- * were indistinguishable to the member *and* to whoever they reported it to, and two separate
- * defects that week were diagnosed only by reading the production log. The status alone separates
- * those three, and the correlation id finds the exact request in one grep.
- *
- * Kept deliberately short and appended in parentheses: it is a reference to quote, not an
- * explanation to read. A member who does not care can ignore it; a member reporting a problem can
- * type six characters and save an afternoon.
+ * The server's own sentence when there is one ([fieldMessage]); otherwise the screen's copy plus the
+ * HTTP status and correlation id in parentheses, for reporting.
  *
  * @param fallback the screen's own sentence, used when the server named nothing.
  * @return the message to show.
@@ -108,11 +83,8 @@ fun ApiError.writeFailureText(
 /**
  * The HTTP status behind a failure, where one exists.
  *
- * [ApiError.Network] never reached a server, so it has none — and saying „HTTP 0" would be worse
- * than saying nothing. Everything else either carries the status itself or can read it from the
- * problem body the server sent.
- *
- * @return the status, or `null` when the request produced no HTTP response.
+ * @return the status, or `null` when the request produced no HTTP response, as for
+ *   [ApiError.Network].
  */
 private fun ApiError.httpStatus(): Int? =
     when (this) {

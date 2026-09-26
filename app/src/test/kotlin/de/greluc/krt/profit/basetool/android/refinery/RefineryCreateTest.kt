@@ -66,22 +66,17 @@ class RefineryCreateTest {
 
     @Test
     fun `a typed material name without a pick is not a material`() {
-        // The wire wants an id. A name alone drops the line, and a form that looks filled would
-        // then be refused by the server for a line the member believed they had entered.
         assertFalse(draft(good(material = null)).sendable)
     }
 
     @Test
     fun `a line without an output quantity is not sendable`() {
-        // `@NotNull @Min(1)` on the wire. Sending 0 earns „muss größer-gleich 1 sein" against
-        // `goods[0]`, which names an index, not a field.
         assertFalse(draft(good(output = "")).sendable)
         assertFalse(draft(good(output = "0")).sendable)
     }
 
     @Test
     fun `one incomplete line blocks the whole order, not just itself`() {
-        // The call carries every line; a half-filled one refuses all of them.
         assertFalse(draft(good(), good(material = null)).sendable)
     }
 
@@ -95,10 +90,6 @@ class RefineryCreateTest {
     fun `the start is read from the two fields the member fills`() {
         val at = draft(good()).copy(startedDate = "27.08.2026", startedTime = "21:00").startedAt
 
-        // Read back in the device's own zone, not asserted as a UTC literal: the member typed a
-        // wall clock, and what the instant looks like in UTC depends on where they are. A literal
-        // here passes in Berlin and fails on a CI runner set to UTC, which is a test about the
-        // runner rather than about the parse.
         val local = requireNotNull(at).atZone(ZoneId.systemDefault()).toLocalDateTime()
         assertEquals(TYPED_START, local)
     }
@@ -111,9 +102,6 @@ class RefineryCreateTest {
 
     @Test
     fun `the quantities read back in SCU beside the units the field takes`() {
-        // The wire counts units, a hundred to the SCU, and the labels say so. This is the figure
-        // shown beside them -- REQ-APP-REF-004a records what confusing the two cost the last time:
-        // a booking that would have written a Lager entry a hundred times the yield.
         val line = good(input = "62000", output = "44200")
         assertEquals(INPUT_SCU, requireNotNull(line.inputScu), SCU_TOLERANCE)
         assertEquals(OUTPUT_SCU, requireNotNull(line.outputScu), SCU_TOLERANCE)
@@ -121,7 +109,6 @@ class RefineryCreateTest {
 
     @Test
     fun `a quantity that is not a number yet has no SCU reading`() {
-        // Shown as an absence rather than as 0,00 SCU, which would claim a run of nothing.
         assertNull(good(output = "").outputScu)
         assertNull(good(input = "6,2").inputScu)
     }

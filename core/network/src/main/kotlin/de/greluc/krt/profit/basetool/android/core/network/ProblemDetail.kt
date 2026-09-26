@@ -11,14 +11,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * One field's validation message inside a problem body's `fieldErrors`.
- *
- * The backend sends this as an array of objects and, for older consumers, the same content again as
- * a flat `{field: message}` map under `errors`. **The array is the shape to read.** Declaring
- * `fieldErrors` as a map was not merely a lost convenience: kotlinx refuses an array where an
- * object is declared, `parseProblem` catches that as „not problem+json", and every validation
- * refusal therefore arrived with **no body at all** — no title, no detail, no correlation id.
- * Found on the device: adding a frequency failed silently, and the server had said exactly why.
+ * One field's validation message inside a problem body's `fieldErrors` array.
  *
  * @property field which field was rejected.
  * @property message the localised reason, safe to show.
@@ -32,12 +25,9 @@ data class ProblemFieldError(
 )
 
 /**
- * The backend's RFC 7807 `application/problem+json` body.
+ * The backend's RFC 7807 `application/problem+json` body, with every field optional.
  *
- * Every field is optional because a problem body is what the server sends when something already
- * went wrong — an error path is the last place to assume a complete payload. The one field the app
- * actually branches on is [code], the backend's stable machine-readable code (main repo
- * REQ-API-004); [title] and [detail] are localised prose meant for display, never for logic.
+ * The app branches only on [code] (REQ-API-004); [title] and [detail] are for display.
  *
  * @property type problem type URI
  * @property title short localised summary, safe to show
@@ -46,10 +36,9 @@ data class ProblemFieldError(
  * @property instance the request path the problem refers to
  * @property code the stable code the client branches on, e.g. `PENDING_APPROVAL`
  * @property correlationId ties this response to one backend log line (REQ-OBS-002)
- * @property fieldErrors the structured per-field validation messages, in the shape the backend
- *   actually sends them: an **array** of `{field, message}`
- * @property errors the same messages in the backend's legacy map shape, kept because it is
- *   still sent and costs one line to read
+ * @property fieldErrors the structured per-field validation messages, as an array of
+ *   `{field, message}`
+ * @property errors the same messages in the backend's legacy map shape
  */
 @Serializable
 data class ProblemDetail(
@@ -64,21 +53,8 @@ data class ProblemDetail(
     val errors: Map<String, String>? = null,
 ) {
     /**
-     * Renders only the three fields that identify a problem, never the ones that describe it.
-     *
-     * Roughly fifty call sites log an `ApiError`, and every `ApiError` carries one of these — so
-     * the generated `toString()` was putting the server's own localised prose, the request path
-     * with its ids, and every field-validation message into logcat on release builds. Some of that
-     * prose names members and amounts, which the project's logging rule forbids categorically, and
-     * logcat is app-private only until a bugreport or an OEM collector picks it up.
-     *
-     * Overriding here rather than editing fifty call sites is deliberate: the next call site gets
-     * it for free, and a `\${result.error}` in a log line stays the obvious thing to write.
-     * [IdTokenClaims], [PkceChallenge] and [AuthorizationRequest] suppress their own sensitive
-     * halves the same way.
-     *
-     * What is kept is exactly what a diagnosis needs: the stable code, the status, and the
-     * correlation id that ties the line to the backend's own (REQ-OBS-002).
+     * Renders only the code, status and correlation id, never the descriptive fields, so logging a
+     * problem leaks no member data.
      *
      * @return the identifying fields, without the descriptive ones.
      */
@@ -93,13 +69,8 @@ data class ProblemDetail(
         const val CODE_PENDING_APPROVAL: String = "PENDING_APPROVAL"
 
         /**
-         * The token is valid but carries no application role (main repo REQ-SEC-053).
-         *
-         * Distinct from [CODE_PENDING_APPROVAL]: that account is known and queued, this one is
-         * approved and simply holds nothing an administrator has granted yet. Both are 403 and
-         * both end at the gate, but only one of them is waiting for a decision that has already
-         * been asked for, and telling a member to "wait for approval" when nobody is going to
-         * approve anything is the wrong instruction.
+         * The token is valid but carries no application role (REQ-SEC-053); unlike
+         * [CODE_PENDING_APPROVAL], no approval is pending.
          */
         const val CODE_NO_ROLE: String = "NO_ROLE"
 

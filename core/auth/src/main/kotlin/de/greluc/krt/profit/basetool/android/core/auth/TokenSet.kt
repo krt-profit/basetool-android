@@ -13,12 +13,8 @@ import java.time.Instant
 /**
  * One grant, as the token endpoint returned it.
  *
- * Only [refreshToken] is ever persisted (ADR-0002); the access token lives in memory for its five
- * minutes and the ID token for as long as the session needs its claims.
- *
- * [accessTokenExpiresAt] is an absolute instant on the **server's** clock rather than the
- * `expires_in` duration the wire carries. A duration is only meaningful together with the moment it
- * was received, and every caller that would have to pair the two is a caller that can get it wrong.
+ * Only [refreshToken] is persisted (ADR-0002). [accessTokenExpiresAt] is an absolute instant on the
+ * server's clock.
  *
  * @property accessToken the bearer token for API calls — plain `Bearer`, never DPoP-bound
  * @property accessTokenExpiresAt when the access token stops being accepted, in server time
@@ -48,12 +44,7 @@ data class TokenSet(
     ): Boolean = !now.plus(margin).isBefore(accessTokenExpiresAt)
 
     /**
-     * Renders the grant **without** any token material.
-     *
-     * The generated `toString` of a data class prints every property, which would put an access
-     * token into any log line, crash report or debugger transcript that touches this object. The
-     * app's logging rule (main repo REQ-OBS-004, inherited by contract) says never — and the
-     * cheapest way to keep a rule is to make the material unavailable.
+     * Renders the grant without any token material (REQ-OBS-004).
      *
      * @return a description carrying only shape and timing
      */

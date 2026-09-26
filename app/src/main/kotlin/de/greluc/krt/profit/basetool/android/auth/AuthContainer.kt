@@ -65,17 +65,12 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * The auth object graph, built once per process.
+ * The auth object graph, built once per process (ADR-0001).
  *
- * Hilt is deliberately not here yet (ADR-0001): the graph is small enough that a hand-written
- * container is easier to read than the generated one, and every dependency below is a decision
- * worth seeing in one place rather than inferring from annotations.
+ * Every member is `by lazy`, so the Keystore work for the token cipher and the DPoP key is only paid
+ * when first needed.
  *
- * Everything is `by lazy` because the Keystore work — generating the token cipher's AES key and the
- * DPoP signing key — is not free, and a member who never opens the app should not pay for it at
- * process start.
- *
- * @property context application context; the constructor takes any and keeps the application one
+ * @property context application context; any context is accepted and its application context kept
  */
 class AuthContainer(
     context: Context,
@@ -89,12 +84,10 @@ class AuthContainer(
     private val keystoreCipher by lazy { KeystoreSecretCipher() }
 
     /**
-     * The refresh token's cipher, with the app lock's outer layer around it.
+     * The refresh token's cipher: [KeystoreSecretCipher] wrapped by the app lock's [LockedSecretCipher]
+     * layer.
      *
-     * The order is the security property: [KeystoreSecretCipher] keeps every guarantee that makes
-     * storing a refresh token defensible — non-exportable, device-bound, StrongBox where available —
-     * and [LockedSecretCipher] adds a layer the member's authentication removes. Inert while the
-     * lock is off, so the stored form then is byte-identical to a build without any of this.
+     * While the lock is off the outer layer is inert and the stored form is unchanged.
      */
     private val tokenCipher: SecretCipher by lazy { LockedSecretCipher(keystoreCipher, envelope) }
 
@@ -119,42 +112,31 @@ class AuthContainer(
     /**
      * The app lock.
      *
-     * It takes [refreshTokenStore] because arming and disarming **rewrite the stored token**: the
-     * blob's form has to match the setting, or a member who armed the lock mid-session would find
-     * an unsealed blob the envelope refuses to open — or, worse, a sealed one after disarming that
-     * nothing can.
+     * Arming and disarming rewrite the stored token in [refreshTokenStore] so its sealed form always
+     * matches the setting.
      */
     val appLock: AppLock by lazy {
         KeystoreAppLock(AppLockKey(), appLockSetting, envelope, refreshTokenStore)
     }
 
     /**
-     * Whether a lock stands, for the settings row to reflect.
-     *
-     * Read from the stored sentinel rather than from a separate flag, so the switch shows what
-     * is actually armed instead of what somebody once asked for.
+     * Whether a lock is armed, read from the stored sentinel, for the settings row to reflect.
      */
     val appLockArmed get() = appLockSetting.enabled
 
     /**
      * The org unit every request is scoped to.
      *
-     * Its own preference file rather than the token DataStore, because the request interceptor
-     * reads it **synchronously** off an OkHttp thread and DataStore cannot answer that way — see
-     * the store's own documentation for the two attempts that proved it. It is still session
-     * state, so [logout] wipes it and the backup rules exclude it alongside the token store.
+     * Kept in its own preference file so the request interceptor can read it synchronously on an OkHttp
+     * thread. It is session state: [logout] wipes it and the backup rules exclude it.
      */
     val activeOrgUnit by lazy { ActiveOrgUnitStore(appContext) }
 
     /**
-     * The login attempt that is currently out in the browser.
+     * The login attempt currently out in the browser.
      *
-     * **Deliberately NOT behind the app lock's outer layer**, unlike the refresh token. The redirect
-     * is handled in `onCreate`, before a single frame is composed and therefore before the lock gate
-     * has had any chance to run — a sealed attempt would be unreadable at exactly that moment, and
-     * `take()` discards what it cannot read, so an armed lock would silently swallow every login
-     * that survived a process death. Sealing it would also buy nothing: it holds a PKCE verifier for
-     * the length of one browser round trip, not a session, and it is already encrypted by the same
+     * Deliberately not behind the app lock's outer layer: the redirect is handled in `onCreate` before
+     * the lock gate runs, and `take()` discards what it cannot read. It is still encrypted with the
      * non-exportable Keystore key.
      */
     val pendingAuthorization by lazy { PendingAuthorization(dataStore, keystoreCipher) }
@@ -174,12 +156,7 @@ class AuthContainer(
             accessTokenProvider = { session.currentAccessToken() },
             correlationIdFactory = { UUID.randomUUID().toString() },
             languageTagProvider = { Locale.getDefault().toLanguageTag() },
-            // Read synchronously off an OkHttp dispatcher thread, which is why the store
-            // mirrors its value in memory rather than being asked to suspend here.
             activeOrgUnitProvider = { activeOrgUnit.current() },
-            // Both run on an OkHttp thread that is about to wait on a socket anyway, and both go
-            // to the token client, which carries none of these interceptors and therefore cannot
-            // re-enter this. Without them the app dies at the realm's access-token lifespan.
             refreshIfSpent = { runBlocking { session.refreshIfNeeded() } },
             refreshAfterRejection = { refused -> runBlocking { session.refreshFor(refused) } },
         )
@@ -267,12 +244,9 @@ class AuthContainer(
     }
 
     /**
-     * The Einsatz's structure — its Einheiten, who is aboard them, and its radio plan.
+     * The Einsatz's structure: its Einheiten, who is aboard them, and its radio plan.
      *
-     * A second repository rather than more methods on [missions], which had reached the point where
-     * one type carried the list, the detail, the books, the roster, the Einsatz's own record and
-     * everything it is made of. It reaches the same host through the same [apiClient]; what differs
-     * is what a caller has to depend on.
+     * Shares [apiClient] with [missions].
      */
     val missionStructure: MissionStructureRepository by lazy {
         MissionStructureRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
@@ -320,8 +294,7 @@ class AuthContainer(
     /**
      * The Operationen list and detail.
      *
-     * No [serverClock]: an Operation has no start time of its own, so nothing here is filtered
-     * against "now" the way the Einsatz list is.
+     * Takes no [serverClock], because an Operation has no start time to filter against.
      */
     val operations: OperationRepository by lazy {
         OperationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
@@ -378,12 +351,10 @@ class AuthContainer(
     }
 
     /**
-     * The live-sync bridge: change signals in, the app's own announcements out (ADR-0143).
+     * The app-wide live-sync bridge: change signals in, the app's own announcements out (ADR-0143).
      *
-     * One instance for the whole app rather than one per screen, and shared with [apiClient] for
-     * the reason the notification stream is: the stream derives its own client from it, so the
-     * bearer token, the active org unit and the correlation id follow a connection that outlives
-     * any single request without a second configuration to keep in sync.
+     * The stream derives its client from [apiClient], so bearer token, active org unit and correlation
+     * id follow the long-lived connection.
      */
     val liveSync: LiveSyncRepository by lazy {
         LiveSyncRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
@@ -421,14 +392,10 @@ class AuthContainer(
     }
 
     /**
-     * The bank's staff surface — the queue, the dashboard, the account lifecycle and the grants.
+     * The bank's staff surface: the queue, the dashboard, the account lifecycle and the grants.
      *
-     * Separate from [bank] because the paths are: these list every account in the organisation and
-     * are gated on a bank role, which the server decides and the screens draw. Whether the caller
-     * has one is answered by `/me/capabilities`, never worked out from a role name.
-     *
-     * `/api/v1/bank/admin` stays out of the app entirely — that is the admin area, which is
-     * web-only by owner decision.
+     * Separate from [bank] because these paths list every account and are gated on a bank role, which
+     * `/me/capabilities` reports. `/api/v1/bank/admin` is not used by the app.
      */
     val bankStaff: BankStaffRepository by lazy {
         BankStaffRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
@@ -502,9 +469,6 @@ class AuthContainer(
 
     private val tokenClient by lazy {
         TokenClient(
-            // Derived from the API client and stripped of its interceptors: an Authorization header
-            // on Keycloak's token endpoint is read as client authentication and answered with
-            // invalid_client (REQ-APP-AUTH-006).
             httpClient = KrtHttpClient.createTokenClient(apiClient, serverClock),
             configuration = configuration,
             proofFactory = proofFactory,
@@ -517,10 +481,6 @@ class AuthContainer(
         AuthSession(
             tokenClient = tokenClient,
             refreshTokenStore = refreshTokenStore,
-            // The bare Keystore cipher: the session uses it only to destroy the key on logout, and
-            // that key belongs to the inner layer. Handing it the decorated one would work but
-            // would suggest the lock has something to wipe here, which it does not — the lock's own
-            // key is disarmed separately.
             cipher = keystoreCipher,
             serverClock = serverClock,
         )
@@ -529,20 +489,14 @@ class AuthContainer(
     /**
      * Ends a session completely, including the DPoP key the refresh token was bound to.
      *
-     * [AuthSession.logout] wipes the token and the cipher key; the signing key lives outside its
-     * reach, and leaving it behind would leave the binding alive.
+     * [AuthSession.logout] wipes the token and the cipher key; this additionally removes the signing key.
      *
      * @return the RP-initiated logout URL to open in a browser, or `null` when there was no session
      */
     suspend fun logout(): String? {
         val endSession = session.logout()
         dpopKeys.deleteKey()
-        // The scope goes with the session: the next member on this device starts from their own
-        // default rather than inside the previous one's org unit.
         activeOrgUnit.clear()
-        // The lock key goes with them: a device handed on with the app signed out must not still
-        // hold a key that once guarded it. disarm() also drops the in-memory session key, so the
-        // outer layer cannot be removed again in this process.
         appLock.disarm()
         return endSession
     }

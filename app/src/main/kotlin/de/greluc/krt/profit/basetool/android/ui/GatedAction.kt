@@ -32,24 +32,15 @@ import kotlinx.coroutines.delay
 const val DENIAL_TOAST_MS = 4_000L
 
 /**
- * A control the caller may not use: drawn as locked, still able to explain itself.
+ * A control the caller may not use: drawn as locked, still able to explain itself
+ * (ADR-0011, REQ-APP-AUTH-013).
  *
- * `enabled = false` is what this deliberately avoids. A Compose control with that flag receives no
- * tap, and a control that cannot be tapped cannot say why it is dim — which leaves a grey button
- * that tells a member nothing, the worst of both options. So the control keeps a live tap target,
- * performs no write, and names the missing grant (ADR-0011, `REQ-APP-AUTH-013`).
- *
- * Hiding it was the alternative and was rejected: this organisation grants roles by hand, and a
- * feature nobody can see is a feature nobody asks to be given.
- *
- * The design draws two kinds of lock with the **same picture** and different copy (ch. 09, artboard
- * 14): a *role* lock, knowable before the tap („Dafür brauchst du die Rolle Logistiker."), and a
- * *row* lock on someone else's entry („Nur deine eigene Zeile …"). Both are this type; only
- * [reason] and [detail] differ.
+ * The control keeps a live tap target, performs no write and names the missing grant; it is neither
+ * `enabled = false` nor hidden. Role locks and row locks differ only in [reason] and [detail].
  *
  * @property allowed whether the action may actually run.
- * @property reason what to say when it may not — the **grant's name** as a sentence, never a status
- *   code and never „Keine Berechtigung": a member has to learn what to ask for.
+ * @property reason what to say when it may not: the grant's name as a sentence, never a status code
+ *   or „Keine Berechtigung".
  * @property detail who hands that grant out, or the rule behind a row lock.
  */
 data class Gate(
@@ -61,12 +52,8 @@ data class Gate(
         /**
          * Builds a gate from a permission that may not have been read yet.
          *
-         * **Three states, not two.** `true` opens the control; `false` locks it and names the
-         * missing grant; `null` — the identity has not been read, or the read failed — locks it too
-         * but says the permission could not be checked. Reading unknown as permitted left every
-         * gated control open for the whole of app start and offered writes the server then refused
-         * (ADR-0011); reading it as a missing grant would tell somebody who holds the role that they
-         * do not.
+         * `true` opens the control; `false` locks it and names the missing grant; `null` locks it and says
+         * the permission could not be checked (ADR-0011).
          *
          * @param permitted the permission's answer, or `null` when it is not known.
          * @param reason the missing-grant headline, used only for a real refusal.
@@ -95,9 +82,8 @@ data class Gate(
  *
  * @property title the missing grant.
  * @property detail who hands it out.
- * @property serial which tap this is — it changes on every raise, including a repeat of the same
- *   refusal, so the dismissal timer restarts rather than letting the first tap's clock run out
- *   under the second („erneuter Tipp setzt den Timer zurück").
+ * @property serial which tap this is; changes on every raise, including a repeat, so the dismissal
+ *   timer restarts.
  */
 data class Denial(
     val title: String,
@@ -145,13 +131,10 @@ class DenialState {
 fun rememberDenialState(): DenialState = remember { DenialState() }
 
 /**
- * What a locked control should do on tap, and how it should look.
+ * What a locked control does on tap, and how it looks.
  *
- * The returned modifier dims the control and gives TalkBack the refusal as its state description,
- * so a screen reader is told the same thing the toast says rather than reading an unqualified
- * label. The glyph half of the pattern — [KrtLockBadge][de.greluc.krt.profit.basetool.android
- * .core.designsystem.component.KrtLockBadge] on an icon button, an inline lock on a
- * call-to-action — is the caller's to place, because only the caller knows the control's shape.
+ * The returned modifier dims the control and gives TalkBack the refusal as its state description.
+ * The lock glyph is the caller's to place.
  *
  * @param gate whether the caller may act, and why not.
  * @param onAllowed the real action.
@@ -170,31 +153,19 @@ fun rememberGated(
 }
 
 /**
- * The refusal itself: one at a time, at the foot of the screen, gone after four seconds.
+ * The refusal toast: one at a time, at the foot of the screen, gone after four seconds.
  *
- * Lives here rather than at a call site because it is a **drawn** element (design ch. 09, artboards
- * 12 and 14) and two hand-rolled copies of one artboard drift — the timer, the inset and the
- * z-order are each easy to get subtly different, and none of the three shows up in a semantics
- * test.
- *
- * Place it at the **screen**, never inside a list row: a `LazyColumn` recycles its items, so a
- * toast owned by a row disappears the moment that row scrolls out from under it.
+ * Place it at the screen level, never inside a lazy list row.
  *
  * @param state the screen's refusal slot; nothing is drawn while it is empty.
  */
 @Composable
 fun DenialToast(state: DenialState) {
     val denial = state.current ?: return
-    // Keyed on the tap, not on the text: a second tap of the same lock has to restart the clock
-    // rather than let the first tap's timer expire underneath it („erneuter Tipp setzt den Timer
-    // zurück").
     LaunchedEffect(denial.serial) {
         delay(DENIAL_TOAST_MS)
         state.clear()
     }
-    // Above whatever else is anchored down there: the refusal is the one thing the member has to be
-    // able to read, and for its four seconds it outranks a button they may not be allowed to press
-    // anyway. 16 dp from both edges and clear of the bottom bar, as the artboard measures it.
     Box(
         modifier = Modifier.fillMaxSize().zIndex(1f),
         contentAlignment = Alignment.BottomCenter,

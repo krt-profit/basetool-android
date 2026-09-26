@@ -84,11 +84,7 @@ data class GameItemStockState(
 }
 
 /**
- * Drives „Game-Items" (design ch. 09 artboard 21, `REQ-APP-INV-*`).
- *
- * **Read-only, and a surface of its own under „Mehr".** The Lager tree groups by *material*, where
- * a game item counted in pieces disappears between SCU figures; the question here is „how many do
- * we have and where", which is a different question with a different unit.
+ * Drives the read-only „Game-Items" screen under „Mehr" (`REQ-APP-INV-*`).
  *
  * @property source the grouped read.
  */
@@ -142,11 +138,7 @@ class GameItemStockViewModel(
     }
 
     /**
-     * A row was tapped.
-     *
-     * It opens **in place** rather than jumping into the Lager tree the artboard names: that tree
-     * is material-grouped and has no item mode, so there is nowhere to jump to. The stacks it would
-     * have shown are already in this row's own answer.
+     * Expands or collapses a row in place to show its stacks.
      *
      * @param item the row.
      */

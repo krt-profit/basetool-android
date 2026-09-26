@@ -19,8 +19,6 @@ import org.junit.Test
 class AllocationSheetStateTest {
     @Test
     fun `the two splits are reconciled apart`() {
-        // The whole point of Modell G: the same 96 SCU can be promised to an Auftrag AND to an
-        // Einsatz. One shared rest would report the second promise as an overbooking.
         val state =
             sheet(
                 jobOrders = listOf(row("o1", "60")),
@@ -42,8 +40,6 @@ class AllocationSheetStateTest {
 
     @Test
     fun `a row that matches the server is not sent again`() {
-        // "3" and "3.0" are the same promise. The server returns the second and the stepper writes
-        // the first, so comparing the strings would re-send every untouched row on every save.
         val state =
             sheet(
                 jobOrders = listOf(AllocationRow("o1", "#1", null, "3", "3.0")),
@@ -77,8 +73,6 @@ class AllocationSheetStateTest {
 
     @Test
     fun `a half-typed amount does not freeze the rest`() {
-        // The field is mid-edit: a sum that refuses to compute would stop the figure the member is
-        // watching, which is worse than treating the unparseable row as nothing yet.
         val state = sheet(jobOrders = listOf(row("o1", ""), row("o2", "10")))
 
         assertEquals("86.25", state.jobOrderRest.stripTrailingZeros().toPlainString())

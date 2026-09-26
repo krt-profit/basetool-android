@@ -32,12 +32,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
 /**
- * The account as one **row**, which is what a tablet's list column gets.
+ * The account as one row in a tablet's list column: name left, balance and delta right.
  *
- * Name left, balance and delta right, and nothing else: the sparkline and the ledger are the
- * detail pane's, one column over. Chapter 02 §5's rule — „the tablet keeps tables, the phone
- * collapses to rows" — was extended to list rows in round 14 (S31), and this is the case it was
- * extended for.
+ * The sparkline and ledger belong to the detail pane.
  *
  * @param account the account.
  * @param onClick opens it in the pane.
@@ -67,8 +64,6 @@ internal fun AccountRow(
         Column(horizontalAlignment = Alignment.End) {
             KrtDataValue(
                 text = formatAmount(account.balance.orEmpty()),
-                // A row is a card's sibling on the figure ladder, so the number keeps its rung
-                // when the card collapses to a row on a tablet (round 15).
                 style = KrtFigure.card,
             )
             account.delta30d?.let { delta ->

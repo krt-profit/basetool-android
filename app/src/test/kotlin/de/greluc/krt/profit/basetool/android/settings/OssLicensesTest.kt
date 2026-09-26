@@ -17,16 +17,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The open-source notice is a legal document, so the tests here ask whether it is **complete**
- * rather than whether the parser works.
- *
- * Three ways it could be quietly wrong, each pinned below. The generated resource could be missing
- * or empty, which the screen renders as a polite empty state and nobody would question. An artifact
- * could carry a licence identifier the app has no name or address for, which happens the first time
- * a transitive dependency arrives under something new. And an artifact could fall out of the
- * grouping entirely and simply not be listed — the failure mode that looks exactly like success.
- *
- * All three are invisible in a screenshot of a screen that shows 138 rows.
+ * Tests that the open-source notice is complete: the generated resource exists and is not empty, every licence
+ * identifier has a name and address, and no artifact falls out of the grouping.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -37,10 +29,6 @@ class OssLicensesTest {
     fun `the notice is generated into the app and is not empty`() {
         val report = OssLicenses.read(resources)
 
-        // If the build wiring in app/build.gradle.kts stops running, the app still builds and the
-        // screen still opens; only the attribution disappears. A report that reads as Unreadable
-        // covers both the missing file and the empty one — the screen makes the same offer either
-        // way, and neither is a notice.
         assertTrue("the generated open-source notice is empty", report is OssReport.Loaded)
     }
 
@@ -62,8 +50,6 @@ class OssLicensesTest {
                 .distinct()
                 .filter { OssLicense.of(it) == null }
 
-        // The fix is to read the licence, decide whether the app may redistribute under it, then
-        // add it to BOTH `licensee { allow(…) }` and OssLicense — never to one of them.
         assertEquals(
             "SPDX identifiers with no entry in OssLicense would render as a bare string",
             emptyList<String>(),
@@ -100,8 +86,6 @@ class OssLicensesTest {
                 """.trimIndent(),
             )
 
-        // The recipient may rely on either, so listing it once under an arbitrary one would
-        // misstate the terms.
         assertEquals(2, OssLicenses.byLicense(artifacts).size)
     }
 

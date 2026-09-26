@@ -129,11 +129,7 @@ class NotificationsScreenTest {
     }
 
     /**
-     * The count is not in the list any more — it is a chip in the bar (design ch. 07).
-     *
-     * Asserted as an absence rather than deleted, because the line it replaced was here for a
-     * reason: a member has to be told how many are unread. This pins that the answer is given
-     * once, in the bar, and does not quietly come back to the top of the list as well.
+     * The unread count appears only as the bar's chip (design ch. 07), not again at the top of the list.
      */
     @Test
     fun `the unread count is not restated inside the list`() {
@@ -169,8 +165,6 @@ class NotificationsScreenTest {
 
     @Test
     fun `a capped list says how many of how many it shows`() {
-        // The web app's own "newest 50 of 123". A list that cannot say what it is not showing is
-        // the silent truncation the main repo's ADR-0104 forbids.
         show(
             NotificationsState(
                 notifications = listOf(notification("n1")),

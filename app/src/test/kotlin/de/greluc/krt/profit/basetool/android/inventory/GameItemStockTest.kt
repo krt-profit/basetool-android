@@ -13,12 +13,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * What the Game-Item screen shows (design ch. 09 artboard 21).
- *
- * The state does the filtering, because the read is one unpaginated call: search and category are
- * therefore complete answers rather than a narrowing of a page, and that is the property worth
- * pinning. The chips are built from the `kind` values that turn up, because `kind` is free text on
- * the wire and a fixed list would hide whatever the catalogue grows next.
+ * Tests the Game-Item screen (design ch. 09, artboard 21): search and category filter the complete unpaginated read,
+ * and the category chips come from the `kind` values present.
  */
 class GameItemStockTest {
     private companion object {
@@ -57,8 +53,6 @@ class GameItemStockTest {
             )
 
         assertEquals(listOf("b"), state.visible.map { it.id })
-        // Everything arrived in one call, so a filtered list is the whole answer — there is no
-        // page behind it and therefore nothing to declare (ADR-0104).
         assertEquals(1, state.visible.size)
     }
 

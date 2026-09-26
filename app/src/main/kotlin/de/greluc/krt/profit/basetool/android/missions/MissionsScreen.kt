@@ -77,10 +77,8 @@ const val MISSIONS_SEARCH_TAG: String = "missions-search"
 /**
  * The Einsatz list (design spec ch. 06 §1).
  *
- * The segment above the search field switches to the Operationen list. It **navigates** rather than
- * swapping a local state: both lists are already destinations of their own — Einsätze in the bottom
- * bar, Operationen behind "Mehr" — so a local toggle would give each list a second address, and the
- * navigation bar would highlight the wrong root for one of them.
+ * The segment above the search field navigates to the Operationen list rather than toggling local
+ * state.
  *
  * @param state what to draw.
  * @param onSearchChanged a keystroke in the search field.
@@ -112,8 +110,6 @@ fun MissionsScreen(
     modifier: Modifier = Modifier,
 ) {
     val zone = remember { ZoneId.systemDefault() }
-    // Recomputed on every recomposition rather than remembered: "Heute" has to stop being today
-    // when the day rolls over while the app is open.
     val today = LocalDate.now(zone)
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -131,8 +127,6 @@ fun MissionsScreen(
             zone = zone,
         )
 
-        // The classified cause is deliberately not shown: an error code means nothing to a member.
-        // The view model logged it, which is what a report can be matched against.
         when (state.phase) {
             is MissionsPhase.Loading -> {
                 KrtLoadingIndicator(
@@ -142,9 +136,6 @@ fun MissionsScreen(
             }
 
             is MissionsPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
                 val retryIn = state.retryIn
                 if (retryIn != null) {
                     KrtRetryCountdown(
@@ -221,17 +212,11 @@ private fun MissionsFilterBar(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
-            // The typed value, not the debounced one. Binding a controlled field to the
-            // debounced term feeds the previous value back on every recomposition and the
-            // character the member just typed disappears (REQ-APP-MIS-004).
             value = state.searchText,
             onValueChange = onSearchChanged,
             placeholder = stringResource(R.string.missions_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(MISSIONS_SEARCH_TAG),
         )
-        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
-        // breaks character by character („ABGEB ROCHE N"). Wrapping by chip keeps every filter
-        // readable and reachable, which horizontal scrolling would not.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -266,16 +251,8 @@ private fun MissionsFilterBar(
 }
 
 /**
- * The status filter: **one** chip that names what it carries, and a sheet behind it.
- *
- * Artboard 06-1 draws „STATUS: ALLE" beside Zeitraum and Vergangene, and the handoff says the web
- * filters „collapse into the chip row; chips open pickers as bottom sheets". Four toggle chips took
- * a line of their own on a 411 dp phone and pushed the list down by that much, for a filter most
- * members set once.
- *
- * The label states the selection rather than the word „Status" alone: nothing selected is „Alle",
- * one is that status by name, more than one is the count. A chip that never changes says nothing
- * about what the list below it is showing.
+ * The status filter: one chip naming its selection („Alle", one status, or a count) with a picker
+ * sheet behind it.
  *
  * @param statuses which statuses are currently kept.
  * @param onStatusToggled the new set.
@@ -311,8 +288,6 @@ private fun StatusFilterChip(
                     KrtSheetOption(
                         text = stringResource(status.labelRes()),
                         selected = selected,
-                        // Multi-select, so the sheet stays open: picking two statuses is one
-                        // decision, and closing after the first would make it two trips.
                         onClick = {
                             onStatusToggled(if (selected) statuses - status else statuses + status)
                         },
@@ -327,14 +302,10 @@ private fun StatusFilterChip(
 const val MISSIONS_STATUS_TAG: String = "missions-status-filter"
 
 /**
- * The date-range filter chip and its picker — design ch. 02 §11 d, spec §C7.
+ * The date-range filter chip and its picker (design ch. 02 §11 d).
  *
- * The chip states the period it carries rather than the word „Zeitraum": „ab 05.09.", „bis 12.09."
- * or both ends. Clearing is the chip's own ✕, which is why the picker has no reset button of its
- * own. One end alone is a legal, open range.
- *
- * The end of the range is anchored to the **last instant of** the chosen day: „bis 12.09." has to
- * include the twelfth, and a midnight bound would silently drop it.
+ * The chip names the period it carries and clears it with its ✕; either end alone is a valid open
+ * range. The end is anchored to the last instant of the chosen day.
  *
  * @param query what is currently narrowed; the ends come from here.
  * @param zone the device zone the chosen days are anchored in.
@@ -471,13 +442,7 @@ private fun MissionRow(
     zone: ZoneId,
     onClick: () -> Unit,
 ) {
-    // A card, not a padded Column: every design chapter draws its list items as bordered
-    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        // Two lines, divided as artboard 06-1 divides them: the name and where the row leads on
-        // the first, the state and the clock on the second. The status used to sit top-right as a
-        // filled badge, which put the loudest thing in the row beside the name and left the org
-        // badge to share the second line with the time.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -490,9 +455,6 @@ private fun MissionRow(
                 modifier = Modifier.weight(1f),
             )
             mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
-            // Design ch. 06 artboard 1 closes every row with a chevron. On a card whose whole
-            // surface is the tap target, it is the only thing that says the card HAS a target —
-            // without it the row reads as a summary rather than as a way in.
             KrtIcon(
                 id = DesignR.drawable.ic_krt_chevron_right,
                 contentDescription = null,
@@ -504,9 +466,6 @@ private fun MissionRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // The quiet pill, not the page badge: a list of ten rows each shouting its status in a
-            // filled frame is a list nobody can scan. `KrtStatusBadge` stays for the one status
-            // that describes a whole screen.
             KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
             Text(
                 text = mission.timeLabel(zone),
@@ -519,10 +478,7 @@ private fun MissionRow(
 }
 
 /**
- * The empty state, which says something different depending on why it is empty.
- *
- * "Nothing is scheduled" and "your filters match nothing" are different facts, and showing the
- * first when the second is true tells the member the squadron is idle when it is not.
+ * The empty state, distinguishing „nothing scheduled" from „filters match nothing".
  *
  * @param narrowed whether a filter is applied.
  * @param onResetFilters clears the filters from inside the empty state.
@@ -565,14 +521,9 @@ private val FILTERABLE_STATUSES =
 private fun MissionStatus.labelRes(): Int =
     when (this) {
         MissionStatus.PLANNED -> R.string.missions_status_planned
-
         MissionStatus.ACTIVE -> R.string.missions_status_active
-
         MissionStatus.COMPLETED -> R.string.missions_status_completed
-
         MissionStatus.CANCELLED -> R.string.missions_status_cancelled
-
-        // Never offered as a filter, and a row carrying it shows its raw server value instead.
         MissionStatus.UNKNOWN -> R.string.missions_title
     }
 
@@ -605,22 +556,15 @@ internal fun Mission.missionStatusTone(): KrtStatusTone =
     }
 
 /**
- * The row's time line.
+ * The row's time line: "seit 18:10" for a running Einsatz, otherwise "TS 20:30 · in 2 Std.".
  *
- * A running Einsatz reads "seit 18:10" — an absolute time, because a member joining late wants to
- * know how far in they are. Anything else reads "TS 20:30 · in 2 Std.": the gathering time plus how
- * long until it, which is the pair the design mock shows.
- *
- * The relative half comes from the platform's own formatter rather than from strings of ours. It is
- * localised and correctly pluralised in every language Android ships, which a hand-written
- * "in %d Std." is not.
+ * The relative half uses the platform's localised formatter.
  *
  * @param zone the device zone.
- * @return the line, or an empty string when the server dated the Einsatz not at all.
+ * @return the line, or an empty string when the Einsatz has no date.
  */
 @Composable
 private fun Mission.timeLabel(zone: ZoneId): String {
-    // Read so the label recomposes with a locale change; the formatter itself follows the same one.
     LocalConfiguration.current
     val timeFormat = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
 
@@ -637,10 +581,6 @@ private fun Mission.timeLabel(zone: ZoneId): String {
 
         else -> {
             val relative = gathering.relativeToNow()
-            // "TS 20:30 · in 2 Std." is the pair the design mock shows: a clock reading and a
-            // distance. Once the Einsatz is far enough back that the distance is itself a clock
-            // reading — „gestern, 20:44", „15.08., 18:17" — the pair prints 20:44 twice, so the
-            // absolute half drops out and the compound carries both.
             if (gathering.carriesClock()) {
                 relative
             } else {
@@ -677,10 +617,6 @@ private fun MissionDay.label(): String =
             stringResource(R.string.missions_day_undated)
         }
 
-        // Design ch. 06 artboard 1 writes it "DIENSTAG · 19.08." — the weekday, then the date in
-        // digits. FormatStyle.FULL spells the month out ("Donnerstag, 27. August 2026"), which on a
-        // 411 dp phone is a heading wider than the rows it groups. The year is dropped for the same
-        // reason it is missing from the artboard: this list only ever shows the near future.
         is MissionDay.On -> {
             date.format(DateTimeFormatter.ofPattern(stringResource(R.string.missions_day_pattern)))
         }

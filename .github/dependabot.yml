@@ -1,27 +1,3 @@
-# Dependabot covers both ecosystems this repo has: the Gradle version catalog
-# and the action pins in .github/workflows.
-#
-# The Gradle schedule is **daily**, which is unusual and deliberate.
-#
-# Corrected 2026-09-04: this comment used to justify the cadence by claiming that Android Lint
-# runs with `warningsAsErrors = true` and that its dependency checks treat an available newer
-# version as a finding, so an upstream release could turn `main` red on its own. That is no
-# longer true — `GradleDependency` and `AndroidGradlePluginVersion` are both `disable`d in `:app`
-# and in every `core:*` module, so nothing about a stale dependency reddens the build.
-#
-# The daily cadence stays, for the reason that actually applies now: this repo's dependency
-# surface is where its worst realistic compromise lives (see supply-chain.yml), the app ships as a
-# self-signed APK off GitHub Releases with no store review behind it, and a security advisory that
-# lands on a Monday should not wait until the next Monday to be seen. It is hygiene — but hygiene
-# on the shortest path an attacker has into the process that holds the refresh token.
-#
-# The claim above mattered beyond tidiness: while it stood, it made a reader believe Lint would
-# force a version bump, which is exactly the assumption ADR-0019's advisory-floor pins depend on
-# being false.
-#
-# No `labels:` on purpose: Dependabot creates and applies its own
-# `dependencies` label, while a label named here that does not exist in the
-# repo is silently dropped.
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -32,8 +8,6 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     groups:
-      # AndroidX and Compose ship many artifacts on the same day; one PR per
-      # artifact would bury the ones that matter.
       androidx:
         patterns:
           - "androidx.*"
@@ -41,49 +15,12 @@ updates:
         patterns:
           - "org.jetbrains.kotlinx:*"
     ignore:
-      # The preinstrumented Robolectric runtime is NOT an ordinary dependency: its coordinate is
-      # `<androidVersion>-robolectric-<buildId>-i<preinstrumentedVersion>`, and which one is
-      # correct is decided by the `robolectric` version's own `DefaultSdkProvider` plus the SDK
-      # level every `@Config(sdk = …)` in the repo pins. Dependabot can see none of that, so it
-      # proposes the newest artifact on Maven and every Robolectric test fails.
-      #
-      # Measured 2026-08-21 on the proposal it opened (#45, closed): the Android 17 runtime needs
-      # Robolectric >= 4.17 (4.16.1 answers `IllegalArgumentException: API level 37 is not
-      # available`), and 4.17 exists only as a beta which cannot run on this toolchain at all --
-      # all 350 tests died with `Failed to interact with raw FileDescriptor internals`.
-      #
-      # Bumping it is therefore a deliberate three-part change (runtime + `robolectric` + every
-      # `@Config` pin), never an automated one. Revisit when 4.17 is stable; `docs/
-      # ANDROID_APP_DEV_CI.md` § 4 carries the full rationale.
       - dependency-name: "org.robolectric:android-all-instrumented"
 
-      # Kotlin is held one release back so CodeQL can still read this repo — ADR-0022.
-      #
-      # CodeQL's Kotlin extractor hooks the compiler, and no shipped bundle (2.27.0 is the newest,
-      # 2026-09-09) parses anything at or above 2.4.20. Merging that bump on 2026-09-11 did not
-      # weaken the scan, it aborted the extraction build, and because `Analyze (java-kotlin)` is a
-      # REQUIRED check it left `main` red and every PR BLOCKED for two days.
-      #
-      # Dependabot re-proposes a bump the moment the version moves back down, so without this the
-      # fix has a shelf life of about a day — and the re-break looks like an ordinary green-labelled
-      # dependency PR, which is exactly how it got merged the first time.
-      #
-      # The range is `>= 2.4.20`, not the single version, because every later Kotlin is equally
-      # unparseable until the extractor catches up; a `2.4.20`-only ignore would just wave 2.4.21
-      # through. Both artifacts carry the catalog's `kotlin` ref, so the wildcard covers the pair
-      # Dependabot named in #157 (`plugin.compose`, `plugin.serialization`) and any third.
-      #
-      # DELETE THIS ENTRY in the same change that raises `kotlin` in the catalog — the ADR says how
-      # to check the extractor's ceiling first. Leaving it behind silently freezes Kotlin forever,
-      # which is the failure mode an ignore block always has.
       - dependency-name: "org.jetbrains.kotlin.plugin.*"
         versions: [">= 2.4.20"]
 
   - package-ecosystem: github-actions
-    # `/` alone covers .github/workflows and a root action.yml, and nothing else. The pins of
-    # the shared build-environment composite (.github/actions/android-build-env) are only seen
-    # because its directory is listed — without it the six jobs that use it would keep their
-    # setup-java / setup-android / gradle pins forever while every workflow-level pin moved.
     directories:
       - /
       - /.github/actions/*
@@ -94,21 +31,6 @@ updates:
     commit-message:
       prefix: "chore(actions)"
     groups:
-      # `github/codeql-action` has four call sites here — `init` and `analyze` in codeql.yml,
-      # `upload-sarif` in ci.yml and supply-chain.yml — and they are not independent: `analyze`
-      # reads the config `init` wrote and rejects a different version of it with
-      #
-      #     Loaded a configuration file for version '4.38.0', but running version '4.38.1'
-      #
-      # Dependabot treats each action *path* as its own dependency, so without this group a patch
-      # release arrives as three PRs — which is what v4.38.1 did on 2026-09-21. #172 moved both
-      # `upload-sarif` sites and was green, because an uploader stands alone. #174 (`init`) and
-      # #175 (`analyze`) each moved one half of the pair, and each failed BOTH `Analyze` legs —
-      # required checks — so neither could merge, and merging either one first would have reddened
-      # `main`. All three were closed for one commit that moved all four call sites together.
-      #
-      # The group is the mechanism, not a reminder: nothing else in CI notices a split pin, because
-      # the halves only conflict once they run together.
       codeql-action:
         patterns:
           - "github/codeql-action*"

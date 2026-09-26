@@ -39,11 +39,8 @@ import java.io.IOException
 import java.time.Instant
 
 /**
- * The Einsatz list's own rules: when a filter change reaches the server, what a failure costs, and
- * what paging must not lose.
- *
- * The source is a recording fake rather than a mock, because most of what matters here is *which
- * query* reached it and *how often* — not that a method was called.
+ * Tests the Einsatz list's rules: when a filter change reaches the server, what a failure costs, and what paging must
+ * not lose.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -89,8 +86,6 @@ class MissionsViewModelTest {
             return if (answers.size > 1) answers.removeAt(0) else answers.first()
         }
 
-        // The list never opens an Einsatz; a stub that throws says so louder than one that returns
-        // something plausible.
         override suspend fun detail(id: String): ApiResult<MissionDetail> = error("the list never reads a detail")
 
         override suspend fun finances(missionId: String): ApiResult<MissionFinances> =
@@ -217,8 +212,6 @@ class MissionsViewModelTest {
     @Test
     fun `an empty result is Ready and empty, never a failure`() =
         runTest(dispatcher) {
-            // "No Einsätze match your filter" and "the list is broken" are different screens, and
-            // showing the second for the first tells a member something is wrong when nothing is.
             source.queue(page(emptyList(), totalPages = 0))
             val viewModel = MissionsViewModel(source)
 
@@ -261,11 +254,6 @@ class MissionsViewModelTest {
     @Test
     fun `a keystroke reaches the state synchronously, ahead of the debounce`() =
         runTest(dispatcher) {
-            // The field is a CONTROLLED component: the screen renders whatever the state holds. A
-            // state that lagged the debounce would feed the previous value straight back and the
-            // character the member just typed would vanish as they typed it. Measured on a device
-            // before this existed: the search field accepted nothing at all, while the view model
-            // tests -- which never render a field -- were green.
             source.queue(page(listOf("a")))
             val viewModel = MissionsViewModel(source)
             viewModel.load()
@@ -312,8 +300,6 @@ class MissionsViewModelTest {
     @Test
     fun `a tapped filter reaches the server immediately`() =
         runTest(dispatcher) {
-            // Unlike typing: a chip is one deliberate act, and making the member wait 300 ms for it
-            // would read as the app being slow rather than as the app being careful.
             source.queue(page(listOf("a")))
             val viewModel = MissionsViewModel(source)
             viewModel.load()
@@ -346,8 +332,6 @@ class MissionsViewModelTest {
     @Test
     fun `a filter change starts again at page zero and replaces the rows`() =
         runTest(dispatcher) {
-            // Appending would leave the previous filter's Einsätze underneath the new filter's,
-            // which reads as the filter not having worked.
             source.queue(page(listOf("a", "b"), totalPages = 2))
             source.queue(page(listOf("c")))
             val viewModel = MissionsViewModel(source)
@@ -395,8 +379,6 @@ class MissionsViewModelTest {
     @Test
     fun `a failed next page keeps the rows already on screen`() =
         runTest(dispatcher) {
-            // A working list must not be replaced by an error because its continuation failed; the
-            // member can simply scroll again.
             source.queue(page(listOf("a"), page = 0, totalPages = 2, total = 2))
             source.queue(ApiResult.Failure(ApiError.Network(IOException("offline"))))
             val viewModel = MissionsViewModel(source)
@@ -414,8 +396,6 @@ class MissionsViewModelTest {
     @Test
     fun `resetting clears the search field as well as the chips`() =
         runTest(dispatcher) {
-            // Clearing only the query object would leave the old term in the field, and the next
-            // keystroke would restore a filter the member believes they removed.
             source.queue(page(listOf("a")))
             val viewModel = MissionsViewModel(source)
             viewModel.load()
@@ -428,8 +408,6 @@ class MissionsViewModelTest {
             assertFalse("the reset itself must leave nothing narrowed", viewModel.state.value.isNarrowed)
             assertEquals("", source.calls.last().first.text)
 
-            // And the next keystroke starts from empty rather than resuming the old term, which is
-            // what a field cleared only in the query object -- not in the typed value -- would do.
             viewModel.onSearchChanged("L")
             advanceUntilIdle()
 
@@ -446,7 +424,6 @@ class MissionsViewModelTest {
             advanceUntilIdle()
 
             viewModel.onRefresh()
-            // Before the answer lands: still Ready, still showing the old rows.
             assertEquals(MissionsPhase.Ready, viewModel.state.value.phase)
             assertEquals(listOf("a"), viewModel.state.value.missions.map { it.id })
 

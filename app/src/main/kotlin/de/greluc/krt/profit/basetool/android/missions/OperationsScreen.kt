@@ -65,12 +65,8 @@ const val LIST_SEGMENT_TAG: String = "list-segment"
 const val OPERATION_CREATE_CTA_TAG: String = "operation-create-cta"
 
 /**
- * Which half of the Einsätze/Operationen switch is showing.
- *
- * The two halves are **separate navigation destinations**, not two states of one screen. Both are
- * already in the graph — "Einsätze" in the bottom bar, "Operationen" behind "Mehr" — so making the
- * segment a local toggle would give each list two addresses, one of which lies to the navigation
- * bar about where the member is. Tapping the other half navigates.
+ * Which half of the Einsätze/Operationen switch is showing; each half is its own navigation
+ * destination, and tapping the other one navigates.
  */
 enum class ListSegment {
     /** The Einsatz list. */
@@ -118,12 +114,8 @@ fun ListSegmentBar(
 /**
  * The Operationen list (design spec ch. 06 §1, Operationen half).
  *
- * **The row is thinner than the design mock.** The mock shows "2 Einsätze · 18 Teilnehmer" and a
- * payout chip per row; the API's list DTO carries neither, and its own documentation states that
- * the bulk endpoints deliberately do not spend the aggregate queries those numbers would need.
- * Widening the backend was put to the repository owner and declined (2026-08-22) — the counts live
- * on the detail, which loads them anyway. Recorded in `docs/specs/operations.md` as an approved
- * deviation rather than left as a silent difference.
+ * Rows carry no Einsatz or participant counts, because the list DTO has none; the counts live on
+ * the detail (approved deviation in `docs/specs/operations.md`).
  *
  * @param state what to draw.
  * @param onSearchChanged a keystroke in the search field.
@@ -157,8 +149,6 @@ fun OperationsScreen(
             selected = ListSegment.OPERATIONS,
             onSelect = { onOpenMissions() },
         )
-        // Above the list rather than floating over it, the same choice the Raffinerie list makes:
-        // an Operation is set up deliberately, so the action belongs where the member already is.
         onCreate?.let {
             KrtOutlineButton(
                 text = stringResource(R.string.operation_form_title),
@@ -178,8 +168,6 @@ fun OperationsScreen(
             onResetFilters = onResetFilters,
         )
 
-        // The classified cause is deliberately not shown: an error code means nothing to a member.
-        // The view model logged it, which is what a report can be matched against.
         when (state.phase) {
             is OperationsPhase.Loading -> {
                 KrtLoadingIndicator(
@@ -189,9 +177,6 @@ fun OperationsScreen(
             }
 
             is OperationsPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
                 val retryIn = state.retryIn
                 if (retryIn != null) {
                     KrtRetryCountdown(
@@ -241,10 +226,7 @@ fun OperationsScreen(
 }
 
 /**
- * Search field plus the status chip row.
- *
- * No date-range and no "Vergangene" chip: an Operation has no start time of its own, and the
- * finished ones are the list's second group rather than something to switch off.
+ * Search field plus the status chip row; there is no date-range or „Vergangene" chip.
  *
  * @param state what is currently narrowed.
  * @param onSearchChanged a keystroke.
@@ -263,14 +245,11 @@ private fun OperationsFilterBar(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
-            // The typed value, not the debounced one — see REQ-APP-MIS-004.
             value = state.searchText,
             onValueChange = onSearchChanged,
             placeholder = stringResource(R.string.operations_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(OPERATIONS_SEARCH_TAG),
         )
-        // FlowRow, not Row -- see MissionsScreen: a Row breaks the last chip's label mid-word
-        // at font scale 1.3x.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -299,11 +278,7 @@ private fun OperationsFilterBar(
 }
 
 /**
- * The grouped, paginated list.
- *
- * Grouped into "Laufend" and "Abgeschlossen" rather than by date, because an Operation has no date
- * of its own — its Einsätze do. Grouping is applied to the rows **already loaded**, so a group
- * heading never claims more than the page behind it holds.
+ * The paginated list, grouped into „Laufend" and „Abgeschlossen" over the rows already loaded.
  *
  * @param state what to draw.
  * @param onOpenOperation a row was tapped.
@@ -378,8 +353,6 @@ private fun OperationRow(
     operation: Operation,
     onClick: () -> Unit,
 ) {
-    // A card, not a padded Column: design ch. 06 draws the Operationen segment with the
-    // same tile the Einsätze segment uses. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -392,10 +365,6 @@ private fun OperationRow(
                 color = KrtPalette.White,
                 modifier = Modifier.weight(1f),
             )
-            // The row pill, not the page badge: this row sits in the same segment as the Einsatz
-            // rows, which wear the dot-and-tint pill (ch. 02 §3). The louder badge belongs on a
-            // detail, where the status is the page's own subject — side by side in one list the
-            // two read as different kinds of record.
             KrtStatusPill(text = operation.statusLabel(), tone = operation.statusTone())
         }
         operation.description?.takeIf { it.isNotBlank() }?.let { description ->
@@ -453,14 +422,9 @@ private val FILTERABLE_OPERATION_STATUSES =
 internal fun OperationStatus.labelRes(): Int =
     when (this) {
         OperationStatus.PLANNED -> R.string.operations_status_planned
-
         OperationStatus.ACTIVE -> R.string.operations_status_active
-
         OperationStatus.COMPLETED -> R.string.operations_status_completed
-
         OperationStatus.CANCELED -> R.string.operations_status_canceled
-
-        // Never offered as a filter, and a row carrying it shows its raw server value instead.
         OperationStatus.UNKNOWN -> R.string.operations_title
     }
 

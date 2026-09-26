@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  prod-flavour additions.
-
-  The production redirect is a verified App Link, not a custom scheme: no other app can claim
-  https://profit-base.online/app/callback, because the domain publishes this app's signing-
-  certificate digest in /.well-known/assetlinks.json (security concept section 2.10).
-
-  android:autoVerify="true" is what makes the system check that file. Until it is served, the
-  link is not verified and Android shows a disambiguation dialog instead of opening the app —
-  which is why publishing assetlinks.json is a release gate, and why a signing-key rotation must
-  list both digests there BEFORE the rotated APK ships.
--->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
@@ -21,12 +9,6 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!--
-                  One path, and the post-logout return uses the same one. The client sets
-                  post.logout.redirect.uris = "+", which in Keycloak means "the same list as
-                  redirectUris" — so a separate /app/logout would be refused by the realm before
-                  the browser ever came back here, and claiming it would only look like coverage.
-                -->
                 <data
                     android:host="profit-base.online"
                     android:path="/app/callback"

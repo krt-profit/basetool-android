@@ -60,19 +60,8 @@ const val MISSION_SORT_TAG: String = "mission-timeline-sort"
 /**
  * What a manager may do to the Ablauf and the Ziele, and what to say when they may not.
  *
- * One record for both tabs: they share a draft, a gate and a refusal slot, and splitting them would
- * only mean threading two nearly identical objects through the same screen.
- *
- * **Composition ratified 2026-08-29** (design ch. 06 artboard 13) and **again on 2026-08-30**
- * (ch. 18 §3, E5/E8). The row shipped with three rows of German-labelled buttons, then with three
- * icon buttons and a separate reorder *mode*. Five actions do not fit a 411 dp row, so it now
- * carries the two move buttons **visibly** — dimmed at the first and last row, which is validation
- * and not a lock — and a `⋮` for the rest: Bearbeiten · Duplizieren · Löschen.
- *
- * The reorder mode is gone with it. Drag and drop in a scrolling list without a grip is unreliable
- * on a phone, and the system asks for a tap alternative beside every drag anyway — so the pair of
- * arrows **is** the mechanism rather than a fallback behind a toggle. Swipe stays out: the inbox
- * has it bound to delete, and a second vocabulary for the same gesture is worse than none.
+ * Each row carries two visible move buttons, dimmed at the list's ends, and a `⋮` with Bearbeiten,
+ * Duplizieren and Löschen (design ch. 18 §3, E5/E8).
  *
  * @property canManage whether the caller may write at all; the server's own verdict.
  * @property enabled whether a write may run right now — online, and nothing already in flight.
@@ -85,7 +74,7 @@ const val MISSION_SORT_TAG: String = "mission-timeline-sort"
  * @property onToggleStep tick a step off, or back on.
  * @property onRemoveStep drop a step.
  * @property onMoveStep move a step one place; `true` is towards the start.
- * @property onDuplicateStep append a copy of a step, which is what „Duplizieren" writes.
+ * @property onDuplicateStep append a copy of a step.
  * @property onSaveObjective append or rewrite the composed Ziel.
  * @property onEditObjective load a Ziel into the editor.
  * @property onRemoveObjective drop a Ziel.
@@ -117,10 +106,6 @@ data class MissionTimelineActions(
 /**
  * The one action at the foot of an ordered list: add a row.
  *
- * „Sortieren" used to sit beside it as the click fallback for a drag handle. Design ch. 18 §3 (E8)
- * ratified the two per-row arrows as the mechanism instead, so there is no mode left to toggle and
- * no hint to explain one.
- *
  * @param addLabelRes what the add action says.
  * @param addTag its test handle.
  * @param timeline the actions, for the gate and the refusal slot.
@@ -149,15 +134,8 @@ fun TimelineListActions(
 }
 
 /**
- * The per-row actions of one Ablauf step: tick, rewrite, remove — three icon buttons, one row.
- *
- * Design ch. 06 artboard 13. This shipped as three stacked rows of German-labelled buttons —
- * about 150 dp of chrome per checklist line — because three labels do not fit a 411 dp row. The
- * design system's answer to exactly that case is the icon button (`.btn-icon`), and it carries its
- * own contract: 44 dp, **always** a content description and a tooltip, and only for a repeated row
- * action whose meaning is universal.
- *
- * Ticking is the action the row exists for, so it comes first; once ticked it becomes the undo.
+ * The per-row actions of one Ablauf step (design ch. 06 artboard 13), with ticking first; once
+ * ticked it becomes the undo.
  *
  * @param step the row.
  * @param done whether it is ticked off.
@@ -222,21 +200,15 @@ data class RowPosition(
 )
 
 /**
- * The shared action row behind both list kinds — design ch. 18 §3 (E5/E8).
+ * The shared action row behind both list kinds (design ch. 18 §3, E5/E8): two move buttons and
+ * one `⋮`, only as wide as its buttons.
  *
- * Two visible move buttons and one `⋮`. The arrows are **dimmed at the ends of the list**, which is
- * validation rather than a lock: nothing is being refused, there is simply nowhere to move to, so
- * they carry no lock glyph and raise no refusal.
- *
- * The group is **as wide as its buttons** and nothing more. Artboard 13 draws it at the trailing
- * edge of the row the actions belong to — „die Zeile bleibt EINE Zeile hoch" — so it must not claim
- * a width of its own and push itself onto a line below the title.
+ * The arrows are dimmed at the ends of the list, without a lock or refusal.
  *
  * @param timeline the actions, for the gate and the refusal slot.
  * @param position where the row sits, which decides whether each arrow has anywhere to go.
  * @param firstIcon the row's own primary action, or `null` when it has none.
- * @param firstLabelRes that action's label — mandatory whenever [firstIcon] is present, because an
- *   icon button without a name is unusable to a screen reader and unlabelled on long press.
+ * @param firstLabelRes that action's label; required whenever [firstIcon] is present.
  * @param onFirst runs it.
  * @param onEdit loads the row into the editor.
  * @param onDuplicate appends a copy of it.
@@ -334,11 +306,7 @@ private fun menuItem(
     )
 
 /**
- * One move button: narrower than a square icon button, and dimmed where it has nowhere to go.
- *
- * A row at the end of its list is not being **refused** anything, so the arrow neither wears the
- * lock nor raises a refusal — it is simply inactive. That is the difference between validation and
- * a permission, and drawing them the same way is what makes a lock stop meaning anything.
+ * One narrow move button, dimmed without a lock where there is nowhere to move to.
  *
  * @param iconRes the chevron.
  * @param labelRes its name.
@@ -403,12 +371,8 @@ private fun GatedIcon(
 }
 
 /**
- * The Ablauf editor, as a sheet.
- *
- * Design ch. 06 artboard 13: „Anlegen/Bearbeiten NICHT als Dauer-Formular unter der Liste, sondern
- * als Sheet" — an open editor under a list somebody is sorting competes with it for the same
- * surface. The same control appends and rewrites; `editingStepId` decides which, and the title
- * says so.
+ * The Ablauf editor as a sheet (design ch. 06 artboard 13); `editingStepId` decides whether it
+ * appends or rewrites, and the title says which.
  *
  * @param timeline the actions and what is typed.
  */
@@ -470,9 +434,6 @@ fun ObjectiveEditorSheet(timeline: MissionTimelineActions) {
                 label = stringResource(R.string.mission_objective_title),
                 enabled = timeline.enabled,
             )
-            // Chips rather than free text: the server's enum has exactly three values, and a field
-            // that accepts a fourth would only ever produce a 400 the member cannot act on. German
-            // labels, never the wire constant (artboard 13).
             FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 MissionObjectiveKind.entries.forEach { kind ->
                     KrtFilterChip(
@@ -529,12 +490,8 @@ fun String.kindLabel(): String =
         ?: this
 
 /**
- * The hue a Ziel's kind chip carries.
- *
- * Artboard 06-2 draws a Primärziel in the brand tone and everything else muted, which is the whole
- * point of classifying them: on a list of five goals the two that decide the Einsatz have to be
- * findable without reading the chips. A kind this build does not know stays muted rather than
- * borrowing the weight of a primary goal.
+ * The tone a Ziel's kind chip carries: brand for a Primärziel, muted for every other or unknown
+ * kind.
  *
  * @return the chip tone.
  */
@@ -542,11 +499,8 @@ fun String.kindTone(): KrtChipTone =
     if (this == MissionObjectiveKind.PRIMARY.wire) KrtChipTone.Primary else KrtChipTone.Muted
 
 /**
- * Resolves the server's raw kind string back to the enum a write sends.
- *
- * An unrecognised kind falls back to `PRIMARY` for the **editor only** — the read side keeps
- * showing its own label or the raw string, because hiding a goal is worse than showing an
- * unfamiliar one.
+ * Resolves the server's raw kind string to the enum a write sends; an unknown kind opens the
+ * editor as `PRIMARY`.
  *
  * @return the kind the editor opens with.
  */

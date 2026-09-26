@@ -39,16 +39,9 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * What the Operationen list and detail actually render.
+ * Tests what the Operationen list and detail render, in German at a 411×891 dp phone size.
  *
- * German is pinned: it is the primary bundle, and the copy rules ("Einsätze", never "Missionen")
- * are asserted against it.
- *
- * **A real phone's size is pinned too.** Robolectric's default display is 320×470 dp — smaller than
- * any device this app supports — and both of these screens carry a segment, a search field and a
- * chip row above their content. At the default size the content below that chrome is off-screen, so
- * `assertIsDisplayed` fails on rows a member would plainly see. Asserting at 411×891 dp tests the
- * layout the design was drawn for rather than one no member has.
+ * Robolectric's default display is too small to show the content below the screens' chrome.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -150,8 +143,6 @@ class OperationsScreenTest {
             ),
         )
 
-        // The design system uppercases a section title for display, so the assertion has to be
-        // case-insensitive rather than pinned to the resource string.
         compose.onNodeWithText("Laufend", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithText("Operation Rotschild").assertIsDisplayed()
         compose.onNodeWithText("Operation Eisvogel").assertIsDisplayed()
@@ -191,8 +182,6 @@ class OperationsScreenTest {
 
     @Test
     fun `a filtered empty list says the filters matched nothing`() {
-        // Showing "no Operation exists" for a filtered miss would tell a member the org is idle
-        // when it is merely their own filter.
         showList(
             OperationsState(
                 query = OperationQuery(text = "zzz"),
@@ -226,21 +215,12 @@ class OperationsScreenTest {
             ),
         )
 
-        // The name, the status badge and the counts live in the TOP BAR now (artboard 06.5), which
-        // this harness does not render — the screen publishes them through ProvideScreenTopBar.
-        // What the screen draws is the share band, the results and the rollup, and those are what
-        // this asserts.
-        // Grouped and stripped of the padding zeros a numeric(_,4) column carries.
         compose.onNodeWithText("74.700").assertIsDisplayed()
-        // A result carries its sign now (artboard 06.5): a gain reads "+86.400", not "86.400".
         compose.onNodeWithText("+86.400").assertIsDisplayed()
     }
 
     @Test
     fun `the roll-up share is what a donating member earned, not the nought they receive`() {
-        // The server zeroes shareAmount for a donating participant and moves the figure to
-        // donatedAmount. Reading the first row's share printed "0" against members who had earned
-        // as much as everyone else — found on a device, on an Operation whose first row donates.
         showDetail(
             OperationDetailState(
                 operationId = "o1",
@@ -256,16 +236,12 @@ class OperationsScreenTest {
             ),
         )
 
-        // The label is uppercased by the key-value row. Two nodes read 4.150: the donations total
-        // and the share — reading the donor's zeroed shareAmount would leave only the first.
         compose.onNodeWithText("ANTEIL (2)").assertIsDisplayed()
         compose.onAllNodesWithText("4.150").assertCountEquals(2)
     }
 
     @Test
     fun `unequal shares are stated as the range they span`() {
-        // The pool is split by how long each member took part, so one figure is only true when
-        // attendance was equal. Naming both ends says what a single number could not.
         showDetail(
             OperationDetailState(
                 operationId = "o1",
@@ -287,7 +263,6 @@ class OperationsScreenTest {
 
     @Test
     fun `a truncated roll-up says so`() {
-        // ADR-0104 in the main repo: a capped list may never look complete.
         showDetail(
             OperationDetailState(
                 operationId = "o1",
@@ -324,8 +299,6 @@ class OperationsScreenTest {
 
     @Test
     fun `an uncomputed preliminary flag claims nothing`() {
-        // `null` means the server did not compute it. Rendering the warning anyway would put a
-        // caveat on figures that may well be final.
         showDetail(
             OperationDetailState(
                 operationId = "o1",
@@ -409,11 +382,6 @@ class OperationsScreenTest {
 
     @Test
     fun `a payout row of a deleted account is named, not left blank`() {
-        // The server sends NO name for a hard-deleted account, and that emptiness is the contract's
-        // signal for exactly this case: the row is kept on purpose so a settled Operation does not
-        // redistribute its shares (backend REQ-DATA-008). The app drew an empty cell, which reads
-        // as a rendering fault rather than as a fact about the row; the web has said
-        // „Gelöschter Nutzer" here all along.
         showDetail(
             OperationDetailState(
                 operationId = "o1",
@@ -483,8 +451,6 @@ class OperationsScreenTest {
     fun `a confirmed payout offers the way back`() {
         showDetail(readyPayouts(paidOut = true, missionManager = true))
 
-        // Taking a confirmation back goes through a modal that names the consequence (design ch. 06
-        // §5, "Zurücknehmen nur mit Bestätigungs-Modal"): the box does not just flip.
         compose.onNodeWithTag(OPERATION_DETAIL_CONTENT_TAG)
             .performScrollToNode(hasTestTag(OPERATION_PAID_OUT_TAG))
         compose.onNodeWithTag(OPERATION_PAID_OUT_TAG).performClick()

@@ -1,47 +1,7 @@
 name: Instrumented tests
 
-# Runs the androidTest suite on an emulator: the three tests in `app/src/androidTest/` exist for
-# properties the JVM and Robolectric cannot see at all, and until this workflow they ran only when
-# somebody remembered to start an emulator by hand.
-#
-#   * ApiReaderMainThreadTest       — StrictMode is a runtime facility; the main-thread crash of
-#                                     REQ-APP-API-008 shipped past a green JVM suite.
-#   * AppLockKeystoreContractTest   — the app lock's Keystore contract needs a real Keystore; two
-#                                     defects that made the lock unusable on a whole platform range
-#                                     were invisible off a device (ADR-0006).
-#   * TestStackTlsHandshakeTest     — needs the main repository's test stack, which this job does
-#                                     not start, so it is EXCLUDED here (see the run step): the
-#                                     managed-device runner counts its "stack not reachable"
-#                                     assumption as a failure. It stays a local, by-hand test.
-#
-# ── How ────────────────────────────────────────────────────────────────────────────────────────
-#
-# Gradle Managed Devices (`api31` in app/build.gradle.kts): the emulator, its system image and
-# its lifecycle are Gradle's, so the command a developer runs locally is the command CI runs —
-# `./gradlew :app:api31DevDebugAndroidTest`. The image is plain `aosp` at API 31, the minSdk floor
-# (ADR-0015). Not the lighter `aosp-atd` one: the Automated Test Device image ships without
-# `android.software.secure_lock_screen`, so the app lock's auth-bound key cannot exist on it — the
-# first run (#178, #180) failed every app-lock test for exactly that reason.
-#
-# GitHub's `ubuntu-latest` runners have /dev/kvm, but not readable by the runner user; the udev
-# rule below opens it, which is what makes the emulator hardware-accelerated instead of unusably
-# slow. `swiftshader` renders on the CPU, because the runner has no GPU.
-#
-# ── When ───────────────────────────────────────────────────────────────────────────────────────
-#
-# Nightly, on dispatch, and on a pull request that changes the instrumented tests, the managed
-# device's workflow, or the build-environment action it runs on. Not on every pull request: an
-# emulator boot costs minutes the ordinary gate should not pay, and none of the three tests
-# watches code that changes often. This is NOT a required check.
-#
-# The owner approved "label-triggered + nightly" (improvement audit 2026-09, SIB-CI-01). The
-# repository has no label that fits and this change creates none, so the label trigger is
-# replaced by the path filter below until one exists; adding it is
-# `types: [labeled]` + `if: contains(github.event.pull_request.labels.*.name, '<label>')`.
-
 on:
   schedule:
-    # Nightly, clear of the weekly CodeQL (Wed 05:23) and the daily Scorecard runs.
     - cron: '41 2 * * *'
   workflow_dispatch:
   pull_request:
@@ -69,12 +29,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      # `read-only`: this job restores the dependency cache and never writes one — a scheduled
-      # run is on main, but nothing it produces is worth caching for the gate.
       - name: Set up the Android build environment
         uses: $/.github/actions/android-build-env
         with:
@@ -89,13 +47,6 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
 
-      # AGP downloads the emulator and the aosp system image itself on the first run; the SDK
-      # licences were accepted by the build-environment action.
-      #
-      # TestStackTlsHandshakeTest is excluded by name, not left to skip itself: it needs the main
-      # repository's test stack, and the managed-device runner reports its assumption failure as a
-      # FAILED test rather than a skipped one (measured on the first run, #178). It stays a
-      # by-hand test against a running stack.
       - name: Run the instrumented tests on the managed device
         run: >-
           ./gradlew :app:api31DevDebugAndroidTest
@@ -105,7 +56,7 @@ jobs:
 
       - name: Upload the instrumented test reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: instrumented-test-reports
           path: |

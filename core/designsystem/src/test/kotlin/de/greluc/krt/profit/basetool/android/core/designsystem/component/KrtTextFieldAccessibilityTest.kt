@@ -22,15 +22,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * What a screen reader gets from [KrtTextField].
- *
- * All of it was missing until 2026-08-21, and none of it was visible on screen: measured on a
- * device, the field reported `NAF="true"` to `uiautomator` — no name of any kind — and the
- * placeholder, plainly legible to the eye, was absent from the accessibility tree entirely, because
- * a sibling drawn behind a full-width text field counts as obscured and obscured nodes are pruned.
- *
- * The field is built on `BasicTextField`, which supplies none of this by default. That is the whole
- * reason these are tests rather than trust.
+ * What a screen reader gets from [KrtTextField]: an accessible name, the placeholder in the tree,
+ * and the error semantics.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [ROBOLECTRIC_SDK_LEVEL])
@@ -70,8 +63,6 @@ class KrtTextFieldAccessibilityTest {
 
     @Test
     fun `the placeholder names the field when there is no label`() {
-        // A search field has no caption above it — the hint is all the member has, so it has to be
-        // the name a screen reader reads too.
         field(placeholder = "Einsatz suchen")
 
         compose.onNodeWithContentDescription("Einsatz suchen").assertIsDisplayed()
@@ -86,8 +77,6 @@ class KrtTextFieldAccessibilityTest {
 
     @Test
     fun `the name survives the member typing`() {
-        // The visible hint disappears on the first character — which is exactly when a field that
-        // relied on it stops saying what it is for.
         field(value = "Konvoi", placeholder = "Einsatz suchen")
 
         compose.onNodeWithContentDescription("Einsatz suchen").assertIsDisplayed()
@@ -95,8 +84,6 @@ class KrtTextFieldAccessibilityTest {
 
     @Test
     fun `the placeholder is reachable in the tree, not merely painted`() {
-        // The regression that started this: legible on screen, pruned from the tree because it was
-        // a sibling behind the field rather than part of it.
         field(placeholder = "Einsatz suchen")
 
         compose.onNodeWithText("Einsatz suchen").assertIsDisplayed()
@@ -104,7 +91,6 @@ class KrtTextFieldAccessibilityTest {
 
     @Test
     fun `an error is attached to the field, not only rendered beneath it`() {
-        // A message that is only a sibling is read minutes later in traversal order, or never.
         field(value = "0", label = "Betrag", isError = true, errorText = "Betrag muss größer als 0 sein")
 
         compose.onNodeWithContentDescription("Betrag").assert(

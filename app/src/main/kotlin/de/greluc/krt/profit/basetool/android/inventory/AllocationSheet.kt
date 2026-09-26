@@ -82,23 +82,16 @@ data class AllocationCallbacks(
 )
 
 /**
- * „Zuordnung" — splitting one stock entry across Aufträge and Einsätze (design ch. 09 §3).
+ * „Zuordnung": splits one stock entry across Aufträge and Einsätze.
  *
- * The two splits are drawn apart and reconciled apart, because that is what the server does: the
- * same 642 SCU can be promised to an Auftrag **and** to an Einsatz, and a single shared rest would
- * be wrong in both directions. Each split therefore carries its own rest figure, and the artboard's
- * three states are exactly the three answers that figure can have — fully allocated, something
- * left, or more promised than exists.
- *
- * Overbooking is refused here rather than at the server. The endpoint answers it with a 422, but a
- * member who has typed their way past the entry's amount should see the sum turn red as they do it,
- * not after a round trip.
+ * The two splits are reconciled separately, each with its own rest, because the server allows the
+ * same quantity to be promised to an Auftrag and an Einsatz. Overbooking is refused locally as the
+ * member types.
  *
  * @param state the open sheet.
  * @param callbacks what it reports back.
- * @param saveGate whether the caller may commit the split — a caller without the Logistiker role
- *   still opens the sheet and reads the numbers, and finds out at the CTA (design ch. 09,
- *   artboard 13: „Werte sichtbar, Editoren gedimmt — der CTA erklärt beim Antippen, was fehlt").
+ * @param saveGate whether the caller may commit the split; without the Logistiker role the sheet
+ *   still shows the values and the CTA explains the refusal.
  * @param denials where that CTA raises its refusal.
  */
 @Composable
@@ -112,7 +105,6 @@ fun AllocationSheet(
         onDismiss = callbacks.onDismiss,
         title = stringResource(R.string.allocation_title),
         modifier = Modifier.testTag(ALLOCATION_SHEET_TAG),
-        // The Lager's other booking surface, and the same reason (design ch. 18 §3, E9).
         centred = isWideWindow(),
     ) {
         Column(
@@ -128,8 +120,6 @@ fun AllocationSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
-            // Read-only, not hidden: the numbers are the reason to open this sheet at all, so a
-            // caller without the grant still sees them — only the editors recede (artboard 13).
             Box(modifier = Modifier.alpha(if (saveGate.allowed) 1f else LOCKED_EDITOR_ALPHA)) {
                 Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
                     val actions =
@@ -161,8 +151,6 @@ fun AllocationSheet(
                 color = KrtPalette.TextMuted,
             )
             state.error?.let { error -> KrtFieldError(text = state.errorText(error)) }
-            // A full-width CTA has no corner for a badge, so the lock leads the label instead, and
-            // the button keeps its tap target so it can name the missing grant (artboard 13).
             val (dim, click) = rememberGated(saveGate, callbacks.onSave, denials)
             KrtCtaButton(
                 text = stringResource(R.string.allocation_save),
@@ -172,10 +160,6 @@ fun AllocationSheet(
                 enabled = state.submittable || !saveGate.allowed,
                 modifier = dim.fillMaxWidth().testTag(ALLOCATION_SAVE_TAG),
             )
-            // The sheet is a window of its own, so the screen's toast would raise itself *behind*
-            // it. Same holder, same single refusal — a second view of it, at the foot of whichever
-            // surface the member is actually looking at („gleiches Bild in Zeile, Sheet, Menü und
-            // Aktionsleiste", design ch. 09, artboard 14).
             denials.current?.let { denial ->
                 LaunchedEffect(denial.serial) {
                     delay(DENIAL_TOAST_MS)
@@ -188,22 +172,15 @@ fun AllocationSheet(
 }
 
 /**
- * What one split shows, independent of which surface is showing it.
- *
- * Split out so the Zuordnung sheet and the book-in form draw the **same** thing: the split of an
- * amount across targets is one interaction, and two renderings of it would drift on the day one of
- * them gains a state the other does not.
+ * What one split shows, shared by the Zuordnung sheet and the book-in form.
  *
  * @property rows what is promised so far.
  * @property offerable what the add-picker may still offer.
  * @property rest what is not promised yet.
  * @property picking whether this split's add-picker is open.
  * @property enabled whether it may still be changed.
- * @property removable whether a row may be taken away.
- *
- *   The Zuordnung sheet says no: there a row **exists on the server**, and un-promising it means
- *   writing a zero, which is what the stepper already does. A book-in's rows exist only in the form
- *   until it is sent, so removing one is the only way to take it back.
+ * @property removable whether a row may be taken away; false on the Zuordnung sheet, where rows
+ *   exist on the server and are un-promised by setting them to zero.
  */
 data class SplitPane(
     val rows: List<AllocationRow>,
@@ -496,10 +473,9 @@ private fun AllocationSheetState.subjectLine(): String =
     ).joinToString(" · ")
 
 /**
- * What a refused save is called.
+ * The sentence for a refused save.
  *
- * The 422 is the server's own overbooking guard, and reaching it means the entry changed under the
- * member while the sheet was open — the local guard covers everything else.
+ * A 422 is the server's overbooking guard and means the entry changed while the sheet was open.
  *
  * @param error the refusal.
  * @return the sentence to show.

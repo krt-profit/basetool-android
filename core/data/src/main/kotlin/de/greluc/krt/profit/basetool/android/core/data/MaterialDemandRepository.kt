@@ -21,8 +21,7 @@ import okhttp3.OkHttpClient
  * One order's share of a material's demand.
  *
  * @property jobOrderId which order, for the jump into it.
- * @property displayId its number as the member reads it. An **integer** on the wire; the app prints
- *   a bare `#` in front of it and nothing else (design ch. 18, B9).
+ * @property displayId its number as an integer; the screen prefixes a bare `#`.
  * @property status where that order stands.
  * @property required how much this order asks for.
  * @property booked how much has already been handed over to it.
@@ -42,14 +41,13 @@ data class MaterialDemandShare(
  *
  * @property materialId the material.
  * @property materialName what it is called.
- * @property unit what it is counted in — SCU for a raw material, pieces for an item.
+ * @property unit what it is counted in: SCU for a raw material, pieces for an item.
  * @property qualityRequirement `GOOD` when only good ore counts, or `null` for any.
  * @property required the sum asked for.
  * @property booked the sum already handed over.
  * @property claimed the sum promised and not yet handed over.
- * @property outstanding what is still open: required minus booked minus claimed, as the **server**
- *   computes it. Never recomputed here — the two would drift the first time a rule changed.
- * @property orders the orders that ask for it, which is what the row expands to show.
+ * @property outstanding what is still open, as the server computed it.
+ * @property orders the orders that ask for it.
  */
 data class MaterialDemandRow(
     val materialId: String,
@@ -63,10 +61,8 @@ data class MaterialDemandRow(
     val orders: List<MaterialDemandShare>,
 ) {
     /**
-     * How much of what was asked for is already covered, between 0 and 1.
-     *
-     * The bar reads this rather than a percentage figure: the question the screen answers is
-     * „reicht es", and a bar answers it at a glance where a number has to be compared.
+     * How much of what was asked for is covered by booked plus claimed, between 0 and 1; 1 when
+     * nothing was asked for.
      */
     val coverage: Float
         get() = if (required <= 0.0) 1f else ((booked + claimed) / required).coerceIn(0.0, 1.0).toFloat()
@@ -93,10 +89,7 @@ data class MaterialDemandGroup(
 /** Reads the cross-order material demand. */
 interface MaterialDemandSource {
     /**
-     * What every open order together still needs, per material.
-     *
-     * One call, no paging: the server answers the whole picture at once because the surface only
-     * makes sense whole — a page of a demand list would answer „reicht es" for a fragment.
+     * Reads what every open order together still needs, per material, in one unpaged call.
      *
      * @return the demand grouped by org unit, or the classified failure.
      */
@@ -104,11 +97,7 @@ interface MaterialDemandSource {
 }
 
 /**
- * The cross-order material demand, as `GET /api/v1/orders/material-demand` answers it.
- *
- * The planning view of design ch. 18 §1: what all open orders together still need, so somebody can
- * see before an Einsatz whether the Lager covers it. It lives in the web as
- * `orders-material-demand.html` and had no artboard until round 12.
+ * Reads the cross-order material demand from `GET /api/v1/orders/material-demand`.
  *
  * @property reader the API seam.
  */

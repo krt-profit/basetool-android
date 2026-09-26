@@ -43,12 +43,7 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * The Operation detail's rules.
- *
- * The one that matters: "Dein Anteil" is found by the **backend user id**, never by name. The
- * server sends `displayName` when a member set one and `username` otherwise, so a name match would
- * quietly point a member at somebody else's money — or at nothing — depending on whether they had
- * personalised their profile.
+ * Tests the Operation detail, chiefly that „Dein Anteil" is found by backend user id, never by name.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -203,8 +198,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `the caller's row is found by id, not by name`() =
         runTest(dispatcher) {
-            // Two members whose display names are identical -- entirely possible, since the name is
-            // free text -- and only the id tells them apart.
             source.queue(ApiResult.Success(overview(payout("u1", "Rhea"), payout("u2", "Rhea"))))
             val model = viewModel(FixedIdentity(ApiResult.Success("u2")))
 
@@ -230,8 +223,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `a failed identity read costs one line, not the screen`() =
         runTest(dispatcher) {
-            // The screen's subject is the Operation. Turning a failed nicety into a failed screen
-            // would hide content that loaded perfectly well.
             source.queue(ApiResult.Success(overview(payout("u1", "Rhea"))))
             val model = viewModel(FixedIdentity(ApiResult.Failure(ApiError.Network(IOException("offline")))))
 
@@ -277,8 +268,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `a refresh does not re-read an identity it already has`() =
         runTest(dispatcher) {
-            // It cannot change without a new session, and the repository caches it anyway; asking
-            // again would be a round trip for a value already known.
             source.queue(ApiResult.Success(overview()))
             val identity = FixedIdentity(ApiResult.Success("u1"))
             val model = viewModel(identity)
@@ -294,8 +283,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `a refresh retries an identity that is still missing`() =
         runTest(dispatcher) {
-            // The member already made the gesture; spending it on the one thing still absent is
-            // better than making them find another way to ask.
             source.queue(ApiResult.Success(overview()))
             val identity = FixedIdentity(ApiResult.Failure(ApiError.Network(IOException("offline"))))
             val model = viewModel(identity)
@@ -327,8 +314,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `a mission manager confirms a payout, and the Operation is re-read`() =
         runTest(dispatcher) {
-            // The payout totals move with a confirmation, so a patched row under a stale total
-            // would be two numbers that disagree.
             source.queue(ApiResult.Success(overview()))
             val model =
                 viewModel(FixedIdentity(ApiResult.Success("u1"), missionManager = true))
@@ -361,8 +346,6 @@ class OperationDetailViewModelTest {
     @Test
     fun `a refusal on the confirmation is kept rather than swallowed`() =
         runTest(dispatcher) {
-            // Confirming needs the grant; taking one BACK needs an officer or admin on top, which
-            // the app cannot know. The refusal is named instead of predicted.
             source.queue(ApiResult.Success(overview()))
             source.confirmAnswer = ApiResult.Failure(ApiError.Forbidden())
             val model =

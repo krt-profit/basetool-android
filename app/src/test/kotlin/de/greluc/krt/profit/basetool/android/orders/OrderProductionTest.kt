@@ -36,12 +36,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * „Herstellung erfassen" — booking a production run against one item line.
+ * Tests „Herstellung erfassen", booking a production run against one item line.
  *
- * The properties worth a class are the ones the server also checks, because a form that lets a
- * member send a plan the server refuses has wasted their whole entry: the demand scales with the
- * run, the coverage is **exact** rather than "enough", a skipped material drops out of both, and
- * the produced units need a place to land.
+ * The demand scales with the run, coverage must be exact, a skipped material drops out of both, and
+ * the produced units need a destination.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -194,11 +192,7 @@ class OrderProductionTest {
         }
 
     /**
-     * The plan is arithmetic nobody should do on a phone.
-     *
-     * Filling takes from the rows in order and never asks a row for more than it can give — the
-     * cap being `min(earmark, stock)`, because an earmark can outlive the material it was made
-     * against.
+     * Covering the demand fills rows in order and never takes more than `min(earmark, stock)` from a row.
      */
     @Test
     fun `covering the demand fills the rows in order and respects each cap`() =

@@ -32,21 +32,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * The member's booking-request surface — design chapter 12, artboards 1 and 3.
+ * Tests the member's booking-request surface (design chapter 12, artboards 1 and 3) where it deliberately departs from
+ * the artboards.
  *
- * These tests exist to pin the two places where the artboards describe a mechanism the API does
- * not have, and where this app therefore deliberately renders something else:
- *
- * 1. **There is no approval counter.** The artboards draw „1 / 2 FREIGABEN" and „BESTÄTIGEN (2/2)"
- *    and a footnote about a staggered ladder of two and three approvals. `BankBookingRequestDto`
- *    carries no count: one owner approval is either needed or not, and either granted or not
- *    (REQ-BANK-041). The KRT account's ladder escalates the *class* of approver with the amount
- *    (REQ-BANK-047), never the number of them.
- * 2. **A deposit is never approval-limited** (REQ-BANK-042), so the sheet says nothing about a
- *    threshold while EINZAHLUNG is selected, although artboard 3 shows the hint in that state.
- *
- * Both corrections went back to the design side; until the artboards follow, these assertions are
- * what stops the fiction from being reintroduced by someone reading the mockups.
+ * - No approval counter: one owner approval is either needed or not (REQ-BANK-041).
+ * - No threshold hint while EINZAHLUNG is selected: a deposit is never approval-limited (REQ-BANK-042).
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -170,8 +160,6 @@ class BankRequestScreenTest {
     fun `no state of the sheet ever claims a number of approvals`() {
         sheet(BankRequestDraftState(kind = BankRequestKind.WITHDRAWAL, accountId = "a1", amount = "120000"))
 
-        // The artboard's wording, which the API cannot support. A regression would reintroduce it
-        // verbatim, so the literal is the assertion.
         assertEquals(
             0,
             compose.onAllNodesWithText("2 Freigaben", substring = true, ignoreCase = true).fetchSemanticsNodes().size,
@@ -235,8 +223,6 @@ class BankRequestScreenTest {
         tab(BankRequestRow(request = request(), mine = false, actionable = true))
 
         compose.onNodeWithText("Freigabe erteilen", ignoreCase = true).assertIsDisplayed()
-        // Rejecting is a bank employee's act on their own surface. The member surface has no
-        // endpoint for it, so an ABLEHNEN button here would be a control that cannot work.
         assertEquals(0, compose.onAllNodesWithText("Ablehnen", ignoreCase = true).fetchSemanticsNodes().size)
         assertEquals(0, compose.onAllNodesWithText("Bestätigen", ignoreCase = true).fetchSemanticsNodes().size)
     }
@@ -301,10 +287,6 @@ class BankRequestScreenTest {
 
     @Test
     fun `the sheet overrules the server on a rejected booking`() {
-        // This is the one refusal the sheet knows better than the server does. A booking request
-        // has exactly two values that can be wrong, and naming both is a shorter path to the fix
-        // than a constraint message about whichever one the validator reached first — so the
-        // screen's sentence wins here, where most write surfaces defer to the server's.
         compose.setContent {
             KrtTheme {
                 Text(

@@ -29,11 +29,8 @@ import org.junit.Test
 import java.io.IOException
 
 /**
- * The consent gate's sequencing, which is where informed consent is either preserved or lost.
- *
- * The case that matters most has no visible symptom: if the document read fails and the gate still
- * renders, the member is asked to agree to a blank page. That is not a display bug — it is consent
- * recorded for a text nobody was shown, so it is asserted explicitly.
+ * Tests the consent gate's sequencing, chiefly that a failed document read never renders the gate asking for consent to
+ * a blank page.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TermsGateViewModelTest {
@@ -262,11 +259,7 @@ class TermsGateViewModelTest {
         }
 
     /**
-     * Accepting before the document arrived does nothing.
-     *
-     * Guards the ordering rather than the UI: the button only exists on the rendered gate, but a
-     * view model that acted on it from any state would be one recomposition away from recording
-     * consent for a document that was never displayed.
+     * Accepting before the document is on screen does nothing.
      */
     @Test
     fun `accept does nothing before the wording is on screen`() =

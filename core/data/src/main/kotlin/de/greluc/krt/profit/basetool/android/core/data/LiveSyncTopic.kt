@@ -8,16 +8,11 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 /**
- * One live-sync room the app can listen to (REQ-APP-SYNC-001, server ADR-0143).
+ * One live-sync room the app can listen to (REQ-APP-SYNC-001).
  *
- * The wire form is the string the server canonicalises to — a prefix, optionally a colon and a
- * lower-case UUID. It is built here rather than assembled at each call site because the string is
- * the room key on both ends: a topic that differs from the server's canonical form by so much as
- * the case of its id opens a second, empty room, and nothing anywhere reports it.
- *
- * The factories are the only way to make one, so a screen cannot invent a room the server does not
- * serve. A topic the server refuses is dropped from the stream's set and named in [LiveSyncEvent.
- * Subscribed], which is the app's cue to treat that screen as poll-only.
+ * The wire form is the server's canonical topic string: a prefix, optionally a colon and a
+ * lower-case UUID. Instances come only from the factories; a refused topic is missing from
+ * [LiveSyncEvent.Subscribed].
  *
  * @property wire the canonical topic string.
  * @property global whether this is a tool-wide room rather than one resource's.
@@ -108,11 +103,7 @@ class LiveSyncTopic private constructor(
         fun bankAccount(accountId: String): LiveSyncTopic = resource("bank", accountId)
 
         /**
-         * Parses a topic the server named back at us.
-         *
-         * Only the server's own strings reach this — the `subscribed` list and the `topic` of a
-         * `changed` frame — so it recognises a room by whether it carries an id, exactly as the
-         * server's parser does, and answers `null` for anything else rather than inventing a room.
+         * Parses a topic string the server sent back, recognising a room by whether it carries an id.
          *
          * @param wire the topic as it arrived.
          * @return the topic, or `null` if it is not one this build knows.

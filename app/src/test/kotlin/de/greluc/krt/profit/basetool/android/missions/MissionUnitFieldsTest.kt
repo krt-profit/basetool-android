@@ -23,16 +23,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What a unit write carries — and what it must **not** silently drop.
- *
- * `PUT /missions/{id}/units/{unitId}` is a replace: `MissionStructureService.updateMissionUnit`
- * writes the ship type, the ship, the frequency, the responsible member and the note
- * unconditionally, so an omitted one is set to `null`. The app sent the name and the HVU mark
- * alone, which meant renaming a unit wiped all five — every one of them set from the web, gone as
- * the side effect of fixing a typo.
- *
- * That is the kind of defect no error message reports and no test catches by accident, so it is
- * pinned here as an **echo**: what the form does not edit has to come back out of the write.
+ * Tests that a unit write echoes every field the form does not edit, since `PUT /missions/{id}/units/{unitId}` replaces
+ * ship type, ship, frequency, responsible member and note.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -113,8 +105,6 @@ class MissionUnitFieldsTest {
             structure(source, this).updateUnit("un1", "Vorhut Alpha", highValue = true, version = 3L, fields = CARRIED)
             advanceUntilIdle()
 
-            // The whole set, unchanged. Sending the name alone cleared the ship, the frequency,
-            // the responsible member and the note — an unrelated edit destroying four facts.
             assertEquals(CARRIED, source.updates.single())
         }
 

@@ -51,9 +51,7 @@ private val PANEL_BAR = 4.dp
 /**
  * The signature HUD container — hairline, translucent fill and two orange corner brackets.
  *
- * This is the loudest container in the system, so it is rationed: at most one or two per screen,
- * reserved for the hero block (for example the next mission on the dashboard). Everything else uses
- * [KrtCard].
+ * At most one or two per screen, for the hero block; everything else uses [KrtCard].
  *
  * @param modifier layout modifier.
  * @param contentPadding inner padding around [content].
@@ -85,15 +83,9 @@ fun KrtHudBox(
 }
 
 /**
- * A card whose left edge carries the accent rail.
+ * A card whose left edge carries the accent rail, for a block that speaks rather than lists.
  *
- * The design uses this for a block that speaks rather than lists — the dashboard's greeting, an
- * order's note. It was hand-built at each call site before, which is how the same four-line `Row` +
- * filled `Box` ended up in two files with two sets of paddings; one component keeps the rail's width
- * and colour in one place.
- *
- * The rail is `IntrinsicSize.Min` tall so it matches the content rather than a guess, which is the
- * whole reason it cannot be a border.
+ * The rail is `IntrinsicSize.Min` tall so it matches the content.
  *
  * @param modifier layout modifier.
  * @param contentPadding padding inside the card, to the right of the rail.
@@ -190,8 +182,7 @@ fun KrtCard(
 /**
  * A collapsible section header with an orange leading bar, an optional count and a chevron.
  *
- * Used to fold long detail screens (Finanzen, Teilnehmer, …) into scannable sections. The header is
- * the toggle, so the whole row is the touch target and reports itself as a button to TalkBack.
+ * The whole row is the toggle and reports itself as a button to TalkBack.
  *
  * @param title section title; uppercased for display.
  * @param expanded current state; drives the chevron direction.
@@ -199,9 +190,7 @@ fun KrtCard(
  * @param modifier layout modifier.
  * @param count optional item count rendered next to the title.
  * @param stateChip what the head says about itself while it is folded.
- * @param busy whether **this** section is writing. The spinner takes the chevron's place rather
- *   than appearing as a screen overlay or a global bar: a section that is saving has to say so at
- *   itself, or a Zeitplan write looks like it froze the Ziele too (design ch. 18 §3, E4).
+ * @param busy whether this section is writing; a spinner then replaces the chevron.
  */
 @Composable
 fun KrtPanelHeader(
@@ -243,9 +232,6 @@ fun KrtPanelHeader(
             )
         }
         Box(modifier = Modifier.weight(1f))
-        // The state chip is what makes the fold honest: a closed section still says whether it is
-        // started, saved, changed or in conflict, so nothing needed for a decision is hidden
-        // (design ch. 02 §10, ch. 06 artboard 7).
         stateChip?.invoke()
         if (busy) {
             CircularProgressIndicator(
@@ -255,9 +241,6 @@ fun KrtPanelHeader(
             )
         } else {
             KrtIcon(
-                // Right when folded, down when open — chapter 02 §10 opens with „Chevron rechts"
-                // and artboard 06-7 draws it that way. Down/up is the other sanctioned rotation,
-                // but it is not the one the panel header uses.
                 id = if (expanded) R.drawable.ic_krt_chevron_down else R.drawable.ic_krt_chevron_right,
                 contentDescription = null,
                 modifier = Modifier.padding(horizontal = KrtSpacing.s16),
@@ -272,10 +255,7 @@ fun KrtPanelHeader(
 private val PANEL_SPINNER = 16.dp
 
 /**
- * One label/value pair of a key-value list.
- *
- * The pairing encodes the grey discipline of the system: the key is a muted uppercase micro-label,
- * the value is the bright element the eye should land on.
+ * One label/value pair of a key-value list: a muted uppercase key and a bright value.
  *
  * @param label the key; uppercased for display.
  * @param value the value.

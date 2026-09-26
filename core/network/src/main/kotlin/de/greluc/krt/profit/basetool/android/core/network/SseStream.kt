@@ -33,21 +33,10 @@ data class SseEvent(
 )
 
 /**
- * Reads a Server-Sent-Event stream over the app's own HTTP client.
+ * Reads a Server-Sent-Event stream over the app's own HTTP client, with a hand-rolled parser.
  *
- * **Hand-rolled rather than `okhttp-sse`.** The framing this needs is three rules — `event:`,
- * `data:`, blank line ends the event — and the library would be a new third-party dependency, which
- * this project's privacy gate treats as a decision rather than a detail. It would also not supply
- * what actually matters here, which is the reconnect policy: the caller owns that, because only the
- * caller knows whether the screen behind the stream is still on show.
- *
- * **The read timeout is removed for this client, and only for it.** A stream is idle by design
- * between events — the server heartbeats every twenty seconds — so the shared client's read timeout
- * would tear the connection down as a matter of course. The derived client keeps the connection
- * pool, the interceptors and therefore the bearer token and the mandatory headers of the original.
- *
- * <p>Open so a test can substitute the reader: the reconnect and give-up policy lives in the
- * caller, and driving it through a real socket makes a timing question out of a logic one.
+ * Uses a derived client without a read timeout but with the original pool and interceptors; the
+ * reconnect policy belongs to the caller. Open so tests can substitute it.
  *
  * @property httpClient the API client; a derived copy without a read timeout is used.
  * @property baseUrl the flavour's API origin.
@@ -65,19 +54,13 @@ open class SseStream(
     /**
      * Opens [path] and emits every event until the stream ends or the collector is cancelled.
      *
-     * The flow **completes** when the server closes the stream — which it does every thirty minutes
-     * by design, and whenever a sixth connection for the same member evicts the oldest. Completion
-     * is therefore normal, not an error, and reconnecting is the caller's decision.
-     *
-     * A non-2xx answer completes the flow as well rather than throwing: a `401` here means the
-     * token expired and the caller should stop, not retry in a loop.
+     * The flow completes normally when the server closes the stream or answers non-2xx; reconnecting is
+     * the caller's decision.
      *
      * @param path the stream's path, e.g. `/api/v1/notifications/stream`.
-     * @param query query parameters to append, added through the URL builder so a value carrying a
-     *   colon or a comma — a live-sync topic does both — is encoded rather than pasted.
+     * @param query query parameters, encoded through the URL builder.
      * @param onRefused called with the status when the server answers non-2xx, before the flow
-     *   completes. Without it a refusal and a dropped connection are indistinguishable to the
-     *   caller, and only one of the two is worth reconnecting through.
+     *   completes.
      * @return a cold flow of events; collecting it opens the connection, cancelling closes it.
      */
     open fun events(
@@ -95,8 +78,6 @@ open class SseStream(
                     Request.Builder()
                         .url(url)
                         .header("Accept", "text/event-stream")
-                        // A proxy that cached a stream would serve the first member's bytes to the
-                        // next one. The backend says so too; saying it here as well costs nothing.
                         .header("Cache-Control", "no-cache")
                         .get()
                         .build(),
@@ -107,19 +88,13 @@ open class SseStream(
             reader.start()
 
             awaitClose {
-                // Cancelling the call is what unblocks the reader thread; closing the body from
-                // another thread is not safe, and letting it run would hold a socket per screen.
                 call.cancel()
             }
         }.flowOn(Dispatchers.IO)
 
     /**
-     * Runs the reader to the end of the stream and closes the producer, whatever happens.
-     *
-     * **The broad catch is deliberate and the detekt rule is wrong at this call site.** This is the
-     * top of a plain `Thread`: anything that escapes takes the whole process down. A member losing
-     * the push channel is a degraded app, and the poll behind it covers that; a member losing the
-     * app because a line failed to parse is a crash report.
+     * Runs the reader to the end of the stream and closes the producer, catching everything since this
+     * is the top of a plain `Thread`.
      *
      * @param call the prepared request.
      * @param scope the producer to send events to and to close when the stream ends.
@@ -134,7 +109,6 @@ open class SseStream(
         try {
             readInto(call, scope, onRefused)
         } catch (failure: IOException) {
-            // The usual ending: the collector cancelled the call, or the network went.
             KrtLog.d(LOG_TAG) { "stream ended: ${failure.javaClass.simpleName}" }
         } catch (failure: RuntimeException) {
             KrtLog.w(LOG_TAG) { "stream failed: ${failure.javaClass.simpleName}" }
@@ -146,13 +120,7 @@ open class SseStream(
     /**
      * Executes [call] and feeds every parsed event into [scope].
      *
-     * Split out of [events] so the framing is readable on its own, and so the thread body above is
-     * just "run this, let nothing escape".
-     *
-     * A line that matches nothing here is a comment (`: keep-alive`), an `id:` or a `retry:`. All
-     * three belong to the format and carry nothing this stream uses — and a comment in particular
-     * must **not** flush an event, or an idle connection would deliver an empty one every few
-     * seconds and a caller re-reading on each would be polling while believing it was using push.
+     * Comment, `id:` and `retry:` lines are ignored and never flush an event.
      *
      * @param call the prepared request.
      * @param scope the producer to send events to.
@@ -166,10 +134,6 @@ open class SseStream(
         call.execute().use { response ->
             if (!response.isSuccessful) {
                 KrtLog.w(LOG_TAG) { "stream refused with ${response.code}" }
-                // The caller has to be able to tell a refusal from a dropped socket. Both end this
-                // flow the same way, and only one of them is worth retrying: a 403 here means the
-                // caller may not enter the rooms it asked for, which will not change while the
-                // screen is open, and a client that kept asking would do so for the life of the app.
                 onRefused?.invoke(response.code)
                 return
             }

@@ -83,16 +83,12 @@ sealed interface BankLifecyclePrompt {
     ) : BankLifecyclePrompt
 
     /**
-     * A member's standing on an account is about to be removed.
+     * Prompt to remove a member's entry on an account, which takes away their sight of it
+     * (REQ-BANK-009).
      *
-     * Its own prompt because removing the entry is what takes the member's **sight** of the account
-     * away — `canSee` on the server is "a row exists" (REQ-BANK-009), which no checkbox on the card
-     * says.
-     *
-     * @property grant whose standing is going.
-     * @property sightSurvives whether they keep seeing the account regardless — true on the CARTEL
-     *   account, which every KRT member sees by rule (REQ-BANK-037) and where the entry therefore
-     *   only ever carried booking rights.
+     * @property grant whose entry is going.
+     * @property sightSurvives whether they keep seeing the account regardless, as on the CARTEL account
+     *   (REQ-BANK-037).
      */
     data class RevokeGrant(
         val grant: BankGrant,
@@ -113,12 +109,11 @@ sealed interface BankLifecyclePrompt {
  * @property error what the last write refused with.
  * @property grantAccountId which account's matrix the Grants tab is showing, or `null` before one
  *   is picked.
- * @property grants the standings on that account.
+ * @property grants the entries on that account.
  * @property grantsLoading whether the matrix is being read.
  * @property granteeDraft the „+ Grant hinzufügen" sheet, or `null` while it is closed.
- * @property holderDraft the „+ Halter registrieren" sheet, or `null` while it is closed. Separate
- *   from [granteeDraft] because both can be reached from the Konten tab and neither may inherit the
- *   other's pick.
+ * @property holderDraft the „+ Halter registrieren" sheet, or `null` while it is closed; kept apart
+ *   from [granteeDraft] so neither inherits the other's pick.
  */
 data class BankLifecycleState(
     val accounts: List<BankManagedAccount> = emptyList(),
@@ -160,18 +155,17 @@ data class BankGranteeDraft(
 )
 
 /**
- * Drives the account lifecycle and the holder register — design chapter 12, artboard 6.
+ * Drives the account lifecycle, the holder register and the grants matrix, all of which require
+ * Bank-Management.
  *
- * Separate from [BankStaffViewModel] because the two answer to different roles: the dashboard and
- * the queue are a bank employee's, everything here is Bank-Management's. Keeping them apart also
- * keeps a refused lifecycle write from putting the queue into a failure state.
+ * Kept apart from [BankStaffViewModel] so a refused lifecycle write does not put the queue into a
+ * failure state.
  *
  * @property source the lifecycle calls.
  * @property staff the holder read, which the queue's confirmation sheet already needs.
  * @property grantSource the per-account grants matrix.
- * @property activeOrgUnitId which unit a new account is opened for — the caller's pinned context,
- *   which is what „Einheit (vorbelegt)" means. A caller who has pinned *all* units has no single
- *   answer, and the creation is then refused rather than guessed at.
+ * @property activeOrgUnitId the caller's pinned unit, for which a new account is opened; with all
+ *   units pinned the creation is refused.
  */
 class BankLifecycleViewModel(
     private val source: BankLifecycleSource,
@@ -331,8 +325,6 @@ class BankLifecycleViewModel(
                 }
 
                 is ApiResult.Success -> {
-                    // The holder list failing is not the tab's failure: the accounts rendered, and
-                    // a register that could not be read is a section that stays empty.
                     val holders = staff.holders()
                     mutableState.update {
                         it.copy(
@@ -360,8 +352,8 @@ class BankLifecycleViewModel(
     /**
      * Sets one member's three capabilities on the shown account.
      *
-     * A grant whose three flags are all false is kept rather than deleted: it is the deliberate
-     * "may see, may book nothing" case (REQ-BANK-009). Taking sight away is [onRevokeGrant].
+     * A grant with all three flags false is kept as a sight-only entry (REQ-BANK-009); removing sight is
+     * [onRevokeGrant].
      *
      * @param grant what the matrix now says.
      */
@@ -412,7 +404,7 @@ class BankLifecycleViewModel(
         searchHolderCandidates("")
     }
 
-    /** Closes it, discarding what was typed. */
+    /** Closes the holder sheet, discarding what was typed. */
     fun onDismissHolderDraft() {
         mutableState.update { it.copy(holderDraft = null) }
     }
@@ -603,8 +595,6 @@ class BankLifecycleViewModel(
         viewModelScope.launch {
             val result = grantSource.searchGrantees(query)
             val current = mutableState.value.granteeDraft ?: return@launch
-            // A later keystroke may have replaced the query while this call was in flight; its own
-            // answer will land, and letting this one overwrite it would show stale candidates.
             if (current.query != query) {
                 return@launch
             }

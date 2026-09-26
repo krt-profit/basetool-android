@@ -60,8 +60,7 @@ sealed interface EditorState {
      *
      * @property editing the row being changed, or `null` for a new entry.
      * @property name what is in the name field.
-     * @property quantity what is in the quantity field, as typed — kept as text so a half-deleted
-     *   number does not snap back to zero under the member's cursor.
+     * @property quantity what is in the quantity field, kept as typed text.
      * @property location the chosen place, or `null` while none is.
      * @property note what is in the note field.
      * @property saving whether a save is in flight.
@@ -100,10 +99,8 @@ data class LocationSearch(
 /**
  * What a bulk deletion did.
  *
- * The server has **no** bulk endpoint for personal rows — only `DELETE /personal-inventory/{id}`
- * — so the app deletes one at a time and counts. That is also what makes this type necessary:
- * a loop can half-succeed, and design ch. 17 artboard 4 asks for exactly that outcome to be named
- * („Server lehnt eine Zeile ab → Ergebnis nennt gelöscht/übersprungen wie das Bulk-Umbuchen").
+ * The rows are deleted one at a time via `DELETE /personal-inventory/{id}`, so the result can be
+ * partial.
  *
  * @property deleted how many rows are gone.
  * @property skipped how many the server refused.
@@ -158,11 +155,9 @@ data class PersonalInventoryState(
 }
 
 /**
- * Drives "Mein Inventar".
+ * Drives „Mein Inventar".
  *
- * **Writes are disabled while the device has no network** rather than queued (design ch. 14). A
- * queued mutation carries a `version` that ages while it waits, which is precisely the write the
- * server has to refuse — so the app says so before the member types instead of after.
+ * Writes are disabled rather than queued while the device has no network.
  *
  * @property repository the member's own stock.
  * @property connectivity whether there is a network at all.
@@ -379,11 +374,6 @@ class PersonalInventoryViewModel(
                                     state.locations.copy(
                                         results = result.value.rows,
                                         searching = false,
-                                        // The repository asks for one place more than it renders
-                                        // and keeps the extra as the sentinel: this endpoint sends
-                                        // a bare array with no total, so „exactly 25 back" used to
-                                        // be the only signal — and it cannot tell a complete list
-                                        // of 25 from a truncated one (ADR-0104).
                                         capped = result.value.more,
                                     ),
                             )
@@ -412,8 +402,6 @@ class PersonalInventoryViewModel(
         val open = mutableState.value.editor as? EditorState.Open
         val place = open?.location
         val quantity = open?.quantity?.toIntOrNull()
-        // One guard rather than a return per condition: an editor that is closed, one that is
-        // incomplete and a device that is offline all mean the same thing here — nothing to send.
         val sendable = open != null && place != null && quantity != null
         if (!sendable || !mutableState.value.online) {
             return
@@ -442,8 +430,6 @@ class PersonalInventoryViewModel(
                     reload(keepRows = true)
                 }
 
-                // The draft stays exactly as typed. A conflict dialog that cleared the form would
-                // punish the member for someone else's edit.
                 is ApiResult.Failure -> {
                     editor { it.copy(saving = false, error = result.error) }
                 }
@@ -495,8 +481,7 @@ class PersonalInventoryViewModel(
     /**
      * A row was long-pressed, or tapped while the selection mode runs.
      *
-     * The mode of design ch. 02 §4, taken over unchanged: a long press starts it, further rows
-     * join with a tap, and the last row leaving ends it.
+     * A long press starts the mode, a tap adds or removes rows, and removing the last row ends it.
      *
      * @param item the row.
      */
@@ -511,12 +496,7 @@ class PersonalInventoryViewModel(
     }
 
     /**
-     * „Alles wählen".
-     *
-     * **Only what is loaded**, which is what the label can honestly promise: the list pages, and
-     * ticking rows the member has not seen is exactly the „delete a list you never looked at" that
-     * the artboard refuses („Eine Aktion, die 18 Zeilen löscht, muss die 18 Zeilen vorher gezeigt
-     * haben"). Scrolling further and tapping again adds the rest.
+     * „Alles wählen": selects every loaded row, not rows on pages not yet loaded.
      */
     fun onSelectAll() {
         mutableState.update { state ->
@@ -559,10 +539,6 @@ class PersonalInventoryViewModel(
         }
         mutableState.update { it.copy(confirmingBulkDelete = false, deleting = true, bulkResult = null) }
         viewModelScope.launch {
-            // Collected rather than counted in three `var`s: a tally mutated inside a lambda is
-            // invisible to the static analysis that reads this (CodeQL called `deleted > 0`
-            // always-false), and the outcome list says the same thing in a shape both a reader and
-            // an analyser can follow.
             val outcomes = ids.map { id -> id to repository.delete(id) }
             val refused = outcomes.filter { it.second is ApiResult.Failure }.map { it.first }.toSet()
             val deleted = outcomes.size - refused.size
@@ -571,8 +547,6 @@ class PersonalInventoryViewModel(
                     deleting = false,
                     selection = refused,
                     bulkResult = PersonalBulkResult(deleted = deleted, skipped = refused.size),
-                    // The refusal itself is reported once, as every other write failure is; the
-                    // counts stay on the bar, where the member is looking.
                     lastFailure =
                         outcomes.firstNotNullOfOrNull { (_, result) ->
                             (result as? ApiResult.Failure)?.error

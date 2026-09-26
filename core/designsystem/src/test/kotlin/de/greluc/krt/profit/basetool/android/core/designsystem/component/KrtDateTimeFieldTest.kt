@@ -25,12 +25,8 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * The date/time pair of design ch. 02 §11 — a picker, not two text fields.
- *
- * What these pin is the part that is easy to regress into: the halves must open modals rather than
- * accept typing, an empty pair must stay empty instead of helpfully pre-filling today, and a moment
- * already gone must be *named* rather than blocked. Every one of those was a defect the chapter was
- * written to correct.
+ * The date/time pair opens modals rather than accepting typing, stays empty when empty, and names a
+ * past moment instead of blocking it.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")

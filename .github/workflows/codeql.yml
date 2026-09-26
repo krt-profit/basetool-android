@@ -1,66 +1,11 @@
 name: CodeQL
 
-# Semantic SAST for the app's own Kotlin, plus GitHub's `actions` pack for the
-# workflows in this directory. It closes the gap left by the other gates:
-# detekt reports local code smells and Android Lint reports platform misuse,
-# but neither follows data across call boundaries. In an app whose whole job is
-# moving tokens and member data between a Keystore, a realm and an API, the
-# taint-tracking is the point.
-#
-# **Kotlin needs a real build.** `build-mode: none` was tried first and produced
-# "CodeQL could not process any code written in Java/Kotlin": buildless analysis
-# does not extract Kotlin, and in a repository with no `.java` file at all that
-# means an empty database rather than a partial one. The extractor hooks the
-# Kotlin compiler, so the compiler has to actually run — which also means the
-# Gradle build cache must be off for this job (`--no-build-cache`), or a restored
-# task output would skip compilation and produce the same empty database with a
-# green build. The dependency cache is restored read-only; an assertion after
-# `Analyze` fails the job if the database holds fewer Kotlin files than the build
-# compiles, before anything is uploaded (audit SIB-CI-05, 2026-09-22).
-#
-# The `actions` pack needs no build and stays on `none`.
-#
-# **The extractor also caps the repository's Kotlin version — ADR-0022.** Because it hooks the
-# compiler, the Kotlin versions CodeQL can analyse are exactly the ones its extractor was built
-# against, listed in `java/kotlin-extractor/versions.bzl` in github/codeql. Building above that
-# ceiling does not degrade the scan, it fails this job at the Gradle step:
-#
-#     com.semmle.extractor.java.interceptors.KotlinInterceptor$KotlinVersionTooRecentError:
-#     Kotlin version 2.4.20 is too recent. CodeQL currently supports versions below 2.4.20
-#
-# That is what merging Dependabot #157 did on 2026-09-11, and `Analyze (java-kotlin)` is a required
-# check, so it blocked every PR until 2026-09-13. `gradle/libs.versions.toml` therefore holds
-# `kotlin` one release back, and `.github/dependabot.yml` ignores the bump. **Bumping the
-# codeql-action pin below and raising that Kotlin version are one change, in this order** — the
-# catalog comment carries the `gh api` one-liner that reads the extractor's current ceiling.
-#
-# The pin below moved to v4.38.0 (default bundle 2.27.0) on 2026-09-14 — Dependabot #164 and #165 —
-# and to v4.38.1 on 2026-09-21. Neither is step 2 of that change: `versions.bzl` was re-read on both
-# days and still ends at 2.4.0, `codeql-cli/v2.27.0` is still the newest CLI release (so v4.38.1's
-# default bundle is the same 2.27.0), and the runner's toolcache served 2.27.0 under the old pin
-# anyway. The Kotlin hold and the Dependabot ignore stay.
-#
-# **All five `github/codeql-action/*` call sites move in one commit** — `init`, `analyze` and
-# `upload-sarif` here, `upload-sarif` in `ci.yml` and `supply-chain.yml`. `analyze` reads the config `init` wrote and
-# refuses a different version of it:
-#
-#     Loaded a configuration file for version '4.38.0', but running version '4.38.1'
-#
-# Dependabot proposes one PR per action *path*, so left alone it opens two halves that each fail
-# this way (#174 and #175 on 2026-09-21, both closed for this commit). `.github/dependabot.yml`
-# groups them so the proposal arrives whole; the group's comment carries this reason.
-#
-# Blocking is enforced via branch protection: mark the two matrix check names
-# ("CodeQL / Analyze (java-kotlin)" and "CodeQL / Analyze (actions)") as
-# required AFTER the first run on main, so GitHub knows the names.
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   schedule:
-    # Weekly, offset from the supply-chain workflow's Monday run.
     - cron: '23 5 * * 3'
   workflow_dispatch:
 
@@ -93,72 +38,35 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      # JDK 25, the SDK licences with no packages, wrapper validation and setup-gradle
-      # (.github/actions/android-build-env). The wrapper is validated because this job executes the
-      # same jar to build the CodeQL database.
-      #
-      # `read-only`, not `disabled` (changed 2026-09-22, audit SIB-CI-05). What must not reach this
-      # job is a *task output*: a restored one makes the compile tasks up-to-date, the Kotlin
-      # compiler never runs, and CodeQL builds an empty or partial database — green, and analysing
-      # nothing. Task outputs come from exactly two places, and neither is the Gradle user-home
-      # cache setup-gradle restores: the project's own `build/` directories, which a fresh checkout
-      # does not have, and the Gradle build cache, which `--no-build-cache` below switches off.
-      # What the cache does restore — dependency jars and the wrapper distribution — cannot skip a
-      # compilation, and read-only means this job never writes an entry either. The extraction
-      # assertion after `Analyze` is what makes that argument checkable instead of assumed: if a
-      # cache ever did skip compilation, the job fails there before anything is uploaded.
       - name: Set up the Android build environment
         if: matrix.build-mode == 'manual'
         uses: $/.github/actions/android-build-env
         with:
           cache-mode: read-only
 
-      # One query of the security-and-quality suite is filtered out; the config file says which
-      # and why. It has to be named here — a file at that path is not auto-discovered in advanced
-      # setup, and deleting this input leaves the filter silently off while the run stays green.
-      #
-      # `queries:` and the file's `query-filters:` do not fight each other. The action's `queries`
-      # input replaces only the config file's own `queries` key — which is what the documented `+`
-      # prefix opts out of — while every other key of the user config is copied through untouched.
-      # So no `+` is needed, and the file declares no queries of its own. Both matrix legs share
-      # the file harmlessly: a `java/…` id matches nothing in the `actions` pack.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-and-quality
           config-file: ./.github/codeql/codeql-config.yml
 
-      # One debug variant is enough: every module's Kotlin is compiled by it, and
-      # the release variants add R8 output CodeQL has no use for.
       - name: Build for extraction
         if: matrix.build-mode == 'manual'
         run: ./gradlew assembleDevDebug --no-build-cache --stacktrace
 
-      # Analysed without uploading, so the assertion below can refuse an empty database before its
-      # results replace the last good analysis. Uploading first and failing afterwards would still
-      # mark every open Kotlin alert as fixed on main.
       - name: Analyze
-        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd
         with:
           category: /language:${{ matrix.language }}
           upload: never
           output: ${{ runner.temp }}/codeql-sarif
 
-      # The job fails if the database holds no Kotlin, or fewer Kotlin files than the build
-      # compiles. Two independent readings, and the larger one is judged: the files the extractor
-      # reports as successfully extracted (the SARIF's diagnostics, which is what the code scanning
-      # tool status page counts) and the source archive the database kept. Either being non-empty
-      # proves the compiler ran under the tracer; both zero is the empty database a restored task
-      # output or a build-mode change would produce while every other step stayed green.
-      #
-      # The expectation is every tracked `.kt` under a `src/main/kotlin` or `src/dev/kotlin`
-      # directory: `assembleDevDebug` compiles all of them and nothing under `src/prod`.
       - name: Assert that Kotlin was extracted
         if: matrix.build-mode == 'manual'
         env:
@@ -200,7 +108,7 @@ jobs:
           fi
 
       - name: Upload the results
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd
         with:
           sarif_file: ${{ runner.temp }}/codeql-sarif
           category: /language:${{ matrix.language }}

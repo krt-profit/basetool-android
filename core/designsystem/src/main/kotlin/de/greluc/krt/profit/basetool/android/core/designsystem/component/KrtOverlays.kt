@@ -59,10 +59,7 @@ private val MODAL_TOP_EDGE = 3.dp
 private val MODAL_BRACKET = 13.dp
 
 /**
- * Bracket stroke width on a modal.
- *
- * The same 2 dp the HUD box uses. Only the **arm** differs (13 dp against 10) — two values, both
- * straight from the stylesheet, deliberately not unified (design ch. 01 §1, corrected 2026-08-30).
+ * Bracket stroke width on a modal: 2 dp, the same as the HUD box; only the arm length differs.
  */
 private val MODAL_BRACKET_STROKE = 2.dp
 
@@ -87,16 +84,10 @@ enum class KrtModalTone {
 }
 
 /**
- * The KRT modal.
+ * The KRT modal: accent top edge, 13 dp brackets and the overlay glow, used instead of platform
+ * dialogs.
  *
- * The app never uses platform dialogs: their rounded corners, tonal surface and system typography
- * contradict the design system, and Android's own alert never looks like this product. The frame is
- * the loudest surface in the app — accent top edge, 13 dp brackets, the overlay glow — because a
- * modal
- * interrupts, and an interruption must be unmistakable.
- *
- * Exactly one filled CTA, placed right, with a ghost cancel to its left; back and the scrim both
- * dismiss.
+ * One filled CTA on the right with a ghost cancel to its left; back and the scrim both dismiss.
  *
  * @param title the question or statement; uppercased for display.
  * @param confirmText label of the single filled action.
@@ -198,13 +189,8 @@ fun KrtModal(
 /**
  * A toast: near-black panel with an accent border, corner brackets and the bloom.
  *
- * This composable only renders the panel; placement and the dismissal timer belong to the screen's
- * scaffold. Destructive swipes pair it with a 5 second undo action, which is what [actionLabel] is
- * for — the inbox's "Benachrichtigung geloescht. / Rueckgaengig" of design ch. 07 is the case it
- * was added for.
- *
- * The action is a ghost button rather than a second CTA: a toast is not a screen context, and the
- * design system's one-filled-CTA rule counts the screen behind it.
+ * Renders the panel only; placement and the dismissal timer belong to the screen's scaffold. The
+ * optional action is a ghost button, e.g. the 5 second undo after a destructive swipe.
  *
  * @param title short headline; uppercased and rendered in the accent colour.
  * @param message one sentence of detail.
@@ -263,20 +249,14 @@ private val TOAST_MAX_WIDTH = 360.dp
 private const val TOAST_FILL_ALPHA = 0.95f
 
 /**
- * The KRT bottom sheet — the phone's answer to a side panel.
- *
- * Square (shape 0 dp) with the accent top edge, and it carries the one rounded exception the design
- * system grants besides the org badge: the pill drag handle. Used for pickers and switchers where a
- * modal would be too heavy; the org switcher is the canonical case.
+ * The KRT bottom sheet: square, with the accent top edge and a pill drag handle; used for pickers
+ * and switchers.
  *
  * @param onDismiss invoked on swipe-down, scrim tap or back.
  * @param modifier layout modifier applied to the sheet body.
  * @param title optional uppercase heading rendered under the handle.
- * @param centred whether to draw a **centred 560 dp dialog** instead of a bottom sheet. The caller
- *   decides, because the window class lives in the app module and because it is a per-surface
- *   choice: design ch. 18 §3 (E9) asks for it at the Lager's booking sheet, which is the one
- *   surface a tablet has room beside. A picker or a switcher stays a sheet at every width, because
- *   it belongs to the control it was opened from.
+ * @param centred whether to draw a centred 560 dp dialog instead of a bottom sheet; the caller
+ *   decides per surface and window width.
  * @param content the sheet content, typically a column of [KrtSheetOption]s.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -294,12 +274,6 @@ fun KrtBottomSheet(
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        // The sheet is bottom-anchored and draws to the very edge of the screen, which puts its
-        // action row inside the system's gesture region: the tap goes to the system, not to the
-        // save button (found on a device, 2026-08-23). The padding goes on the sheet itself —
-        // padding its content only makes the content taller and scrolls the row out of reach
-        // instead of lifting it. [LocalKrtBottomBarInset] rather than `navigationBarsPadding()`,
-        // because the sheet's own window reports no navigation-bar inset at all.
         modifier = modifier.padding(bottom = LocalKrtBottomBarInset.current),
         sheetState = rememberModalBottomSheetState(),
         shape = MaterialTheme.shapes.large,
@@ -325,13 +299,6 @@ fun KrtBottomSheet(
             }
         },
     ) {
-        // The sheet draws to the bottom edge of the screen and the last thing in it is usually
-        // the save action, so without this the action row lands in the system's gesture region and
-        // the tap never reaches the button (found on a device, 2026-08-23).
-        //
-        // [LocalKrtBottomBarInset] rather than `navigationBarsPadding()`: the sheet's own window
-        // reports no navigation-bar inset at all, so the modifier — and every variant of it —
-        // resolves to zero here.
         Column(modifier = Modifier.imePadding()) {
             if (title != null) {
                 Text(
@@ -348,12 +315,8 @@ fun KrtBottomSheet(
 }
 
 /**
- * The same sheet as a centred dialog, for a window with room beside its content.
- *
- * Not a [KrtModal]: a modal asks a question and carries the two buttons that answer it, while this
- * holds a **form** whose own action is inside it. What changes with the width is where the surface
- * sits, not what it is — so it keeps the accent top edge and drops only the drag handle, which
- * would promise a gesture a dialog does not have.
+ * The same sheet as a centred dialog for a wide window, keeping the accent top edge and dropping
+ * the drag handle.
  *
  * @param onDismiss invoked on scrim tap or back.
  * @param modifier layout modifier applied to the dialog body.
@@ -414,10 +377,8 @@ private val DRAG_HANDLE_WIDTH = 32.dp
 private val DRAG_HANDLE_HEIGHT = 4.dp
 
 /**
- * One row of a selection sheet, for example the org switcher.
- *
- * The selected row uses the brand selection rule — orange background with black text — which is the
- * same rule the navigation indicator and every Material selection surface follow.
+ * One row of a selection sheet, for example the org switcher; the selected row is orange with black
+ * text.
  *
  * @param text the option label.
  * @param selected whether this option is the active one.

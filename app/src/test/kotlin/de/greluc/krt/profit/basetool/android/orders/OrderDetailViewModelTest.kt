@@ -312,8 +312,6 @@ class OrderDetailViewModelTest {
     @Test
     fun `nothing is offered while the app does not know who the caller is`() =
         runTest(dispatcher) {
-            // An assignment addresses a member by id, and there is no id to address. Offering the
-            // action anyway would put the wrong name on the order or fail.
             val vm = model(identity = ApiResult.Failure(ApiError.NotFound()))
             vm.load()
             advanceUntilIdle()
@@ -351,8 +349,6 @@ class OrderDetailViewModelTest {
     @Test
     fun `the note is locked on the assignee edge, not on the order`() =
         runTest(dispatcher) {
-            // Echoing the order's version would 409 the note against any unrelated change to the
-            // order, and bumping the order's would 409 everyone else's screen.
             source = FakeSource(order(mine(note = "alt")))
             val vm = model()
             vm.load()
@@ -396,9 +392,6 @@ class OrderDetailViewModelTest {
             vm.onSaveNote()
             advanceUntilIdle()
 
-            // Design ch. 10 artboard 7: the typed text is never discarded. The reload succeeds
-            // here, so the field shows what the order now says and the refused text is held beside
-            // it — which is the pair the sheet draws.
             assertEquals("", vm.state.value.noteDraft)
             assertEquals("Nachtschicht", vm.state.value.rejectedNote)
             assertTrue(vm.state.value.error is ApiError.OptimisticLock)
@@ -487,9 +480,6 @@ class OrderDetailViewModelTest {
     @Test
     fun `an order already at the front does not move up`() =
         runTest(dispatcher) {
-            // The fixture sits at priority 1. „Höher" and „An den Anfang" would both send 1 again,
-            // which the server would happily accept and reorder the whole queue for — a write that
-            // changes nothing is still a write.
             val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
             vm.load()
             advanceUntilIdle()
@@ -504,8 +494,6 @@ class OrderDetailViewModelTest {
     @Test
     fun `an order out of the queue offers no priority control`() =
         runTest(dispatcher) {
-            // A completed or rejected order has no position. Offering „move it up" would be an
-            // instruction to put it back into a queue it has left.
             source.order = order().copy(priority = null)
             val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
             vm.load()
@@ -517,8 +505,6 @@ class OrderDetailViewModelTest {
     @Test
     fun `a refusal on the status is named rather than swallowed`() =
         runTest(dispatcher) {
-            // The grant is per order, so a Logistician outside this order's slice is refused
-            // exactly like a member without it.
             source.answer = ApiResult.Failure(ApiError.Forbidden())
             val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
             vm.load()

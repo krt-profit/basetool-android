@@ -12,12 +12,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 /**
- * What the graph's addresses must satisfy for design chapter 03's deep-link rules to hold.
- *
- * The rules themselves — a known link opens its screen, an unknown one reaches the in-fiction 404 —
- * are verified on a device, because they are decided by Navigation's matcher rather than by
- * anything this project owns. This pins the two properties the app *does* own and that a future
- * change could quietly break.
+ * Pins the properties of the graph's addresses that design chapter 03's deep-link rules depend on; the routing itself
+ * is decided by Navigation's matcher.
  */
 class DeepLinkRoutingTest {
     @Test

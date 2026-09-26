@@ -143,10 +143,7 @@ class DashboardViewModelTest {
     }
 
     /**
-     * Answers the announcement read, and remembers what the member has marked.
-     *
-     * The read flag lives on the member rather than on the notice, so this fake models both
-     * halves: `lastRead` is the id the server holds, and `markRead` moves it.
+     * Answers the announcement read and models the member's read marker, which `markRead` moves.
      *
      * @property answer what the announcement read returns.
      * @property lastReadId the id the member has already marked, or `null`.
@@ -240,10 +237,7 @@ class DashboardViewModelTest {
     }
 
     /**
-     * The marker is off until the app knows, not on.
-     *
-     * "Unread" is an invitation to act. Showing one for the frames before the read flag lands, and
-     * then taking it back, teaches a member that the marker means nothing.
+     * The unread marker stays off until the read flag has landed, instead of showing and then withdrawing it.
      */
     @Test
     fun `an unmarked notice reads as unread once the flag lands`() =
@@ -327,8 +321,6 @@ class DashboardViewModelTest {
     @Test
     fun `no announcement is a result, not a failure`() =
         runTest(dispatcher) {
-            // The server answers 204 when there is nothing to announce. The correct rendering is no
-            // banner, and the Einsatz band must be unaffected.
             val missions = RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1")))))
             val model = viewModel(missions, FixedAnnouncement(ApiResult.Success(null)))
 
@@ -342,8 +334,6 @@ class DashboardViewModelTest {
     @Test
     fun `a failed announcement does not blank the Einsatz band`() =
         runTest(dispatcher) {
-            // Two unrelated reads behind unrelated permissions. One outage must not take the other
-            // down, or a member loses tonight's Einsatz to a broken notice.
             val missions = RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1")))))
             val model =
                 viewModel(
@@ -377,8 +367,6 @@ class DashboardViewModelTest {
     @Test
     fun `the band asks for a seven-day window, bounded at both ends`() =
         runTest(dispatcher) {
-            // Unbounded above, the "next 7 days" band would show whatever the server had, and the
-            // heading would be a lie.
             val missions = RecordingMissions(mutableListOf(ApiResult.Success(page())))
             val model = viewModel(missions, FixedAnnouncement(ApiResult.Success(null)))
 

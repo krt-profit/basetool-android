@@ -30,11 +30,8 @@ import org.robolectric.annotation.Config
 import java.time.OffsetDateTime
 
 /**
- * What the Raffinerie renders.
- *
- * The assertions that matter are the ones a member would act on: the remaining time is rounded up
- * so „noch 0 Min." never stands in for „ready", and „In Lager buchen" is absent until the run has
- * actually ended.
+ * Tests what the Raffinerie renders: the remaining time rounds up so „noch 0 Min." never stands in for ready, and „In
+ * Lager buchen" appears only once the run has ended.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -113,18 +110,13 @@ class RefineryScreenTest {
     }
 
     /**
-     * The screen lists the unit's orders since design round 16, so every card names its owner.
-     *
-     * Until then a member could see an order sitting ready to collect and had no way to tell whose
-     * yield it was or whom to ask about it — the endpoint used to be `/my-orders`, so the question
-     * never came up.
+     * Every card names its owner, since the screen lists the whole unit's orders.
      */
     @Test
     fun `every card names its owner`() {
         list(now = BEFORE)
 
         compose.onNodeWithText("Rhea").assertIsDisplayed()
-        // The method keeps its place on the same line, after the separator.
         compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
     }
 
@@ -169,25 +161,13 @@ class RefineryScreenTest {
         list(now = BEFORE)
 
         compose.onNodeWithTag(REFINERY_LIST_TAG).assertIsDisplayed()
-        // By tag, not by text: the chip row says „In Arbeit" too, and the design system uppercases
-        // both — matching on the words would pass while showing the wrong element.
-        // By tag AND descendant text, on the unmerged tree. Two reasons, both learned here: the row
-        // is clickable, so Compose merges its children into the row node and the pill's tag is
-        // gone from the merged tree; and the tag sits on the pill's layout, whose label is a
-        // child, so the tagged node carries no text of its own.
         assertPhase("In Arbeit")
-        // The method is the subtitle and the countdown is in the card's FOOTER beside the value
-        // (design ch. 11 artboard 1). They used to be one line, which put the same clock on the
-        // card twice once the footer arrived.
         compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
         compose.onNodeWithText("noch 2 Std. 41 Min.").assertIsDisplayed()
     }
 
     @Test
     fun `forty seconds left reads as one minute, never as zero`() {
-        // Rounding down would show "noch 0 Minuten" for a whole minute. That reads as ready, and
-        // a member who walks over finds it still refining. The singular is the plural resource
-        // doing its job — Android Lint rejects a bare "%d Min." and it is right to.
         list(now = ALMOST)
 
         compose.onNodeWithText("noch 1 Minute").assertIsDisplayed()
@@ -198,9 +178,6 @@ class RefineryScreenTest {
         list(now = AFTER)
 
         assertPhase("Abholbereit")
-        // The method alone. Round 14 (S15) moved the start time up into the card's lead — which
-        // is what names a run that has no number — and the goods are listed under it in full, so
-        // the second line no longer repeats a total.
         compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
     }
 
@@ -208,9 +185,6 @@ class RefineryScreenTest {
     fun `a running order offers no booking`() {
         detail(now = BEFORE)
 
-        // Absent rather than disabled: chapter 11 puts the action at the foot of the screen, and a
-        // greyed button there invites a member to keep tapping it. Booking an unfinished run books
-        // a yield that does not exist.
         compose.onNodeWithTag(REFINERY_STORE_TAG).assertDoesNotExist()
     }
 

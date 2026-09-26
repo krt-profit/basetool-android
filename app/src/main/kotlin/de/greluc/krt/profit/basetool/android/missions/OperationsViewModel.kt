@@ -49,10 +49,9 @@ sealed interface OperationsPhase {
 /**
  * Everything the Operationen list draws.
  *
- * @property query what the member has narrowed to; its `text` is the **debounced** term
+ * @property query what the member has narrowed to; its `text` is the debounced term
  * @property searchText what is in the search field right now, updated on every keystroke ahead of
- *   the debounce — a controlled field bound to the debounced value discards every character, which
- *   is a defect this project has already shipped once and now guards against
+ *   the debounce
  * @property operations every row loaded so far, across pages, in server order
  * @property total how many Operationen the filter matches on the server
  * @property phase how far the first page has got
@@ -82,16 +81,9 @@ data class OperationsState(
 }
 
 /**
- * Drives the Operationen list.
+ * Drives the Operationen list: search debounced, other filters immediate, every reload from page 0.
  *
- * The Einsatz list's rules apply unchanged — typing debounced, everything else immediate, every
- * reload from page 0 — and are not re-argued here. What differs is what the list can be narrowed
- * by: an Operation has no start time of its own, so there is no "Vergangene aus"; the finished ones
- * are a group in the list rather than something to switch off.
- *
- * **Loaded lazily.** The list is behind a segment, and a member who never taps "Operationen" should
- * not pay for it. [load] is therefore called by the screen when the segment is first shown, not on
- * construction.
+ * Loaded lazily — the screen calls [load] when the segment is first shown.
  *
  * @property source where the Operationen come from
  */
@@ -209,8 +201,6 @@ class OperationsViewModel(
             when (val result = source.search(current.query, page = current.page + 1)) {
                 is ApiResult.Success -> {
                     val loaded = result.value
-                    // Read the state again: a refresh may have replaced the rows while this page
-                    // was in flight, and appending to the stale snapshot would resurrect them.
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
@@ -223,8 +213,6 @@ class OperationsViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The rows on screen stay: a failed next page is not a reason to replace a
-                    // working list with an error.
                     KrtLog.w(LOG_TAG) { "next page of Operationen failed: ${result.error}" }
                     mutableState.update { it.copy(loadingMore = false) }
                 }

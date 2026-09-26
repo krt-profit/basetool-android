@@ -22,11 +22,9 @@ private val DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
 
 /**
- * Splits a wire instant into the date and time halves the drawn field pair shows.
+ * Splits a UTC wire instant into the date and time halves shown in the device's zone.
  *
- * **UTC on the wire, the device's zone on the screen** — the app's own contract. A blank or
- * unparseable value yields two blanks rather than throwing: a server that answers with something
- * this build cannot read must leave the field empty, not crash the tab.
+ * A blank or unparseable value yields two blanks instead of throwing.
  *
  * @receiver the wire value, ISO-8601, or blank.
  * @return `date to time`, both in the device zone, both blank when there is nothing to show.
@@ -38,11 +36,9 @@ fun String.toKrtDateTime(): Pair<String, String> {
 }
 
 /**
- * Builds the wire instant back out of a date and a time half.
+ * Builds the wire instant from a date and a time half.
  *
- * Both halves are needed: a date with no time is not a point in time, and sending one would make
- * the server pick midnight on the member's behalf. Either half blank, or either half unreadable,
- * means „not given" — which for these fields is what the server reads as a clear.
+ * Either half blank or unreadable means „not given", which the server reads as a clear.
  *
  * @param date the date half as typed, `TT.MM.JJJJ`.
  * @param time the time half as typed, `HH:MM`.
@@ -64,8 +60,6 @@ fun krtWireInstant(
             .toInstant()
             .toString()
     } catch (_: DateTimeParseException) {
-        // A half-typed date is an ordinary state while somebody types, not an error to report.
-        // The server validates what it is sent; the field simply does not send an unreadable value.
         null
     }
 }

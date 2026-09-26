@@ -38,11 +38,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * The account kinds a withdrawal or a transfer must be justified on.
- *
- * The same three the web tests (`JUSTIFICATION_TYPES` in `krt-bank-account-search.js`) and the
- * same three the server enforces. Written out rather than derived, because a fourth kind must be
- * a deliberate addition on both clients at once.
+ * The account kinds on which a withdrawal or transfer must carry a justification; the same set the
+ * web and the server use.
  */
 private val JUSTIFICATION_TYPES = setOf("CARTEL", "CARTEL_BANK", "SPECIAL")
 
@@ -53,12 +50,10 @@ private const val SPLIT_MAX = 100
  * One row of the staff dashboard, with the two facts the row cannot work out for itself.
  *
  * @property account the account.
- * @property openRequests how many undecided requests stand against it, counted from the queue.
- *   Artboard 4's handoff is explicit that this is aggregated client-side and needs no DTO field.
- * @property viewable whether this caller could see the account **without** their staff role. A
- *   staff member sees every account of the unit; the ones they hold no view grant on are marked,
- *   because reading someone's balance by virtue of an office is a different act from reading one
- *   they were given sight of.
+ * @property openRequests how many undecided requests stand against it, counted client-side from the
+ *   queue.
+ * @property viewable whether this caller could see the account without their staff role; rows
+ *   reached only through the office are marked.
  */
 data class BankStaffRow(
     val account: BankStaffAccount,
@@ -69,16 +64,11 @@ data class BankStaffRow(
 /**
  * What the confirmation sheet holds while it is open.
  *
- * **Confirming is a sheet, not a button.** `ConfirmBankBookingRequest.holderId` is required by the
- * server, and an over-limit request is additionally refused without the employee's attestation
- * that the responsible holder approved. Artboard 5 draws a bare CTA; the web frontend has a modal
- * for exactly this, and so does the app.
- *
  * @property request which request is being booked.
- * @property holderId who received or paid the money out.
+ * @property holderId who received or paid the money out; required by the server.
  * @property destinationHolderId the receiving holder of a transfer.
- * @property approvalAttested the employee's attestation. Only meaningful — and only shown — when
- *   the request carries [BankBookingRequest.requiresOwnerApproval].
+ * @property approvalAttested the employee's attestation; only shown when the request carries
+ *   [BankBookingRequest.requiresOwnerApproval].
  * @property staffNote the employee's own note on the booking, or blank.
  * @property saving whether the write is in flight.
  * @property error what the last attempt refused with.
@@ -119,49 +109,37 @@ data class BankRejectState(
 }
 
 /**
- * „Direktbuchung" — design ch. 12 artboard 9.
+ * „Direktbuchung": a booking by the Verwaltung without a request, in one of three modes.
  *
- * One sheet with three modes rather than the web's three forms. The Verwaltung books **without a
- * request**, which is the case nobody files one for: cash handed over in-game, or a correction of
- * somebody else's booking. There is no second approval, and the sheet says so before the member
- * types — a wrong direct booking is corrected with a reversal, not edited.
+ * There is no second approval; a wrong booking is corrected with a reversal.
  *
  * @property kind which of the three modes.
  * @property accountId the account it books onto, or the source for a transfer.
  * @property amount as typed.
- * @property holderId who holds the money afterwards. Required in **all three** modes, the same
- *   rule the request confirmation carries: custody is kept per org unit, so a balance without a
- *   holder is money nobody is accountable for.
+ * @property holderId who holds the money afterwards; required in all three modes.
  * @property note the Verwendungszweck.
  * @property destinationAccountId the receiving account, for a transfer.
  * @property destinationHolderId who holds it there, for a transfer.
  * @property saving whether the write is in flight.
  * @property error what it was refused with.
- * @property feeRate the org-wide in-game transfer fee, as a fraction, or `null` while it has not
- *   been read. Guidance only — the authoritative fee is computed server-side at booking time.
- * @property feeInclusive whether [amount] is the **debited gross** rather than what the recipient
- *   receives. `false` is the server's own default and means the fee is added on top.
- * @property accountType the selected account's kind, carried because the justification rule turns
- *   on it and the state is where the rule can be enforced. Set by the picker; `null` until an
- *   account is chosen.
- * @property justification why the money is being moved. **Required** on a withdrawal or a transfer
- *   out of a `CARTEL` / `CARTEL_BANK` / `SPECIAL` account — the server answers a blank one with
- *   `BANK_JUSTIFICATION_REQUIRED`, which is a refusal the form can prevent instead of collecting.
- *   A deposit has no such field on the wire at all.
- * @property staffNote the bank's internal note, on all three modes. Redacted from the org unit's
- *   own members (REQ-BANK-054), which is what makes it a different field from [note] rather than a
- *   longer one.
+ * @property feeRate the org-wide in-game transfer fee as a fraction, or `null` until read; guidance
+ *   only, the server computes the binding fee.
+ * @property feeInclusive whether [amount] is the debited gross; `false`, the server default, adds
+ *   the fee on top.
+ * @property accountType the selected account's kind, which the justification rule turns on; `null`
+ *   until an account is chosen.
+ * @property justification why the money is moved; required on a withdrawal or transfer out of a
+ *   `CARTEL`, `CARTEL_BANK` or `SPECIAL` account, and not sent on a deposit.
+ * @property staffNote the bank's internal note, redacted from the org unit's own members
+ *   (REQ-BANK-054).
  * @property counterpartyUserId the other side of the booking, when they hold a tool account.
- * @property counterpartyExternal whether the other side is **not** a tool user, which is what
- *   swaps the picker for a free-text name. Not on the wire — it decides which of the two
- *   counterparty fields is sent.
+ * @property counterpartyExternal whether the other side is not a tool user; not sent, it selects
+ *   which counterparty field is.
  * @property counterpartyExternalName the other side's name when they have no account.
- * @property counterpartyOrgUnitId the other side's org unit. Independent of the two above: a
- *   registered member can still be acting for a unit, and an external party can belong to one.
- * @property splitEnabled whether a deposit is spread across the squadron accounts. Deposit only.
- * @property splitPercent the share that is spread, 1..100, as typed. The server carries a
- *   cross-field rule the document does not express — a split needs a percentage and a non-split
- *   must omit one — so the two travel together or not at all.
+ * @property counterpartyOrgUnitId the other side's org unit, independent of the two above.
+ * @property splitEnabled whether a deposit is spread across the squadron accounts; deposit only.
+ * @property splitPercent the share that is spread, 1..100, as typed; sent only together with
+ *   [splitEnabled].
  */
 data class DirectBookingState(
     val kind: DirectBookingKind = DirectBookingKind.DEPOSIT,
@@ -189,16 +167,10 @@ data class DirectBookingState(
     val figure: java.math.BigDecimal? get() = parseTypedDecimal(amount)
 
     /**
-     * Whether a reason must be given before this booking may be sent.
+     * Whether a justification must be given before this booking may be sent.
      *
-     * Three account kinds demand one, and only on the two modes that take money **out**: the KRT
-     * account, the bank's own, and the special accounts. The same three the web tests
-     * (`JUSTIFICATION_TYPES`), and the same rule the server enforces with
-     * `BANK_JUSTIFICATION_REQUIRED` — checked here so the refusal is a dimmed CTA rather than a
-     * 409 after the member has typed everything else.
-     *
-     * An **unknown** type does not demand one. The flag is the account's own and arrives with it;
-     * inventing a requirement from a missing field would lock a booking the server would take.
+     * True for a withdrawal or transfer on a `CARTEL`, `CARTEL_BANK` or `SPECIAL` account, mirroring the
+     * server's `BANK_JUSTIFICATION_REQUIRED`; an unknown account type does not require one.
      */
     val justificationRequired: Boolean
         get() = kind != DirectBookingKind.DEPOSIT && accountType in JUSTIFICATION_TYPES
@@ -215,9 +187,8 @@ data class DirectBookingState(
     /**
      * What the split would send to the squadron accounts, and what stays behind.
      *
-     * Rounded the way the web rounds it — half-up on the share, remainder by subtraction — so the
-     * two figures always add back to the deposit and neither client can show a total the other
-     * does not.
+     * Rounds half-up on the share and takes the remainder by subtraction, matching the web, so both
+     * figures add back to the deposit.
      *
      * @return share and remainder, or `null` while either half is missing.
      */
@@ -307,22 +278,14 @@ data class DirectBookingState(
         get() = !justificationRequired || justification.isNotBlank()
 
     /**
-     * Whether the split is in a shape the server accepts.
-     *
-     * `BankDepositRequest` carries an `@AssertTrue` — a split needs a percentage and a non-split
-     * must omit one — and it is `@Schema(hidden = true)`, so it appears in **no** generated client
-     * and cannot be enforced by the contract tests. A rule the document does not express is one
-     * the client has to know by hand; this is where it is written down.
+     * Whether the split is in a shape the server accepts: a split needs a percentage and a non-split
+     * must omit one.
      */
     private val splitConsistent: Boolean
         get() = !splitApplies || !splitEnabled || splitValid
 
     /**
-     * Whether the account can carry what this booking takes out of it.
-     *
-     * Against what is **debited**, not against what was typed: with the fee on top the gross is
-     * the figure the server's own overdraft guard uses, so checking the typed one would let the
-     * form invite a booking the server then refuses.
+     * Whether the account can carry what this booking debits, including a fee on top.
      *
      * @param balance what the account stands at, or `null` when the screen does not know.
      * @return whether the withdrawal fits, and `true` for every other mode.
@@ -345,14 +308,12 @@ data class DirectBookingState(
         get() = !feeInclusive || arrives?.let { it.signum() > 0 } != false
 
     /**
-     * What the source account stands at afterwards — the artboard's live preview.
+     * What the source account stands at after this booking.
      *
      * @param balance what it stands at now, or `null` when the screen does not know.
      * @return the figure after this booking, or `null` when either half is missing.
      */
     fun preview(balance: java.math.BigDecimal?): java.math.BigDecimal? =
-        // `debited`, not the typed figure: on a fee-bearing booking more leaves the account than
-        // was typed, and a preview that ignored that showed a balance the account never reaches.
         debited?.let { leaving ->
             balance?.let { current ->
                 if (kind == DirectBookingKind.DEPOSIT) current + leaving else current - leaving
@@ -364,28 +325,23 @@ data class DirectBookingState(
  * The Verwaltung scope's Übersicht tab.
  *
  * @property rows every account of the unit.
- * @property totals the KPI band, or `null` when the server withheld it — which it does for
- *   every caller who is not Bank-Management (REQ-BANK-010).
- * @property management whether the **server** grants this caller Bank-Management.
+ * @property totals the KPI band, or `null` when the server withheld it, as it does for every caller
+ *   without Bank-Management (REQ-BANK-010).
+ * @property management whether the server grants this caller Bank-Management.
  * @property openRequestTotal how many undecided requests the queue holds in total.
- * @property queue the undecided requests, in the order the server returned them. The same read
- *   the per-account counter is aggregated from, so the badge cannot disagree with the list.
+ * @property queue the undecided requests in server order; the per-account counters are aggregated
+ *   from the same read.
  * @property holders the unit's holders, which a confirmation has to name one of.
  * @property counterpartyOptions what the counterparty picker currently offers.
- * @property counterpartyQuery what was typed into it, held here so the field survives a
- *   recomposition and the answer that arrives late can be matched against it.
+ * @property counterpartyQuery what was typed into it, so a late answer can be matched against it.
  * @property orgUnitOptions every active org unit of either kind, for the counterparty's unit.
- * @property filed set when a direct booking came back **filed** rather than booked — over
- *   the KRT employee ceiling the server raises an approval request instead (REQ-BANK-047,
- *   ADR-0109) and answers 202. The balance has not moved, so the screen has to say so;
- *   closing the sheet on it in silence is how a member reads an unchanged figure as a bug.
+ * @property filed set when a direct booking was filed as an approval request (HTTP 202) rather than
+ *   booked (REQ-BANK-047, ADR-0109); the balance has not moved and the screen says so.
  * @property confirming the open confirmation sheet, or `null`.
  * @property rejecting the open refusal dialog, or `null`.
  * @property busyId the request a decision is currently in flight for.
- * @property countsPartial whether the per-account counters are known to be incomplete — the queue
- *   is paged, and a queue longer than [MAX_COUNTED_PAGES] pages is not walked to the end. The
- *   number is then a floor, and the screen says so rather than showing a total that is quietly
- *   wrong (ADR-0104: no silent caps).
+ * @property countsPartial whether the per-account counters are a floor because the queue exceeded
+ *   [MAX_COUNTED_PAGES] pages (ADR-0104).
  * @property phase how far the read has got.
  * @property refreshing whether a pull-to-refresh is running.
  */
@@ -412,24 +368,17 @@ data class BankStaffState(
 /**
  * Drives the bank's Verwaltung scope.
  *
- * **A `Forbidden` here is an ordinary answer, not a defect.** The scope segment is drawn for every
- * member — locked for those without the role, per the design's chapter-09 pattern — and a member
- * who taps into it anyway is told what the server said rather than shown a crash.
+ * A `Forbidden` answer is an ordinary state shown to the member, not a defect.
  *
  * @property source the staff calls.
- * @property memberAccounts the member-visible account list, which is what makes the
- *   "ohne eigenen View-Grant" mark possible: an account on the staff list but not on this one is
- *   an account this caller reaches only through their office.
+ * @property memberAccounts the member-visible account list; an account missing from it is one this
+ *   caller reaches only through their office.
  * @property liveSync the peer bridge, or `null`.
  */
 class BankStaffViewModel(
     private val source: BankStaffSource,
     private val memberAccounts: suspend () -> ApiResult<List<BankAccountSummary>>,
     private val liveSync: LiveSyncSource? = null,
-    // The counterparty's two lists. `BankStaffRepository` implements BankGrantSource as well, so
-    // this is the same object as `source` at the call site -- named separately because the
-    // interface says what is used, and a view model that took the whole repository would be free
-    // to reach for anything on it.
     private val grantees: BankGrantSource? = null,
     private val orgUnits: OrgUnitSource? = null,
 ) : ViewModel() {
@@ -487,16 +436,9 @@ class BankStaffViewModel(
         }
 
         /**
-         * Searches the counterparty picker.
+         * Searches the counterparty picker through `/users/search-bank`, which is gated on `BANK_EMPLOYEE`.
          *
-         * The same endpoint the web's counterparty picker uses (`/users/search-bank`), and NOT
-         * `/users/search`: the two run the same query over the same scope and differ only in the
-         * role gate, which here is widened to BANK_EMPLOYEE — a bank manager holding no org role
-         * gets 403 on the other one and would have no picker at all.
-         *
-         * A refused search leaves the previous options standing rather than emptying the list: the
-         * write the member is heading for reports its own failure, and an empty picker would say
-         * „there is nobody" about a request that never answered.
+         * A refused search keeps the previous options rather than emptying the list.
          *
          * @param query what was typed; blank asks for the first page unfiltered.
          */
@@ -512,12 +454,7 @@ class BankStaffViewModel(
         }
 
         /**
-         * Reads the org units the counterparty may be acting for.
-         *
-         * Every active unit of either kind, which is what the web offers an **external** party.
-         * For a registered member the web narrows to their own memberships and auto-selects a sole
-         * one; that refinement is not built here, so the list is wider than the web's and never
-         * narrower — it can cost a scroll, it cannot hide the right answer.
+         * Reads every active org unit of either kind as the counterparty's possible unit.
          */
         fun loadOrgUnits() {
             if (mutableState.value.orgUnitOptions.isNotEmpty()) {
@@ -533,10 +470,8 @@ class BankStaffViewModel(
         }
 
         /**
-         * Acknowledges the notice that the last attempt was filed rather than booked.
-         *
-         * Its own action rather than a timeout: the notice says the money has **not** moved, and a
-         * message that disappears on its own is one a member can miss entirely.
+         * Acknowledges the notice that the last attempt was filed rather than booked; the notice stays until
+         * acknowledged.
          */
         fun acknowledgeFiled() {
             mutableState.update { it.copy(filed = false) }
@@ -579,17 +514,11 @@ class BankStaffViewModel(
                         destinationAccountId = open.destinationAccountId,
                         destinationHolderId = open.destinationHolderId,
                         feeInclusive = open.feeInclusive,
-                        // A deposit has no justification on the wire at all, so sending one there
-                        // would be a field the schema does not carry rather than an empty one.
                         justification =
                             open.justification.takeIf {
                                 open.kind != DirectBookingKind.DEPOSIT && it.isNotBlank()
                             },
                         staffNote = open.staffNote.takeIf { it.isNotBlank() },
-                        // Exactly one of the two counterparty identities: the toggle decides which,
-                        // and sending both would leave the server to guess which one the member
-                        // meant. The unit is independent of both -- a registered member can act
-                        // for a unit, and an external party can belong to one.
                         counterpartyUserId =
                             open.counterpartyUserId?.takeIf {
                                 open.counterpartyApplies && !open.counterpartyExternal
@@ -685,9 +614,6 @@ class BankStaffViewModel(
                                     BankStaffRow(
                                         account = account,
                                         openRequests = counts.perAccount[account.id] ?: 0,
-                                        // Unknown means the member read failed; marking every row
-                                        // as reached-by-office would be a louder claim than the app
-                                        // can support, so nothing is marked.
                                         viewable = viewable == null || account.id in viewable,
                                     )
                                 },
@@ -698,11 +624,6 @@ class BankStaffViewModel(
                             phase = BankPhase.Ready,
                             queue = counts.rows,
                             holders = mutableState.value.holders,
-                            // Carried across the rebuild, like the holders above. A direct
-                            // booking triggers this reload itself, so a fresh object would
-                            // drop the very notice that write raised — and the notice is the
-                            // only thing telling the member the balance below it is correct
-                            // and their withdrawal is merely filed.
                             filed = mutableState.value.filed,
                         )
                     readHolders()
@@ -727,12 +648,9 @@ class BankStaffViewModel(
     )
 
     /**
-     * Walks the pending queue and counts it by account.
+     * Walks the pending queue, up to [MAX_COUNTED_PAGES] pages, and counts it by account.
      *
-     * Bounded on purpose. A queue deep enough to need more than [MAX_COUNTED_PAGES] pages says
-     * something has gone badly wrong upstream, and spending that many round trips to decorate a
-     * dashboard would be the wrong trade — but a truncated count is reported as truncated rather
-     * than shown as if it were the whole (ADR-0104).
+     * A truncated count is reported as partial (ADR-0104).
      *
      * @return the counts, and whether they are complete.
      */
@@ -745,8 +663,6 @@ class BankStaffViewModel(
         while (!complete && page < MAX_COUNTED_PAGES) {
             when (val result = source.requestQueue(page = page)) {
                 is ApiResult.Failure -> {
-                    // The dashboard still renders. A decoration that could not be read must not
-                    // take the screen down with it — but it must not pretend to be complete.
                     KrtLog.w(LOG_TAG) { "request queue unavailable: ${result.error}" }
                     return OpenRequestCounts(perAccount, total, partial = true, rows = rows)
                 }
@@ -786,10 +702,10 @@ class BankStaffViewModel(
         }
 
     /**
-     * Reads the unit's holders, which the confirmation sheet has to offer.
+     * Reads the unit's holders for the confirmation sheet.
      *
-     * Its failure is not the scope's failure: the dashboard and the queue still render, and a
-     * confirmation simply cannot be submitted until the list arrives.
+     * A failure here does not fail the scope; a confirmation just cannot be submitted until the list
+     * arrives.
      */
     private fun readHolders() {
         viewModelScope.launch {

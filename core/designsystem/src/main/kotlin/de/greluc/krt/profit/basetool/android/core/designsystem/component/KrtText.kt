@@ -29,11 +29,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /**
- * Uppercases a string for the styles the design system marks UPPERCASE.
- *
- * Compose has no `text-transform`, so the transformation happens at the call site. It uses the
- * **current UI locale** rather than the default one, which matters for the app's two locales and
- * for any user whose device locale uppercases differently (the classic Turkish dotted-i trap).
+ * Uppercases a string for the styles the design system marks UPPERCASE, using the current UI
+ * locale.
  *
  * @return the uppercased string.
  */
@@ -44,10 +41,7 @@ fun String.krtUppercase(): String {
 }
 
 /**
- * A screen or section heading: uppercase, orange, tracked.
- *
- * Orange carries both action and identity in this system, so headings are the one place where a
- * large orange text block is correct. Only one heading of a given level per section.
+ * A screen or section heading: uppercase, orange, tracked; one per level per section.
  *
  * @param text the heading; uppercased for display.
  * @param modifier layout modifier.
@@ -71,11 +65,7 @@ fun KrtHeading(
 }
 
 /**
- * A quiet section title with a hairline rule running to the end of the row.
- *
- * Deliberately neutral grey rather than orange: within a screen the orange budget belongs to the
- * single primary action, so structural labels stay muted. The rule fills the remaining width, which
- * is what separates a section title from an ordinary bold label.
+ * A quiet grey section title with a hairline rule running to the end of the row.
  *
  * @param text the title; uppercased for display.
  * @param modifier layout modifier.
@@ -126,17 +116,12 @@ fun KrtHairlineRule(
 }
 
 /**
- * A bright numeric readout — the brightest element on a screen.
- *
- * Uses tabular figures so digits keep their column when a value updates, which is the reason the
- * design system insists on them for amounts, balances and countdowns.
+ * A bright numeric readout with tabular figures, so digits keep their column when a value updates.
  *
  * @param text the formatted number, including its thousands separators.
  * @param modifier layout modifier.
- * @param style the figure's rung on [KrtFigure] — `total` for a screen's hero number, `card`
- *   for one inside a card or row, `inline` beside a label. A number never names a heading
- *   style: those carry letter-spacing, which on digits reads as spaced-out numerals
- *   (round 15 · R2, R3).
+ * @param style the figure's rung on [KrtFigure] — `total` for a screen's hero number, `card` inside
+ *   a card or row, `inline` beside a label; never a heading style.
  * @param color value colour; white by default, semantic tints for deltas and prices.
  */
 @Composable

@@ -36,7 +36,6 @@ class KrtRetryCountdownTest {
 
     @Test
     fun `a negative countdown reads as zero, not as a bug report to the member`() {
-        // An overrun timer is our problem. Rendering "-2" hands it to the member instead.
         setContent(secondsLeft = -2)
 
         compose.onNodeWithText("0").assertIsDisplayed()
@@ -59,7 +58,6 @@ class KrtRetryCountdownTest {
 
         compose.onNodeWithTag("krt-retry-button").performClick()
 
-        // Resetting the backoff is the caller's job; this only has to report that it happened.
         assertEquals(1, pressed)
     }
 
@@ -67,8 +65,6 @@ class KrtRetryCountdownTest {
     fun `both sentences of chapter 14 are shown`() {
         setContent(secondsLeft = 3)
 
-        // The heading is uppercased for display (chapter 14 draws every state title that way);
-        // the caller still passes it in sentence case, which is what a screen reader gets.
         compose.onNodeWithText("SIGNAL INSTABIL").assertIsDisplayed()
         compose.onNodeWithText("Der Server ist ausgelastet.").assertIsDisplayed()
     }

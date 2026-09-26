@@ -23,12 +23,7 @@ import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 
 /**
- * Answers the two staff reads.
- *
- * At file scope rather than nested in one test class: `BankStaffViewModelTest` and
- * `BankDirectBookingFieldsTest` drive the same view model from two directions — the queue and the
- * booking form — and a second copy of this would be a second place for the recorded calls to drift
- * from what the seam actually offers.
+ * Answers the two staff reads for both `BankStaffViewModelTest` and `BankDirectBookingFieldsTest`.
  *
  * @property dashboard what [staffDashboard] returns.
  * @property pages the queue, one entry per page; the walk stops when a page says it is last.
@@ -102,10 +97,7 @@ internal fun staffModel(
 ) = BankStaffViewModel(source = source, memberAccounts = { ApiResult.Success(memberVisible) })
 
 /**
- * One pending request against an account.
- *
- * Shared with the double because the double answers a confirmation with one, and a fixture that
- * lived in only one of the two test classes would make the other one's answers a different shape.
+ * One pending request against an account, shared by the double and both staff test classes.
  *
  * @param accountId which account it stands against.
  * @return the request.

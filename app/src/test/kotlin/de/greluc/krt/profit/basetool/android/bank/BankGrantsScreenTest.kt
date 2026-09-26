@@ -25,12 +25,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * What the grants matrix renders — design chapter 12, artboard 7.
- *
- * The matrix is where a drawing and the server disagree, so the tests pin the server's shape: three
- * capability rows and no approval one, and a standing that is taken away by removing the entry
- * rather than by clearing a fourth box. The locked variant is pinned too — artboard 6's handoff
- * asks for the chapter-09 padlock, and hiding the controls instead would pass a naive test.
+ * Tests the grants matrix (design chapter 12, artboard 7): three capability rows, removal by deleting the entry, and
+ * the padlock on the locked variant.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -98,8 +94,6 @@ class BankGrantsScreenTest {
         compose.onNodeWithText("Einzahlen").assertIsDisplayed()
         compose.onNodeWithText("Auszahlen").assertIsDisplayed()
         compose.onNodeWithText("Transfer").assertIsDisplayed()
-        // The artboard draws a „FREIGEBEN" column. There is no such flag: who may approve a
-        // request is decided per request by `requiredApprover`, never per member.
         assertEquals(
             0,
             compose.onAllNodesWithText("Freigeben", ignoreCase = true)
@@ -111,8 +105,6 @@ class BankGrantsScreenTest {
     fun `the screen says in plain text that the entry alone is the view grant`() {
         render()
 
-        // Not a tooltip: a member with every box unticked can still see the account, and burying
-        // that behind a long-press would make the matrix read as "no rights at all".
         compose
             .onNodeWithText("Wer hier steht, darf das Konto sehen", substring = true)
             .assertIsDisplayed()
@@ -184,8 +176,6 @@ class BankGrantsScreenTest {
 
         compose.onNodeWithText("Eintrag entfernen", ignoreCase = true).performClick()
 
-        // The tab raises a confirmation rather than writing: on an ordinary account the removal
-        // takes the member's sight of it away, which no checkbox on the card mentions.
         assertEquals(1, asked.size)
         assertEquals(false, asked.single().sightSurvives)
     }
@@ -205,8 +195,6 @@ class BankGrantsScreenTest {
                 ),
         )
 
-        // REQ-BANK-037: every KRT member sees this account by rule. Promising to revoke sight here
-        // would be a promise the server does not keep.
         compose.onNodeWithText("sieht jedes Mitglied ohnehin", substring = true).assertIsDisplayed()
         assertEquals(
             0,

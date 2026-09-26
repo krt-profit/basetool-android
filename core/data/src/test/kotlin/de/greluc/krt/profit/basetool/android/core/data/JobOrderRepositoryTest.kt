@@ -152,9 +152,6 @@ class JobOrderRepositoryTest {
             assertEquals("Staffel 1", first.requestingOrgUnit)
             assertEquals("SK Vanguard", first.responsibleOrgUnit)
             assertEquals("Quantainium", first.materials.single().name)
-            // "500.0", not "500": a Double round-trips through its own toString, and the
-            // screen's formatter is what strips the tail. The repository does not pretend to
-            // know how many digits matter.
             assertEquals("500.0", first.materials.single().needed)
             assertEquals(1, first.materials.single().claimCount)
         }
@@ -162,8 +159,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `redacted survives to the screen`() =
         runTest {
-            // The flag is what tells a requester they are looking at a reduced order
-            // (REQ-ORDERS-023). Losing it would present the gaps as the whole truth.
             respond(QUEUE)
 
             assertTrue((repository.queue() as ApiResult.Success).value.rows.first().redacted)
@@ -172,8 +167,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `an absent redacted flag means not redacted`() =
         runTest {
-            // Treating its absence as "something is missing" would put a caveat on every order an
-            // older server sends.
             respond("""{"content": [{"id": "o1", "displayId": 1}], "page": 0, "totalElements": 1, "totalPages": 1}""")
 
             assertFalse((repository.queue() as ApiResult.Success).value.rows.first().redacted)
@@ -201,8 +194,6 @@ class JobOrderRepositoryTest {
 
     @Test
     fun `a need of zero has no progress rather than a full bar`() {
-        // Nothing was asked for, so nothing can be complete — and a full green bar would say the
-        // opposite.
         val material = JobOrderMaterial("m1", "Quantainium", "0", "10", 0, null, null)
 
         assertNull(material.progress)
@@ -235,8 +226,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `the org scope is never sent from the client`() =
         runTest {
-            // Which orders a member sees follows from the active-org-unit header. A client-side
-            // scope would be a second, weaker copy of a server-side rule.
             respond(QUEUE)
 
             repository.queue()
@@ -255,8 +244,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `an assignee carries the id, the note and its own version`() =
         runTest {
-            // The edge's version is not the order's. Echoing the order's would 409 a note edit
-            // against any unrelated change to the order.
             respond(ORDER)
 
             val order = (repository.detail("o1") as ApiResult.Success).value
@@ -273,8 +260,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `an assignee the server sent without a user id is dropped`() =
         runTest {
-            // Both writes on this edge address the member by id, so a row without one could only
-            // offer actions that fail.
             respond(ORDER)
 
             val order = (repository.detail("o1") as ApiResult.Success).value
@@ -325,7 +310,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `clearing a note deletes it and carries the version in the query`() =
         runTest {
-            // The clear has no body, so the version it is locked on has nowhere else to go.
             respond(ORDER)
 
             repository.setAssigneeNote("o1", "u1", null, EDGE_VERSION)
@@ -355,8 +339,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `a status this build does not know is refused rather than guessed at`() =
         runTest {
-            // UNKNOWN exists to carry a constant this build has never seen. Folding it into one of
-            // the four would move the order somewhere nobody asked for.
             val result = repository.setStatus("o1", JobOrderStatus.UNKNOWN, ORDER_VERSION)
 
             assertTrue(result is ApiResult.Failure)
@@ -380,8 +362,6 @@ class JobOrderRepositoryTest {
     @Test
     fun `a blueprint the server named with neither is still pickable`() =
         runTest {
-            // Its id is what the wire wants. Hiding a nameless blueprint would make its item
-            // unorderable, so the row falls back to the wiki key and then to the id itself.
             respond(BLUEPRINTS)
 
             val rows = (repository.blueprintsFor("gi1") as ApiResult.Success).value

@@ -40,14 +40,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * One holder's custody — design chapter 12, artboard 8.
+ * Tests one holder's custody (design chapter 12, artboard 8): a transfer needs a destination and an amount, and a
+ * failed register read keeps the custody figure on screen.
  *
- * The rules with teeth here are about what a transfer may not do: it may not go out without a
- * destination or an amount, and a failure to read the register must not take the custody figure off
- * the screen, because the figure and its postings are what the screen is for.
- *
- * Robolectric because `KrtLog` reaches `android.util.Log`, whose unmocked stub throws inside
- * `viewModelScope` — the supervisor swallows it and the state simply stops moving.
+ * Uses Robolectric because `KrtLog` reaches `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -187,8 +183,6 @@ class BankHolderViewModelTest {
             viewModel.onConfirmTransfer()
             advanceUntilIdle()
 
-            // An empty amount would otherwise reach the server as a zero-value posting, which is a
-            // real ledger entry saying nothing happened.
             assertTrue(source.transfers.isEmpty())
         }
 
@@ -220,7 +214,6 @@ class BankHolderViewModelTest {
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            // Only the transfer needs the register; the figure and its postings are the screen.
             assertEquals("118600.0000", viewModel.state.value.holder?.totalHeld)
             assertTrue(viewModel.state.value.phase is BankPhase.Ready)
             assertTrue(viewModel.state.value.peers.isEmpty())
@@ -244,7 +237,6 @@ class BankHolderViewModelTest {
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            // Not oneself, and not someone who may receive nothing new anyway.
             assertEquals(listOf("h2"), viewModel.state.value.peers.map { it.id })
         }
 

@@ -20,18 +20,10 @@ import de.greluc.krt.profit.basetool.android.auth.LoginUiState
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /**
- * Puts the login screen on a device before it is wired to anything.
+ * Shows the login screen on a device without any wiring behind it, as a dev-flavour launcher entry.
  *
- * Compose previews render the tree; they do not answer what the screen is actually like at 412 dp
- * with the system bars in place, whether the bloom's falloff banded, or whether the footer still
- * fits above a gesture bar. That needs a device, and until the composition root exists there is no
- * route that reaches this screen — so the dev flavour gets its own launcher entry.
- *
- * **Dev flavour only.** A release build ships no development surfaces, and this one in particular
- * would be a login screen whose button logs nothing in.
- *
- * Tapping "Anmelden" cycles the states rather than starting a flow: what needs looking at here is
- * the resting layout, the disabled call to action while a login runs, and the error slot under it.
+ * Tapping "Anmelden" cycles through the resting, in-progress and error states instead of starting a
+ * flow. Dev flavour only.
  */
 class LoginPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

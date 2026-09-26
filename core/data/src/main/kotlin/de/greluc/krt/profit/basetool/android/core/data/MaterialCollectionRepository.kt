@@ -21,18 +21,17 @@ import java.math.BigDecimal
 /**
  * One stock row linked to an Auftrag.
  *
- * @property entryId the inventory row — every write on this page is addressed by it.
+ * @property entryId the inventory row, which every write on this page addresses.
  * @property version its optimistic lock; the delivered flag echoes it.
- * @property owner who holds it, or `null` where the answer redacted it (a requesting-side viewer
- *   sees no owners, `canSeeJobOrderInventoryOwners`).
+ * @property owner who holds it, or `null` where the answer redacted it for a requesting-side
+ *   viewer.
  * @property ownerId the same by id, or `null` for the same reason.
  * @property location where it is, or `null`.
  * @property locationId the same by id.
  * @property materialName what it holds.
  * @property quality the quality reading, or `null` for an item.
  * @property quantity how much is on the row.
- * @property allocated how much of that is earmarked to **this** Auftrag — the figure the unlink
- *   confirmation names, and the reason a row with none can be unlinked without asking.
+ * @property allocated how much of that is earmarked to this Auftrag.
  * @property delivered whether it has been marked delivered.
  */
 data class MaterialCollectionRow(
@@ -50,20 +49,11 @@ data class MaterialCollectionRow(
 )
 
 /**
- * „Materialsammelübersicht" — the stock rows linked to one Auftrag, and the three things that can
- * be changed about them.
- *
- * > **It belongs to the Auftrag, not to the material reference.** `material.collection.back` reads
- * > „Zurück zum Auftrag". Design chapter 16's first draft filed it under Materialien and corrected
- * > itself.
+ * „Materialsammelübersicht": the stock rows linked to one Auftrag, and the writes that change them.
  */
 interface MaterialCollectionSource {
     /**
-     * Reads the rows linked to one Auftrag.
-     *
-     * Visible to anyone who may see the order; the **owners are redacted** for a requesting-side
-     * viewer, which is why the model's owner fields are nullable rather than a name the screen can
-     * rely on.
+     * Reads the rows linked to one Auftrag; owners are redacted for a requesting-side viewer.
      *
      * @param orderId the Auftrag.
      * @return the rows, or the classified failure.
@@ -71,11 +61,7 @@ interface MaterialCollectionSource {
     suspend fun rows(orderId: String): ApiResult<List<MaterialCollectionRow>>
 
     /**
-     * Flips one row's delivered flag.
-     *
-     * `PATCH /inventory/{id}/delivered` — the Logistician shortcut that marks material as handed
-     * over without going through the book-out machinery. It echoes the row's version, so a
-     * concurrent change is a 409 rather than a silent overwrite.
+     * Flips one row's delivered flag without going through the book-out.
      *
      * @param entryId the stock row.
      * @param orderId the Auftrag the flag is set in the context of.
@@ -91,10 +77,7 @@ interface MaterialCollectionSource {
     ): ApiResult<Unit>
 
     /**
-     * Removes one stock row's link to the Auftrag.
-     *
-     * **The stock itself is untouched** — only the earmark goes. That is the whole reason the
-     * confirmation can be a single sentence rather than a danger flow.
+     * Removes one stock row's link to the Auftrag; the stock itself is untouched.
      *
      * @param orderId the Auftrag.
      * @param entryId the stock row.
@@ -106,9 +89,7 @@ interface MaterialCollectionSource {
     ): ApiResult<Unit>
 
     /**
-     * Removes a whole material's link to the Auftrag.
-     *
-     * The second of the two unlinks, for a material that is required but has no stock behind it.
+     * Removes a whole material's link to the Auftrag, for a required material with no stock behind it.
      *
      * @param orderId the Auftrag.
      * @param materialId the material.

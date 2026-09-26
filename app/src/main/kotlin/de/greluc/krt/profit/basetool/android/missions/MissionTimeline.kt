@@ -20,10 +20,7 @@ import kotlinx.coroutines.launch
 private const val LOG_TAG = "MissionTimeline"
 
 /**
- * What a manager is composing on the Ablauf or the Ziele tab.
- *
- * One draft for both, because only one editor can be open at a time — the tabs are exclusive, and a
- * second draft would only be a second thing to keep in sync.
+ * What a manager is composing on the Ablauf or the Ziele tab; one draft serves both.
  *
  * @property stepTitle the new or edited step's title, as typed.
  * @property stepMeta its time-and-place line, as typed.
@@ -32,10 +29,8 @@ private const val LOG_TAG = "MissionTimeline"
  * @property objectiveKind what the Ziel is for.
  * @property editingObjectiveId the Ziel being rewritten, or `null` while composing a new one.
  * @property composing which editor sheet is open — `true` for the Ablauf, `false` for the Ziele,
- *   `null` for neither. The editor is a sheet rather than a permanent form under the list, because
- *   an open form competes with a list somebody is sorting for the same surface (ch. 06 artboard 13).
- * @property sorting whether the reorder mode is on — the click fallback the design system requires
- *   beside any drag.
+ *   `null` for neither.
+ * @property sorting whether the reorder mode is on.
  * @property busy whether a write is running.
  * @property error the last refusal.
  */
@@ -55,15 +50,10 @@ data class MissionTimelineDraft(
 /**
  * The Einsatz's Ablauf and its Ziele, as a manager writes them.
  *
- * > **These surfaces have no artboard for their WRITE half.** Chapter 06 draws both tabs as reading
- * > surfaces — the numbered checklist with its current-phase mark, and the Ziele with their kind.
- * > The editors are composed from the design system's own drawn parts and their composition is
- * > **unratified**; round 11 asks for the drawing.
- *
  * @property missionId the Einsatz.
  * @property source where the writes go.
  * @property scope the view model's scope.
- * @property read what is typed, and the Einsatz as last read — which carries the two section
+ * @property read what is typed, and the Einsatz as last read, which carries the two section
  *   counters these writes echo.
  * @property write reports the draft back, together with the Einsatz a successful write answers
  *   with.
@@ -191,11 +181,9 @@ class MissionTimeline(
     }
 
     /**
-     * Appends a copy of one step — „Duplizieren" of the row's overflow (design ch. 18 §3, E5).
+     * Appends a copy of one step with the same title and meta — „Duplizieren" (design ch. 18 §3, E5).
      *
-     * A copy, not a link: the server has no duplicate call, so this is the ordinary append with the
-     * same title and meta. It lands at the end of the list, where an append lands, rather than
-     * beside its original — there is no insert-at-position on the wire either.
+     * The copy lands at the end of the list.
      *
      * @param step the row to copy.
      */
@@ -210,14 +198,8 @@ class MissionTimeline(
     /**
      * Moves one step one place up or down.
      *
-     * > **Buttons, not a drag.** The reorder endpoint wants the whole id list in its new order, and
-     * > a two-button move produces that list exactly as reliably as a gesture does — without
-     * > inventing a drag interaction no artboard has drawn. Round 11 asks whether it should become
-     * > one; until then this is a marked, working stand-in rather than a guess at a drawing.
-     *
-     * The list is taken from the Einsatz as last read, so a step somebody else added meanwhile is
-     * carried along rather than dropped — and if it was added after this read, the counter is stale
-     * and the server refuses with a `409` instead of losing it.
+     * Sends the whole id list from the Einsatz as last read; a stale counter makes the server answer
+     * `409`.
      *
      * @param stepId which step.
      * @param up `true` to move it towards the start.
@@ -328,10 +310,6 @@ class MissionTimeline(
         scope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    // The editor clears and closes on success and only on success: a refusal that
-                    // emptied it would make the member type it all again to find out what was
-                    // wrong. The reorder mode survives — somebody sorting a list is mid-task, and
-                    // dropping them out of it after every move is the opposite of helping.
                     write(MissionTimelineDraft(sorting = draft.sorting), result.value)
                 }
 
@@ -349,8 +327,8 @@ class MissionTimeline(
  *
  * @param id which row to move.
  * @param up `true` towards the start.
- * @return the new order, or `null` when the row is unknown or already at that end — in which case
- *   nothing is written, so a tap at the edge is a no-op rather than a request the server refuses.
+ * @return the new order, or `null` when the row is unknown or already at that end, in which case
+ *   nothing is written.
  */
 private fun List<String>.moved(
     id: String,
@@ -367,9 +345,6 @@ private fun List<String>.moved(
 
 /**
  * The parts of a step an editor loads.
- *
- * A record rather than the domain model: [editStep] needs three fields and nothing else, and taking
- * the whole `MissionStep` would tie the holder to the read model's shape.
  *
  * @property id which step.
  * @property title what happens.

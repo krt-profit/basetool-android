@@ -1,13 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Themed-icon (monochrome) layer for Android 13+: the same Basetool mark, flat white so the
-  system can tint it to the user's wallpaper palette.
-
-  Geometry is identical to ic_launcher_foreground.xml and must stay in step with it — the
-  placement rationale (why scale 0.292, why the group is translated by 21.88/16.28) lives
-  there and is deliberately not duplicated. Only the colours differ: a themed icon is tinted
-  by the system, so hardcoding the brand orange here would fight that tint.
--->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

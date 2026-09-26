@@ -109,8 +109,6 @@ class BankStaffScreenTest {
     fun `a row with no open request carries no counter at all`() {
         render(BankStaffRow(account(), openRequests = 0, viewable = true))
 
-        // The KPI line under the total always states the queue's size, so the phrase is on screen
-        // exactly once. A second occurrence would be a chip on a row that has nothing waiting.
         assertEquals(
             1,
             compose.onAllNodesWithText("offene Anträge", substring = true, ignoreCase = true)
@@ -134,8 +132,6 @@ class BankStaffScreenTest {
             management = false,
         )
 
-        // Only management sees beyond their own grants. Marking every row for an employee would
-        // say nothing at all.
         assertEquals(
             0,
             compose.onAllNodesWithText("View-Grant", substring = true, ignoreCase = true)
@@ -152,8 +148,6 @@ class BankStaffScreenTest {
             management = false,
         )
 
-        // The server withholds the strip from anyone who is not Bank-Management (REQ-BANK-010).
-        // Rendering zeroes would tell an employee the bank is empty.
         assertEquals(
             0,
             compose.onAllNodesWithText("Gesamt", substring = true, ignoreCase = true)
@@ -179,8 +173,6 @@ class BankStaffScreenTest {
         )
 
         compose.onNodeWithText("Geschlossen", ignoreCase = true).assertIsDisplayed()
-        // A closed account takes no bookings, so its open-request count and its grant status are
-        // noise beside the one fact that matters.
         assertEquals(
             0,
             compose.onAllNodesWithText("View-Grant", substring = true, ignoreCase = true)
@@ -241,11 +233,8 @@ class BankStaffScreenTest {
             }
         }
 
-        // Unlike artboard 1's member row, this surface really does have POST .../confirm and
-        // .../reject behind it.
         compose.onNodeWithText("Bestätigen", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithText("Ablehnen", ignoreCase = true).assertIsDisplayed()
-        // And still no counter.
         assertEquals(
             0,
             compose.onAllNodesWithText("/ 2", substring = true).fetchSemanticsNodes().size,

@@ -14,11 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The deduct-from contract, as the server states it (REQ-INV-027).
- *
- * These are the rules a member would otherwise learn from a 400 or a 422 after the write. Each one
- * is asserted here so the sheet can refuse in place instead — and so that a later "simplification"
- * of the arithmetic has to break a named rule rather than a feeling.
+ * Tests the deduct-from contract (REQ-INV-027), so the sheet can refuse invalid input before the write.
  */
 class HerkunftPlanTest {
     private companion object {

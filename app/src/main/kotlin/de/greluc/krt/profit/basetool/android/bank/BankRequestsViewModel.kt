@@ -35,11 +35,10 @@ import kotlinx.coroutines.launch
  * One row of the Anträge tab, with the two facts the row cannot work out for itself.
  *
  * @property request the request.
- * @property mine whether the caller raised it, which decides between the requester's actions
- *   (edit, withdraw) and the holder's one (approve).
- * @property actionable whether the caller may grant or revoke the owner approval on it. True only
- *   for a request the server returned on the "Fremde Anträge" read, because that read *is* the
- *   authority on who is responsible for which account — the app works out no grant of its own.
+ * @property mine whether the caller raised it, which selects the requester's actions (edit,
+ *   withdraw) over the holder's (approve).
+ * @property actionable whether the caller may grant or revoke the owner approval; true only for a
+ *   request returned by the "Fremde Anträge" read.
  */
 data class BankRequestRow(
     val request: BankBookingRequest,
@@ -50,9 +49,8 @@ data class BankRequestRow(
 /**
  * What the request sheet holds while it is open.
  *
- * @property editing the request being corrected, or `null` when a new one is being raised. The
- *   server refuses an edit of anything but the caller's own pending, unapproved request, and it
- *   refuses a change of account or kind — hence both are locked while this is set.
+ * @property editing the request being corrected, or `null` for a new one; while set, account and kind
+ *   are locked because the server refuses changing them.
  * @property kind which movement.
  * @property accountId the account the money moves on.
  * @property targetAccountId where a transfer goes.
@@ -114,14 +112,11 @@ data class BankRequestsState(
 /**
  * Drives the Anträge tab and the request sheet.
  *
- * **Own and foreign requests are read as two calls and shown as one list.** The server decides who
- * may approve what, so the split is what tells the tab which rows carry an approve action — a
- * single merged read would force the app to reimplement the grant rules to work that out, and it
- * would get them wrong the first time an account changed hands.
+ * Own and foreign requests are read as two calls and shown as one list; the foreign read decides
+ * which rows carry an approve action, so the app never derives grant rules itself.
  *
  * @property source the request calls.
- * @property accountSource the accounts the sheet picks from, which are the same ones the Konten
- *   tab shows.
+ * @property accountSource the accounts the sheet picks from, the same the Konten tab shows.
  * @property liveSync the peer bridge, or `null`.
  */
 class BankRequestsViewModel(
@@ -144,8 +139,6 @@ class BankRequestsViewModel(
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.ORGUNIT_BANK)) { _ ->
-            // Both sections of this room end in the same read: a balance moving means a request
-            // was booked, and a settings change can move a limit that decides who must approve.
             if (loadedOnce) {
                 reload(keepContent = true)
             }
@@ -195,8 +188,6 @@ class BankRequestsViewModel(
                 (own as ApiResult.Success).value.map {
                     BankRequestRow(request = it, mine = true, actionable = false)
                 }
-            // A request can be on both reads at once — one raised by a holder against their own
-            // account. It is theirs, and nobody approves their own, so the own read wins.
             val ownIds = ownRows.map { it.request.id }.toSet()
             val foreignRows =
                 (foreign as ApiResult.Success).value
@@ -226,9 +217,6 @@ class BankRequestsViewModel(
                 mutableState.update { state ->
                     state.copy(
                         accounts = accounts.value,
-                        // A sheet opened straight from the CTA gets here before the accounts do,
-                        // and would otherwise sit with an empty, unsubmittable picker until the
-                        // member noticed and chose one by hand.
                         draft =
                             state.draft?.let { open ->
                                 if (open.accountId == null) {
@@ -301,8 +289,6 @@ class BankRequestsViewModel(
     fun onSubmit() {
         val draft = mutableState.value.draft ?: return
         val existing = draft.editing
-        // A new request needs an account; a correction already has one the server will not let
-        // anyone change, so the picker is absent from that sheet and nothing to check here.
         if (existing == null && draft.accountId == null) {
             return
         }
@@ -425,11 +411,7 @@ class BankRequestsViewModel(
 }
 
 /**
- * The amount as a field can sensibly hold it.
- *
- * The server renders money at its storage scale, so a request of 120.000 aUEC comes back as
- * `120000.0000`. Grouping it is wrong here — an input with separators fights the caret — but so is
- * showing four zeros nobody typed, which is what a device run rejected.
+ * The amount as an input field holds it: a plain number without grouping or trailing zeros.
  *
  * @return the plain number without trailing zeros, or an empty field when there is nothing to edit.
  */

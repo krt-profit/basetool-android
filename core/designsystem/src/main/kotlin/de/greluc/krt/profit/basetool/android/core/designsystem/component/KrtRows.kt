@@ -73,15 +73,9 @@ private val ROW_ICON = 24.dp
 private val ROW_CHEVRON = 18.dp
 
 /**
- * The canonical dense list row of the app.
+ * The canonical dense list row: one 56 dp touch target with a tabular trailing value.
  *
- * The whole row is one touch target — comfortably above the 48 dp minimum at its 56 dp height — so
- * users never have to hit a small chevron. The trailing block is where the row's number goes
- * (countdown, quantity, balance); it renders with tabular figures through [KrtDataValue] so a list
- * of numbers stays aligned.
- *
- * Long-press selects when [onLongClick] is supplied, which is how the multi-select surfaces of the
- * Lager and inbox screens work.
+ * Long-press enters selection mode when [onLongClick] is supplied.
  *
  * @param title the record's name; truncated with an ellipsis rather than wrapped.
  * @param modifier layout modifier.
@@ -191,18 +185,10 @@ fun KrtListRow(
 private val SETTING_ICON = 20.dp
 
 /**
- * A row of the settings screen: leading glyph, label, optional explanation, trailing control.
+ * A settings row: leading glyph, muted label, optional explanation, trailing control.
  *
- * Distinct from [KrtListRow] on purpose, and not a parameter of it. A list row presents a **record**
- * — its title is the thing itself, rendered bright, and the row opens a detail. A settings row
- * presents a **control**: the label is a caption for whatever sits on the right, so it is muted, and
- * the row's job is to toggle or open that control rather than to navigate. Folding the two together
- * would mean a component whose title colour and trailing semantics depend on a flag.
- *
- * The **whole row** is the touch target when [onClick] is given, which is what lets the trailing
- * control keep its designed size — a 24 dp toggle is nowhere near tappable on its own, and the row
- * is 56 dp tall. A trailing control that handles its own gesture (a segmented control, where the row
- * cannot know which segment was meant) is placed without [onClick].
+ * With [onClick] the whole row is the touch target; omit it when the trailing control handles its
+ * own gesture.
  *
  * @param title the setting's label.
  * @param modifier layout modifier.
@@ -254,9 +240,6 @@ fun KrtSettingRow(
                 color = if (enabled) tone else KrtPalette.Gray2,
             )
             if (subtitle != null) {
-                // bodySmall, not labelSmall: the subtitle is a sentence, and labelSmall carries
-                // 1.65 sp of tracking for UPPERCASE labels. On screen that spaced a two-line
-                // explanation out until it read as a heading someone had forgotten to uppercase.
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
@@ -269,10 +252,8 @@ fun KrtSettingRow(
 }
 
 /**
- * The "load more" control at the foot of a paginated list.
- *
- * The label always states how much of the whole is loaded ("Mehr laden — 40 von 143"): the app
- * never truncates a list silently, so the user can tell a short list from a capped one.
+ * The "load more" control at the foot of a paginated list, whose label states how much of the
+ * whole is loaded ("Mehr laden — 40 von 143").
  *
  * @param text the label including the counts.
  * @param onClick loads the next page.
@@ -324,10 +305,7 @@ fun KrtEndOfList(
 }
 
 /**
- * A swipe action revealed behind a list row.
- *
- * Swipes reveal rather than commit: the design system forbids auto-committing past a threshold, and
- * a destructive swipe must be undoable through a 5 second undo toast.
+ * A swipe action tile revealed behind a list row.
  *
  * @param label action label; uppercased for display.
  * @param iconRes glyph of the action.
@@ -376,20 +354,8 @@ private const val SWIPE_FLING_VELOCITY = 1000f
 /**
  * Wraps a list row in the design system's two swipe actions.
  *
- * The gesture existed only as a picture until now: [KrtSwipeAction] drew the revealed tile and
- * nothing ever moved a row, so the inbox had no swipe at all. The numbers here are the spec's, not
- * defaults — reveal at [SWIPE_ACTION_WIDTH], commit at [SWIPE_COMMIT_FRACTION] of the row width or
- * on a fling, and a spring-back over `KrtTheme.motionMs`.
- *
- * Committing is left to the caller and the row is **not** removed here. A delete is optimistic with
- * a 5 s undo toast, so the list decides whether the row disappears; a "mark read" leaves it in
- * place. Either way the row animates back to rest, because a row that stayed open after its action
- * ran would read as though the action had not.
- *
- * Under reduced motion the spring-back has zero duration, so the row snaps home instead of gliding.
- * The gesture itself is a finger tracking its own position and stays available — and the row's
- * icon buttons remain the accessible path to both actions, which is what the spec requires of them
- * anyway.
+ * Reveals at [SWIPE_ACTION_WIDTH] and commits at [SWIPE_COMMIT_FRACTION] of the row width or on a
+ * fling; the row always springs back and is not removed here. Under reduced motion it snaps home.
  *
  * @param onStartAction invoked on a committed left-to-right swipe (the green "gelesen" reveal);
  *   `null` disables that direction.
@@ -422,8 +388,6 @@ fun KrtSwipeableRow(
                 .fillMaxWidth()
                 .onSizeChanged { rowWidth = it.width },
     ) {
-        // The revealed side is decided by the sign of the offset, so only one tile is ever
-        // composed — two would both be hit-testable under the row.
         if (offset.value > 0f && startAction != null) {
             Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.CenterStart) {
                 startAction()
@@ -498,10 +462,7 @@ private fun RowsPreview() {
 /**
  * Where one step of an Ablauf stands relative to the rest of the list.
  *
- * The three values are the design system's `.step--done` / `.step--now` / plain `.step`, and they
- * are derived rather than stored: the wire carries `done` per step and nothing else, so "now" is
- * the first step that is not done. That is what artboard 06-13 draws — a „Geplant" Einsatz still
- * marks the step the crew is about to reach.
+ * Derived, not stored: "now" is the first step that is not done.
  */
 enum class KrtStepState {
     /** Ticked off. Green box with a check, and the rail below it turns green with it. */
@@ -515,24 +476,17 @@ enum class KrtStepState {
 }
 
 /**
- * One line of an Ablauf, drawn as the design system's `.ablauf > .step`.
+ * One line of an Ablauf, drawn as the design system's `.ablauf > .step`: a numbered box with a rail
+ * running down to the next step.
  *
- * The numbered box and the rail running out of its foot are what make this a **timeline** rather
- * than a list with a status chip: progress is read down the left edge in one movement, and the
- * green segment stops exactly where the work stops. A „ERLEDIGT" chip on the right says the same
- * thing about one row and nothing at all about the list.
- *
- * Design ch. 06 artboard 13 puts the actions **on this row** rather than under it — „die Zeile
- * bleibt EINE Zeile hoch". They are centred against the whole row, so a title that wraps does not
- * drag them out of line with their neighbours.
+ * Actions sit on the row itself, vertically centred against it.
  *
  * @param number the step's 1-based position, shown when it is not [KrtStepState.Done].
  * @param state where it stands; decides the box, the title's colour and the rail below it.
  * @param title what happens.
  * @param modifier layout modifier.
  * @param meta the time-and-place line beneath the title, or `null` when the step has none.
- * @param connected whether a rail runs on to a following step — `false` on the last row, which must
- *   not trail a stub into empty space.
+ * @param connected whether a rail runs on to a following step; `false` on the last row.
  * @param actions the row's own controls, drawn at the trailing edge and vertically centred.
  */
 @Composable
@@ -555,8 +509,6 @@ fun KrtStepRow(
             modifier =
                 Modifier
                     .weight(1f)
-                    // The gap to the next step lives inside this row so the rail can run through
-                    // it; a gap between list items would break the line at every step.
                     .padding(top = STEP_BODY_TOP, bottom = if (connected) KrtSpacing.s16 else 0.dp),
             verticalArrangement = Arrangement.spacedBy(STEP_BODY_GAP),
         ) {

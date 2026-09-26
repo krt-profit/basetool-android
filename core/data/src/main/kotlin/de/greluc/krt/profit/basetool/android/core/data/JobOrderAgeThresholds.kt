@@ -11,16 +11,10 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * When an unfinished order starts to look old, in days.
+ * The ages in days at which an unfinished order is coloured as old, taken from the operator's
+ * `job_order.age_yellow_days` and `job_order.age_red_days` system settings.
  *
- * **The operator owns these numbers, not this app.** They are the `job_order.age_yellow_days` and
- * `job_order.age_red_days` system settings, editable in the web app's admin area, and the queue's
- * age colouring is the one place a member sees them. Hard-coding the defaults here would make the
- * app disagree with the web queue the moment somebody tunes them — and disagree silently, because
- * a colour carries no number to check.
- *
- * The defaults below are the ones the migration seeds and the web app falls back to, so a fresh
- * install and a failed settings read both look exactly like the web app does.
+ * The defaults match the values the migration seeds and the web app falls back to.
  *
  * @property yellowDays age from which an order is drawn in the warning colour.
  * @property redDays age from which it is drawn in the danger colour.
@@ -33,8 +27,7 @@ data class JobOrderAgeThresholds(
      * Which band an order created at [createdAt] falls into.
      *
      * @param createdAt when the order was raised.
-     * @param now the moment to measure against; overridden only by tests, which would otherwise
-     *   have to wait ninety days.
+     * @param now the moment to measure against; overridden by tests.
      * @return the band; [JobOrderAgeBand.Fresh] for anything below the yellow threshold.
      */
     fun bandFor(

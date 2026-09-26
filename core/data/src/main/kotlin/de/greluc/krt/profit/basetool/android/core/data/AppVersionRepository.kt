@@ -27,11 +27,7 @@ data class AppVersionPolicy(
     val releasesUrl: String,
 ) {
     /**
-     * Whether [versionCode] is still served.
-     *
-     * **A zero floor always passes**, which is the unconfigured server's answer and must never
-     * lock anybody out. Everything else is a plain comparison — the app does not interpret the
-     * number, it obeys it.
+     * Whether [versionCode] is still served; a zero floor, the unconfigured answer, always passes.
      *
      * @param versionCode this build's own `versionCode`.
      * @return `true` when the build may run.
@@ -51,12 +47,7 @@ fun interface AppVersionSource {
 }
 
 /**
- * Reads `GET /api/v1/app/version-policy` (server REQ-API-010).
- *
- * **The one endpoint the app calls without needing a session.** That is the point of it: when a
- * contract change breaks the login itself, the build that most needs to be told it is too old is
- * exactly the one that cannot authenticate. The shared client omits `Authorization` when there is
- * no session, so this works signed in or out with no second client.
+ * Reads `GET /api/v1/app/version-policy` (REQ-API-010), the one endpoint the app calls without a session.
  *
  * @property reader performs the call and classifies its failure.
  */
@@ -83,17 +74,8 @@ class AppVersionRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     AppVersionPolicy(
-                        // A missing floor is NO floor, never a blocking one. The generator makes
-                        // every field nullable, and the wrong default here would wall off every
-                        // member the first time the server omitted a value.
                         minimumVersionCode = result.value.minimumVersionCode ?: 0,
                         latestVersionCode = result.value.latestVersionCode ?: 0,
-                        // https, or the fallback. This is the one value in the app that
-                        // arrives from the wire and leaves again as an implicit ACTION_VIEW, on
-                        // the one endpoint that answers without a token — so `market://`,
-                        // `intent://` or anything else another app claims would be launched on a
-                        // compromised server's say-so. A wall with a wrong-but-safe link beats a
-                        // wall that opens something we did not choose.
                         releasesUrl = safeReleasesUrl(result.value.releasesUrl),
                     ),
                 )

@@ -38,10 +38,7 @@ data class UnbackedMaterial(
 )
 
 /**
- * The unlink being confirmed.
- *
- * Only a row with an earmarked amount asks: the link is what goes, the stock stays, and a row that
- * promised nothing has nothing to warn about.
+ * The unlink being confirmed; asked only for a row with an earmarked amount.
  *
  * @property entryId the stock row.
  * @property materialName what it holds.
@@ -86,9 +83,6 @@ data class OrderCollectionState(
 /**
  * Drives „Materialsammelübersicht" — the stock rows linked to one Auftrag (REQ-APP-ORDERS-023).
  *
- * > **It belongs to the Auftrag.** `material.collection.back` reads „Zurück zum Auftrag"; design
- * > chapter 16's first draft filed this page under the material reference and corrected itself.
- *
  * @property source the rows and the three writes.
  * @property orders where the order is read, for its number, its required materials and the gate.
  * @property orderId which Auftrag.
@@ -119,16 +113,6 @@ class OrderCollectionViewModel(
                             rows = result.value,
                             displayId = order?.displayId.orEmpty(),
                             unbacked = order.krtUnbacked(result.value),
-                            // `canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`,
-                            // computed server-side per order — the same expression the two
-                            // unlink endpoints carry in their own `@PreAuthorize`. So the
-                            // screen agrees with them by construction rather than by a rule
-                            // written twice.
-                            //
-                            // An absent flag closes the screen. It is only absent from a
-                            // server too old to send it, and these three writes remove work:
-                            // guessing "allowed" there would offer a member a delete the
-                            // server then refuses.
                             allowed = order?.canEdit == true,
                             loading = false,
                         )
@@ -146,11 +130,8 @@ class OrderCollectionViewModel(
     /**
      * Flips one row's delivered flag.
      *
-     * The one write on this screen whose server-side gate is **not** the order's. It lives on
-     * `/inventory` and is judged by `canEditInventoryItem` — the row's rule. So a caller the screen
-     * has opened can still be refused here, on a row whose stock belongs to another unit, and the
-     * 403 is shown rather than pre-empted: the collection row carries no per-row permission on the
-     * wire, and hiding a control the server would have allowed is the worse of the two errors.
+     * The server gates this by the inventory row's own rule (`canEditInventoryItem`), not the order's,
+     * so a `403` is shown when it comes rather than pre-empted.
      *
      * @param row which row.
      */
@@ -240,11 +221,8 @@ class OrderCollectionViewModel(
 }
 
 /**
- * The materials the Auftrag requires that no linked row covers.
- *
- * The design's second section — „Verknüpfte Materialien (ohne Bestand)". Derived rather than read,
- * because the server has no endpoint for it: the required list and the linked rows are two answers
- * and the difference is what is missing.
+ * The materials the Auftrag requires that no linked row covers — „Verknüpfte Materialien (ohne
+ * Bestand)", derived on the device.
  *
  * @receiver the order, or `null` when it could not be read.
  * @param rows the linked stock rows.

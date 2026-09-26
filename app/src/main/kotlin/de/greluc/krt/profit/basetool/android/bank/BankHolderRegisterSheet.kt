@@ -51,12 +51,9 @@ data class BankHolderRegisterActions(
 )
 
 /**
- * „+ Halter registrieren" — the entry point for everything artboard 8 shows.
+ * „+ Halter registrieren": registers a member as a holder of the unit.
  *
- * Without a holder there is no custody to look at and no booking confirmation can name one, so this
- * is the first action of the register rather than an afterthought. The sheet states what a holder is
- * — and that custody is kept at org-unit level — because the word carries no such meaning on its
- * own.
+ * The sheet explains what a holder is and that custody is kept at org-unit level.
  *
  * @param draft what the sheet holds.
  * @param saving whether the registration is in flight.

@@ -63,11 +63,8 @@ data class BankStaffQueueActions(
 )
 
 /**
- * The Verwaltung scope's Anträge tab — design chapter 12, artboard 5.
- *
- * The same card the member surface uses, with the bank employee's two decisions in place of the
- * holder's one. Here `BESTÄTIGEN` and `ABLEHNEN` are exactly right, unlike on artboard 1: this is
- * the surface that has `POST …/confirm` and `POST …/reject` behind it.
+ * The Verwaltung scope's Anträge tab: the pending queue with the bank employee's `BESTÄTIGEN` and
+ * `ABLEHNEN` decisions.
  *
  * @param state what the scope holds.
  * @param onRefresh a pull-to-refresh.
@@ -110,8 +107,6 @@ fun BankStaffQueue(
                 }
             }
             if (state.countsPartial) {
-                // Stated, not tucked into a tooltip: a queue that ends early has to say so where
-                // it ends (ADR-0104).
                 item(key = "partial") {
                     Text(
                         text = stringResource(R.string.bank_staff_queue_partial),
@@ -158,14 +153,11 @@ private fun RowScope.StaffRequestActions(
 }
 
 /**
- * Books a request — the sheet artboard 5 draws as a bare button.
+ * Books a request.
  *
- * **It cannot be a button.** `ConfirmBankBookingRequest.holderId` is required by the server: a
- * booked deposit or withdrawal records which Verwahrer received or paid the money out
- * (REQ-BANK-040/-044). An over-limit request is additionally refused with
- * `BANK_OWNER_APPROVAL_REQUIRED` unless the employee attests that the responsible holder approved
- * (REQ-BANK-041). The web frontend has a modal for exactly this; the drawing has neither control,
- * and the gap went back to the design side rather than being coded around.
+ * A sheet rather than a button because the server requires a holder
+ * (`ConfirmBankBookingRequest.holderId`, REQ-BANK-040) and refuses an over-limit request with
+ * `BANK_OWNER_APPROVAL_REQUIRED` unless the employee attests the owner approval (REQ-BANK-041).
  *
  * @param state what the sheet holds.
  * @param holders the holders it may name.
@@ -258,10 +250,8 @@ fun BankConfirmSheet(
 }
 
 /**
- * The attestation an over-limit request cannot be booked without.
- *
- * It says what the server already knows — whether the responsible holder granted their approval —
- * so the employee is ticking a box they can check rather than one they must take on trust.
+ * The attestation an over-limit request cannot be booked without, stating whether the responsible
+ * holder granted their approval.
  *
  * @param state what the sheet holds.
  * @param onAttest reports the tick.

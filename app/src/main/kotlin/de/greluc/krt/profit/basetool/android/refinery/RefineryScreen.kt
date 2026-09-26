@@ -120,11 +120,7 @@ const val REFINERY_STORED_NOTICE_TAG: String = "refinery-stored-notice"
 private const val MINUTES_PER_HOUR = 60L
 
 /**
- * The member's own Raffinerie orders (design spec ch. 11 §1).
- *
- * **No total.** Chapter 11's list shows chips and rows and no count, and that is also the only
- * honest option here: „In Arbeit" and „Abholbereit" are one server answer split on the device, so a
- * server total would describe the pair and a local one only the pages fetched so far.
+ * The unit's Raffinerie orders, as a filterable list without a total.
  *
  * @param state what to draw.
  * @param onFilterChanged a chip was tapped.
@@ -179,10 +175,6 @@ fun RefineryOrdersScreen(
         }
 
         is RefineryPhaseState.Ready -> {
-            // The FAB rides over the list, as artboard 11-1 draws it — the same corner every
-            // other list in the app puts its „anlegen" in. It sat above the list as a full-width
-            // outline band, a shape no chapter draws, and cost a row of the list on every screen
-            // for an action most members take once a session.
             Box(modifier = modifier.fillMaxSize()) {
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
@@ -193,11 +185,6 @@ fun RefineryOrdersScreen(
                         FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
                         if (state.orders.isEmpty()) {
                             KrtRefreshableFill {
-                                // „Aktiv" is the default, so its empty state is the one most members
-                                // will ever meet — and „für diesen Filter liegt nichts vor" would
-                                // leave them looking at a screen that hides the rest without saying
-                                // so. It names what is missing and points at the chip that shows
-                                // everything (ADR-0104's no-silent-caps rule, applied to a filter).
                                 val active = state.filter == RefineryFilter.ACTIVE
                                 KrtEmptyState(
                                     iconRes = DesignR.drawable.ic_krt_refinery,
@@ -238,11 +225,6 @@ fun RefineryOrdersScreen(
                                 }
                                 item(key = "footer") {
                                     if (state.hasMore) {
-                                        // The label counts what is on screen, not a server total: the
-                                        // two live filters are a device-side split of one answer, so a
-                                        // server count would name the unsplit pair. Saying "mehr
-                                        // laden" beside the loaded count is the honest version, and it
-                                        // is what keeps this from reading as a completeness claim.
                                         KrtLoadMore(
                                             text =
                                                 pluralStringResource(
@@ -267,10 +249,6 @@ fun RefineryOrdersScreen(
                 }
                 onCreate?.let { create ->
                     if (isWideWindow()) {
-                        // A bar across the foot of the list column, as chapter 11's tablet frame
-                        // draws it — not a floating button. In a pane this narrow the FAB sat on
-                        // top of a row and hid half of it, and the row it covered was a run the
-                        // member might have come to collect.
                         KrtCtaButton(
                             text = stringResource(R.string.refinery_create_title),
                             onClick = create,
@@ -302,10 +280,7 @@ fun RefineryOrdersScreen(
 }
 
 /**
- * The four chips of chapter 11.
- *
- * Horizontally scrollable rather than wrapped: „Abholbereit" and „Eingelagert" are long German
- * compounds, and a wrap would put one chip on its own line on a narrow phone.
+ * The filter chips, in a horizontally scrollable row.
  *
  * @param selected the active chip.
  * @param onFilterChanged a chip was tapped.
@@ -349,8 +324,6 @@ private fun OrderRow(
     onClick: () -> Unit,
 ) {
     val phase = order.phaseAt(now)
-    // A card, not a padded Column: every design chapter draws its list items as bordered
-    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(
         modifier = Modifier.fillMaxWidth().testTag(REFINERY_ROW_TAG),
         onClick = onClick,
@@ -360,14 +333,6 @@ private fun OrderRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // „ARC-L1 · 16.08. 22:41" — station AND start time, because a refinery run has no
-            // number to lead with (round 14 · S15: there is no `displayId` like an Auftrag's, and
-            // G10 asks for one). The station alone made every card on a Staffel with one refinery
-            // look the same; the time is what tells them apart.
-            //
-            // Two texts, so the STATION gives way first: „ARC-L1 Wide Forest Station" is a real
-            // name in the fixtures and one Text ellipsised the time away — exactly the half that
-            // carries the distinction.
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
@@ -392,16 +357,10 @@ private fun OrderRow(
             KrtStatusPill(
                 text = stringResource(phase.labelRes()),
                 tone = phase.tone(),
-                // Tagged because the chip row above says the same words: „In Arbeit" is both a
-                // filter and a status, and both are uppercased by the design system. Without this
-                // a test asserting the row's status matches the chip as readily.
                 modifier = Modifier.testTag(REFINERY_PHASE_TAG),
             )
         }
         OwnerLine(order = order, isMine = isMine)
-        // Design ch. 11 artboard 1 lists the goods ON the card. Without them the card says an order
-        // exists at a station and nothing about what is in it — and "what is in it" is the reason a
-        // member opens the Raffinerie at all.
         if (order.yields.isNotEmpty()) {
             KrtHairlineRule()
             order.yields.forEach { good -> GoodRow(good = good) }
@@ -411,20 +370,10 @@ private fun OrderRow(
 }
 
 /**
- * Whose run this is, and what it is running — „☉ Rhea · Dinyx Solventation".
+ * Whose run this is and its method, e.g. „Rhea · Dinyx Solventation".
  *
- * **The screen lists the unit's orders, not only the caller's** (round 16), and until then no card
- * said whose yield was sitting there ready to collect, or whom to ask about it. The name leads
- * because that is the question a foreign card raises; the method follows it on the same line
- * because the two together are one sentence about the run.
- *
- * The caller's own row is drawn brighter and suffixed „ (du)", so finding yourself in a list of
- * fourteen is a glance rather than a read. Without an identity the suffix is simply absent and
- * every card names its owner plainly — wrong about nobody.
- *
- * **The name is what may not be cut.** It is the discriminator; the method is a detail one can
- * infer from the goods below. So the name takes the space it needs and the method ellipsises,
- * which is the opposite of what a single joined string would have done.
+ * The caller's own row is drawn brighter with a „ (du)" suffix; without a known identity every card
+ * just names its owner. The name is never cut; the method ellipsises.
  *
  * @param order the order.
  * @param isMine whether the caller owns it.
@@ -437,8 +386,6 @@ private fun OwnerLine(
     val method = secondLine(order)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        // 6 dp in the artboard; the scale has no s6, and s4 keeps the glyph closer to the name
-        // than the name is to the separator, which is the reading order this line wants.
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -449,10 +396,6 @@ private fun OwnerLine(
             tint = KrtPalette.TextMuted,
         )
         Text(
-            // No deleted-account fallback here, and deliberately: user deletion REASSIGNS refinery
-            // orders to a surviving admin rather than orphaning them (backend REQ-DATA-008,
-            // `REFINERY_ORDERS_REASSIGNED`), so an order without an owner is not a state the server
-            // can produce.
             text =
                 order.ownerName.let { name ->
                     if (isMine) stringResource(R.string.refinery_owner_you, name) else name
@@ -518,11 +461,9 @@ private fun GoodRow(good: RefineryYield) {
 }
 
 /**
- * The card's last row: where the run stands, what it is worth, and the way in.
+ * The card's last row: where the run stands, its estimated UEX value with „≈", and the way in.
  *
- * The value is **data**, so it is white or green and never orange — chapter 11 is explicit, and the
- * reason is that orange in this design system means *action*, which an estimate is not. It is an
- * estimate (UEX), and the "≈" says so rather than a footnote nobody reads.
+ * The value is drawn white or green, never orange.
  *
  * @param order the order.
  * @param phase which of the three states it is in.
@@ -547,18 +488,10 @@ private fun CardFooter(
         Text(
             text = remaining,
             style = MaterialTheme.typography.bodySmall,
-            // The PHASE's tone, which is what artboard 11-1 draws: „noch 5 Std. 12 Min." in the
-            // running blue, „seit 06:41 abholbereit" in the ready green. It was hardcoded green,
-            // so a run whose end the server does not know read as one ready to collect — the tint
-            // has to follow the state rather than announce one.
             color = phase.tone().krtColor(),
             modifier = Modifier.weight(1f),
         )
         value?.let { amount ->
-            // Two texts, not one formatted string: „Wert ≈" is a muted label and the figure beside
-            // it is the data (artboard 11-1). It WAS one string — and that string carries no
-            // placeholder, so `stringResource(id, arg)` dropped the argument and every card in the
-            // list read „Geschätzter Wert" with no number at all.
             Text(
                 text = stringResource(R.string.refinery_value),
                 style = MaterialTheme.typography.bodySmall,
@@ -584,12 +517,7 @@ private fun CardFooter(
 }
 
 /**
- * The row's second line: what a member needs to tell two orders apart at a glance.
- *
- * The METHOD alone, since round 14 (S15): the start time moved up into the lead line, the goods
- * are listed under it in full, and a running order's remaining time belongs to the footer
- * (artboard 11-1), where it sits beside the value. Each of those had at some point been folded in
- * here, and the card ended up saying the same clock twice.
+ * The row's second line: the refining method.
  *
  * @param order the order.
  * @return the line, empty when the server named no method.
@@ -618,11 +546,7 @@ private fun RefineryOrder.krtStarted(): String? =
     startedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }?.krtShortMoment()
 
 /**
- * The remaining-time text of chapter 11, at the granularity the clock ticks.
- *
- * Rounded up rather than down: a run with forty seconds left reads „noch 1 Min.", and a member who
- * walks over finds it done. Rounding down would show „noch 0 Min." for a whole minute, which reads
- * as ready and is not.
+ * The remaining-time text, in minutes rounded up so a run is never shown as ready too early.
  *
  * @param endsAt when the run ends.
  * @param now the clock.
@@ -676,7 +600,7 @@ const val REFINERY_DELETED_TOAST_TAG: String = "refinery-deleted-toast"
 private const val DELETED_TOAST_MS = 2000L
 
 /**
- * One order in full, with „In Lager buchen" (design spec ch. 11 §2).
+ * One order in full, with „In Lager buchen".
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
@@ -685,8 +609,7 @@ private const val DELETED_TOAST_MS = 2000L
  * @param onStoreConfirmed the confirmation was accepted.
  * @param onStoreDismissed the confirmation was dismissed.
  * @param modifier layout modifier.
- * @param menu the two actions of design ch. 11 artboards 6 and 7, or `null` where the screen
- *   cannot navigate.
+ * @param menu the edit and delete actions, or `null` where the screen cannot navigate.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -776,8 +699,8 @@ fun RefineryOrderDetailScreen(
 /**
  * What the Raffinerie detail's `⋮` offers.
  *
- * @property onEdit open the pre-filled form (artboard 6).
- * @property onDeleteRequested raise the deletion confirmation (artboard 7).
+ * @property onEdit open the pre-filled form.
+ * @property onDeleteRequested raise the deletion confirmation.
  * @property onDeleteConfirmed it was accepted.
  * @property onDeleteDismissed it was dismissed.
  */
@@ -789,12 +712,9 @@ data class RefineryDetailMenu(
 )
 
 /**
- * The `⋮` of the order detail.
+ * The `⋮` of the order detail, with „Bearbeiten" and „Löschen".
  *
- * Both entries are **drawn for everyone**: whether the caller owns this run or is a logistician is
- * the server's answer. „Löschen" on a booked run is drawn **locked with its reason** rather than
- * left out — the rule is real (its yield exists as Lager rows), but it is the app's rule, so the
- * member is told it rather than shown a menu that quietly lost an entry.
+ * Both entries are always drawn; „Löschen" on a booked run is drawn locked with its reason.
  *
  * @param state what the detail holds.
  * @param menu the four callbacks.
@@ -807,9 +727,6 @@ private fun OrderMenu(
     var open by rememberSaveable { mutableStateOf(false) }
     val edit = stringResource(R.string.refinery_edit_title)
     val delete = stringResource(R.string.refinery_delete_action)
-    // Two different locks on the same menu, and they must not be confused: „not yours" is about
-    // WHO, „already booked" about WHEN. A member reading „Der Auftrag ist eingelagert" on somebody
-    // else's run would go looking for a state they cannot see.
     val foreignReason = stringResource(R.string.refinery_write_locked_foreign)
     val lockedReason = if (state.mine) stringResource(R.string.refinery_delete_locked_stored) else foreignReason
     KrtOverflowMenu(
@@ -826,8 +743,6 @@ private fun OrderMenu(
                     reason = foreignReason.takeIf { !state.mine },
                     onClick = {
                         open = false
-                        // Drawn and tappable for everyone (ADR-0011); the row states the reason and
-                        // must not go on to open a form whose save the server refuses.
                         if (state.mine) {
                             menu.onEdit()
                         }
@@ -841,9 +756,6 @@ private fun OrderMenu(
                     reason = lockedReason.takeIf { !state.deletable },
                     onClick = {
                         open = false
-                        // A locked row keeps its tap target so it can state its reason —
-                        // which the row itself draws. It must not go on to raise the
-                        // confirmation for a deletion that will not happen.
                         if (state.deletable) {
                             menu.onDeleteRequested()
                         }
@@ -854,12 +766,9 @@ private fun OrderMenu(
 }
 
 /**
- * The deletion confirmation of artboard 7.
+ * The deletion confirmation: a danger modal without a typing hurdle.
  *
- * A danger modal and **no typing hurdle**: the hurdle is reserved for wipe-grade actions (design
- * ch. 02 §7), and a refinery order is one row. The body names what goes — the goods lines and a
- * yield that was never booked — and the one thing that does not apply, because each sentence
- * heads off a different wrong conclusion.
+ * The body names what goes (the goods lines and an unbooked yield).
  *
  * @param order the run.
  * @param busy whether the deletion is in flight.
@@ -918,17 +827,8 @@ private fun OrderDetailBody(
     onStoreRequested: () -> Unit,
 ) {
     val phase = order.phaseAt(state.now)
-    // The run's own head, as artboard 11-2 draws it: the status under the name and, beside it,
-    // which refinery and which method. Both stood in the body under the section bar, which left
-    // the bar naming the category („RAFFINERIEAUFTRAG") of a screen that shows exactly one.
-    //
-    // The artboard's „#7841" is mock — no order number exists on the wire, and the web's own
-    // title is „Raffinerieauftrag Details" — so the head names what the app actually has.
     ProvideScreenTopBar(
         title = stringResource(R.string.refinery_order_title),
-        // **One publisher for the whole bar.** The slot holds one head and the last writer wins,
-        // so the overflow published on its own — with a null title — raced this one: whichever
-        // ran last, the bar lost either its name or its ⋮. Same trap the Auftrag detail hit.
         actions = menu?.let { { OrderMenu(state = state, menu = it) } },
         subtitle = {
             Row(
@@ -937,8 +837,6 @@ private fun OrderDetailBody(
                 modifier = Modifier.padding(top = 2.dp),
             ) {
                 KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
-                // Station and start time, the same lead the list card carries — the run has no
-                // number, and these two together are what names it (round 14 · S15).
                 val identity = order.krtLead()
                 if (identity.isNotBlank()) {
                     Text(
@@ -963,8 +861,6 @@ private fun OrderDetailBody(
         if (!state.online) {
             OfflineBand()
         }
-        // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
-        // rest of the app uses for a block of facts that belong together.
         KrtHudBox(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtKeyValueRow(
@@ -991,8 +887,6 @@ private fun OrderDetailBody(
                         if (phase == RefineryPhase.RUNNING) {
                             remainingText(order.endsAt, state.now)
                         } else {
-                            // „heute 06:41" rather than a full stamp: a finished run's end is read
-                            // as "how long ago", which is what the artboard shows.
                             order.endsAt
                                 ?.let { runCatching { Instant.parse(it) }.getOrNull() }
                                 ?.relativeToNow()
@@ -1003,10 +897,6 @@ private fun OrderDetailBody(
         }
         KrtSectionTitle(text = stringResource(R.string.refinery_yield))
         order.yields.forEach { YieldRow(it) }
-        // One row, not two. The artboard closes the yield block with „Geschätzter Wert" in the
-        // success green; chapter 11 wants a UEX estimate behind it, no endpoint offers one, and the
-        // recorded profit is the figure the web itself shows. Printing Ore Sales beside it repeated
-        // an input as if it were a result. Deviation recorded in docs/specs/refinery.md.
         order.profit?.let {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1045,11 +935,7 @@ private fun OrderDetailBody(
 }
 
 /**
- * One yield: the material, its grade beneath it, and the amount.
- *
- * A card rather than a label-value row. Artboard 2 sets the material bold with „Qualität 874"
- * under it and the amount right-aligned; run together on one line the two read as a single long
- * label and the figure stops being scannable.
+ * One yield as a card: the material, its quality beneath it, and the amount right-aligned.
  *
  * @param good the yield.
  */
@@ -1085,12 +971,7 @@ private fun YieldRow(good: RefineryYield) {
 }
 
 /**
- * An amount in the material's own unit.
- *
- * **Never a hardcoded SCU**, for the same reason as on the Materialbörse: an item counted in pieces
- * and labelled „SCU" is a quantity a member acts on. And never the wire's number either — the
- * repository has already turned units into SCU, and this only has to render what it produced
- * without inventing precision the run did not have.
+ * An amount in the material's own unit, never a hardcoded SCU.
  *
  * @param amount the amount, already in the member's unit.
  * @param piece whether that unit is pieces.
@@ -1107,10 +988,7 @@ private fun amountText(
 }
 
 /**
- * The booking confirmation of chapter 11.
- *
- * It names the number of Lager entries the booking will create, because that is the part a member
- * cannot see from the button: one entry per material, not one per order.
+ * The booking confirmation, naming how many Lager entries it creates: one per material.
  *
  * @param order the order about to be booked.
  * @param onConfirm accepted.
@@ -1146,14 +1024,9 @@ private fun StoreConfirmation(
 }
 
 /**
- * Renders a wire timestamp the way chapter 11 writes one: „16.08. 22:41", in the member's zone.
+ * Renders a UTC ISO wire timestamp as „16.08. 22:41" in the member's zone (REQ-APP-API-004).
  *
- * Found on a device: the detail printed `2026-08-24T02:53:02.557721Z` verbatim in both rows. The
- * wire is UTC ISO and the screen is the member's zone (`REQ-APP-API-004`) — the rule every other
- * screen in the app already follows.
- *
- * An unparseable value is shown as it came rather than replaced: a server that changed its format
- * is something to see. A missing one falls back to the unknown-time wording.
+ * An unparseable value is shown as it came; a missing one falls back to the unknown-time wording.
  *
  * @return the formatted stamp.
  */
@@ -1203,14 +1076,10 @@ private fun RefineryPhase.labelRes(): Int =
     }
 
 /**
- * The phase's colour, mapped onto the design system's status tones.
+ * The phase's colour, as a design-system status tone.
  *
- * Chapter 11 names the three colours outright — „In Arbeit" info, „Abholbereit" success,
- * „Eingelagert" grey — so the mapping is to the design system's tones that carry those hues, not to
- * the tones whose names happen to match the phase. `Active` is the success green and belongs to
- * READY; `Planned` is the info blue and belongs to RUNNING. Nothing here is orange: the chapter
- * reserves that for the brand, and its rule that a value is „weiß/grün — nie orange" applies to the
- * status beside it as much as to the number.
+ * „In Arbeit" is info blue (`Planned`), „Abholbereit" success green (`Active`), „Eingelagert" grey;
+ * never orange.
  *
  * @return the tone.
  */
@@ -1255,8 +1124,8 @@ fun RefineryOrdersRoute(
  *
  * @param viewModel drives the screen.
  * @param modifier layout modifier.
- * @param onEdit open the pre-filled form, or `null` where the screen cannot navigate — which also
- *   takes the whole `⋮` away, because the deletion has nowhere to return to either.
+ * @param onEdit open the pre-filled form, or `null` where the screen cannot navigate; this also
+ *   removes the whole `⋮`.
  * @param onDeleted the run was deleted and this screen has nothing left to draw.
  */
 @Composable
@@ -1267,10 +1136,6 @@ fun RefineryOrderDetailRoute(
     onDeleted: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // The run is gone; the screen showing it has nothing left to show, so the caller takes over —
-    // but not before the confirmation has been read. Artboard 7 puts „Auftrag gelöscht." on the
-    // list the member lands on; a toast raised there would have to be handed across two view
-    // models, so it is shown here for its two seconds and the navigation follows it.
     LaunchedEffect(state.deleted) {
         if (state.deleted) {
             delay(DELETED_TOAST_MS)

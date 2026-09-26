@@ -26,14 +26,8 @@ import okhttp3.Request
 import java.io.IOException
 
 /**
- * The one question the gate asks, as its caller needs it.
- *
- * A separate type from [AccountGateRepository] so the polling logic can be exercised without a
- * socket: the loop's interesting properties — that it stops on approval, that it survives a lost
- * response, that a second start does not double the request rate — are about *scheduling*, and
- * asserting them through a real HTTP stack would test OkHttp instead. Opening the repository class
- * for subclassing would achieve the same thing by weakening production code, which is the trade
- * this interface exists to avoid.
+ * The account-gate read the polling logic depends on, separate from [AccountGateRepository] so scheduling can be tested
+ * without a socket.
  */
 fun interface AccountGateSource {
     /**
@@ -45,22 +39,10 @@ fun interface AccountGateSource {
 }
 
 /**
- * Reads the answers that decide whether a signed-in member reaches the app at all.
+ * Reads whether a signed-in member is admitted: an approved registration, an assigned role and accepted Terms of Use.
  *
- * A valid token is not admission. The backend gates every other endpoint behind an approved
- * registration, an assigned role and an accepted Terms-of-Use version, and answers **403 for all
- * three** with the stable codes `PENDING_APPROVAL` / `NO_ROLE` / `TERMS_ACCEPTANCE_REQUIRED` (main
- * repo REQ-SEC-017 / REQ-SEC-053 / REQ-SEC-028). The app therefore asks up front rather than
- * waiting to be refused: the alternative is a first screen that loads, fails, and then has to guess
- * which of four unrelated 403s it just received.
- *
- * The endpoint is deliberately reachable while its own gate is closed — that is what makes the call
- * possible for a pending caller, and it is a property of the server the app depends on rather than
- * a happy accident.
- *
- * Nothing here is cached. The state is one enum, it is read at app start and on an explicit
- * refresh, and a stale "approved" restored from disk would be the one cached value able to let
- * somebody past a gate the server has since closed.
+ * The backend otherwise refuses with 403 `PENDING_APPROVAL`, `NO_ROLE` or `TERMS_ACCEPTANCE_REQUIRED`
+ * (REQ-SEC-017). Nothing is cached, so a stale approval can never let anybody past a closed gate.
  *
  * @property reader performs the call and classifies its failures
  */
@@ -80,17 +62,8 @@ class AccountGateRepository(
     /**
      * Reads the calling member's position in the approval queue.
      *
-     * A `PENDING_APPROVAL` **refusal is folded into a successful [ApprovalStatus.PENDING]** rather
-     * than surfaced as an error. Whether this particular endpoint is refused depends on how the
-     * deployment orders its gate filters, and both outcomes mean the identical thing to the caller.
-     * Treating one of them as a failure would show a connectivity screen to a member whose account
-     * is simply waiting for an administrator.
-     *
-     * A `NO_ROLE` refusal is folded the same way, and it can only arrive as one: the backend
-     * refuses a role-less account on every API path except this one and the two anonymous reads
-     * (main repo REQ-SEC-053), so there is no successful body that could carry the state.
-     * Left as a failure it would reach the member as "Command did not respond" — a connectivity
-     * screen for an account that is perfectly connected and simply has no role yet.
+     * A `PENDING_APPROVAL` refusal is folded into [ApprovalStatus.PENDING] and a `NO_ROLE` refusal into
+     * `ApprovalStatus.NO_ROLE`, instead of surfacing as failures.
      *
      * @return the status, or a failure the caller can show
      */

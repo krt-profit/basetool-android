@@ -75,14 +75,9 @@ private val TYPE_ICON = 20.dp
 /**
  * The notification inbox (design spec ch. 07), fully interactive.
  *
- * Every action reaches the member before the network does: a row flips read, or leaves the list, on
- * the spot. A delete is the one that can be taken back — the row goes at once and the call waits
- * five seconds, because the server cannot un-delete and an undo offered after the call would be a
- * button that cannot do what it says.
- *
- * **Both actions exist twice, and that is the point.** Swiping is the fast path; the two icon
- * buttons on every row are the reachable one. A gesture is invisible to a screen reader and hard
- * for anyone with a motor impairment, so the buttons are not a fallback to be dropped later.
+ * Every action updates the list immediately. A delete removes the row at once but sends the call
+ * only after a five-second undo window. Each action is available both by swipe and by an icon
+ * button on the row.
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
@@ -112,12 +107,6 @@ fun NotificationsScreen(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        // Narrower than the app-wide 1200 dp cap, because design ch. 07 says so: an inbox is a
-        // column of sentences, and a sentence that runs the full width of a tablet is harder to
-        // read than one that does not. The global cap is a maximum, not a target.
-        // widthIn BEFORE fillMaxSize, not after. The other order fixes the width to the parent's
-        // maximum first, leaving widthIn nothing to shrink — the cap silently does nothing, which
-        // is how it shipped and what a 1280 dp tablet showed: rows running the full width.
         Column(modifier = Modifier.widthIn(max = INBOX_COLUMN_MAX).fillMaxSize()) {
             if (state.phase is NotificationsPhase.Ready && state.notifications.isNotEmpty()) {
                 Row(
@@ -127,12 +116,6 @@ fun NotificationsScreen(
                             .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 ) {
-                    // Both carry their glyph, as artboard 1 draws them — and they are the same two
-                    // the rows carry, so the header action and the per-row action read as the same
-                    // verb rather than as two unrelated controls.
-                    // Even halves. Sized to content the two are lopsided — the longer label takes
-                    // what it needs and leaves the shorter one so little that „GELESENE LÖSCHEN"
-                    // broke mid-word across four lines once the glyphs joined them.
                     KrtGhostButton(
                         text = stringResource(R.string.notifications_mark_all_read),
                         onClick = onMarkAllRead,
@@ -159,9 +142,6 @@ fun NotificationsScreen(
                 }
 
                 is NotificationsPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -212,8 +192,6 @@ fun NotificationsScreen(
                 }
             }
         }
-        // The undo sits above the list rather than inside it: the row it refers to is gone, so
-        // anchoring it to the list would anchor it to nothing.
         if (state.pendingDelete != null) {
             KrtToast(
                 title = stringResource(R.string.notifications_deleted_title),
@@ -304,10 +282,8 @@ private fun NotificationsList(
 /**
  * One notification row.
  *
- * An unread row carries the design's orange inset bar, a bright bold sentence and an orange type
- * icon; a read one is muted throughout. The two differ in more than one channel on purpose — colour
- * alone would carry the whole distinction, and it is the channel a member with a colour-vision
- * deficiency does not have.
+ * Unread rows carry an orange inset bar, bold bright text and an orange icon; read rows are muted,
+ * so the state is not signalled by colour alone.
  *
  * @param notification the notification.
  * @param onClick opens its subject.
@@ -341,8 +317,6 @@ private fun NotificationRow(
         )
         KrtIcon(
             id = notification.kind.krtIconRes(),
-            // The icon repeats the row's source area, which the sentence already names. A screen
-            // reader announcing it again would read every row twice.
             contentDescription = null,
             size = TYPE_ICON,
             tint = if (notification.read) KrtPalette.TextMuted else MaterialTheme.colorScheme.primary,
@@ -363,8 +337,6 @@ private fun NotificationRow(
                 color = KrtPalette.TextMuted,
             )
         }
-        // Not a fallback for the swipe — the reachable path to the same two actions. Both are
-        // 48 dp targets, which is why the row's own press area stops short of them.
         if (!notification.read) {
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_check,
@@ -401,27 +373,19 @@ private fun Notification.sentence(): String =
     )
 
 /**
- * How long ago this notification was raised, in the platform's words.
- *
- * The shared ladder of [relativeToNow], so the inbox, the Kartellbank and the dashboard cannot
- * drift apart on what „gestern" looks like.
+ * How long ago this notification was raised, via the shared [relativeToNow] ladder.
  *
  * @return e.g. "vor 4 Min.", or an empty string when the server sent no timestamp.
  */
 @Composable
 private fun Notification.timeLabel(): String {
-    // Read so the label recomposes on a locale change.
     LocalConfiguration.current
     val raised = createdAt ?: return ""
     return raised.relativeToNow()
 }
 
 /**
- * The icon for a notification's source area.
- *
- * Internal because the dashboard's unread band draws the same rows and must not keep a second copy
- * of the mapping — two lists of the same notifications with different icons is the kind of drift
- * nobody notices until a member asks which one is right.
+ * The icon for a notification's source area, shared with the dashboard's unread band.
  *
  * @return the drawable id, per the design's rule.
  */
@@ -448,9 +412,6 @@ fun NotificationsRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // „3 NEU" belongs in the bar, not in the list (design ch. 07). It only has room there since the
-    // org chip and the bell stopped appearing on pushed screens — and on the inbox the bell would
-    // have pointed at the screen it was on anyway (`REQ-APP-UI-005`).
     ProvideScreenTopBar(
         actions =
             if (state.unread > 0) {
@@ -467,7 +428,6 @@ fun NotificationsRoute(
                     )
                 }
             } else {
-                // Never „0 neu": an empty count is a fact the empty list already states.
                 null
             },
     )

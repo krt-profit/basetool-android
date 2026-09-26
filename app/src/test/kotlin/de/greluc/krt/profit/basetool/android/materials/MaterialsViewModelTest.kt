@@ -69,7 +69,6 @@ class MaterialsViewModelTest {
             listOf(
                 row("q", "Quantainium", "Veredelt", BigDecimal("79.40"), BigDecimal("88.10")),
                 row("l", "Laranite", "Veredelt", LARANITE_BUY, LARANITE_SELL),
-                // Nobody sells it, so it has no answer to „mindestens 50".
                 row("m", "Medpen (Hemozal)", null, null, null),
             ),
         )
@@ -111,8 +110,6 @@ class MaterialsViewModelTest {
 
             assertEquals(MaterialsPhase.Ready, vm.state.value.phase)
             assertEquals(CATALOGUE_SIZE, vm.state.value.visible.size)
-            // „Unsortiert" is the web's own fallback, so a material without a category still gets a
-            // chip rather than falling out of every one of them.
             assertEquals(listOf("Unsortiert", "Veredelt"), vm.state.value.categories)
         }
 

@@ -19,21 +19,6 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/* ───────────────────────────── GLOW ─────────────────────────────
- * The system has NO drop shadows for depth — depth is hairlines and corner brackets. The only
- * light effect is a restrained orange bloom, and "restrained" is a number, not a feeling:
- *
- *   HARD CAPS — nothing in the app may exceed either of these:
- *       radius <= 12.dp        alpha <= 0.10
- *
- * Three sizes, and only these three. A surface that wants a fourth does not need a glow.
- *   Focus     6.dp / 0.10   input focus, focused chip or tab — sits ON the border
- *   Emphasis 12.dp / 0.07   a bar carrying the one primary action (CTA bar, selection bar)
- *   Overlay  12.dp / 0.10   a surface floating over content (bottom sheet, modal, toast)
- *
- * Elevation stays 0.dp on every Material container: no shadowElevation, no tonalElevation, and
- * never two blooms on one screen — that reads as a bug, not as depth.
- */
 object KrtGlow {
     val focusRadius: Dp = 6.dp
     const val FOCUS_ALPHA = 0.10f

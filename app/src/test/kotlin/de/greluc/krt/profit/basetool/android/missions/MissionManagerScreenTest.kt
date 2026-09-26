@@ -65,13 +65,9 @@ class MissionManagerScreenTest {
     private val robot by lazy { MissionScreenRobot(compose) }
 
     /**
-     * The Funktions-Select renders for a manager and its chips are live.
+     * The Funktions-Select, reached through the row's ⋮ sheet, renders for a manager with live chips.
      *
-     * The catalogue is only loaded for someone who may assign, so an empty one is what a plain
-     * member gets — which is why this test hands one in rather than relying on the screen to ask.
-     *
-     * It is drawn in the row's sheet since 2026-09-07, not inline on the row, so the path through
-     * the ⋮ is part of the assertion: a picker nobody can reach is not a picker.
+     * The test hands in the catalogue, which is loaded only for someone who may assign.
      */
     @Test
     fun `a manager can assign a Funktion from the roster`() {
@@ -106,17 +102,14 @@ class MissionManagerScreenTest {
             canManage = true,
         )
 
-        // A 44 dp icon button carrying its name as a content description, per `.btn-icon`.
         compose.onNodeWithContentDescription("Einchecken", ignoreCase = true).performClick()
 
         assertEquals(listOf("check-in:p2"), taps)
     }
 
     /**
-     * „Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast
-     * nennt die Rolle." So the tap must still land, and it must produce the refusal rather than a
-     * write. `enabled = false` was the rejected alternative: a control that cannot be tapped cannot
-     * say why it is dim.
+     * Without the Missions-Manager role the Funktions-Select still takes the tap and answers with a toast naming the
+     * role instead of a write.
      */
     @Test
     fun `a member without the role is refused in place rather than shown nothing`() {

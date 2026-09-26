@@ -24,10 +24,8 @@ import kotlinx.coroutines.launch
  * What the Fleetview-Import screen holds.
  *
  * @property pasted the export typed or pasted into the box.
- * @property fileName the picked file's name, or `null` when nothing was picked. Kept so the screen
- *   can name what is armed — "eine Datei" would leave a member unsure which one.
- * @property fileBytes the picked file's content, held in memory because the upload happens on the
- *   member's next tap rather than on the pick.
+ * @property fileName the picked file's name, or `null` when nothing was picked.
+ * @property fileBytes the picked file's content, held in memory until the upload.
  * @property uploading whether an import is in flight.
  * @property result the last import's tally, shown as a modal until dismissed.
  * @property error the last refusal, if any.
@@ -47,11 +45,7 @@ data class FleetImportState(
         get() = !uploading && online && (fileBytes != null || pasted.isNotBlank())
 
     /**
-     * Value equality over the byte array too.
-     *
-     * A `data class` compares an array by identity, which would make two states holding the same
-     * export compare unequal and re-emit forever. Spelled out rather than dropping the array,
-     * because the bytes have to survive until the member taps Importieren.
+     * Value equality including the content of the byte array, which a `data class` compares by identity.
      *
      * @param other the state to compare with.
      * @return whether both hold the same import.
@@ -88,10 +82,8 @@ data class FleetImportState(
 /**
  * Drives the Fleetview import.
  *
- * The two ways in — a picked `.json` and a pasted export — end in the same upload, because the
- * server takes one file part either way. Picking a file wins over the box when both are filled: a
- * member who has just chosen a file has said what they mean more recently than the text still
- * sitting in a field they scrolled past.
+ * A picked file and a pasted export end in the same upload; when both are present, the picked file
+ * wins.
  *
  * @property source the hangar reads and writes.
  * @property connectivity whether the device has a route to the server.

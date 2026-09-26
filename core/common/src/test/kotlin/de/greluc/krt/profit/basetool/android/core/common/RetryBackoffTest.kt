@@ -20,23 +20,17 @@ class RetryBackoffTest {
         assertEquals(6.seconds, RetryBackoff.next(1))
         assertEquals(THIRD_STEP.seconds, RetryBackoff.next(2))
         assertEquals(TOP_STEP.seconds, RetryBackoff.next(LAST_RUNG))
-        // It holds rather than growing: a screen the member is still looking at must keep trying at
-        // a rate they can perceive as trying.
         assertEquals(TOP_STEP.seconds, RetryBackoff.next(FAR_PAST_THE_TOP))
     }
 
     @Test
     fun `the server's Retry-After wins over the ladder`() {
-        // The server knows when its bucket refills; the client is guessing. Retrying sooner spends
-        // a token that was never going to be granted.
         assertEquals(SERVER_ASKED.seconds, RetryBackoff.next(attempt = 0, retryAfterSeconds = SERVER_ASKED))
         assertEquals(SERVER_ASKED.seconds, RetryBackoff.next(attempt = LAST_RUNG, retryAfterSeconds = SERVER_ASKED))
     }
 
     @Test
     fun `an absent, zero or negative Retry-After falls back to the ladder`() {
-        // "Retry immediately" from a server that just rate-limited you is not an instruction worth
-        // following.
         assertEquals(3.seconds, RetryBackoff.next(attempt = 0, retryAfterSeconds = null))
         assertEquals(3.seconds, RetryBackoff.next(attempt = 0, retryAfterSeconds = 0))
         assertEquals(6.seconds, RetryBackoff.next(attempt = 1, retryAfterSeconds = NEGATIVE))
@@ -44,8 +38,6 @@ class RetryBackoffTest {
 
     @Test
     fun `an unreasonably long Retry-After is capped back onto the ladder`() {
-        // A live countdown running for an hour is a frozen app in the member's eyes. Late rather
-        // than stuck: the ladder's ceiling, and the manual retry stays available.
         assertEquals(TOP_STEP.seconds, RetryBackoff.next(attempt = LAST_RUNG, retryAfterSeconds = AN_HOUR))
     }
 
@@ -60,8 +52,6 @@ class RetryBackoffTest {
         assertEquals(TWELVE, RetryBackoff.parseRetryAfter("  12 "))
         assertNull(RetryBackoff.parseRetryAfter(null))
         assertNull(RetryBackoff.parseRetryAfter("0"))
-        // The HTTP-date form is legal and deliberately not parsed: it would mean trusting the
-        // device clock against the server's, and a skew turns three seconds into hours or none.
         assertNull(RetryBackoff.parseRetryAfter("Wed, 21 Oct 2026 07:28:00 GMT"))
     }
 

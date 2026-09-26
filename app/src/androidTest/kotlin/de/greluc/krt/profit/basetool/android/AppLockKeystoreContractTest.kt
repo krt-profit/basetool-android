@@ -19,33 +19,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The Keystore contract the app lock rests on, asserted against a real Keystore.
+ * Asserts the Keystore contract the app lock rests on against a real Keystore (REQ-APP-AUTH-010).
  *
- * Every claim `REQ-APP-AUTH-010` makes about auth-bound keys was, before these tests existed,
- * asserted only by reading Android's documentation — and that gap hid two defects that each made
- * the lock completely unusable on a whole platform range. Both were invisible to unit tests,
- * because the Keystore is not exercised off a device, and neither is reproducible in Robolectric.
- *
- * They are worth naming, because they are what these tests are for:
- *
- * 1. Arming sealed the session key inline while creating the key. Auth-per-use means per *use*, and
- *    encrypting is a use, so Keystore refused with `Key user not authenticated` — **the lock could
- *    not be switched on at all** on API 30+.
- * 2. On the since-dropped API 29 the key was time-bound, `Cipher.init` threw until an
- *    authentication existed, and a broad catch turned that into the value already meaning "this
- *    lock can never be opened again". Dropping the platform (ADR-0006) removed the path; these
- *    tests are what would catch its return.
- * 3. `KeystoreSecretCipher` — the refresh-token cipher, not the lock — wrapped only
- *    `GeneralSecurityException`. On an API-31 device with **no screen lock**, keystore2 cannot
- *    create the `setUnlockedDeviceRequired` key ("User ECDH key missing") and throws
- *    `java.security.ProviderException`, which extends **RuntimeException**. It walked past the
- *    wrapper and past `LoginViewModel`'s handler and took the process down on the sign-in button —
- *    while the code that should have caught it was already written, with a comment explaining why
- *    it mattered.
- *
- * They deliberately stop short of the prompt: a `BiometricPrompt` needs an activity and a human.
- * What they pin is everything either side of it — that the key can be created on this device, and
- * that both ciphers the prompt is meant to vouch for can be obtained from it.
+ * Covers creating the auth-bound key, obtaining both ciphers from it before any authentication, and
+ * the refresh-token cipher surfacing platform failures as [SecretCipherException]. The
+ * `BiometricPrompt` itself is out of scope, since it needs an activity and a human.
  */
 @RunWith(AndroidJUnit4::class)
 class AppLockKeystoreContractTest {
@@ -61,10 +39,8 @@ class AppLockKeystoreContractTest {
     /**
      * Creating the key and obtaining the encrypt cipher both succeed before any authentication.
      *
-     * This is the half of arming that runs *before* the prompt, and it is the exact operation that
-     * used to throw. An auth-per-use key permits `init` and defers authorisation to the
-     * `CryptoObject`, so a failure here means the platform changed that contract — and the lock can
-     * no longer be switched on.
+     * An auth-per-use key permits `init` and defers authorisation to the `CryptoObject`; a failure here
+     * means the lock cannot be switched on.
      */
     @Test
     fun armingProducesACipherBeforeAnyAuthentication() {
@@ -76,11 +52,10 @@ class AppLockKeystoreContractTest {
     }
 
     /**
-     * A key created moments ago does not report itself unsatisfiable.
+     * A freshly armed key does not report itself unsatisfiable.
      *
-     * `unlockCipher` answers `null` when the key is gone or was invalidated by a new biometric
-     * enrolment — a lock with no way past it but signing out. Directly after arming it must not say
-     * that, or switching the lock on would lock the member out of their own session.
+     * `unlockCipher` answers `null` only for a key that is gone or invalidated by a new biometric
+     * enrolment.
      */
     @Test
     fun aFreshlyArmedKeyCanBeOpened() {
@@ -127,12 +102,10 @@ class AppLockKeystoreContractTest {
     }
 
     /**
-     * The refresh-token cipher round-trips on this device.
+     * The refresh-token cipher round-trips on this device without escaping as a `RuntimeException`.
      *
-     * Defect 3 above made this throw `ProviderException` rather than fail cryptographically, so the
-     * assertion that matters is not "the value comes back" but "nothing escapes as a
-     * RuntimeException". A device with a screen lock takes the happy path; one without takes the
-     * path that used to crash, and must arrive at [SecretCipherException] instead.
+     * A device without a screen lock must arrive at [SecretCipherException] rather than a
+     * `ProviderException`.
      */
     @Test
     fun theRefreshTokenCipherNeverEscapesAsARuntimeException() {
@@ -145,9 +118,6 @@ class AppLockKeystoreContractTest {
                 plaintext.contentEquals(restored),
             )
         } catch (expected: SecretCipherException) {
-            // The device cannot provide the key — no screen lock, no secure element, a wiped
-            // Keystore. That is a legitimate outcome and the one the login handles. What must never
-            // happen is any other throwable reaching this point.
             assertNotNull("the cause is kept for the log", expected.cause)
         } finally {
             cipher.deleteKey()

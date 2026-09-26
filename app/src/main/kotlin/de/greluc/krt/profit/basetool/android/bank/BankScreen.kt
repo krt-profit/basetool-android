@@ -133,11 +133,7 @@ const val BANK_ROLE_TAG: String = "bank-role"
 const val BANK_ACCOUNT_TAG: String = "bank-account"
 
 /**
- * The Konten list (design spec ch. 12 §1), read-only.
- *
- * **The Anträge tab is absent.** Approving and rejecting a booking request are mutations behind a
- * staged approval ladder (Phase 3), and a tab that only listed them while the actions lived
- * elsewhere would invite a member to try.
+ * The Konten list, read-only.
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
@@ -162,9 +158,6 @@ fun BankAccountsScreen(
         }
 
         is BankPhase.Failed -> {
-            // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-            // empty state, because a countdown in front of a 403 promises a retry that will
-            // answer exactly the same.
             val retryIn = state.retryIn
             if (retryIn != null) {
                 KrtRetryCountdown(
@@ -222,11 +215,7 @@ fun BankAccountsScreen(
 }
 
 /**
- * The colour a 30-day change is stated in.
- *
- * Green up, red down, muted when it did not move — the direction is the fact, and a member reading
- * a column of deltas should not have to parse a sign to see it. Both tints are the -text variants,
- * which are the ones that hold contrast on black.
+ * The colour a 30-day change is stated in: green up, red down, muted when unchanged.
  *
  * @param delta the change as the server sent it.
  * @return the tint for that reading.
@@ -241,15 +230,9 @@ internal fun deltaTone(delta: String): androidx.compose.ui.graphics.Color {
 }
 
 /**
- * What the visible accounts add up to.
+ * The sum of the accounts on screen, so the total covers only what the caller can see.
  *
- * Design ch. 12 artboard 1 leads the list with it, and the reason is scope: a member with a
- * view-grant on three accounts is being told how much the org holds *that they can see*, which is
- * not the same as what the org holds. Summing the rows on screen keeps the two identical by
- * construction — a server-side grand total would silently include accounts the caller is not shown.
- *
- * Accounts whose balance the server withheld are skipped rather than counted as zero: a redacted
- * balance is unknown, and unknown is not nothing.
+ * Accounts whose balance the server withheld are skipped rather than counted as zero.
  *
  * @param accounts the accounts on screen.
  */
@@ -260,10 +243,6 @@ private fun TotalCard(accounts: List<BankAccountSummary>) {
         return
     }
     val sum = total.reduce { a, b -> a + b }
-    // `KrtTotalTile` IS this tile — the orange leading bar that marks a figure as the sum of the
-    // screen, the muted label, the bright value. It was hand-built here before anyone noticed the
-    // component existed, and the copy lost two things the original has: the label uppercased, and
-    // the value in tabular figures so the digits hold their column while the total changes.
     KrtTotalTile(
         label = stringResource(R.string.bank_total),
         value = formatAmount(sum.toPlainString()),
@@ -283,18 +262,10 @@ private fun AccountCard(
     account: BankAccountSummary,
     onClick: () -> Unit,
 ) {
-    // In a tablet's list column the card becomes a ROW — name left, figures right (ch. 02 §5,
-    // extended to list rows in round 14 · S31). Everything else the card carries, the sparkline
-    // above all, belongs to the detail pane beside it: three accounts as full cards filled the
-    // 397 dp column, and the pane next to them repeated every figure a second time.
     if (isWideWindow()) {
         AccountRow(account = account, onClick = onClick)
         return
     }
-    // KrtKpiCard *is* this card: design ch. 12 draws the account as a `kpi-card` — name above, the
-    // balance large beneath it, and the 30-day delta beside a sparkline on one row. It was built
-    // here as a bare Column with a hairline underneath, which loses the border, puts the balance on
-    // the name's line and leaves the delta grey when its sign is the point of it.
     KrtKpiCard(
         title = account.name,
         value = formatAmount(account.balance.orEmpty()),
@@ -317,10 +288,7 @@ private fun AccountCard(
 internal const val MINUS_CHAR = '\u2212'
 
 /**
- * Whether a formatted delta reads as an increase.
- *
- * The server sends it already formatted and already signed, so the sign is read off the string
- * rather than re-derived — which also keeps the minus sign the server chose, typographic or not.
+ * Whether a server-formatted, signed delta reads as an increase, judged by its leading sign.
  *
  * @return `false` only for an explicitly negative figure; an absent or unsigned one is not drawn as
  *   a loss.
@@ -356,18 +324,10 @@ fun BankAccountScreen(
     onReportHandled: () -> Unit = {},
     limitActions: BankLimitActions? = null,
 ) {
-    // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
-    // `/me/capabilities` answered.
     val staff = LocalCaller.current?.bankEmployee == true
 
-    // Which originals already carry a counter-booking. The wire says only which transaction a
-    // Storno negates, so this is read off the rows themselves — right for everything on screen, and
-    // an older page's reversal simply leaves the action offered until the server refuses it, which
-    // it then says plainly.
     val reversedIds = state.bookings.mapNotNull { it.reversesTransactionId }.toSet()
 
-    // The file is handed on the moment it arrives, then cleared: a report kept in state is a report
-    // re-offered on the next recomposition.
     val context = LocalContext.current
     LaunchedEffect(state.report) {
         state.report?.let { file ->
@@ -402,17 +362,7 @@ fun BankAccountScreen(
                             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                         ) {
-                            // The account's name and its org sit in the TOP BAR (design ch. 12
-                            // artboard 2), the rule every detail in this app now follows.
-                            // The artboard also puts the owning unit under the name; the detail
-                            // DTO does not carry it (BankAccountDetail has no orgUnitName, only
-                            // the summary does), so it is left off rather than guessed from the
-                            // list the member may not have come through.
                             ProvideScreenTopBar(title = account.name)
-                            // The balance is a HUD box with its sparkline, not three stacked
-                            // Texts: the artboard gives the one number a member came for the
-                            // heaviest treatment on the screen, and puts the 30-day shape under it
-                            // so "is this going up" is answered without reading the ledger.
                             KrtHudBox(modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = stringResource(R.string.bank_balance).uppercase(),
@@ -424,11 +374,6 @@ fun BankAccountScreen(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
-                                        // `KrtFigure.card` — the ladder's middle rung, below the
-                                        // screen's own total (round 14 · S12, put on the figure
-                                        // ladder in round 15). At the hero size the card's figure
-                                        // matched the GESAMT tile's, which made every single
-                                        // account look like the sum of them.
                                         text = formatAmount(account.balance.orEmpty()),
                                         style = KrtFigure.card,
                                         color = KrtPalette.White,
@@ -454,14 +399,7 @@ fun BankAccountScreen(
                                         color = deltaTone(delta),
                                     )
                                 }
-                                // The artboard draws a large sparkline here. BankAccountDetail
-                                // carries no series — only the list summary does — so it is a
-                                // mapping gap rather than a layout one, and inventing a shape from
-                                // one number would be a chart of nothing.
                             }
-                            // Only for the member responsible for this account, and only because
-                            // the server said so in the settings answer: the app works out no role
-                            // of its own here.
                             state.settings?.takeIf { it.canSetTarget || it.canConfigureVisibility }
                                 ?.let {
                                     KrtGhostButton(
@@ -551,12 +489,10 @@ fun BankAccountScreen(
 }
 
 /**
- * The row's direction, as the artboard's arrow.
+ * The row's direction arrow, using the same classification as the amount's sign
+ * (REQ-APP-BANK-003).
  *
- * Exactly the classification `REQ-APP-BANK-003` already uses for the sign, so the glyph and the
- * figure can never disagree: money in points down and reads success, money out points up and reads
- * danger, and every other kind — a transfer, a reversal, one this build has never seen — gets the
- * neutral swap rather than a direction nobody checked.
+ * Money in points down, money out points up, and every other kind gets the neutral swap glyph.
  *
  * @param incoming `true` for a deposit, `false` for a withdrawal, `null` for anything else.
  */
@@ -582,10 +518,8 @@ private fun BookingDirection(incoming: Boolean?) {
 /**
  * One ledger line.
  *
- * The amount takes its sign from the booking **kind**, never from the digits: the ledger stores
- * every amount as a positive magnitude, so reading a sign off the number would show every
- * withdrawal as a deposit. A kind this build does not know renders without a sign and in the
- * neutral colour rather than guessing.
+ * The amount's sign comes from the booking kind, since the ledger stores positive magnitudes; an
+ * unknown kind renders unsigned and neutral.
  *
  * @param booking the line.
  */
@@ -601,9 +535,6 @@ private fun BookingRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The direction as a glyph, which artboard 2 draws on every row. The sign and the tint
-        // already say it, but both live at the far right; the ledger is read down the left edge,
-        // and „was this money in or out" should not need a saccade to the amount column.
         BookingDirection(booking.incoming)
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -622,8 +553,6 @@ private fun BookingRow(
             )
             val fee = booking.feeLine()
             if (fee != null) {
-                // The transfer's own cost, stated rather than left as the gap between the amount
-                // on the row and the amount that left the account.
                 Text(
                     text = fee,
                     style = MaterialTheme.typography.bodySmall,
@@ -631,8 +560,6 @@ private fun BookingRow(
                 )
             }
             if (reversed) {
-                // Saying it on the row is what makes the missing action legible: without it, a
-                // member sees a Storno offered on one line and absent on the next for no reason.
                 Text(
                     text = stringResource(R.string.bank_booking_reversed),
                     style = MaterialTheme.typography.bodySmall,
@@ -645,9 +572,6 @@ private fun BookingRow(
             style = MaterialTheme.typography.bodyMedium,
             color = booking.amountColor(),
         )
-        // A Storno is offered on an original that still stands and that the reversal can name:
-        // not on a counter-booking, not on one already reversed, and not on a row whose transaction
-        // the wire did not carry.
         val reversible = !reversed && !booking.isReversal && booking.transactionId != null
         if (staff && reversible) {
             KrtIconButton(
@@ -685,12 +609,8 @@ private fun BankBooking.signedAmount(): String {
 @Composable
 private fun BankBooking.amountColor(): Color =
     when (incoming) {
-        // The *Text tints, not the fills: Success/Danger are container colours and fail contrast
-        // as text on the dark ground. The design calls these "Text-Tints" for that reason.
         true -> KrtPalette.SuccessText
-
         false -> KrtPalette.DangerText
-
         null -> KrtPalette.White
     }
 
@@ -704,8 +624,6 @@ private fun BankBooking.subline(): String {
     LocalConfiguration.current
     val booked = createdAt
     val time = if (booked == null) null else booked.relativeToNow()
-    // The recipient the transfer was actually made out to. It is on the wire and was being
-    // dropped, which left a member re-reading a past transfer with no record of who got it.
     val toWhom =
         counterpartyHandle
             ?.takeIf { it.isNotBlank() }
@@ -723,14 +641,10 @@ private fun BankBooking.subline(): String {
 private fun BankBooking.typeLabel(): String = bankTypeLabel(type)
 
 /**
- * The translated name of a booking kind.
- *
- * Shared with the holder detail, which shows the same kinds against custody rather than against an
- * account — the wording is the same fact either way.
+ * The translated name of a booking kind, shared with the holder detail.
  *
  * @param type the server's value.
- * @return the wording, or the raw server value for a kind this build has never seen — an
- *   untranslated word beats an empty line.
+ * @return the wording, or the raw server value for an unknown kind.
  */
 @Composable
 internal fun bankTypeLabel(type: String?): String =
@@ -824,8 +738,6 @@ fun BankAccountsRoute(
                 ),
             selectedIndex = scope,
             onSelect = { chosen ->
-                // A locked segment still reports the tap; that is what lets the screen say why it
-                // is locked instead of silently doing nothing.
                 if (chosen == STAFF_SCOPE && !staffAllowed) {
                     lockToast = true
                 } else {
@@ -882,9 +794,6 @@ fun BankAccountsRoute(
             }
         }
         KrtBottomCtaBar(
-            // Only where the rail replaces the bottom navigation: on a phone the nav bar sits
-            // below this and has already taken the inset, so taking it again would lift the CTA
-            // off its own bar.
             modifier =
                 if (isWideWindow()) {
                     Modifier.padding(bottom = LocalKrtBottomBarInset.current)
@@ -895,9 +804,6 @@ fun BankAccountsRoute(
             KrtCtaButton(
                 text = stringResource(R.string.bank_request_action),
                 onClick = {
-                    // Raising a request needs the accounts, and on the Konten tab they are already
-                    // here — but a member who opens the sheet without ever visiting Anträge would
-                    // otherwise get an empty picker.
                     requestsViewModel.loadOnce()
                     requestsViewModel.onCompose()
                 },
@@ -908,8 +814,6 @@ fun BankAccountsRoute(
         }
     }
     if (lockToast) {
-        // The lock has to explain itself, or it is just a control that does nothing. Dismisses on
-        // its own action, because there is nothing to do about it but read it.
         KrtToast(
             title = stringResource(R.string.bank_scope_staff),
             message = stringResource(R.string.bank_scope_locked),
@@ -943,11 +847,6 @@ fun BankAccountsRoute(
 
 /**
  * The Verwaltung scope's content.
- *
- * **Only the Übersicht for now.** Artboard 4 draws four tabs — ÜBERSICHT · ANTRÄGE · KONTEN ·
- * GRANTS — and the other three arrive with the screens behind them. A tab bar whose tabs lead
- * nowhere would be worse than no tab bar, so it appears with the second tab rather than ahead of
- * it.
  *
  * @param viewModel drives the dashboard.
  * @param onOpenAccount a row was tapped.
@@ -985,8 +884,6 @@ private fun BankStaffScope(
                 ),
             selectedIndex = staffTab,
             onSelect = { chosen ->
-                // Artboard 4 draws GRANTS locked for an employee without Bank-Management —
-                // tappable, never hidden, answering with the role it needs.
                 if (chosen == GRANTS_TAB && !state.management) {
                     managementToast = true
                 } else {
@@ -1017,9 +914,6 @@ private fun BankStaffScope(
         }
     }
     state.direct?.let { direct ->
-        // Both lists are read when the sheet opens rather than at screen load: they are needed by
-        // one optional field on two of three modes, and reading them for every visit to the tab
-        // would put two requests behind a control most bookings never touch.
         LaunchedEffect(Unit) {
             viewModel.directBooking.loadOrgUnits()
             viewModel.directBooking.searchCounterparty("")
@@ -1047,9 +941,6 @@ private fun BankStaffScope(
             onAction = { managementToast = false },
         )
     }
-    // Over the KRT employee ceiling the server files the attempt instead of booking it and answers
-    // 202 (REQ-BANK-047, ADR-0109). Both are 2xx, so without this the sheet would close on a
-    // withdrawal that moved nothing and the member would find the old balance with no explanation.
     if (state.filed) {
         KrtToast(
             title = stringResource(R.string.bank_direct_filed_title),
@@ -1107,8 +998,6 @@ private fun StaffScopeContent(
         }
 
         is BankPhase.Failed -> {
-            // A caller without the role is the ordinary answer here, not a fault: the segment is
-            // offered to everyone by design, so the refusal has to read as an explanation.
             val forbidden = phase.error is ApiError.Forbidden
             KrtEmptyState(
                 iconRes = DesignR.drawable.ic_krt_lock,
@@ -1189,10 +1078,8 @@ private fun StaffScopeContent(
 }
 
 /**
- * The scope's two decision dialogs.
- *
- * Both sit outside the tab content on purpose: a decision taken from the queue must survive the
- * list reloading underneath it.
+ * The scope's two decision dialogs, kept outside the tab content so a decision survives the list
+ * reloading underneath it.
  *
  * @param state what the scope holds.
  * @param viewModel drives it.
@@ -1252,11 +1139,9 @@ private fun StaffScopeDialogs(
 private const val STAFF_SCOPE = 1
 
 /**
- * The Konten tab's confirmations.
+ * The Konten tab's confirmations, worded as in the web frontend.
  *
- * None of them is destructive — closing is reversible and a deactivated holder keeps their
- * holdings withdrawable — so none carries a type-to-confirm hurdle. Every wording is the web
- * frontend's own, so the same act reads the same on both surfaces.
+ * None is destructive, so none asks for type-to-confirm.
  *
  * @param state what the tab holds.
  * @param viewModel drives it.
@@ -1557,10 +1442,8 @@ data class BankSettingsActions(
 /**
  * What the account's responsible holder may change about it.
  *
- * Every control here is drawn from a flag the **server** sent: `canSetTarget` and
- * `canConfigureVisibility` are per-account facts, and the app works out no role of its own. An
- * account type that does not support visibility at all says so rather than showing an empty
- * section — "cannot be configured" and "you may not configure it" are different sentences.
+ * Every control follows a server flag (`canSetTarget`, `canConfigureVisibility`). An account type
+ * without visibility support says so instead of showing an empty section.
  *
  * @param settings what the account says.
  * @param state the screen, for the save gate and the last refusal.
@@ -1607,10 +1490,6 @@ private fun BankSettingsSheet(
             if (settings.canConfigureVisibility) {
                 BankVisibilitySection(settings = settings, state = state, actions = actions)
             }
-            // Design ch. 12 artboard 10 makes this a fifth tab of the Verwaltung; it cannot be one,
-            // because every limit endpoint addresses ONE account and the current values ride on
-            // that account's settings. It lives beside the visibility grants instead — same scope,
-            // same owner, same read. Recorded as a deviation.
             BankApprovalLimitsSection(
                 limits = settings.approvalLimits,
                 busy = state.busyLimit,
@@ -1694,8 +1573,7 @@ private const val MINUS_SIGNS = "-−"
 /**
  * „Kontoauszug" and „3-Monats-Bericht", the staff account detail's two reports.
  *
- * Its own composable so the screen stays under detekt's complexity limit, and because the pair is
- * one idea: both fetch a file and hand it to a share sheet, and neither is offered to a member.
+ * Both fetch a file and hand it to a share sheet; neither is offered to a member.
  *
  * @param busy whether a report is already being fetched.
  * @param onStatement the statement was asked for.
@@ -1732,10 +1610,7 @@ private fun ReportActions(
 }
 
 /**
- * The settings sheet and the conflict dialog that shares its screen.
- *
- * Extracted so the account screen stays under detekt's complexity limit; the two belong together
- * anyway, since the dialog exists to resolve a refusal the sheet caused.
+ * The settings sheet together with the conflict dialog that resolves its refusals.
  *
  * @param state what the screen holds.
  * @param actions what the sheet reports back.
@@ -1748,15 +1623,11 @@ private fun AccountSettingsOverlay(
     onRefresh: () -> Unit,
     limitActions: BankLimitActions? = null,
 ) {
-    // Over the settings sheet, and outside its own open-check: opening a limit from one of its
-    // rows must not close what it was opened from.
     limitActions?.let { ApprovalLimitOverlays(state = state, actions = it) }
     if (!state.settingsOpen) {
         return
     }
     state.settings?.let { settings ->
-        // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and makes the
-        // account re-read rather than re-sending a value against a newer version.
         ConflictOn(
             error = state.error,
             onReload = {
@@ -1769,10 +1640,7 @@ private fun AccountSettingsOverlay(
 }
 
 /**
- * The two Freigabe-Limit sheets, at the host.
- *
- * Outside [AccountSettingsOverlay] because they sit **over** the settings sheet: opening one from
- * a row must not close what it was opened from.
+ * The two Freigabe-Limit sheets, drawn over the settings sheet so opening one does not close it.
  *
  * @param state the screen.
  * @param actions setting and removing one limit.

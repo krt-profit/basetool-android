@@ -51,11 +51,9 @@ data class BankCustodyActions(
 )
 
 /**
- * „Halter-Umbuchung" — design chapter 12, artboard 8.
+ * „Halter-Umbuchung": moves custody between holders without touching an account.
  *
- * The explanatory line is the web frontend's own, verbatim, and it carries the one fact that makes
- * the action safe to offer: it moves custody **between holders without touching an account**, and
- * the source may go negative. Softening either half would misrepresent what the server does.
+ * The source holder may go negative; the explanatory line says both.
  *
  * @param draft what the sheet holds.
  * @param peers the other active holders custody can move to.
@@ -87,8 +85,6 @@ fun BankCustodySheet(
                 color = KrtPalette.Gray1,
             )
             if (peers.isEmpty()) {
-                // Without a second active holder the action cannot be completed at all. Saying so
-                // beats a picker with nothing in it.
                 Text(
                     text = stringResource(R.string.bank_holder_transfer_no_peers),
                     style = MaterialTheme.typography.bodySmall,

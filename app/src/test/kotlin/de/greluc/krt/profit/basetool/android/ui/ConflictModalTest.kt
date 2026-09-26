@@ -23,13 +23,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The dialog design chapter 14 draws for a refused save, and the one thing about it that is subtle.
- *
- * The behaviour under test is not "does a dialog appear" — it is that a **second** refusal shows the
- * dialog again after the member dismissed the first. `ApiError.OptimisticLock` is a data class, so
- * two separate refusals compare equal, and the obvious implementation (`remember(error)`) treats the
- * second as the first: dismiss the dialog once and it never returns for the rest of the session,
- * leaving the member saving into a wall in silence.
+ * Tests the conflict dialog for a refused save (design chapter 14): a second refusal shows it again after the first was
+ * dismissed, although `ApiError.OptimisticLock` values compare equal.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -74,10 +69,7 @@ class ConflictModalTest {
     }
 
     /**
-     * The regression the identity check exists for.
-     *
-     * Dismiss the dialog, let a **new** refusal arrive that is equal to the first, and it must be
-     * on screen again.
+     * A new refusal equal to a dismissed one raises the dialog again.
      */
     @Test
     fun `a second refusal is raised again after the first was dismissed`() {

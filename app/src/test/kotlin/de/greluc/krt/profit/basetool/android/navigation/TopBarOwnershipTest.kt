@@ -13,21 +13,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Who owns the top bar's two ends.
+ * Tests who owns the top bar's two ends, decided by the single predicate `destination in destinations` on each form
+ * factor.
  *
- * The bar has a left end (a back arrow, or nothing) and a right end (the org chip and the bell, or
- * whatever the screen itself puts there). Both answer the same question — *is this a destination
- * the navigation offers, or something pushed on top of one?* — and for a while they were asked
- * differently: the arrow from the destination, the chip and the bell from whether a screen happened
- * to publish a title.
- *
- * Every screen that publishes none therefore got **both**: a back arrow *and* the chip *and* the
- * bell. Artboards 07.1, 08.4, 13.1 and 15.1 draw the same head for all four of those screens — back
- * arrow, title, and only what that screen owns. The Hangar's title was even truncated to make room
- * for a chip that does not belong there.
- *
- * The rule is now one predicate, `destination in destinations`, and these tests pin what it has to
- * come out as on each form factor.
+ * A navigation destination shows the org chip and the bell; a pushed screen shows a back arrow, its
+ * title and only what it owns.
  */
 class TopBarOwnershipTest {
     /** The bottom bar's five: Übersicht, Einsätze, Aufträge, Lager, Mehr. */

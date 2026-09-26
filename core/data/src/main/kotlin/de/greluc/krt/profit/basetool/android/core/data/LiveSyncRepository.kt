@@ -51,23 +51,15 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The waits the live-sync client is built around.
+ * The waits the live-sync client is built around; a parameter so tests can shorten them.
  *
- * A parameter rather than constants so a test can collapse them: asserting that two frames inside
- * one window arrive as one event otherwise costs the real 1500 ms, per assertion, and a suite that
- * slow stops being run.
- *
- * @property resourceWindow ADR-0094's coalescing window for one resource's room.
- * @property globalWindow ADR-0094's window for a tool-wide room — longer because such a room is
- *   read by every member at once, and the re-fetch herd, not the relay, is the binding cost.
- * @property reconnectSettle the spread over a reconnect after a stream that had been working. The
- *   server closes every stream after thirty minutes by design, so without this every phone that
- *   connected together would come back together, forever.
+ * @property resourceWindow the coalescing window for one resource's room (ADR-0094).
+ * @property globalWindow the longer coalescing window for a tool-wide room (ADR-0094).
+ * @property reconnectSettle the spread over a reconnect after a stream that had been working.
  * @property reconnectBase the first backoff step after a failed attempt.
  * @property reconnectCeiling the longest a client waits before trying again.
- * @property unionSettle how long the room union has to hold still before the connection
- *   follows it. Screens mount together, and without this each one would tear the shared
- *   stream down and rebuild it.
+ * @property unionSettle how long the room union has to hold still before the connection follows
+ *   it.
  */
 data class LiveSyncTiming(
     val resourceWindow: Duration = 400.milliseconds,
@@ -81,12 +73,8 @@ data class LiveSyncTiming(
 /** What the live-sync stream tells a screen. */
 sealed interface LiveSyncEvent {
     /**
-     * The rooms the server actually opened, sent once when the stream connects.
-     *
-     * A screen must read this rather than assume it got what it asked for: a room missing here will
-     * never speak, and silence from a live room and silence from a room that was refused look
-     * exactly the same. Only this event tells the two apart, and only the second means the screen
-     * has to keep refreshing on its own.
+     * The rooms the server actually opened, sent once when the stream connects; a room missing here
+     * will never emit.
      *
      * @property topics the accepted rooms.
      */
@@ -95,10 +83,8 @@ sealed interface LiveSyncEvent {
     ) : LiveSyncEvent
 
     /**
-     * A room changed and the named regions should be re-read.
-     *
-     * Already coalesced: several frames inside the room's window arrive as one event carrying the
-     * union of their sections.
+     * A room changed and the named regions should be re-read; already coalesced over the room's
+     * window.
      *
      * @property topic the room.
      * @property sections the regions to re-read.
@@ -133,43 +119,16 @@ interface LiveSyncSource {
 }
 
 /**
- * The live-sync client: one SSE stream in, one signal out (REQ-APP-SYNC-001…004, server ADR-0143).
+ * The live-sync client: one shared SSE stream in, one signal out (REQ-APP-SYNC-001…004).
  *
- * Four things happen here that a screen must not have to think about.
- *
- * **One stream for the whole app.** Every screen calls [observe] with its own rooms, and they all
- * ride a single connection carrying the union. This is not an optimisation — it is a correction of
- * an assumption that turned out to be wrong on a device: a phone shows one screen, but its
- * ViewModels are activity-scoped and several are alive at once, so a stream per caller meant three
- * or four concurrent TLS connections, three or four reconnect loops, and eviction as soon as a
- * fifth screen opened (the server caps a member at four). Measured on the emulator before the fix:
- * three streams and a burst of twelve handshake failures in ten seconds.
- *
- * The union is debounced, because mounting three screens at once must open one stream rather than
- * three in a row, and each caller sees only the rooms it asked for.
- *
- * **Reconnect.** The server closes a stream every thirty minutes by design, and a phone loses its
- * connection far more often than that. [observe] reopens with a full-jittered backoff and keeps
- * going until it is cancelled. It never gives up on a failure it cannot classify — [SseStream]
- * completes the flow the same way for a clean close, a dropped socket and a `401`, so treating any
- * of them as terminal would silently strand the screen for the two cases that recover on their own.
- * A refused stream costs a reconnect attempt per backoff step, and the backoff is what bounds it.
- *
- * **Coalescing.** A room is re-read at most once per window — 400 ms for one resource, 1500 ms for
- * a tool-wide room, both **full-jittered** (REQ-APP-SYNC-003). This is what actually protects the
- * server: the relay rate is cheap, the re-fetch herd it triggers is not, and a global room can hold
- * every member at once. The jitter matters as much as the window — without it a frame broadcast to
- * two hundred viewers produces two hundred reads at the same instant.
- *
- * **Silence about failure.** [publish] answers a result nobody is expected to act on. It follows a
- * mutation that has already committed; a screen that reported an error here would be reporting a
- * failure of somebody else's refresh as a failure of the member's own save.
+ * All [observe] callers share one connection carrying the debounced union of their rooms. The
+ * stream reconnects with full-jittered backoff until cancelled, change frames are coalesced per
+ * room over a jittered window (REQ-APP-SYNC-003), and [publish] reports no failure to its caller.
  *
  * @property stream the SSE reader.
  * @property reader the API client, used only for [publish].
  * @property json the parser for the two small frame shapes.
- * @property timing the coalescing windows and the reconnect backoff; overridden only by tests,
- *   which would otherwise have to spend the real 1500 ms of a global window per assertion.
+ * @property timing the coalescing windows and the reconnect backoff; overridden by tests.
  */
 class LiveSyncRepository(
     private val stream: SseStream,
@@ -189,10 +148,8 @@ class LiveSyncRepository(
     /**
      * The one connection, shared by every collector.
      *
-     * `flatMapLatest` is what makes a changed union close the old stream and open a new one, and
-     * the debounce in front of it is what stops three screens mounting together from doing that
-     * three times. `WhileSubscribed` keeps the connection tied to actual demand: no screen
-     * listening means no socket held.
+     * A changed union reopens the stream after a debounce, and the connection is held only while a
+     * collector is subscribed.
      */
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     private val shared: SharedFlow<LiveSyncEvent> =
@@ -203,10 +160,7 @@ class LiveSyncRepository(
             .shareIn(scope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 0)
 
     /**
-     * Convenience constructor for the object graph.
-     *
-     * Both halves ride the one API client, which is what keeps the bearer token, the active org
-     * unit and the correlation id identical on the stream and on the signal it answers with.
+     * Builds the client on the one API client, so the stream and [publish] carry the same headers.
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers.
      * @param baseUrl the flavour's API origin.
@@ -224,10 +178,6 @@ class LiveSyncRepository(
             }
             register(topics, +1)
             try {
-                // Each caller sees only its own rooms. The acceptance list is narrowed the same
-                // way, so a screen is told what IT got rather than what the shared stream got --
-                // otherwise every screen would believe it is live because some other screen's room
-                // was accepted.
                 emitAll(
                     shared.mapNotNull { event ->
                         when (event) {
@@ -242,19 +192,15 @@ class LiveSyncRepository(
                     },
                 )
             } finally {
-                // Runs on cancellation too, which is the normal way a screen goes away.
                 withContext(NonCancellable) { register(topics, -1) }
             }
         }
 
     /**
-     * Adds or removes one collector's demand and republishes the union.
-     *
-     * Reference-counted rather than a plain set: two screens can want the same room, and the first
-     * of them closing must not take it away from the second.
+     * Adds or removes one collector's reference-counted demand and republishes the union.
      *
      * @param topics the caller's rooms.
-     * @param delta {@code +1} on subscribe, {@code -1} on teardown.
+     * @param delta `+1` on subscribe, `-1` on teardown.
      */
     private suspend fun register(
         topics: Set<LiveSyncTopic>,
@@ -293,9 +239,6 @@ class LiveSyncRepository(
                         val attempt2 =
                             collectOnce(topics) { event ->
                                 when (event) {
-                                    // Never coalesced: it is the screen's signal that a room is
-                                    // live at all, and delaying it would let the screen believe it
-                                    // is live for a window in which it is not.
                                     is LiveSyncEvent.Subscribed -> {
                                         trySend(event)
                                     }
@@ -309,15 +252,6 @@ class LiveSyncRepository(
                         if (verdict != null) {
                             refusals++
                             if (refusals >= MAX_REFUSALS) {
-                                // A refusal is a verdict, not a hiccup: this request will be
-                                // answered the same way for as long as this union stands, and the
-                                // union is what the connection follows. Measured on a device
-                                // before this guard existed: a member without the Auftrags-queue
-                                // capability re-asked every thirty seconds for as long as the app
-                                // ran.
-                                // Stays at DEBUG like every other line here: KrtLog's floor is
-                                // INFO, and anything at or above it reaches android.util.Log,
-                                // which is unmocked in JVM unit tests and throws.
                                 KrtLog.d(LOG_TAG) { "giving up after $refusals refusals ($verdict)" }
                                 trySend(LiveSyncEvent.Subscribed(emptySet()))
                                 break
@@ -325,8 +259,6 @@ class LiveSyncRepository(
                         } else {
                             refusals = 0
                         }
-                        // A stream that delivered something was working, so the next drop starts
-                        // over at the shortest wait rather than inheriting an old backoff.
                         attempt = if (attempt2.delivered) 0 else attempt + 1
                         delay(backoff(attempt))
                     }
@@ -335,15 +267,8 @@ class LiveSyncRepository(
         }
 
     /**
-     * Folds a change frame into its room's window, emitting the union once the window closes.
-     *
-     * The first frame for a quiet room starts a timer; every frame inside that window only widens
-     * the section set. So a room is re-read once per window however many frames arrive, which is
-     * the bound that matters — the relay is cheap, the re-fetch herd it triggers is not, and a
-     * tool-wide room can hold every member at once.
-     *
-     * The window is jittered per room rather than fixed, so a frame broadcast to two hundred
-     * viewers does not produce two hundred reads at the same instant.
+     * Folds a change frame into its room's jittered window, emitting the union of sections once the
+     * window closes.
      *
      * @param event the frame.
      * @param pending sections accumulated per room, guarded by [guard].
@@ -382,10 +307,8 @@ class LiveSyncRepository(
     }
 
     /**
-     * The coalescing window for a room, full-jittered.
-     *
-     * ADR-0094's numbers, unchanged: a tool-wide room is read by everyone at once and gets the long
-     * window; one resource is read by the handful of people looking at it and gets the short one.
+     * The full-jittered coalescing window for a room: the long one for a tool-wide room, the short one
+     * for a single resource (ADR-0094).
      *
      * @param topic the room.
      * @return the wait before its accumulated sections are emitted.
@@ -410,8 +333,6 @@ class LiveSyncRepository(
                 ChangedRequest.serializer(),
             )
         if (result is ApiResult.Failure) {
-            // Deliberately swallowed at the log level: the member's own write already succeeded,
-            // and the only consequence is that peers refresh on their own cadence instead.
             KrtLog.d(LOG_TAG) { "signal for ${topic.wire} not relayed" }
         }
         return result
@@ -422,26 +343,18 @@ class LiveSyncRepository(
      *
      * @param topics the rooms to ask for.
      * @param emit where to put the parsed events.
-     * @return what the attempt came to. The refusal status has to be told apart from a dropped
-     *   socket: one is a verdict to stop asking, the other is a hiccup to retry through, and the
-     *   stream reader ends the flow the same way for both.
+     * @return what the attempt came to, telling a refusal status apart from a dropped socket.
      */
     private suspend fun collectOnce(
         topics: Set<LiveSyncTopic>,
         emit: (LiveSyncEvent) -> Unit,
     ): Attempt {
-        // Atomics rather than plain vars: the stream reader runs on its own thread and writes
-        // these, while the coroutine below reads them once the flow completes. Without the memory
-        // barrier the refusal is simply not seen, and the client retries a 403 forever — which is
-        // exactly what it did on a device before this line.
         val refused = AtomicInteger(NO_STATUS)
         val delivered = AtomicBoolean(false)
         val query = listOf(TOPICS_PARAM to topics.joinToString(",") { it.wire })
         stream
             .events(STREAM_PATH, query) { status -> refused.set(status) }
             .collect { event ->
-                // A heartbeat counts: it proves the connection works, which is what the backoff
-                // reset is about. Only the two carrying events are handed on.
                 delivered.set(true)
                 when (event.name) {
                     SUBSCRIBED_EVENT -> parseSubscribed(event.data)?.let(emit)
@@ -458,7 +371,7 @@ class LiveSyncRepository(
     /**
      * What one connection attempt came to.
      *
-     * @param refused the HTTP status if the stream was refused outright, else {@code null}.
+     * @param refused the HTTP status if the stream was refused outright, else `null`.
      * @param delivered whether anything at all arrived, heartbeats included.
      */
     private data class Attempt(
@@ -480,11 +393,7 @@ class LiveSyncRepository(
             }
 
     /**
-     * Parses a change frame.
-     *
-     * A frame naming a room this build does not know is dropped rather than passed on with a
-     * synthesised topic: it can only come from a newer server, and a screen has nothing to do with
-     * a room it has no code for.
+     * Parses a change frame; a frame naming a room this build does not know is dropped.
      *
      * @param data the frame body.
      * @return the event, or `null` if the frame did not parse or named nothing usable.
@@ -497,11 +406,7 @@ class LiveSyncRepository(
     }
 
     /**
-     * The wait before the next reconnect attempt.
-     *
-     * Full jitter rather than a plain exponential: every phone on the network loses its connection
-     * at the same moment when the server restarts, and an unjittered backoff would bring all of
-     * them back in one wave, repeatedly.
+     * The full-jittered exponential wait before the next reconnect attempt.
      *
      * @param attempt how many consecutive attempts have failed; zero after a working connection.
      * @return the wait.
@@ -535,22 +440,8 @@ class LiveSyncRepository(
         const val HTTP_FORBIDDEN = 403
 
         /**
-         * Statuses that end the attempt loop instead of feeding the reconnect backoff.
-         *
-         * Both say something about **this request** that re-sending it cannot change, and the
-         * request only changes when the union does — at which point `flatMapLatest` starts a fresh
-         * connection with a fresh counter, so giving up is scoped to the union and not to the app.
-         *
-         * `400` is here because of a production incident: one member's union crossed the
-         * backend's per-stream topic cap, the endpoint refuses the whole request rather than the
-         * surplus, and a `400` fell into the "dropped socket, try again" branch. Live sync was dead
-         * on every screen for as long as the app was open, silently, and the app re-asked on the
-         * backoff for hours. The cap was raised to match the union shape, but a client that
-         * hammers a request the server has already called malformed is wrong independently of what
-         * made it malformed.
-         *
-         * `401` is deliberately absent: a stale token is exactly the refusal a retry fixes, once
-         * the interceptor beneath this has renewed it.
+         * Statuses that end the attempt loop for the current topic union instead of feeding the
+         * reconnect backoff; `401` is absent because a renewed token fixes it.
          */
         val FINAL_REFUSALS = setOf(HTTP_BAD_REQUEST, HTTP_FORBIDDEN)
 

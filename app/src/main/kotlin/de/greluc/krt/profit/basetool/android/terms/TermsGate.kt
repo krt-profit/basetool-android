@@ -24,10 +24,7 @@ import de.greluc.krt.profit.basetool.android.gate.GateUnavailableScreen
 /**
  * Holds the app until the Terms of Use in force have been accepted.
  *
- * Sits **after** the approval gate and before the app: the backend enforces the same order, and a
- * member whose registration is still pending has nothing to consent to yet. Like the gates around
- * it, [content] is a lambda rather than something rendered underneath — composed behind the
- * document it would fire loads against endpoints the consent filter is about to refuse.
+ * Sits after the approval gate. [content] is composed only once consent is on record.
  *
  * @param viewModel reads the status, fetches the wording and records consent
  * @param onDecline signs out; declining the terms means leaving the tool
@@ -66,9 +63,6 @@ fun TermsGate(
 
         is TermsGateState.Unavailable -> {
             GateUnavailableScreen(
-                // Only a request that never reached the server counts as offline; a 500 means the
-                // server answered, and telling the member to check their connection would send them
-                // after a fault that is not on their side.
                 offline = current.error is ApiError.Network,
                 onRetry = viewModel::start,
                 onLogout = onDecline,

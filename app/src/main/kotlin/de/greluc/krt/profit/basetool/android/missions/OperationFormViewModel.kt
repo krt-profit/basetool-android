@@ -31,11 +31,7 @@ private const val NAME_MAX = 200
 private const val DESCRIPTION_MAX = 2000
 
 /**
- * The statuses the form offers.
- *
- * `CANCELED` is deliberately absent: calling an Operation off is not something a form should make
- * as easy as renaming it, and the design draws only the two. `UNKNOWN` is a read-side fallback and
- * was never a choice.
+ * The statuses the form offers: `CANCELED` and the read-side fallback `UNKNOWN` are not offered.
  */
 val OPERATION_FORM_STATUSES: List<OperationStatus> =
     listOf(OperationStatus.PLANNED, OperationStatus.ACTIVE, OperationStatus.COMPLETED)
@@ -83,18 +79,10 @@ data class OperationFormState(
 }
 
 /**
- * Drives „Operation anlegen" and „Operation bearbeiten" (REQ-APP-OPS-014).
+ * Drives „Operation anlegen" and „Operation bearbeiten" (REQ-APP-OPS-014) with one form for both.
  *
- * One form for both, because the two writes take the same three fields.
- *
- * > **No Beginn and no Ende.** Design ch. 06 artboards 15 and 16 draw them; `OperationCreateDto`
- * > and `OperationUpdateDto` have neither, and an Operation has no times of its own — they live on
- * > its Einsätze. Drawing empty fields that write nowhere would be worse than not drawing them.
- *
- * > **No Einsatz assignment either.** A mission joins an Operation through **its own** core section
- * > (`PATCH /missions/{id}/core` with `operationId`), which needs that mission's name and core
- * > version. The form says where the assignment happens rather than offering a control that cannot
- * > reach it. Both are on the design gap list.
+ * There are no time fields and no Einsatz assignment: an Operation has no times of its own, and an
+ * Einsatz joins one through its own Kern section.
  *
  * @property source where the two writes go.
  * @property operationId the Operation being rewritten, or `null` when raising one.
@@ -183,8 +171,6 @@ class OperationFormViewModel(
                             name = operation.name,
                             description = operation.description.orEmpty(),
                             status = operation.status,
-                            // The head's version, which the update echoes so a concurrent edit is
-                            // a 409 rather than a silent overwrite.
                             version = operation.version,
                             loading = false,
                         )

@@ -18,25 +18,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Whether the member has allowed screenshots and screen recording.
+ * Whether the member has allowed screenshots and screen recording (REQ-APP-AUTH-010).
  *
- * Blocking capture (`FLAG_SECURE`) is the app's default and stays the default — see
- * `REQ-APP-AUTH-010`. What this adds is a way out, because the block also stopped the one capture
- * we actually want: a tester photographing a defect. An app whose bug reports cannot carry a
- * picture is harder to fix than one whose recents thumbnail is legible.
- *
- * **A plain boolean, unlike the app lock beside it.** `AppLockSetting` deliberately stores a sealed
- * key rather than a flag, so "armed" cannot disagree with "satisfiable". Nothing of the sort
- * applies here: this records a preference, the platform enforces it, and there is no second fact it
- * could contradict.
- *
- * **Its own store, not the token store.** Signing out wipes that one, and a preference about
- * screenshots is a property of the device and its owner, not of a session. A tester who logs out
- * and back in should not find the block silently restored.
- *
- * The value is not secret — it says nothing about the member — so it needs neither the Keystore nor
- * a backup-exclusion rule of its own. Backups are off app-wide regardless
- * (`android:allowBackup="false"`).
+ * Capture is blocked (`FLAG_SECURE`) by default. The flag lives in its own settings store, not the
+ * token store, so signing out does not reset it.
  *
  * @property dataStore the preferences store this app's settings live in.
  */
@@ -62,7 +47,7 @@ class ScreenCapturePreference(
     }
 
     companion object {
-        /** Name of the settings store; separate from the token store on purpose (see above). */
+        /** Name of the settings store, kept separate from the token store so sign-out does not clear it. */
         private const val STORE_NAME = "krt_settings"
 
         private val KEY = booleanPreferencesKey("screen_capture_blocked")

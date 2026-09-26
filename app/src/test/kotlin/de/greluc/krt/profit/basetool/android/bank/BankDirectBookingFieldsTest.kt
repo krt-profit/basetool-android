@@ -26,16 +26,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The fields the Direktbuchung carries beyond the four the artboard draws.
- *
- * Its own class rather than more of `BankStaffViewModelTest`: these five fields are one subject —
- * what a booking made from the app records, against what the same booking made in the browser
- * records — and the sibling class had grown past what detekt will hold in one file.
- *
- * The property that carries them: **each field's rule belongs to something other than the form.**
- * The reason is demanded by the ACCOUNT, the split's two halves are bound by a server-side rule no
- * generated client can see, and the counterparty is one identity out of two. A form that made any
- * of those up would send something the server refuses after everything else has been typed.
+ * Tests the Direktbuchung fields beyond the four the artboard draws, whose rules belong to the account, the server or
+ * the counterparty identity rather than the form.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -54,11 +46,8 @@ class BankDirectBookingFieldsTest {
     }
 
     /**
-     * Three account kinds demand a reason, and the form asks for it instead of collecting a 409.
-     *
-     * `BANK_JUSTIFICATION_REQUIRED` is what the server answers a blank one with — after the member
-     * has typed the amount, picked the holder and pressed the CTA. The rule belongs to the
-     * ACCOUNT, so it travels with the account rather than being re-derived at submit time.
+     * Three account kinds demand a reason, and the form asks for it instead of letting the server answer
+     * `BANK_JUSTIFICATION_REQUIRED`.
      */
     @Test
     fun `a KRT withdrawal cannot be sent without a reason`() =

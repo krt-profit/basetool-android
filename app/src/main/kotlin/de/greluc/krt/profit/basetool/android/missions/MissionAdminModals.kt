@@ -30,18 +30,13 @@ const val MISSION_START_CONFIRM_TAG: String = "mission-start-confirm"
 const val MISSION_CONFLICT_TAG: String = "mission-section-conflict"
 
 /**
- * The confirmation the badge's lifecycle action asks for (design ch. 06, F2).
+ * The standard (non-danger) confirmation for advancing the Einsatz lifecycle (design ch. 06, F2).
  *
- * A **standard** modal, not a danger one: advancing the lifecycle destroys nothing — it simply
- * cannot be taken back, and the second line says exactly that rather than asking „Bist du sicher?".
- * The first line names the consequence in numbers: how many signed-up members can check in.
+ * It names how many signed-up members can check in and states that the status cannot be moved
+ * back; the start time stays editable in the Zeitplan.
  *
- * The earlier wording promised the step was „korrigierbar", which conflated two different facts.
- * The **start time** does stay editable in the Zeitplan; the **status** does not go back. Round 12
- * corrected that, because a member who reads „correctable" and means „undoable" is misled by it.
- *
- * @param next the status being moved to; decides both the wording and the verb on the CTA.
- * @param registered how many are signed up, which is what starting is measured in.
+ * @param next the status being moved to; decides the wording and the CTA verb.
+ * @param registered how many are signed up.
  * @param onConfirm advance it.
  * @param onDismiss leave it where it is.
  */
@@ -92,12 +87,8 @@ fun MissionLifecycleConfirm(
 }
 
 /**
- * A refused save, named by the section it belongs to.
- *
- * Design ch. 06 artboard 11. The Einsatz carries four independent counters, so a `409` must say
- * **which** section somebody else changed — and say plainly that the others are untouched. A shared
- * error slot at the foot of the form could do neither. Both versions are shown, server first, in
- * the same shape as the Auftrag's note conflict (ch. 10).
+ * A refused save, naming the section somebody else changed and showing both versions, server
+ * first (design ch. 06 artboard 11).
  *
  * @param conflict what collided.
  * @param onKeepMine write the member's own version against the fresh counter.
@@ -126,8 +117,6 @@ fun MissionSectionConflictModal(
             Version(titleRes = R.string.mission_conflict_theirs, value = theirs)
         }
         Version(titleRes = R.string.mission_conflict_mine, value = conflict.mine)
-        // The line that makes the per-section lock worth having: the other three are fine, and a
-        // member who does not read that will reload work they did not have to lose.
         Text(
             text = stringResource(R.string.mission_conflict_others_unaffected),
             style = MaterialTheme.typography.bodySmall,

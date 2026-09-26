@@ -53,15 +53,12 @@ private val COLUMN_MAX_WIDTH = 480.dp
 private val STATUS_ICON = 40.dp
 
 /**
- * What the gate says and shows for one held state.
- *
- * Resolved once per render rather than by three parallel conditionals, so a fourth state cannot
- * ship with its icon taken from one branch and its headline from another.
+ * The headline, body and glyph the gate shows for one held state, resolved together.
  *
  * @property titleRes the headline, rendered uppercase
  * @property bodyRes the explanation under it
  * @property iconRes the glyph above the headline
- * @property tint the glyph's colour — danger only where the state is terminal
+ * @property tint the glyph's colour; danger only where the state is terminal
  */
 private data class GateCopy(
     val titleRes: Int,
@@ -73,10 +70,8 @@ private data class GateCopy(
 /**
  * Picks the copy for a held state.
  *
- * [ApprovalStatus.ACTIVE] never reaches this screen — the gate routes a cleared member into the
- * app — and [ApprovalStatus.UNKNOWN] is deliberately shown as the pending state: an unrecognised
- * server status means "not cleared", and the waiting copy is the one that does not claim more than
- * that.
+ * [ApprovalStatus.ACTIVE] never reaches this screen, and [ApprovalStatus.UNKNOWN] is shown as
+ * pending.
  *
  * @param status why the member is being held
  * @return the strings and glyph for it
@@ -112,26 +107,11 @@ private fun copyFor(status: ApprovalStatus): GateCopy =
     }
 
 /**
- * The wall a member meets between signing in and being let into the app.
+ * The screen a member meets between signing in and being let into the app.
  *
- * **There is no primary action here, and the button ladder says so.** The design chapter is
- * explicit that this screen carries no filled CTA: the member cannot do anything to be approved
- * faster, and an orange button would promise otherwise. What they get is an outline re-check and a
- * quiet way out.
- *
- * Two entries of the design frame are deliberately absent, both because the data does not exist
- * rather than because they were dropped:
- *
- * - **"Eingereicht: vor 2 Std. · via Discord".** `RegistrationStatusDto` carries the status and
- *   nothing else — no submission timestamp and no identity provider. Inventing a plausible-looking
- *   "vor 2 Std." would be the worst option of the three, so the row is gone until the server
- *   offers the field.
- * - **The rejection reason.** Administrators do record one (`RejectRegistrationRequest.reason`),
- *   but no endpoint exposes it to the rejected member, so the rejected copy names the consequence
- *   and where to ask instead of pretending to quote a reason.
- *
- * The account row survives because its value comes from the ID token's `preferred_username`, which
- * the app already holds — no request needed, and it works while every gated endpoint refuses.
+ * It has no primary action, only an outline re-check and sign-out. It shows neither a submission
+ * time nor a rejection reason, since the server exposes neither; the account name comes from the ID
+ * token's `preferred_username`.
  *
  * @param status why the member is being held
  * @param accountName the member's login name from the ID token, or `null` when the realm sent none
@@ -180,9 +160,6 @@ fun ApprovalPendingScreen(
                         tint = copy.tint,
                     )
                     Spacer(Modifier.height(KrtSpacing.s12))
-                    // Uppercase, as chapter 04 sets every gate heading. The source strings stay
-                    // sentence case so a screen reader is not handed shouting, and
-                    // `krtUppercase` folds with the device's locale rather than the JVM default.
                     Text(
                         text = stringResource(copy.titleRes).krtUppercase(),
                         style = MaterialTheme.typography.titleLarge,
@@ -197,15 +174,8 @@ fun ApprovalPendingScreen(
                         textAlign = TextAlign.Center,
                     )
 
-                    // Only rendered when the realm actually sent a username: an empty value beside
-                    // a bright label reads as data that failed to load rather than as data that
-                    // was never promised.
                     accountName?.let { name ->
                         Spacer(Modifier.height(KrtSpacing.s16))
-                        // The name is set in a data chip, not printed as a value: it is the string
-                        // an administrator will search the approval queue for, and the artboard
-                        // frames it for exactly that reason. `Data` is the design system's tone for
-                        // it — white on the input surface, hairline border.
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                             verticalAlignment = Alignment.CenterVertically,
@@ -239,11 +209,6 @@ fun ApprovalPendingScreen(
             )
         }
 
-        // The design frame promises "Automatische Prüfung alle 60 s — Push bei Freigabe." Only the
-        // first half is true here and the second half is struck: the app has no push channel at all
-        // (resolved decision Q2), so an approval reaches this screen through the poll or not at
-        // all. Promising a notification that can never arrive would leave a member waiting on the
-        // lock screen of their phone instead of tapping re-check.
         Text(
             text = stringResource(R.string.gate_poll_hint),
             style = MaterialTheme.typography.labelSmall,

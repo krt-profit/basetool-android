@@ -65,19 +65,8 @@ private val BAR_HEIGHT = 6.dp
 /**
  * „Materialbedarf" — what every open Auftrag together still needs (design ch. 18 §1).
  *
- * The planning view. It lives in the web as `orders-material-demand.html` and had no artboard until
- * round 12; the entry point is the Auftragsliste's overflow rather than a navigation item, because
- * it is read **before an Einsatz**, not daily.
- *
- * The question the surface answers is „reicht es", so coverage is a bar rather than a percentage —
- * a bar answers at a glance what a number has to be compared to. Rights are the order list's: a
- * member without Logistiker reads it, they are not locked out of it.
- *
- * The second line says **what is promised and what is handed over**. It was drawn as „im Lager
- * frei: n" until 2026-08-30, and that line is struck (ch. 18 §1, B1): `MaterialDemandRowDto`
- * carries no stock field, and joining `/inventory/aggregated` would report the *total* rather than
- * the free amount because that read knows nothing about claims. Backend ask **G7** would bring it
- * back; until then the row says the two figures it actually has.
+ * Reached from the Auftragsliste's overflow and readable by every member who sees the order list.
+ * Coverage is drawn as a bar; the second line shows what is promised and what is handed over.
  *
  * @param state what to draw.
  * @param onFilterChanged a chip was tapped.
@@ -315,14 +304,10 @@ private fun DemandRow(
 }
 
 /**
- * The tone of the outstanding figure — three thresholds on the **open share of the required
- * amount**, stated by the chapter rather than guessed (ch. 10, round 14 · S22).
+ * The tone of the outstanding figure by open share of the required amount: under 30 % white,
+ * 30–99 % warning yellow, 100 % danger red.
  *
- * `< 30 %` white · `30–99 %` warning yellow · `100 %` danger red, where 100 % means nothing has
- * been booked or promised at all. It was two tones on „is anything still open", which made a
- * material that is 3 % short look exactly as urgent as one nobody has touched.
- *
- * A row with no required amount takes the plain tone: there is no share to measure.
+ * A row with no required amount takes the plain tone.
  *
  * @receiver the demand row.
  * @return the colour for the figure.

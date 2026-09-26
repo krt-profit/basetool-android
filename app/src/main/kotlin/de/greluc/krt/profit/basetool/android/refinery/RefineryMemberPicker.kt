@@ -16,19 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Who the refined output is booked onto, when it is not the caller.
+ * The picker for whom a line's refined output is booked onto, when it is not the caller.
  *
- * **A Logistician act, and only offered to one.** `RefineryOrderService.storeRefineryOrder` checks
- * `canManageUserInventory(targetUserId)` per item — the receiver is per line, so the gate is too —
- * and refuses anyone else with a 403. The web app draws the same conclusion in its own words: a
- * plain member sees their own name in a disabled field, because *"offering a roster picker whose
- * every foreign choice answers 403 is worse than not offering one"* (REQ-SEC-039). This app follows
- * that, gated on the hierarchy-resolved grant rather than the membership flag that used to hide it
- * from admins.
- *
- * The line's `userId` was always on the wire and always sent; what was missing was any way to set
- * it. Left `null`, the server falls back to the order's owner — which for a non-Logistician is the
- * caller, by the ownership check the endpoint already applies.
+ * Offered only to a Logistician; the server checks `canManageUserInventory(targetUserId)` per line
+ * (REQ-SEC-039). A line left without a receiver falls back to the order's owner.
  *
  * @property open which line index the picker is open for, or `null` when it is closed.
  * @property query what the member typed.
@@ -45,14 +36,10 @@ data class RefineryMemberPickerState(
 )
 
 /**
- * Drives [RefineryMemberPickerState] against the roster search.
+ * Drives [RefineryMemberPickerState] against the `/users/search` roster search.
  *
- * Shares `/users/search` with the Lager's own member picker rather than adding a second roster
- * read: it is the same question against the same list, and the web uses one `remote-users` combobox
- * for both.
- *
- * @property roster the search, or `null` when the screen was built without one — then the picker
- *   never opens and the field stays a plain display of the current receiver.
+ * @property roster the search, or `null` when the screen was built without one; the picker then never
+ *   opens and the field only displays the current receiver.
  * @property scope the view model's scope.
  * @property read the current picker state.
  * @property write publishes a new picker state.
@@ -113,9 +100,6 @@ class RefineryMemberPicker(
                 }
 
                 is ApiResult.Failure -> {
-                    // The roster is an aid, not the subject: a failed search leaves the field as it
-                    // was rather than turning the store dialog into an error screen. The member can
-                    // still book onto themselves, which is what the field already says.
                     KrtLog.w(LOG_TAG) { "member search failed: ${result.error}" }
                     write(read().copy(results = emptyList(), more = false, loading = false))
                 }

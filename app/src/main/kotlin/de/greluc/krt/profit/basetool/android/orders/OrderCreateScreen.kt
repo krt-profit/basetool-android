@@ -116,16 +116,11 @@ data class OrderCreateActions(
 )
 
 /**
- * „Neuer Auftrag" — the material order the web raises at `/orders/create`.
+ * „Neuer Auftrag" — the create form for material and item orders, as the web raises at
+ * `/orders/create`.
  *
- * Chapter 10 has no artboard for this form; artboard 1 only draws the „+" that opens it. The layout
- * follows chapter 11's create form, which is the nearest drawn precedent: one scrolling column, a
- * card per repeating line, a ghost button to add another, and a full-width CTA at the foot. Design
- * round 8 §1 asks for the drawing.
- *
- * Both order kinds live here, as they do on the web: a switch at the head and the lines under it.
- * What the two do *not* share is the sub-assembly tree the web draws under an item line — that is
- * still round 8 §1.3.
+ * One scrolling column with a kind switch at the head, a card per line, a ghost button to add
+ * another, and a full-width CTA at the foot.
  *
  * @param state what the form holds.
  * @param actions what it reports back.
@@ -149,8 +144,6 @@ fun OrderCreateScreen(
         }
         if (state.mode == OrderFormMode.EDIT_AS_REQUESTER) {
             item(key = "requester-note") {
-                // Chapter 10 artboard 11's own sentence: what a requester may change, and what
-                // they may not, said once at the top rather than discovered field by field.
                 KrtHint(explanation = stringResource(R.string.order_edit_requester_note))
             }
         }
@@ -180,9 +173,6 @@ fun OrderCreateScreen(
                     onAmount = { actions.onAmount(index, it) },
                     onMinQuality = { actions.onMinQuality(index, it) },
                     onRemove = { actions.onRemoveLine(index) },
-                    // The floor under this line: „eine erfüllte Position lässt sich nicht unter
-                    // die übergebene Menge senken" (artboard 10). The server refuses it outright,
-                    // so the line says which one is wrong rather than the save failing unlabelled.
                     delivered = state.deliveredOf(line.materialId),
                 )
             }
@@ -219,8 +209,6 @@ fun OrderCreateScreen(
                 onValueChange = actions.onComment,
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.order_create_comment),
-                // The web gives the comment a four-row textarea; a one-line field would hide most
-                // of what a member writes into it.
                 minLines = COMMENT_LINES,
             )
         }
@@ -231,10 +219,7 @@ fun OrderCreateScreen(
 }
 
 /**
- * Switches the form between a material and an item order.
- *
- * The web uses a radio pair; the segmented control is the same choice in the design's own control,
- * and it says at a glance which of the two is active.
+ * Switches the form between a material and an item order with a segmented control.
  *
  * @param kind which order is being raised.
  * @param onKind the switch was used.
@@ -275,11 +260,7 @@ private fun SectionTitle(text: String) {
 }
 
 /**
- * One item line.
- *
- * The blueprint picker stays shut until an item is picked, because the blueprints are read *for*
- * that item: offering an empty dropdown first would read as a broken control. An item whose single
- * blueprint was picked for the member still shows the picker, so they can see which one it is.
+ * One item line; the blueprint picker appears only once an item is picked.
  *
  * @param line what to draw.
  * @param removable whether it may be taken away; the last line stays and is cleared instead.
@@ -317,9 +298,6 @@ private fun ItemLineCard(
             if (line.gameItemId == null) {
                 Hint(text = stringResource(R.string.order_create_item_blueprint_hint))
             } else if (line.blueprints.isEmpty()) {
-                // Not a picker problem: the catalogue holds the item but no blueprint for it, and
-                // the server would refuse the line. Saying so beats a dropdown that opens on
-                // nothing.
                 Hint(text = stringResource(R.string.order_create_item_blueprint_none))
             }
             KrtTextField(
@@ -423,8 +401,8 @@ private fun BlueprintField(
 /**
  * The two units and the contact handle.
  *
- * The processing picker is the profit-eligible subset and the customer picker is every active unit,
- * which is the distinction the backend enforces: a Bereich may raise an order but never work one.
+ * The processing picker offers only profit-eligible units; the customer picker offers every active
+ * unit.
  *
  * @param state what the form holds.
  * @param actions what it reports back.
@@ -444,10 +422,6 @@ private fun WhoBlock(
         )
         if (!state.loading && state.responsibleOptions.isEmpty()) {
             Text(
-                // „No unit is enabled" is a statement about the organisation, and it may only be
-                // made once the server has actually answered. A failed read says so instead —
-                // telling a member their org has no processing unit when the phone simply could
-                // not ask sends them to an administrator over a dropped connection.
                 text =
                     stringResource(
                         if (state.error == null) {
@@ -475,19 +449,13 @@ private fun WhoBlock(
             enabled = state.mode.headEditable,
         )
         if (!state.mode.headEditable) {
-            // Drawn, not removed. A field that is simply gone reads as a bug; a field with a
-            // reason reads as a rule — and the server takes these three from the stored order
-            // whatever the payload says, so editing them would change nothing silently.
             KrtHint(explanation = stringResource(R.string.order_edit_head_locked))
         }
     }
 }
 
 /**
- * One material line.
- *
- * Menge and Min. Qualität share a row because they are one thought — how much, of what grade — and
- * three fields across at 360 dp is not a layout the field height carries.
+ * One material line, with Menge and Min. Qualität sharing a row.
  *
  * @param line what to draw.
  * @param removable whether it may be taken away; the last line stays and is cleared instead.
@@ -498,8 +466,8 @@ private fun WhoBlock(
  * @param onAmount the amount was edited.
  * @param onMinQuality the minimum quality was picked.
  * @param onRemove the line is to go.
- * @param delivered how much of this material has already changed hands — the floor the amount may
- *   not go under, and `0.0` on a form raising a new order.
+ * @param delivered how much of this material has already changed hands — the floor for the amount;
+ *   `0.0` for a new order.
  */
 @Composable
 private fun LineCard(
@@ -526,8 +494,6 @@ private fun LineCard(
             PickerOverflowNote(more = truncated)
             if (line.materialId == null && line.query.trim().length >= MIN_QUERY && materials.isEmpty()) {
                 Text(
-                    // An empty dropdown reads as a broken picker. Only orderable materials are
-                    // offered here, so „nothing matched" is a real answer and worth saying.
                     text = stringResource(R.string.order_create_no_matches),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
@@ -700,17 +666,13 @@ private fun SubmitBlock(
                 ),
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth().testTag(ORDER_CREATE_SUBMIT_TAG),
-            // Validation-dimmed, without a padlock: nothing here is forbidden, it is unfinished.
             enabled = state.submittable,
         )
     }
 }
 
 /**
- * The create form, bound to its view model.
- *
- * Navigation on success is the host's, not this composable's: reacting to `created` here would fire
- * a side effect from composition.
+ * The create form, bound to its view model; navigation on success is left to the host.
  *
  * @param viewModel drives it.
  * @param modifier layout modifier.

@@ -75,9 +75,6 @@ internal fun LazyListScope.participantsTab(
         item { EmptyTab(R.string.mission_detail_empty_participants) }
         return
     }
-    // Checked in first, then by name — and the chip beside the counts says so. The artboard draws
-    // both („14 Teilnehmer · 9 eingecheckt" · „Sortiert: Check-In"), and the order is the point: on
-    // the evening of an Einsatz the question is who is already there, not who signed up first.
     val ordered =
         detail.participants.sortedWith(
             compareByDescending<MissionParticipant> { it.checkedIn }.thenBy { it.name.lowercase() },
@@ -87,9 +84,6 @@ internal fun LazyListScope.participantsTab(
         val isMine = participant.id == mine?.id
         ParticipantRow(participant = participant, isMine = isMine, roster = roster, own = own)
     }
-    // No footnote. Artboard 06-2 ends the tab with a grey paragraph, but it is a **handoff
-    // annotation** rather than copy — its second sentence points at „Muster Kap. 09" — and the app
-    // does not put chapter references in front of members.
 }
 
 /**
@@ -105,9 +99,6 @@ private fun RosterSummary(detail: MissionDetail) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            // Two counts, two plural rules: German and English both inflect „Teilnehmer" and
-            // „eingecheckt" independently, so the line is composed from two plurals rather than
-            // from one string with two placeholders in it.
             text =
                 pluralStringResource(
                     R.plurals.mission_roster_count,
@@ -142,8 +133,6 @@ private fun ParticipantRow(
     roster: MissionRosterActions,
     own: MissionOwnRoleActions,
 ) {
-    // A bordered card, not loose text on the page: artboard 06-2 draws each member as a record with
-    // its own frame, which is what lets a roster of thirty be scanned rather than read.
     Column(
         modifier =
             Modifier
@@ -158,8 +147,6 @@ private fun ParticipantRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // The dot replaces the „NICHT EINGECHECKT" chip. Two words per row, thirty rows, and
-            // the one fact they carry is binary — the design spends 8 dp on it instead of 90.
             KrtStatusDot(
                 on = participant.checkedIn,
                 stateLabel =
@@ -177,9 +164,6 @@ private fun ParticipantRow(
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = if (isMine) MaterialTheme.colorScheme.primary else KrtPalette.White,
                 )
-                // Which Staffel they come from — not their Funktion, which the chips below already
-                // are. The row used to repeat the assigned job here and say nothing about where a
-                // name belongs, on a screen whose whole subject is who is coming.
                 participant.orgUnitNames.takeIf { it.isNotEmpty() }?.let {
                     Text(
                         text = it.joinToString(MISSION_DOT),
@@ -187,10 +171,6 @@ private fun ParticipantRow(
                         color = KrtPalette.TextMuted,
                     )
                 }
-                // The wish is drawn beside the assignment („Wunsch: {{ p.jobWish }}") and is the
-                // whole reason a manager can assign anything sensibly. Shown only when it differs
-                // from what is assigned — repeating the same word twice tells nobody anything —
-                // and in the warning tint, because a divergence is what the manager must act on.
                 participant.desiredJobName
                     ?.takeIf { it != participant.role }
                     ?.let {
@@ -201,13 +181,6 @@ private fun ParticipantRow(
                         )
                     }
             }
-            // The payout as a **read** chip: it states the member's standing choice. Design ch. 18
-            // §3 (E6) keeps the read chip and the choice chip apart on purpose, so this one never
-            // becomes the control — the control is in the row's sheet.
-            //
-            // On the caller's own row too, now. It was suppressed there while the radio pair was
-            // drawn directly beneath it, which would have stated the same value twice a finger
-            // apart; with that pair moved into the sheet, the chip is the only thing saying it.
             participant.donating?.let { donating ->
                 KrtChip(
                     text =
@@ -229,11 +202,7 @@ private fun ParticipantRow(
 }
 
 /**
- * The row's check-in, as the 44 dp icon button the artboard draws.
- *
- * A labelled button per row cost about a third of the row's width for a word every row repeats;
- * the `.btn-icon` contract exists for exactly this case, and carries the name in the content
- * description and the tooltip instead.
+ * The row's check-in as a 44 dp icon button, named by its content description and tooltip.
  *
  * @param participant the row.
  * @param roster the actions and the gate.
@@ -267,24 +236,15 @@ private fun ParticipantCheckIn(
             ),
         onClick = click,
         modifier = dim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-        // The server refuses a check-in before the Einsatz has actually started, so the control is
-        // inactive before then — validation, which dims but never locks.
         enabled = roster.enabled && roster.checkInPossible,
     )
 }
 
 /**
- * The row's ⋮ — one entry, and it opens the row's sheet.
+ * The row's ⋮ — one entry that opens [MissionRoleSheet].
  *
- * **It used to carry the payout toggle directly, and the assignment chips were drawn under every
- * row** (owner decision, 2026-09-07). The chips were the whole catalogue on every one of fourteen
- * rows, so the roster read as a wall of chips in which the chosen one was indistinguishable at a
- * glance. Anteil, Wunsch and Funktion are one subject and now share one surface: [MissionRoleSheet].
- *
- * The entry itself is never locked and never gated, because opening a sheet is not a write. The
- * lock did not disappear with it — each of the sheet's three sections carries its own, which is
- * what lets one sheet serve a manager, a member on their own row, and a member on somebody
- * else's (ADR-0011: the control is drawn and locked, not hidden).
+ * The entry is never locked, since opening a sheet is not a write; each section of the sheet
+ * carries its own lock (ADR-0011).
  *
  * @param participant the row.
  * @param isMine whether it is the caller's own.
@@ -327,15 +287,8 @@ private fun ParticipantOverflow(
 }
 
 /**
- * „Funktion an Bord": what this member was actually assigned, and nothing else.
- *
- * A read chip, not the picker it replaced. The picker drew every Funktion the organisation has
- * defined on every row of the roster; what a reader of the roster wants from a row is the one that
- * was chosen. Assigning is still done here — through the row's ⋮, in [MissionRoleSheet], where the
- * catalogue is the subject rather than the noise around it.
- *
- * Nothing is drawn when nobody has been assigned yet: an empty label on fourteen rows says less
- * than the absence of a chip does, and the ⋮ that would set one is on every row regardless.
+ * „Funktion an Bord": a read chip for the Funktion this member was assigned, or nothing when none
+ * is; assigning happens in [MissionRoleSheet].
  *
  * @param participant the row.
  */

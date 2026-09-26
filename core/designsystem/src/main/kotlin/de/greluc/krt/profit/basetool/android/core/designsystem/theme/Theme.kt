@@ -32,18 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * The press highlight of the whole app: white at 8 %, in every interaction state.
- *
- * The design system specifies one number — "Ripple: white 8%, bounded, square" (ch. 01 § 5 and the
- * global rule of ch. 02) — so all four states carry it rather than Material's graded 8/10/10/16 %
- * ladder. Setting only [ripple]'s colour, as this theme did until now, leaves the alpha at
- * Material's default and renders a press at 10 %: the right hue at the wrong strength, and
- * invisible in a screenshot comparison because the difference is two percentage points on a
- * translucent overlay.
- *
- * Focus is deliberately included even though the design system draws focus as a border rather than
- * a wash — a focused control that also carries a 10 % white fill would sit brighter than the
- * pressed state next to it.
+ * The press highlight of the whole app: white at 8 % in every interaction state, focus included.
  */
 private val KrtRippleAlpha =
     RippleAlpha(
@@ -54,24 +43,16 @@ private val KrtRippleAlpha =
     )
 
 /**
- * The theme every Basetool screen is wrapped in.
+ * The dark-only theme every Basetool screen is wrapped in, without dynamic colour.
  *
- * Dark only, on purpose: there is no light scheme and dynamic colour is never applied, because the
- * brand hues are fixed by the corporate design manual. The theme also replaces the default Material
- * ripple with the design system's white ripple, so presses read as a flat highlight instead of a
- * coloured wash.
- *
- * Two things are resolved here rather than at the call site because they are properties of the
- * device, not of a component: the ripple alpha (see [KrtRippleAlpha]) and the motion duration (see
- * [LocalKrtMotionMs]).
+ * Also provides the white ripple ([KrtRippleAlpha]) and the device's motion duration
+ * ([LocalKrtMotionMs]).
  *
  * @param content the screen content, styled by this theme.
  */
 @Composable
 fun KrtTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    // Read once per composition of the theme root. The setting changes only through the system
-    // settings app, which restarts the activity, so observing it would buy nothing.
     val motionMs =
         remember(context) {
             val scale =
@@ -101,34 +82,17 @@ fun KrtTheme(content: @Composable () -> Unit) {
 }
 
 /**
- * How tall the system's bottom bar is, measured at the app root.
- *
- * A bottom sheet cannot read this for itself: it is drawn in a window that reports no
- * navigation-bar inset, so `navigationBarsPadding()` inside one resolves to nothing while the sheet
- * still paints under the gesture bar. Its action row then ends up in the system's gesture region,
- * where a tap never reaches the button — measured on a device, 2026-08-23. Captured here, at the
- * one place that is inside the activity window and above every screen that consumes insets.
+ * The height of the system's bottom bar, measured at the app root for bottom sheets, whose window
+ * reports no navigation-bar inset.
  */
 val LocalKrtBottomBarInset: ProvidableCompositionLocal<Dp> = staticCompositionLocalOf { 0.dp }
 
 /**
- * How long a colour or fade transition may take, in milliseconds — [KRT_MOTION_MS], or `0` when the
- * device asks for reduced motion.
+ * How long a colour or fade transition may take, in milliseconds — [KRT_MOTION_MS], or `0` when
+ * `Settings.Global.ANIMATOR_DURATION_SCALE` asks for reduced motion.
  *
- * The design system allows exactly one motion (200 ms colour/fade) and requires that it be skipped
- * when the system reports reduced motion; the app honoured the first half and not the second. On
- * Android that signal is `Settings.Global.ANIMATOR_DURATION_SCALE`, which a member sets either
- * through developer options or through **Einstellungen → Bedienungshilfen → Animationen
- * entfernen** — the accessibility toggle writes the same value, so this covers the case the rule is
- * actually about.
- *
- * Read it as [KrtTheme.motionMs] and pass it to `tween(...)`. A duration of zero makes Compose jump
- * to the target value without an intermediate frame, which is the intended behaviour: the state
- * change still happens, it simply is not animated.
- *
- * The loading spinner and the pull-to-refresh ring deliberately do **not** consult this. They are
- * not decoration — a spinner that does not spin reports "nothing is happening" while the app waits
- * on the network, which is worse for everybody than the motion it avoids.
+ * Read it as [KrtTheme.motionMs] and pass it to `tween(...)`. Spinners and the pull-to-refresh
+ * ring do not consult it.
  */
 val LocalKrtMotionMs: ProvidableCompositionLocal<Int> = staticCompositionLocalOf { KRT_MOTION_MS }
 
@@ -158,11 +122,8 @@ object KrtTheme {
 }
 
 /**
- * Preview scaffold for this library's component previews.
- *
- * Wraps the content in [KrtTheme] and paints the flat black page canvas with the standard screen
- * margin, so a preview shows the component as it will appear on a screen rather than on Compose's
- * default white background.
+ * Preview scaffold that wraps a component in [KrtTheme] on the black canvas with the standard
+ * screen margin.
  *
  * @param content the component under preview.
  */

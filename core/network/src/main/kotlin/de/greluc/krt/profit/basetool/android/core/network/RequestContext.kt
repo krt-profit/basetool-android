@@ -8,15 +8,10 @@
 package de.greluc.krt.profit.basetool.android.core.network
 
 /**
- * Supplies the bearer token for outgoing API calls.
+ * Supplies the bearer token for outgoing API calls, synchronously from memory, since it is called
+ * from an OkHttp interceptor.
  *
- * Deliberately **not** a suspending function: it is called from an OkHttp interceptor, which is
- * synchronous, and wrapping a coroutine there means `runBlocking` on a network thread. The auth
- * module satisfies this by keeping the current access token in memory (security concept §4 — the
- * access token never touches disk) and refreshing it out of band, so the read is a field access.
- *
- * Returning `null` means "no session": the interceptor then sends no `Authorization` header at all
- * rather than an empty one, which is what the anonymous endpoints expect.
+ * `null` means no session, and the interceptor then sends no `Authorization` header.
  */
 fun interface AccessTokenProvider {
     /**

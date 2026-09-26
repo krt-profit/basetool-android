@@ -68,11 +68,8 @@ private val CARET_SIZE = 16.dp
 private val CHECKBOX_SIZE = 20.dp
 
 /**
- * The listbox frame: left, right and bottom, but never the top.
- *
- * Compose borders are all-or-nothing, and the CSS is explicit that the top edge stays open
- * (`border-top: none`) so the open list reads as an extension of the field rather than a second box
- * floating under it. Drawing three sides by hand is the only way to say that.
+ * Draws the listbox frame on the left, right and bottom, leaving the top open so the list reads as
+ * an extension of the field.
  *
  * @param color the frame colour.
  * @return the modifier drawing the frame.
@@ -88,10 +85,7 @@ private fun Modifier.krtListboxFrame(color: Color): Modifier =
     }
 
 /**
- * A hairline closing off the bottom of a row.
- *
- * Drawn rather than bordered so it does not box the row in on all four sides, and drawn *over* the
- * content so an orange active row keeps its separator instead of painting across it.
+ * Draws a hairline over the bottom of a row, so an orange active row keeps its separator.
  *
  * @param color the hairline colour.
  * @return the modifier drawing the line.
@@ -116,10 +110,7 @@ data class KrtOption(
 )
 
 /**
- * Highlights the matched substring of a filter query inside an option label.
- *
- * The design system marks matches by weight only — bold, no highlight fill — because a coloured
- * background inside an option would collide with the orange selection rule.
+ * Bolds the matched substring of a filter query inside an option label.
  *
  * @param label the full option label.
  * @param query the current filter text; blank leaves the label unstyled.
@@ -145,9 +136,8 @@ private fun highlight(
 /**
  * One row of an option list.
  *
- * Two different states are shown at once and must not be confused: *active* is the keyboard/pointer
- * highlight and fills the row orange with black text (the brand selection rule); *selected* is the
- * value currently held by the field and is marked by an orange leading bar plus orange text.
+ * *Active* (the keyboard/pointer highlight) fills the row orange with black text; *selected* (the
+ * field's current value) shows an orange leading bar and orange text.
  *
  * @param label option text.
  * @param onClick invoked when the option is chosen.
@@ -200,14 +190,9 @@ private fun KrtOptionRow(
 }
 
 /**
- * The type-to-filter combobox.
+ * The type-to-filter combobox, whose muted notice states how many of the total entries remain.
  *
- * The web app's picker is the model: the user types, the list narrows, and a muted notice states how
- * many of the total entries remain. That notice is not decoration — it is the "no silent caps" rule
- * in visual form: a filtered list must always say what it is hiding.
- *
- * The component is stateless; the caller owns query, expansion and the filtered options, which is
- * what lets a screen restore all three after process death.
+ * Stateless: the caller owns query, expansion and the filtered options.
  *
  * @param query current filter text.
  * @param onQueryChange invoked as the user types.
@@ -248,9 +233,6 @@ fun KrtCombobox(
             placeholder = placeholder,
             enabled = enabled,
             trailing = {
-                // `.krt-combobox__input` carries an orange caret as a background image. Without it
-                // the field is indistinguishable from a plain text box, and a member has no way to
-                // know that typing will offer them anything.
                 KrtIcon(
                     id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
                     contentDescription = null,
@@ -260,15 +242,6 @@ fun KrtCombobox(
             },
         )
         if (expanded && enabled) {
-            // `.krt-combobox__listbox`: dark-gray fill, an orange frame that is open at the top so
-            // it reads as one control with the field above it, and hairlines between the options.
-            //
-            // The CSS caps the list at 18 rem and scrolls it, but that cap belongs to an absolutely
-            // positioned listbox floating over the page. This one sits in the flow of a sheet that
-            // already scrolls, and Compose cannot nest two scrollers in the same direction — a bare
-            // cap without a scroller would clip options away silently, which is the one outcome the
-            // "no silent caps" rule forbids. The list therefore takes the height it needs and the
-            // sheet scrolls; callers bound the option count and say so in `notice`.
             Column(
                 modifier =
                     Modifier
@@ -304,11 +277,7 @@ fun KrtCombobox(
 }
 
 /**
- * A closed-list select field.
- *
- * Renders the current value with the orange chevron of the design system; tapping it opens the
- * option list. Unlike [KrtCombobox] there is no free text — use this when every valid value is
- * known and short enough to scan.
+ * A closed-list select field with the orange chevron; unlike [KrtCombobox] it takes no free text.
  *
  * @param value label of the current value.
  * @param options selectable options.
@@ -388,17 +357,10 @@ fun KrtSelectField(
 }
 
 /**
- * The checkbox a list row wears while a multi-selection is running.
+ * The 22 dp unfilled checkbox a list row wears during a multi-selection, distinct from
+ * [KrtCheckboxRow]'s form control.
  *
- * Deliberately **not** [KrtCheckboxRow]'s mark. That one is the form control of design ch. 02: 18 dp,
- * a filled `SurfaceInput` well with a `Gray3` edge, sized to sit beside a label on a page ground.
- * Chapter 09's tree draws a different one — 22 dp, no fill at all and a `Gray2` edge — because it
- * sits **on** a filled row, where the form control's own fill disappears into the row behind it and
- * its edge is barely a shade off it. Same idea, two grounds, two marks.
- *
- * It renders the state only. The tap belongs to the whole row, which is what the artboard makes
- * tappable („Tap = Auswahl umschalten"), so this carries no click of its own and no semantics —
- * the row's `toggleable` owns both.
+ * Renders state only; the row's `toggleable` owns the tap and the semantics.
  *
  * @param checked whether the row is in the selection.
  * @param modifier placement within the row.
@@ -437,11 +399,8 @@ private val SELECTION_CHECKBOX_SIZE = 22.dp
 private val SELECTION_CHECK_GLYPH = 15.dp
 
 /**
- * The square checkbox of the design system.
- *
- * Material's checkbox is rounded and animates a checkmark stroke; this one is a square that fills
- * orange with a black check, matching the web app. The whole row is the toggle target so the label
- * is tappable.
+ * The square checkbox of the design system, filling orange with a black check; the whole row is the
+ * toggle target.
  *
  * @param checked current state.
  * @param onCheckedChange invoked with the new state.
@@ -549,8 +508,6 @@ fun KrtRadioRow(
                 )
             }
         }
-        // The label and its supporting line are one column, so a two-line explanation stays under
-        // its own choice instead of drifting toward the sibling radio (design ch. 06, artboard 3).
         Column {
             Text(
                 text = label,
@@ -636,21 +593,15 @@ private val TOGGLE_KNOB = 18.dp
 private val TOGGLE_KNOB_INSET = 2.dp
 
 /**
- * The switch of the design system — square, never Material's rounded one.
+ * The square switch of the design system.
  *
- * Square track, square knob, no ripple halo and no elevation: the whole visual language is built on
- * hairlines and right angles, and M3's pill-shaped `Switch` is the one control that would announce
- * itself as stock Android on an otherwise in-fiction screen.
- *
- * It carries **no** click handler of its own by default use: settings rows put the toggle in their
- * trailing slot and make the entire row the target, which is both the design's behaviour and the
- * only way to reach the 48 dp minimum without inflating a 24 dp control. Pass [onCheckedChange] to
- * make the toggle itself tappable when it stands alone.
+ * Has no click handler unless [onCheckedChange] is passed; settings rows make the whole row the
+ * target instead.
  *
  * @param checked current state.
  * @param modifier layout modifier.
  * @param enabled whether the control reads as available; a disabled toggle keeps its state but
- *   renders muted, because hiding it would read as a missing feature.
+ *   renders muted.
  * @param onCheckedChange optional handler; leave it out when an enclosing row owns the gesture.
  */
 @Composable
@@ -705,8 +656,6 @@ fun KrtToggle(
         Box(
             modifier =
                 Modifier
-                    // The lambda overload, because the offset is state-backed: the value
-                    // version would recompose the whole toggle on every animation frame.
                     .offset { IntOffset(knobOffset.roundToPx(), 0) }
                     .size(TOGGLE_KNOB)
                     .background(if (enabled) knobColor else KrtPalette.Gray3),
@@ -715,34 +664,22 @@ fun KrtToggle(
 }
 
 /**
- * A two-or-more-way inline choice, rendered as adjoining square segments.
- *
- * Used where the options are few, short and mutually exclusive and a dropdown would be a tap too
- * many — the language pair on the settings screen is the canonical case. The selected segment is
- * orange with black text, which is the same "selection = orange, text = black" rule the navigation
- * indicator and the option sheet follow.
- *
- * **48 dp tall, not the 36 px of the web design.** This is the platform correction [KrtSpacing]
- * already documents for touch targets: on a phone this is a finger target, and a 36 dp one fails
- * Android's accessibility minimum. Segment width stays as designed unless [stretch] is set.
+ * A few-way inline choice rendered as adjoining square segments, 48 dp tall; the selected segment is
+ * orange with black text.
  *
  * @param options the segment labels, in order; each must be short enough not to wrap.
  * @param selectedIndex index of the active segment.
  * @param onSelect invoked with the index of the tapped segment.
  * @param modifier layout modifier.
  * @param enabled whether the control accepts input.
- * @param stretch whether the segments divide the available width equally instead of taking the
- *   fixed 52 dp of design chapter 13. The fixed width is right for a pair like DE/EN that sits
- *   beside other controls; a segment that *is* the control — the Einsätze/Operationen switch above
- *   a list (chapter 06 §1) — spans the row, and a word like "Operationen" does not fit 52 dp.
- * @param activeColor fill of the chosen segment. Orange by default; a control whose choice carries
- *   a meaning of its own passes that meaning's colour, the way Einnahme/Ausgabe does.
+ * @param stretch whether the segments divide the available width equally instead of taking a fixed
+ *   52 dp each.
+ * @param activeColor fill of the chosen segment; orange by default.
  * @param activeContentColor label colour on that fill.
- * @param icons an optional leading icon per option, positionally matched to [options]. A short
- *   list or a null entry simply leaves that segment iconless, so a caller may mark only some.
+ * @param icons an optional leading icon per option, matched by position; a missing or null entry
+ *   leaves that segment iconless.
  * @param lockedIndices options the caller may not have, drawn with a trailing padlock and still
- *   **tappable**: `onSelect` fires so the screen can say what the lock means. Hiding the option
- *   instead would leave a member unable to discover that the surface exists at all.
+ *   tappable so the screen can explain the lock.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -798,8 +735,6 @@ fun KrtSegmentedControl(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // The icon is decoration: the label beside it already says what the segment
-                    // selects, so announcing it again would make every option read twice.
                     icons?.getOrNull(index)?.let { iconRes ->
                         KrtIcon(
                             id = iconRes,
@@ -809,16 +744,10 @@ fun KrtSegmentedControl(
                         )
                     }
                     Text(
-                        // Every artboard renders segment labels through
-                        // `text-transform: uppercase`, and the copy rules ask for uppercase labels.
-                        // Doing it here rather than at each call site keeps the two from drifting.
                         text = label.uppercase(),
                         style = MaterialTheme.typography.labelMedium,
                         color = tint,
                         textAlign = TextAlign.Center,
-                        // One line, always. The control is one row high, so a label that wraps is
-                        // drawn clipped through the middle of a word rather than made to fit — an
-                        // ellipsis says „this is shortened", a broken word says „this is broken".
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

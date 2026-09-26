@@ -34,16 +34,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
 /**
- * The page-level tab row of the design system's `.tab-nav`.
+ * The page-level tab row of the design system's `.tab-nav`, where exactly one page shows.
  *
- * Text tabs on the dark-gray band with a hairline under them; the open one is white with a 3 dp
- * orange underline, and counts sit beside their label in orange. **Not** filter chips: a chip row
- * reads as a set a member can combine, and these are pages of which exactly one is showing. Both
- * the Einsatz detail (design ch. 06 artboard 2) and the Auftrag detail (ch. 10 artboard 2) use it,
- * which is why it lives here rather than in either screen.
- *
- * Horizontally scrollable, because seven German tab labels do not fit a 411 dp phone and the
- * alternative — truncating them — makes "Teilnehmer" and "Frequenzen" look alike.
+ * The open tab is white with a 3 dp orange underline; counts sit beside labels in orange. The row
+ * scrolls horizontally rather than truncating labels.
  *
  * @param tabs the tabs, in order.
  * @param selectedIndex which one is showing.
@@ -89,11 +83,6 @@ private fun PageTab(
             Modifier
                 .clickable(onClick = onClick)
                 .heightIn(min = KrtSpacing.touchTarget)
-                // The tab row scrolls horizontally, so it hands its children an unbounded width.
-                // `fillMaxWidth()` on the underline collapses to zero under an infinite constraint,
-                // which drew the marker at 0 px wide — present in the tree, invisible on screen.
-                // Measuring the column at its own intrinsic width gives the underline something
-                // finite to fill.
                 .width(IntrinsicSize.Max),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom,
@@ -106,9 +95,6 @@ private fun PageTab(
             Text(
                 text = tab.label.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                // TextMuted, never Gray2: #646464 is the HAIRLINE value and reads at ~3.5:1 on the
-                // tab band, below the AA floor. The token `--color-gray-2-text` exists precisely so
-                // this mistake has a fix (design README correction 16).
                 color =
                     when {
                         selected -> KrtPalette.White
@@ -124,9 +110,6 @@ private fun PageTab(
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            // The lock is drawn at FULL opacity beside the dimmed label. Alpha alone is
-            // indistinguishable from a loading state, which is the reason the design system pairs
-            // the two rather than choosing one.
             if (tab.locked) {
                 KrtIcon(
                     id = R.drawable.ic_krt_lock,

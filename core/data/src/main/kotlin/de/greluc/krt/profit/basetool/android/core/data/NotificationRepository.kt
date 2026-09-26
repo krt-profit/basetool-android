@@ -52,14 +52,11 @@ interface NotificationSource {
     suspend fun unreadCount(): ApiResult<Long>
 
     /**
-     * Signals that something changed, one emission per server-side event.
+     * Signals that something changed, one emission per server-side event; a hint to re-read, not
+     * data.
      *
-     * The stream carries no payload — the server sends the bare word "new" — so this is a **hint to
-     * re-read**, not data. Modelling it as `Unit` keeps that honest: a client that tried to render
-     * the event would be rendering nothing.
-     *
-     * @return a cold flow; collecting opens the connection, cancelling closes it, and the flow
-     *   completes when the server closes the stream, which it does every thirty minutes by design.
+     * @return a cold flow; collecting opens the connection, cancelling closes it, and it completes
+     *   when the server closes the stream every thirty minutes.
      */
     fun changes(): Flow<NotificationSignal>
 
@@ -95,11 +92,7 @@ interface NotificationSource {
 }
 
 /**
- * What a bulk inbox action changed.
- *
- * The server answers both numbers in one response, which is why nothing here needs a follow-up
- * read: [unreadCount] settles the badge from the same call that changed it, so the badge and the
- * list cannot disagree in the window a second request would have opened.
+ * What a bulk inbox action changed, including the new unread count so no follow-up read is needed.
  *
  * @property affected how many rows the action touched.
  * @property unreadCount how many notifications are unread now.
@@ -110,10 +103,7 @@ data class NotificationBulkResult(
 )
 
 /**
- * Reads the notification inbox from the backend.
- *
- * Nothing is cached. The inbox is the one list whose whole purpose is to be current, and the badge
- * beside it would be a lie a moment later.
+ * Reads the notification inbox from the backend, uncached.
  *
  * @property reader performs the calls and classifies their failures
  * @property stream opens the push channel
@@ -134,11 +124,8 @@ class NotificationRepository(
     )
 
     /**
-     * Reads one page of the inbox.
-     *
-     * A row without an id is dropped — it cannot be marked read or opened — but the server's total
-     * is passed through untouched, because that total is what the screen states and lowering it
-     * quietly would hide the fault.
+     * Reads one page of the inbox, dropping rows without an id while passing the server's total
+     * through.
      *
      * @param page the zero-based page index.
      * @param pageSize how many rows to ask for.
@@ -168,11 +155,8 @@ class NotificationRepository(
             .map { it.count ?: 0L }
 
     /**
-     * Opens the push channel and emits once per `notification` event.
-     *
-     * `connected`, `heartbeat` and `replaced` are filtered out here rather than passed on. They are
-     * the stream's own bookkeeping, and a caller that re-read the inbox on every heartbeat would
-     * poll every twenty seconds while believing it was using push.
+     * Opens the push channel and emits once per `notification` event, filtering out `connected`,
+     * `heartbeat` and `replaced`.
      *
      * @return the signal flow.
      */
@@ -182,11 +166,7 @@ class NotificationRepository(
             .map { NotificationSignal.parse(it.data) }
 
     /**
-     * Marks one notification read.
-     *
-     * The server answers with the updated row; it is discarded on purpose. The caller has already
-     * flipped the row optimistically, and adopting the response here would make the repository the
-     * second place that decides what a read row looks like.
+     * Marks one notification read, discarding the updated row the server answers with.
      *
      * @param id the notification to mark.
      * @return success, or the classified failure.
@@ -245,12 +225,7 @@ class NotificationRepository(
         private const val SORT_PARAM = "sort"
 
         /**
-         * Newest notification first.
-         *
-         * Sent explicitly because the server sorts **ascending** when the parameter is absent
-         * (`PaginationUtil.resolveSort` falls back to `Sort.by(defaultField).ascending()`), which
-         * opened the inbox on the oldest notification a member ever received and put today's on
-         * the last page. The web app sends `createdAt,desc` for the same reason.
+         * Newest notification first; sent explicitly because the server sorts ascending by default.
          */
         private const val NEWEST_FIRST = "createdAt,desc"
     }
@@ -292,11 +267,7 @@ private fun NotificationDto.toModel(): Notification? {
 }
 
 /**
- * Maps a bulk result off the wire, defaulting both numbers.
- *
- * A missing `unreadCount` becomes zero rather than "unknown" on purpose: both actions can only ever
- * lower the count, and the alternative — leaving the badge at its old value — would show a number
- * the member just cleared.
+ * Maps a bulk result off the wire, defaulting both numbers to zero.
  *
  * @return the model.
  */

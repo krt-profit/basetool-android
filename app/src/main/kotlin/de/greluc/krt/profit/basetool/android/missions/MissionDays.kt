@@ -56,21 +56,14 @@ data class MissionDaySection(
 )
 
 /**
- * Groups Einsätze into the dated sections the design's list is built from.
+ * Groups Einsätze into dated sections, deciding the day in the device's zone rather than UTC.
  *
- * **The device's zone decides the day, not UTC.** The wire is UTC; a member in Europe/Berlin
- * looking at an Einsatz at 23:30 UTC is looking at one that happens tomorrow, and grouping it under
- * today would put it under the wrong heading — visibly wrong exactly once a day, which is the kind
- * of bug that gets reported as "the app shows the wrong date sometimes".
- *
- * Server order is preserved inside each section, and the sections themselves keep the order in
- * which their first Einsatz appeared. The server already sorts by planned start, so re-sorting here
- * would be a second, weaker copy of a decision already made — except for [MissionDay.Undated],
- * which is forced last because it has no place on a timeline.
+ * Server order is preserved inside and across sections, except that [MissionDay.Undated] is always
+ * last.
  *
  * @param missions the rows to group, in server order.
  * @param zone the device's zone.
- * @param today the device's current date, passed in rather than read here so a test can pin it.
+ * @param today the device's current date, injectable for tests.
  * @return the sections, in display order; empty when [missions] is empty.
  */
 fun groupMissionsByDay(
@@ -89,8 +82,6 @@ fun groupMissionsByDay(
     }
     return sections.entries
         .map { MissionDaySection(it.key, it.value.toList()) }
-        // Undated last: it belongs to no point on the timeline, so wherever the first undated row
-        // happened to appear is not where its heading belongs.
         .sortedBy { it.day == MissionDay.Undated }
 }
 

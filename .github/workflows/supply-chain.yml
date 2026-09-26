@@ -1,28 +1,11 @@
 name: Supply Chain
 
-# Two checks that look at what the project depends on rather than what it does.
-#
-# dependency-review runs on pull requests and fails when a PR *introduces* a
-# vulnerable or badly-licensed dependency. Scoped to the diff on purpose: a
-# gate that also fires on the existing tree is a gate that gets marked
-# "expected failure" and then ignored.
-#
-# OpenSSF Scorecard grades this repository's own posture — branch protection,
-# pinned actions, token permissions, signed releases — and writes the result
-# into code scanning. It runs on a schedule and on pushes to main rather than
-# per PR: it measures the repo, not the change.
-#
-# The app's dependency surface is where its worst realistic compromise lives.
-# A malicious transitive Gradle dependency runs inside the process that holds
-# the refresh token; nothing in the app's own code review would see it.
-
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
   schedule:
-    # Daily, and that cadence is load-bearing rather than tidy — see the Scorecard job below.
     - cron: '41 4 * * *'
   workflow_dispatch:
 
@@ -45,35 +28,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Review dependency changes
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
         with:
           fail-on-severity: moderate
-          # GPL-3.0-only for the app itself; a dependency under a licence that
-          # cannot be combined with it is a legal defect, not a preference.
           deny-licenses: AGPL-1.0-or-later, AGPL-3.0-or-later, SSPL-1.0, BUSL-1.1
           comment-summary-in-pr: on-failure
 
-  # Schedule and manual dispatch only — never on push, and that is a fix rather than a preference.
-  #
-  # Scorecard's Binary-Artifacts check excludes `gradle/wrapper/gradle-wrapper.jar` only when
-  # `ci.yml` already has a SUCCESSFUL run for the head commit. On a push both workflows start in
-  # the same second; Scorecard finishes in ~40 s and CI in ~15 min, so the exclusion can never
-  # fire and the wrapper jar is reported as an unvalidated binary every single time. Measured
-  # 2026-08-31 on the same commit: the push SARIF carried BinaryArtifactsID, the scheduled SARIF
-  # did not. Both scheduled runs this repo has ever had omit it; all ~60 push runs carry it.
-  #
-  # The DAILY cron above is part of the same fix. Scorecard lists ci.yml's runs without
-  # pagination, so the exclusion only ever sees the 30 newest successful runs across all branches
-  # and events. On a weekly cadence, 30 PR-triggered successes can push the main-HEAD run off that
-  # page and silently reopen the alert.
-  #
-  # Accepted regression: the flapping SASTID alert now takes up to a day to clear instead of
-  # clearing on the next push. The daily cron bounds that.
   scorecard:
     name: OpenSSF Scorecard
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -83,25 +48,23 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      # Scorecard signs its results with a short-lived OIDC token so the
-      # published score is attributable to this workflow.
       id-token: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Run Scorecard
-        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc
         with:
           results_file: scorecard.sarif
           results_format: sarif
           publish_results: true
 
       - name: Upload Scorecard results to code scanning
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd
         with:
           sarif_file: scorecard.sarif
           category: scorecard

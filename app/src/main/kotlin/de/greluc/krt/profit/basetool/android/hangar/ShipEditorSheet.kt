@@ -71,10 +71,7 @@ private const val INSURANCE_TAB_LTI = 0
 /**
  * The create/edit sheet for one of the member's ships.
  *
- * **Insurance is a segment plus a number, not a text field.** The server accepts `LTI` or a whole
- * number of months from 0 to 120 and refuses everything else, so the app offers exactly those two
- * shapes. A free-text field would let a member type "lifetime" and learn it was wrong only after
- * the save.
+ * Insurance is a lifetime segment plus a month count, matching what the server accepts.
  *
  * @param editor what the sheet holds.
  * @param hulls the ship-type catalogue.
@@ -121,8 +118,6 @@ fun ShipEditorSheet(
                     .padding(KrtSpacing.s16),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
-            // Artboard 08.2's order: identify the ship, then name it, then state its facts.
-            // Name-first asked a member to name a thing they had not chosen yet.
             HullPicker(
                 chosen = editor.hull,
                 query = editor.hullQuery,
@@ -137,8 +132,6 @@ fun ShipEditorSheet(
                 label = stringResource(R.string.hangar_field_name),
                 enabled = !editor.saving,
             )
-            // Versicherung and Ort share a row in the artboard: both are short facts about where
-            // the hull stands, and full-width each they pushed Fitted off a phone screen.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -162,9 +155,6 @@ fun ShipEditorSheet(
                     )
                 }
             }
-            // A bordered row that lights up when set, not a toggle on a bare line: the artboard
-            // gives Fitted its own box with a second line saying what it means, because
-            // "einsatzbereit" is a claim about the ship that somebody else will rely on.
             Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtCheckboxRow(
                     checked = editor.fitted,
@@ -204,11 +194,6 @@ fun ShipEditorSheet(
                     enabled = editor.submittable && !editor.saving,
                 )
             }
-            // A quiet danger button at the sheet's foot, and only when a ship is open here
-            // (round 14 · S14). It used to be a second icon on every row, which left the row about
-            // 190 dp for its chips and its location and pushed long station names out — and the
-            // split is the overflow's own: „Hangar leeren" is about every ship, „Löschen" about the
-            // one already in front of the member.
             editor.editing?.let { ship ->
                 KrtQuietDangerButton(
                     text = stringResource(R.string.hangar_delete_ship),
@@ -222,11 +207,9 @@ fun ShipEditorSheet(
 }
 
 /**
- * The hull picker.
+ * The searchable hull picker.
  *
- * Searchable rather than a list: the catalogue runs to hundreds of hulls. Only the first few
- * matches are shown, and the notice says so — a list cut without saying so sends a member looking
- * for a hull that is right there under the fold.
+ * Only the first few matches are shown, and a notice says so.
  *
  * @param chosen the hull already picked, or `null`.
  * @param query what the member typed.
@@ -254,9 +237,6 @@ private fun HullPicker(
                     it.manufacturerName?.contains(term, ignoreCase = true) == true
             }
         }
-    // Opening is the member's act, not a side effect of the query still being non-empty: after a
-    // pick the query holds the chosen hull's name, and a list that reopens on that would cover the
-    // field the moment it is answered.
     var open by rememberSaveable { mutableStateOf(false) }
     val shown = matches.take(HULL_RESULT_LIMIT)
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
@@ -349,10 +329,7 @@ private fun InsuranceField(
 private const val MAX_MONTHS = 120
 
 /**
- * The place picker.
- *
- * A short list rather than a search: the org's home locations are a handful, and "kein Ort" is a
- * legitimate answer that a search field cannot express.
+ * The place picker: a short list of the org's home locations plus "kein Ort".
  *
  * @param chosen the place already picked, or `null`.
  * @param places the list.
@@ -366,8 +343,6 @@ private fun PlacePicker(
     enabled: Boolean,
     onChosen: (HomeLocation?) -> Unit,
 ) {
-    // A closed list of the org's own places, so the select field rather than the combobox: there
-    // is nothing to type, and an always-open column of every place buried the fields under it.
     var open by rememberSaveable { mutableStateOf(false) }
     val none = stringResource(R.string.hangar_location_none)
     KrtSelectField(

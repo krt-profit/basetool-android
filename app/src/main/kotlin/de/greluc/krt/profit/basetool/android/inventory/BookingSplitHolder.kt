@@ -18,13 +18,7 @@ import java.math.BigDecimal
 /**
  * The book-in form's earmarks: where the amount being booked in is promised to go.
  *
- * Its own holder rather than five more methods on [BookingViewModel], for the reason detekt's
- * function cap exists to surface: the booking form answers „what, how much, where" and this
- * answers „and to whom" — a second question with its own state, its own reads and its own rules.
- * The view model keeps the booking; this keeps the split.
- *
- * Everything it does is a transform on the shared [BookingState], so there is **one** state and no
- * second copy to keep in step.
+ * Every operation is a transform on the shared [BookingState]; it holds no state of its own.
  *
  * @property source where the targets are read from.
  * @property scope the view model's scope, so a target read dies with the screen.
@@ -36,12 +30,10 @@ class BookingSplitHolder(
     private val update: ((BookingState) -> BookingState) -> Unit,
 ) {
     /**
-     * Reads what a book-in's earmarks may point at.
+     * Reads the Auftrag and Einsatz targets once when the form opens.
      *
-     * Both lists, once, when the form opens — not per keystroke: they are short, they do not depend
-     * on what is being booked, and the filtering against the picked material happens on the device.
-     * A failure leaves the lists empty, which reads as „nothing to earmark" rather than as a
-     * banner: the booking itself is unaffected, and it is the reason the form is open.
+     * Filtering against the picked material happens on the device. A failure leaves the lists empty
+     * without a banner.
      */
     fun load() {
         scope.launch {
@@ -64,11 +56,7 @@ class BookingSplitHolder(
     fun picking(kind: AllocationKind?) = update { it.copy(picking = kind) }
 
     /**
-     * Adds an earmark row for the picked target.
-     *
-     * Starts at the **rest** rather than at zero: a member earmarking a booking usually means all
-     * of it, and the case where they do not is the one where they were going to type a figure
-     * anyway.
+     * Adds an earmark row for the picked target, starting at the remaining rest.
      *
      * @param kind which split.
      * @param target what to earmark for.
@@ -102,10 +90,7 @@ class BookingSplitHolder(
     ) = update { current -> current.mapRow(kind, targetId) { it.copy(amount = amount) } }
 
     /**
-     * Steps one earmark by whole units.
-     *
-     * Clamped at zero: a negative promise is not a smaller one, and the row's own „entfernen" is
-     * how a member takes an earmark back.
+     * Steps one earmark by whole units, clamped at zero.
      *
      * @param kind which split.
      * @param targetId which row.
@@ -143,8 +128,7 @@ class BookingSplitHolder(
  * @param kind which split.
  * @param targetId which row.
  * @param transform what to do to it.
- * @return the updated form, with the last refusal cleared — the member has changed the thing it
- *   was about.
+ * @return the updated form, with the last refusal cleared.
  */
 private fun BookingState.mapRow(
     kind: AllocationKind,

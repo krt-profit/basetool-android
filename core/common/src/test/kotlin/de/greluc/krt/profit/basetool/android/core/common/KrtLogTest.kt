@@ -16,12 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The level gate of the logging facade.
- *
- * What is worth pinning is not that a line reaches logcat but that a **dropped** line never
- * evaluates its message lambda: call sites are expected to build strings inline, and a facade that
- * evaluates them regardless would put that cost — and any accidental token interpolation — into
- * release builds where the message is discarded anyway.
+ * Tests the facade's level gate, chiefly that a dropped line never evaluates its message lambda.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

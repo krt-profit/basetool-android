@@ -61,22 +61,11 @@ private const val BULLET = "•  "
 private val BULLET_INDENT = 16.dp
 
 /**
- * The consent gate — the document, the checkbox and the one action that gets past it.
+ * The consent gate: the document, the checkbox and the accept action.
  *
- * **The text is the server's, never this build's.** It arrives from `GET /api/v1/terms/document`
- * together with the version an acceptance is recorded against (main repo ADR-0138). A copy compiled
- * into the APK would show the wording this build shipped with while the server records consent
- * against whatever it currently has in force — and with distribution over GitHub Releases, that
- * drift is the steady state rather than a risk. A member reading one wording and agreeing to another
- * is not informed consent, so the app carries no copy at all.
- *
- * **The CTA is disabled until the box is ticked, and there is no scroll-to-bottom gate** (design
- * ch. 04). Forcing a scroll measures that a finger moved, not that anything was read, and it
- * punishes the member who genuinely wants to read on a large screen where the text already fits.
- *
- * **Declining is a logout, and it says so before it happens.** The confirmation names the
- * consequence rather than asking an abstract "are you sure" — refusing the terms means leaving the
- * tool, which is not obvious from a button labelled "Ablehnen".
+ * The text comes from `GET /api/v1/terms/document` with the version acceptance is recorded against;
+ * the app bundles no copy. The CTA is enabled by the checkbox alone, with no scroll gate. Declining
+ * signs out after a confirmation that says so.
  *
  * @param document the wording in force
  * @param accepting whether an acceptance is currently in flight
@@ -94,8 +83,6 @@ fun TermsScreen(
     onDecline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // rememberSaveable, not remember: a rotation must not silently untick a box the member ticked,
-    // which would turn a disabled CTA into a mystery.
     var checked by rememberSaveable { mutableStateOf(false) }
     var confirmingDecline by rememberSaveable { mutableStateOf(false) }
 
@@ -108,22 +95,8 @@ fun TermsScreen(
     ) {
         Header(document)
 
-        // Design ch. 04 gives the Terms — and only the Terms — a split on the tablet: the
-        // document on the left at a readable measure, the action rail on the right. Login and
-        // the pending/app-lock screens keep their single 480 dp column, so this is not the
-        // general wide layout of the auth family but this one screen's rule.
-        //
-        // Splitting matters here more than elsewhere: this is the one screen a member must read
-        // before acting, and a full-tablet-width line of legal prose is the hardest thing to read
-        // the app could put in front of them. The rail also keeps the CTA visible while they
-        // scroll, instead of hiding the thing they are scrolling towards.
         if (isWideWindow()) {
             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // The cap has to sit INSIDE the weighted slot, not after it. `weight` hands the
-                // child a fixed width, and `widthIn` cannot narrow a fixed constraint — it would
-                // read as a cap and do nothing, which is what a 1280 dp tablet showed: the
-                // document ran 872 dp wide. A Box takes the weight and passes loose constraints
-                // down, so the measure applies.
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopStart) {
                     TermsDocumentColumn(
                         document = document,
@@ -172,10 +145,7 @@ fun TermsScreen(
 }
 
 /**
- * The scrolling document itself.
- *
- * Extracted so the phone's single column and the tablet's split can share it — the text is the
- * same text, and a second copy would be a second place for the prose to drift.
+ * The scrolling document, shared by the phone's single column and the tablet's split.
  *
  * @param document what to render.
  * @param modifier layout modifier; the caller decides the width and the weight.
@@ -224,9 +194,7 @@ private val ACTION_RAIL_WIDTH = 360.dp
 /**
  * The fixed header: eyebrow, title, version and date.
  *
- * The version is shown because it is what the acceptance is recorded against — a member who is
- * re-prompted after a change can see that the document is a different one, which is otherwise
- * invisible.
+ * The version is the one the acceptance is recorded against.
  *
  * @param document the wording in force
  */
@@ -245,8 +213,6 @@ private fun Header(document: TermsDocument) {
             color = KrtPalette.TextMuted,
         )
         Spacer(Modifier.height(KrtSpacing.s4))
-        // The document's own title, uppercased for display only: the server sends it in sentence
-        // case and the chapter renders it as a heading, the same way the top bar treats a title.
         Text(
             text = document.title.krtUppercase(),
             style = MaterialTheme.typography.titleLarge,
@@ -348,9 +314,6 @@ private fun ActionBar(
         KrtCtaButton(
             text = stringResource(R.string.terms_accept),
             onClick = onAccept,
-            // Both conditions, not just the box: a second tap while the first acceptance is still
-            // in flight would post consent twice. The server is idempotent about it, but the member
-            // would be looking at a button that appears to do nothing.
             enabled = checked && !accepting,
             iconRes = DesignR.drawable.ic_krt_clipboard_check,
             modifier = Modifier.fillMaxWidth(),

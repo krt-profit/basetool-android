@@ -19,14 +19,8 @@ import androidx.compose.ui.unit.dp
 private val DASH = 4.dp
 
 /**
- * A dashed hairline around the content, radius 0.
- *
- * The design system uses it in exactly two places and for one reason: to mark a **place something
- * goes** rather than a container that holds something. `.assoc-add` („+ Person zuweisen") and the
- * empty state both draw it; a solid border in either spot reads as a filled surface that happens to
- * be blank.
- *
- * Drawn rather than composed from `Modifier.border`, which has no dash support.
+ * A dashed square hairline around the content, marking a place something goes (`.assoc-add`, the
+ * empty state).
  *
  * @param color the hairline's colour.
  * @param width its thickness; the design system's hairline is 1 dp everywhere.

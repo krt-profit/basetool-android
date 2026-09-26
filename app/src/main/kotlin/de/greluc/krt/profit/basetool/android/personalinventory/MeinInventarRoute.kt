@@ -34,13 +34,9 @@ const val MEIN_INVENTAR_SEGMENT_TAG: String = "mein-inventar-segment"
 private const val TAB_ITEMS = 0
 
 /**
- * "Mein Inventar & Blueprints" — the one screen the design gives two halves (ch. 09 § 4).
+ * „Mein Inventar & Blueprints": one screen with an Items half and a Blueprints half.
  *
- * The segment lives here rather than in either half, and each half keeps its own view model: the
- * two read different endpoints, fail independently, and a member switching tabs must not lose the
- * list they just scrolled. The chosen tab survives process death (`rememberSaveable`) because
- * coming back to the wrong half is the kind of small wrongness that is hard to name and easy to
- * feel.
+ * Each half keeps its own view model; the chosen tab survives process death.
  *
  * @param items drives the Items half.
  * @param blueprints drives the Blueprints half.
@@ -56,8 +52,6 @@ fun MeinInventarRoute(
     val itemsState by items.state.collectAsStateWithLifecycle()
     val blueprintsState by blueprints.state.collectAsStateWithLifecycle()
 
-    // Loaded on first *display*, not on first composition of the screen: the Blueprints half costs
-    // two requests, and a member who never opens the tab should never pay for them.
     LaunchedEffect(tab) {
         if (tab == TAB_ITEMS) items.loadOnce() else blueprints.loadOnce()
     }
@@ -128,8 +122,6 @@ fun MeinInventarRoute(
     }
 
     (itemsState.editor as? EditorState.Open)?.let { editor ->
-        // Design ch. 14's conflict dialog: a refused save must not be a line under a
-        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
         ConflictOn(
             error = editor.error,
             onReload = {
@@ -166,12 +158,9 @@ fun MeinInventarRoute(
             onDismiss = items::onBulkDeleteDismissed,
         )
     }
-    // Two ways out of the mode and no third: „Aufheben" on the bar, and the system back gesture.
     BackHandler(enabled = itemsState.selecting, onBack = items::onSelectionCleared)
 
     val blueprintEditor = blueprintsState.editor
-    // Design ch. 14's conflict dialog for both blueprint sheets: they share one editor state, so
-    // one dialog covers adding and editing.
     ConflictOn(
         error =
             (blueprintEditor as? BlueprintEditor.Adding)?.error

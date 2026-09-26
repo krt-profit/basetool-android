@@ -20,25 +20,12 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * AES-256-GCM backed by a non-exportable key in the Android Keystore.
+ * AES-256-GCM backed by a non-exportable Android Keystore key, protecting the refresh token at rest.
  *
- * This is the only place the app has a secret at rest, and three properties of the key are the
- * reason the refresh token may be stored at all (security concept §4):
- *
- * - **Non-exportable.** The key never enters the app process, so a ciphertext copied off the device
- *   — by a backup that slipped through, by a restore onto another phone — cannot be decrypted
- *   anywhere else.
- * - **[KeyGenParameterSpec.Builder.setUnlockedDeviceRequired].** While the device is locked the
- *   refresh token is cryptographically unusable, which is exactly the "stolen locked phone" case.
- *   It costs nothing here because the app only refreshes in the foreground — there is no push
- *   channel to wake it (decision Q2).
- * - **StrongBox where available**, with a fallback: [StrongBoxUnavailableException] is caught and
- *   the key regenerated without it. A device without a secure element still gets a TEE-backed key,
- *   which is strictly better than refusing to store anything and asking for a full login every
- *   time.
- *
- * `androidx.security:security-crypto` is deliberately **not** used — it is deprecated with no
- * successor (final release 1.1.0), which is a poor foundation for the one secret that matters.
+ * - Non-exportable, so a copied ciphertext cannot be decrypted elsewhere.
+ * - [KeyGenParameterSpec.Builder.setUnlockedDeviceRequired], so the token is unusable while the
+ *   device is locked.
+ * - StrongBox where available, regenerating a TEE-backed key on [StrongBoxUnavailableException].
  *
  * @property alias Keystore entry name; one per purpose so a wipe can be scoped
  */
@@ -55,15 +42,6 @@ class KeystoreSecretCipher(
         } catch (failure: GeneralSecurityException) {
             throw SecretCipherException("encryption failed", failure)
         } catch (unavailable: ProviderException) {
-            // The provider could not produce the key at all — distinct from a cryptographic
-            // failure, and NOT a GeneralSecurityException: `ProviderException` extends
-            // RuntimeException, so without this branch it walks past every caller's handler and
-            // takes the process down.
-            //
-            // The case that produced it: `setUnlockedDeviceRequired(true)` on a device with no
-            // secure lock screen. Android 12's keystore2 answers "User ECDH key missing" because
-            // the per-user super-encryption key only exists once a lock is set. A member who has
-            // never set one would have lost the app on the sign-in button.
             throw SecretCipherException("the Keystore could not provide a key", unavailable)
         }
 
@@ -75,15 +53,10 @@ class KeystoreSecretCipher(
             cipher.init(Cipher.DECRYPT_MODE, secretKey(), spec)
             cipher.doFinal(ciphertext, IV_LENGTH_BYTES, ciphertext.size - IV_LENGTH_BYTES)
         } catch (failure: GeneralSecurityException) {
-            // Includes the ordinary states: key invalidated by a new biometric enrolment, device
-            // locked under setUnlockedDeviceRequired, blob restored from another device. The
-            // exception type is never surfaced further — all of them mean "log in again".
             throw SecretCipherException("decryption failed", failure)
         } catch (malformed: IllegalArgumentException) {
             throw SecretCipherException("stored blob is malformed", malformed)
         } catch (unavailable: ProviderException) {
-            // Same reasoning as in `encrypt`: a provider that cannot hand over the key is a
-            // "log in again" state, not a crash.
             throw SecretCipherException("the Keystore could not provide a key", unavailable)
         }
 
@@ -98,8 +71,6 @@ class KeystoreSecretCipher(
         try {
             keyStore().deleteEntry(alias)
         } catch (failure: GeneralSecurityException) {
-            // A key that cannot be deleted is not worth crashing a logout over; the blob is gone
-            // either way and the next login overwrites the entry.
             KrtLog.w(LOG_TAG, failure) { "keystore entry could not be deleted" }
         }
     }
@@ -122,9 +93,6 @@ class KeystoreSecretCipher(
      */
     private fun generateKey(): SecretKey =
         try {
-            // Always asked for: StrongBox is API 28+ and minSdk is 29, so a version guard here
-            // would be dead code. Whether the device HAS a secure element is answered by the
-            // exception below, not by an SDK level.
             generateKey(useStrongBox = true)
         } catch (unavailable: StrongBoxUnavailableException) {
             KrtLog.w(LOG_TAG, unavailable) { "StrongBox unavailable, falling back to a TEE-backed key" }

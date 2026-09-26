@@ -17,14 +17,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Turns an unsuccessful HTTP response into the [ApiError] the UI switches on.
  *
- * **The stable `code` decides, not the status.** The backend answers 403 for three unrelated
- * situations — a pending registration, unaccepted terms, and a genuine authorisation failure — and
- * a client that branches on the status alone shows the wrong screen for two of them. The status is
- * the fallback for responses that carry no problem body at all, which is what an edge (NPM) or a
- * proxy produces.
- *
- * A malformed body never becomes a thrown parse error: an unreadable problem body is still an error
- * response, and losing the status because the JSON was odd would be the worse outcome.
+ * Classifies by the problem body's stable `code`, falling back to the status when there is no body;
+ * a malformed body never throws.
  *
  * @property json lenient by default; see [DEFAULT_JSON]
  */
@@ -99,9 +93,6 @@ class ApiErrorMapper(
             }
 
             HTTP_CONFLICT -> {
-                // Not OptimisticLock: that is what the explicit OPTIMISTIC_LOCK code above means.
-                // Every other 409 is the server refusing on a rule, and calling it a concurrent
-                // edit told the member to reload over a state that reloading does not change.
                 ApiError.Conflict(problem)
             }
 
@@ -138,10 +129,6 @@ class ApiErrorMapper(
     /**
      * Parses the problem body, tolerating anything that is not one.
      *
-     * Expression-shaped rather than a sequence of early returns: detekt caps a function at two, and
-     * the guard chain here reads better as one pipeline anyway — unreadable, blank and unparseable
-     * all mean the same thing to the caller.
-     *
      * @param response the response whose body to read
      * @return the parsed body, or `null` when there is none or it is unusable
      */
@@ -152,8 +139,6 @@ class ApiErrorMapper(
                 try {
                     json.decodeFromString(ProblemDetail.serializer(), body)
                 } catch (malformed: IllegalArgumentException) {
-                    // An error response that is not problem+json — an edge 404 page, an HTML 502.
-                    // The status still classifies it; only the localised prose is lost.
                     KrtLog.d(LOG_TAG) { "non-problem error body: " + malformed.javaClass.simpleName }
                     null
                 }

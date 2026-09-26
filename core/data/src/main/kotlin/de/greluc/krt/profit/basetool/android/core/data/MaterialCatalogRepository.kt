@@ -24,7 +24,7 @@ import java.math.BigDecimal
 /** How many rows one page of the catalogue asks for. */
 private const val PAGE_SIZE = 500
 
-/** A page-walk that has read this many pages has met something it was not built for. */
+/** The page-walk's upper bound on pages read before it gives up. */
 private const val MAX_PAGES = 40
 
 /**
@@ -39,21 +39,15 @@ private const val MATRIX_PAGE_SIZE = 1000
 const val MATERIAL_CATEGORY_UNSORTED: String = "Unsortiert"
 
 /**
- * One material in the trade list, with the best price on each side.
+ * One material in the trade list, with the best price on each side; carries no type or unit.
  *
- * > **No type and no unit.** The artboard's subtitle reads „Veredelt · SCU", and
- * > `MaterialPriceOverviewDto` carries neither `type` nor `quantityType` — the category is what the
- * > projection has, and it is what the web groups by. Reading `/materials/search` alongside just to
- * > fill a subtitle would double the traffic of the whole list. On the design gap list.
- *
- * @property id the material — the detail is addressed by it.
+ * @property id the material, which addresses the detail.
  * @property name what it is called.
  * @property category which family it belongs to, or `null`; the screen falls back to „Unsortiert".
- * @property minPriceBuy the cheapest terminal sells it for this, or `null` where none does. Kept
- *   as the server's own decimal rather than a `Double`: the screen renders it verbatim and the two
- *   filters only ever compare it, so nothing here has to round.
+ * @property minPriceBuy the cheapest terminal sells it for this, or `null` where none does; the
+ *   server's own decimal, never rounded.
  * @property maxPriceSell the dearest terminal pays this, or `null`.
- * @property illegal whether it is contraband, which the web badges.
+ * @property illegal whether it is contraband.
  */
 data class MaterialPriceRow(
     val id: String,
@@ -65,10 +59,7 @@ data class MaterialPriceRow(
 )
 
 /**
- * One material, as its own page needs it.
- *
- * Unlike the list row this **does** carry the type and the unit: `/materials/{id}` answers with the
- * full `MaterialDto`.
+ * One material as its own page needs it, including type and unit from `/materials/{id}`.
  *
  * @property id the material.
  * @property name what it is called.
@@ -108,14 +99,8 @@ data class MaterialTerminalPrice(
  */
 interface MaterialCatalogSource {
     /**
-     * The whole price list, in one answer.
-     *
-     * **Page-walked rather than paged on screen**, which is the same choice the web makes
-     * (`size=10000`). The two price filters the design draws — „Min. Einkaufspreis" and „Max.
-     * Verkaufspreis" — are not query parameters on this endpoint, so filtering them over a
-     * partially loaded list would quietly answer from a fraction of the catalogue and look like a
-     * complete answer (ADR-0104). Roughly two hundred rows is a cheap thing to hold and an
-     * expensive thing to get wrong.
+     * Reads the whole price list by walking every page, so the local price filters apply to the
+     * complete catalogue (ADR-0104).
      *
      * @return every material with its two best prices, or the classified failure.
      */
@@ -130,10 +115,8 @@ interface MaterialCatalogSource {
     suspend fun material(materialId: String): ApiResult<MaterialSummary>
 
     /**
-     * Every terminal price for one material.
-     *
-     * Page-walked for the reason the list is: the detail's terminal filter is a local one, and a
-     * filter over half the terminals would be a wrong answer rather than a short one.
+     * Reads every terminal price for one material by walking every page, so the local terminal filter
+     * applies to all of them.
      *
      * @param materialId which material.
      * @return its price rows, or the classified failure.
@@ -163,22 +146,14 @@ data class MaterialMatrixCell(
 )
 
 /**
- * One page of the matrix.
- *
- * Delivered a page at a time rather than page-walked inside the repository, because the design
- * draws it arriving: „Nachladen zeilenweise … die Ladezeile bleibt unten stehen und wird nie durch
- * einen Vollbild-Spinner ersetzt" (ch. 16 artboard 3).
+ * One page of the Material × Terminal matrix, delivered a page at a time.
  *
  * [Page.rows] holds the rows on this page.
  */
 typealias MaterialMatrixPage = Page<MaterialMatrixCell>
 
 /**
- * One material's profit for one ship, as the server computed it.
- *
- * **Every figure here is the server's.** The app renders them and computes none: a margin is money
- * advice, and an app that derived one would be stating a number nobody could reconcile with the
- * web.
+ * One material's profit for one ship; every figure is the server's and none is computed here.
  *
  * @property materialName which material.
  * @property minBuy the cheapest purchase, or `null`.
@@ -375,8 +350,6 @@ class MaterialCatalogRepository(
                                     materialId = materialId,
                                     materialName = dto.materialName.orEmpty(),
                                     terminalId = terminalId,
-                                    // The nickname is what the web's own column header shows where
-                                    // there is one — „ARC-L1" rather than the full station name.
                                     terminalName =
                                         dto.terminalNickname?.takeIf { it.isNotBlank() } ?: dto.terminalName.orEmpty(),
                                     starSystem = dto.starSystemName?.takeIf { it.isNotBlank() },
@@ -406,8 +379,6 @@ class MaterialCatalogRepository(
             answer.content.orEmpty().forEach { dto ->
                 val id = dto.id ?: return@forEach
                 val scu = dto.scu ?: return@forEach
-                // A full load of nothing is not a calculation, which is why the web filters the
-                // same way rather than offering the choice and answering with zeroes.
                 if (scu > 0) {
                     ships.add(
                         ShipTypeOption(
@@ -457,8 +428,6 @@ class MaterialCatalogRepository(
             val result =
                 reader.get(
                     "/api/v1/materials/profit-calculation",
-                    // A repeated parameter, one per system — an absent list means „every system",
-                    // which is what the server treats null as.
                     listOf("shipId" to shipId) + starSystemNames.map { "starSystemNames" to it },
                     ListSerializer(ProfitCalculationDto.serializer()),
                 )

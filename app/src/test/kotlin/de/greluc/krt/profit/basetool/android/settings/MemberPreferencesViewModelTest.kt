@@ -32,20 +32,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The two Einstellungen rows that live on the server.
- *
- * The fake below is the whole point of this class: it models **one** version for both settings,
- * because that is what the backend does — they are columns of the same `User` row. An earlier
- * version of this view model kept a version per setting, and every fake that did the same agreed
- * with it. The device did not: after one payout write, every blueprint-sharing write was refused
- * with `expected=1 persisted=2` forever.
+ * Tests the two server-side Einstellungen rows, whose fake models one version for both settings, as the backend stores
+ * them on the same `User` row.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-// Robolectric, and the reason is worth keeping: `refresh()`'s failure branches call KrtLog,
-// which reaches `android.util.Log`. A plain JVM unit test does not stub it (this module sets
-// no `returnDefaultValues`), so the call throws inside `viewModelScope` — where the exception
-// is swallowed and the only symptom is a coroutine that never finishes. Every test here
-// predates the first failing READ, which is why it never came up.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class MemberPreferencesViewModelTest {
@@ -156,12 +146,8 @@ class MemberPreferencesViewModelTest {
     }
 
     /**
-     * The state the screen could not see for months.
-     *
-     * A refused read left both values `null`, which is exactly what a never-set value looks like —
-     * so both rows sat greyed out on „Noch nicht gewählt" and the reason lived only in the log.
-     * The failure is now its own field, and the values stay `null` beside it: they really are
-     * unknown, and pretending otherwise would put a figure on screen the server never confirmed.
+     * A refused read sets its own failure field while both values stay `null`, so it is distinguishable from a value
+     * nobody has set.
      */
     @Test
     fun `a refused read is distinguishable from a value nobody has set`() =
@@ -209,7 +195,6 @@ class MemberPreferencesViewModelTest {
             model.refresh()
             advanceUntilIdle()
 
-            // Both values are asked for again — the retry is a real second pass, not a redraw.
             assertEquals(READS_PER_PASS * 2, source.reads)
             assertNotNull("still refused, so the message stands", model.state.value.readError)
         }
@@ -229,11 +214,7 @@ class MemberPreferencesViewModelTest {
         }
 
     /**
-     * The regression the device found.
-     *
-     * Writing one setting bumps the row both settings sit on, so the other must adopt the new
-     * version. With a version per setting the second write here is refused — and stays refused,
-     * because the row keeps re-sending the number it read at start-up.
+     * Writing one setting leaves the other writable, because the other adopts the row's new version.
      */
     @Test
     fun `writing one setting leaves the other writable`() =
@@ -261,7 +242,6 @@ class MemberPreferencesViewModelTest {
             val model = MemberPreferencesViewModel(source)
             model.loadOnce()
             advanceUntilIdle()
-            // Somebody else writes the row in between — a browser session, say.
             source.version += 1
 
             model.onPayout(PayoutPreference.DONATE)

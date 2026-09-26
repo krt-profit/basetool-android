@@ -101,9 +101,6 @@ class MissionAdminTest {
             subject.open()
             advanceUntilIdle()
 
-            // Ending is not a status: activation stamps the START server-side and nothing stamps
-            // the end, so this field is the only thing that closes an Einsatz — and with it every
-            // participant's open end-time.
             assertEquals(false, form?.ended)
             subject.endMission()
             assertEquals(true, form?.endingNow)
@@ -129,15 +126,12 @@ class MissionAdminTest {
             subject.open()
             advanceUntilIdle()
 
-            // The picker fills in after the form: the tab opens on what is already known.
             assertEquals(listOf("op1" to "Bergung Hurston"), form?.operations)
 
             subject.change(MissionSection.CORE) { it.copy(operationId = "op1") }
             subject.save(MissionSection.CORE)
             advanceUntilIdle()
 
-            // The Operation's own form has no such field because the wire has none, so this is
-            // the only place it can be set - and the app used to offer it in neither.
             assertEquals(listOf("op1"), source.cores)
         }
 
@@ -190,10 +184,6 @@ class MissionAdminTest {
                 calls,
             )
         }
-
-    // Starting the Einsatz is no longer this holder's action: design ch. 06 (F2) moved the
-    // lifecycle onto the status badge, and the write is a Kern patch carrying the new status
-    // rather than a Zeitplan patch carrying a timestamp. Its test lives with the view model.
 
     /** A closed sheet writes nothing, whichever action is raised against it. */
     @Test

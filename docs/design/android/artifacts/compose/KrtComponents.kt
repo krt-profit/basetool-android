@@ -33,23 +33,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.*
 
-/* ═════════════════════════════ 1 · BUTTON LADDER ═════════════════════════════
- * Strongest to quietest. EXACTLY ONE filled orange CTA per context (screen, sheet, card).
- * If a screen seems to need two, one of them is a KrtOutlineButton.
- *
- *   KrtCtaButton      filled orange + emphasis glow   the one primary action (Anmelden, Speichern)
- *   KrtSuccessButton  filled green                    a state change (Check-In, Bestätigen)
- *   KrtOutlineButton  orange outline, transparent     emphasised secondary (Crew zuweisen)
- *   KrtGhostButton    grey hairline, orange on press  routine, repeated (Bearbeiten, Abschnitt speichern)
- *   KrtQuietDanger    transparent, red on press       destructive (Löschen, Zurückziehen)
- *   KrtIconButton     44 dp square, icon only         repeated row action; aria label MANDATORY
- *
- * Disabled vs. LOCKED are different things and must not look the same:
- *   disabled  = a rule the data breaks or a write in flight → alpha .45, NO lock glyph, not clickable
- *   locked    = a permission the caller lacks             → alpha .45 PLUS lock glyph, STILL clickable
- * See section 8 (KrtGated) — never pass enabled = false for a permission.
- */
-
 @Composable
 fun KrtCtaButton(
     text: String,
@@ -183,8 +166,6 @@ fun KrtIconButton(
 
 private fun Modifier.alpha(value: Float) = this.then(androidx.compose.ui.draw.alpha(value))
 
-/* ═════════════════════════════ 2 · SURFACES ═════════════════════════════ */
-
 /** Plain square surface: hairline + #141414. The workhorse. */
 @Composable
 fun KrtCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
@@ -213,12 +194,10 @@ fun KrtHudBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() ->
             .background(KrtPalette.Gray4.copy(alpha = 0.5f))
             .border(KrtDimens.hairline, KrtPalette.Gray3)
             .drawBehind {
-                val arm = 10.dp.toPx()   // .hud-box; the modal frame draws 13.dp
+                val arm = 10.dp.toPx()
                 val w = 2.dp.toPx()
-                // top-left
                 drawLine(KrtPalette.Primary, Offset(0f, 0f), Offset(arm, 0f), w, StrokeCap.Square)
                 drawLine(KrtPalette.Primary, Offset(0f, 0f), Offset(0f, arm), w, StrokeCap.Square)
-                // bottom-right
                 drawLine(KrtPalette.Primary, Offset(size.width, size.height), Offset(size.width - arm, size.height), w, StrokeCap.Square)
                 drawLine(KrtPalette.Primary, Offset(size.width, size.height), Offset(size.width, size.height - arm), w, StrokeCap.Square)
             }
@@ -227,11 +206,6 @@ fun KrtHudBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() ->
     )
 }
 
-/* ═════════════════════════════ 3 · CHIP ═════════════════════════════
- * A SQUARE inline data label (count, kind, quality, state). Tone sets border + faint tint fill +
- * TEXT TINT. The label colour is the …Text value, never the canonical fill — that is the one
- * mistake the web stylesheet makes today.
- */
 enum class KrtChipTone { NEUTRAL, PRIMARY, SUCCESS, DANGER, WARNING, INFO, MUTED, DATA }
 
 @Composable
@@ -268,8 +242,6 @@ fun KrtSquadronBadge(text: String, modifier: Modifier = Modifier) {
     ) { Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = KrtPalette.Primary) }
 }
 
-/* ═════════════════════════════ 4 · SECTION TITLE & PANEL HEADER ═════════════════════════════ */
-
 /** Muted uppercase label above a group, with the hairline rule under it. */
 @Composable
 fun KrtSectionTitle(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
@@ -281,12 +253,10 @@ fun KrtSectionTitle(text: String, modifier: Modifier = Modifier, trailing: (@Com
 }
 
 /**
- * Collapsible section head — spec Kap. 02 §10 draws every collapsible in BOTH states.
+ * Collapsible section head; the closed head still shows count, amount or state chip, and the
+ * chevron rotates 0° → 90°.
  *
- * Three things are binding and drawn: the default state, what the CLOSED head still shows
- * (count / amount / state chip — a fold must never hide what the decision needs), and the
- * chevron rotation 0° → 90°. No accordion constraint: several sections may be open at once.
- * Keep [expanded] in rememberSaveable so it survives rotation but not leaving the screen.
+ * Several sections may be open at once. Keep [expanded] in `rememberSaveable`.
  */
 @Composable
 fun KrtPanelHeader(

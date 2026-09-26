@@ -26,12 +26,8 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 
 /**
- * The Einsatz detail read, and the two shapes the same endpoint answers in.
- *
- * The second one is the point of most of this: for an anonymous or role-less caller the backend
- * redacts the DTO (main repo ADR-0034) — no description, no owner, participants without their
- * comment. That is a **legitimate answer**, not a truncated one, and an app that treated a missing
- * field as a parse failure would show "Signal Lost" on an Einsatz the server happily served.
+ * The Einsatz detail read in both shapes the endpoint answers: full, and redacted for anonymous or
+ * role-less callers (ADR-0034), which must parse as a legitimate answer.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -160,11 +156,7 @@ class MissionDetailRepositoryTest {
         }
 
     /**
-     * The label is `name` (or the type's) and the value is the **number** — they were swapped.
-     *
-     * The row rendered the label where the frequency belonged and left the label column empty, so
-     * the one fact the tab exists for was never on screen. The old test asserted only what the
-     * request sent, which is why nothing caught it.
+     * A frequency row shows `name` (or the type's) as the label and the number as the value.
      */
     @Test
     fun `a frequency's label and its number do not swap places`() =
@@ -215,8 +207,6 @@ class MissionDetailRepositoryTest {
     @Test
     fun `the outsider redaction is a success, not a failure`() =
         runTest {
-            // Every field ADR-0034 strips is legitimately absent. Treating any of them as required
-            // would show "Signal Lost" on an Einsatz the server served without complaint.
             respond(REDACTED)
 
             val result = repository.detail("m1")
@@ -233,8 +223,6 @@ class MissionDetailRepositoryTest {
     @Test
     fun `an id the server omits falls back to the one that was asked for`() =
         runTest {
-            // A detail read is addressed by id, so the answer is about that Einsatz whether or not
-            // it repeats it. Failing here would turn a cosmetic server change into a dead screen.
             respond("""{"name":"Ohne Id","status":"PLANNED"}""")
 
             val detail = (repository.detail("m1") as ApiResult.Success).value
@@ -244,17 +232,6 @@ class MissionDetailRepositoryTest {
 
     @Test
     fun `an unknown enum constant is a documented fragility, not a handled case`() {
-        // Pinned so the day it changes is noticed. `JobTypeDto.archetype` is a NON-NULL generated
-        // enum and `coerceInputValues` only rescues nullable ones, so a constant added server-side
-        // makes the WHOLE detail response unparseable -- every tab gone, on an APK in the field
-        // that cannot be redeployed, while the list (which has no nested enums) keeps working. The
-        // member would see rows that all fail to open.
-        //
-        // Not fixable here: openapi-generator's `enumUnknownDefaultCase` is a no-op for
-        // kotlinx_serialization, and the app never reads `archetype` at all -- it is required
-        // purely to parse. The mitigation belongs in the main repo, where adding a constant to an
-        // enum reachable from a REQ-API-009 operation can fail the BACKEND build (that spec's own
-        // acceptance list already carries it as open). See `docs/specs/missions.md`.
         runTest {
             respond(FULL.replace("""archetype": "CREW""", """archetype": "LOGISTICS"""))
 
@@ -270,8 +247,6 @@ class MissionDetailRepositoryTest {
     @Test
     fun `a refused Einsatz is a Forbidden failure the screen can word for itself`() =
         runTest {
-            // What an outsider gets for an internal or terminal Einsatz. Distinguishable from an
-            // outage, which is the whole reason the error is classified rather than generic.
             respond("""{"title":"Guests cannot view internal missions."}""", HTTP_FORBIDDEN)
 
             val result = repository.detail("m1")
@@ -320,8 +295,6 @@ class MissionDetailRepositoryTest {
     @Test
     fun `amounts are carried verbatim, never through a Double`() =
         runTest {
-            // aUEC sums are displayed and never recomputed here; parsing a decimal to print it
-            // again is how a total gains a rounding error it did not have on the server.
             respond("""{"total":1234567.89,"incomeSum":1234567.89,"incomeCount":1,"expenseSum":0,"expenseCount":0}""")
             respond("""{"content":[],"page":0,"size":50,"totalElements":0,"totalPages":0,"sort":[]}""")
 
@@ -333,8 +306,6 @@ class MissionDetailRepositoryTest {
     @Test
     fun `a refused summary fails the whole tab rather than showing half of it`() =
         runTest {
-            // A total over an empty list, or a list under a blank total, reads as data rather than
-            // as the partial answer it is.
             respond("""{"title":"forbidden"}""", HTTP_FORBIDDEN)
 
             val result = repository.finances("m1")

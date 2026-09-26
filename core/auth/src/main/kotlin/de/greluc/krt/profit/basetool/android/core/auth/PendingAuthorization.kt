@@ -20,22 +20,11 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * The login attempt that is currently out in the browser.
+ * The login attempt that is currently out in the browser, persisted so its `state`, `nonce` and PKCE verifier survive
+ * the process being killed behind the Custom Tab.
  *
- * **This exists because the app can die while the Custom Tab is in front.** The browser is another
- * task; Android is free to kill this process behind it, and on a low-memory phone it will. When the
- * redirect brings the app back, the `state`, `nonce` and PKCE verifier that the attempt was started
- * with must still be there — without them the code cannot be redeemed and the redirect cannot even
- * be recognised as ours. Keeping them in memory would make login work on a developer's device and
- * fail, unreproducibly, on a member's.
- *
- * **Encrypted, because the verifier is a secret for the length of the round trip.** It is what
- * redeems the authorization code, so between launch and redirect it deserves the same treatment as
- * the refresh token: the same [SecretCipher], the same store.
- *
- * **Single use.** [take] reads *and* clears. A code can be redeemed exactly once, so an attempt
- * that has been consumed is finished; leaving it behind would let a stale or replayed redirect be
- * acted on a second time.
+ * Encrypted with the same [SecretCipher] and store as the refresh token. [peek] reads without
+ * consuming; [clear] removes the attempt once its redirect has been judged, so it is used once.
  *
  * @property dataStore where the encrypted attempt lives — the same store as the refresh token
  * @property cipher the Keystore-backed cipher in production, a fake in tests
@@ -72,19 +61,12 @@ class PendingAuthorization(
     }
 
     /**
-     * Reads the pending attempt **without consuming it**.
+     * Reads the pending attempt without consuming it, so a foreign start of the exported [AuthRedirectActivity] cannot
+     * destroy it.
      *
-     * Consuming on read is what this used to do, and it made the attempt destroyable by anybody:
-     * [AuthRedirectActivity] is exported, so another installed app can start it with any intent it
-     * likes, and the read alone would have thrown the attempt away — the member's real redirect
-     * then arrives with nothing to complete and every login ends in „abgelaufen". PKCE and the
-     * 256-bit state already stop that app from *stealing* a login; this stops it from *breaking*
-     * one, which is a different property and was not covered.
+     * The caller calls [clear] once the redirect has been judged.
      *
-     * The caller clears it once the redirect has been judged — see [clear].
-     *
-     * @return the attempt, or `null` when there is none or it can no longer be read — which for the
-     *   caller means the same thing: this redirect cannot be completed and the member starts over
+     * @return the attempt, or `null` when there is none or it can no longer be read
      */
     @OptIn(ExperimentalEncodingApi::class)
     suspend fun peek(): AuthorizationRequest? {
@@ -133,8 +115,6 @@ class PendingAuthorization(
                 pkce = PkceChallenge(verifier = stored.verifier, challenge = stored.challenge),
             )
         } catch (unusable: SecretCipherException) {
-            // Same three ordinary states as the refresh token: key invalidated, device locked, blob
-            // from another device. The login is simply started again.
             KrtLog.w(LOG_TAG, unusable) { "pending authorization is unusable, discarding it" }
             null
         } catch (malformed: IllegalArgumentException) {
@@ -152,11 +132,8 @@ class PendingAuthorization(
 }
 
 /**
- * The in-flight attempt as it is stored.
- *
- * A separate type from [AuthorizationRequest] on purpose: this one is a wire format that has to
- * stay readable across app updates, and pinning it here means a change to the domain object cannot
- * silently invalidate every login that is out in a browser at the time.
+ * The in-flight attempt as stored: a wire format separate from [AuthorizationRequest] so it stays readable across app
+ * updates.
  *
  * @property state the CSRF value the redirect must echo
  * @property nonce the value the ID token must carry

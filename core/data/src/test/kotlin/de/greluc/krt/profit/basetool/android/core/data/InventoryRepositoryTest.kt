@@ -216,9 +216,6 @@ class InventoryRepositoryTest {
 
             repository.locations("")
 
-            // 200, not the generic picker page. The location catalogue is small and bounded by the
-            // game universe, and a member booking stock expects to scroll it. At `size=25` this
-            // very picker showed 25 of 53 places with nothing on screen saying so.
             assertEquals("200", requestedUrl().queryParameter("size"))
         }
 
@@ -229,7 +226,6 @@ class InventoryRepositoryTest {
 
             val page = (repository.materials("q") as ApiResult.Success).value
 
-            // Read off `totalElements`, not off a full-looking page (ADR-0104).
             assertTrue(page.more)
         }
 
@@ -253,17 +249,12 @@ class InventoryRepositoryTest {
                     gameItemId = "gi1",
                     locationId = "l1",
                     amount = "3",
-                    // Carried over from a material the member had picked before switching: the
-                    // draft may hold it, the wire may not.
                     quality = 874,
                 ),
             )
 
             val body = server.takeRequest().body?.utf8().orEmpty()
             assertTrue(body.contains("\"gameItemId\":\"gi1\""))
-            // Asserted as an ABSENCE: the server refuses a quality on an item row outright
-            // (isQualityConsistentWithCatalog, REQ-INV-029), and a payload carrying one looks
-            // perfectly valid until it comes back a 400.
             assertFalse("a quality must never travel with an item row, was: ${'$'}body", body.contains("quality"))
             assertFalse("the catalogue reference is exclusive", body.contains("materialId"))
         }
@@ -287,9 +278,6 @@ class InventoryRepositoryTest {
             )
 
             val body = server.takeRequest().body?.utf8().orEmpty()
-            // One request, not a booking followed by a write per target: the server checks the sum
-            // against the amount and every target against its own requirement in the same
-            // transaction that creates the row (Variante C, REQ-INV-027 R4).
             assertTrue(body.contains("\"jobOrderAllocations\":[{\"targetId\":\"jo1\",\"amount\":250"))
             assertTrue(body.contains("\"missionAllocations\":[{\"targetId\":\"mi1\",\"amount\":100"))
         }
@@ -314,8 +302,6 @@ class InventoryRepositoryTest {
             )
 
             val body = server.takeRequest().body?.utf8().orEmpty()
-            // A zero is an earmark OF nothing, which the server would create: a target promised
-            // nothing, standing among targets promised something.
             assertFalse("an empty split must not travel, was: ${'$'}body", body.contains("jobOrderAllocations"))
         }
 
@@ -341,8 +327,6 @@ class InventoryRepositoryTest {
 
             val page = (repository.gameItems("station") as ApiResult.Success).value
 
-            // The item catalogue, not the materials: the two are separate tables and the server
-            // takes them in mutually exclusive fields.
             assertTrue(requestedUrl().encodedPath.endsWith("/api/v1/orders/item-catalog"))
             assertEquals("Medizinische Station T2", page.rows.single().name)
             assertTrue(page.more)
@@ -351,7 +335,6 @@ class InventoryRepositoryTest {
     @Test
     fun `the member picker uses the name the member recognises`() =
         runTest {
-            // effectiveName, not username: it is what the web app renders.
             respond(MEMBERS)
 
             val members = (repository.members("rh") as ApiResult.Success).value.rows

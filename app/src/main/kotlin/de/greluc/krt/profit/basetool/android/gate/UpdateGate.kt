@@ -65,18 +65,10 @@ sealed interface UpdateGateState {
 }
 
 /**
- * Reads the served-version policy once and decides whether this build may run
- * (REQ-APP-UI-004, server REQ-API-010).
+ * Reads the served-version policy once and decides whether this build may run (REQ-APP-UI-004).
  *
- * **Fails open, in three separate ways**, because every one of them would otherwise turn an
- * ordinary problem into an app nobody can use:
- *
- * - a **failed read** leaves the state `Unknown`, and `Unknown` runs the app. A member on a train
- *   must not be walled off because the policy request timed out.
- * - a **zero floor** allows everything, which is what an unconfigured server answers.
- * - the read happens **once**, not on a loop: a wall that appears mid-session over work in
- *   progress is worse than one that waits for the next start, and the floor does not move often
- *   enough to justify polling.
+ * Fails open: a failed read leaves the state `Unknown`, which runs the app; a zero floor allows every
+ * build; and the policy is read once per process, never polled.
  *
  * @property source where the policy comes from
  * @property versionCode this build's own `versionCode`
@@ -111,9 +103,6 @@ class UpdateGateViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // Deliberately not an error state. There is no screen for "we could not check
-                    // whether you may run", and inventing one would stop a member from working
-                    // over a request that failed for reasons that have nothing to do with them.
                     KrtLog.w(LOG_TAG) { "the version policy could not be read: ${result.error}" }
                     mutableState.value = UpdateGateState.Allowed
                 }
@@ -128,16 +117,11 @@ class UpdateGateViewModel(
 }
 
 /**
- * Stands outside every other gate and renders [content] unless this build is refused.
+ * The outermost gate, ahead of the lock and the session: renders [content] unless this build is
+ * refused.
  *
- * **Outermost on purpose**, ahead of the lock and the session. The endpoint is anonymous for
- * exactly this reason (server REQ-API-010): when the breaking change is in the auth flow, the old
- * build cannot sign in, and a wall placed behind the session gate would never appear for the one
- * case it exists for — leaving the member with an authentication error that blames their
- * credentials.
- *
- * Nothing is wiped. Chapter 14 is explicit that cached data survives an update wall, so this
- * composes over the app rather than signing anybody out.
+ * The policy endpoint is anonymous, so a build that can no longer sign in still sees the wall. No
+ * data is wiped and nobody is signed out.
  *
  * @param viewModel holds the verdict.
  * @param onOpenReleases opens the release page in a browser.
@@ -156,15 +140,11 @@ fun UpdateGate(
     LaunchedEffect(Unit) { viewModel.start() }
 
     when (val current = state) {
-        // Unknown runs the app: see the ViewModel's KDoc. A spinner here would hold every start
-        // hostage to one request, on a screen the member cannot do anything about.
         is UpdateGateState.Unknown, is UpdateGateState.Allowed -> {
             content()
         }
 
         is UpdateGateState.Blocked -> {
-            // Back exits rather than dismissing: there is nothing behind this screen, and a back
-            // press that did nothing would read as a frozen app.
             BackHandler(enabled = true) { onExit() }
             UpdateRequiredScreen(onOpenReleases = { onOpenReleases(current.releasesUrl) })
         }
@@ -172,11 +152,9 @@ fun UpdateGate(
 }
 
 /**
- * The non-dismissible „Update erforderlich" screen of design chapter 14.
+ * The non-dismissible „Update erforderlich" screen.
  *
- * The call to action points at the **release page**, not a store listing — distribution is GitHub
- * Releases plus Obtainium (plan Q1), so the chapter's store button has nothing to open. Recorded as
- * a deviation in `docs/specs/ui.md`.
+ * Its call to action opens the GitHub release page, not a store listing.
  *
  * @param onOpenReleases opens the release page.
  * @param modifier layout modifier.

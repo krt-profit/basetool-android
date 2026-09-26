@@ -38,29 +38,14 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
  * How much wider the detail pane is than the list beside it.
- *
- * Two, from the chapters' own tablet frames: on a 1280 dp landscape the rail takes 88 and the
- * remaining 1192 split into a ~397 dp list and a ~795 dp pane (ch. 06, 10, 11, 12 all draw that
- * proportion). At 1.5 the list took 477 dp of it, and the Einsatz detail's **eight** tabs — which
- * chapter 06 requires to fit „ohne Scroll" on a tablet — ran off the pane's right edge.
  */
 private const val DETAIL_WEIGHT = 2f
 
 /**
  * The tablet's list-detail layout, and the phone's plain list.
  *
- * Design ch. 00 and 03 put a list beside its detail on every wide window; chapters 06, 10, 11 and
- * 12 each name their own pairing ("Queue + Detail", "Orders + Detail", "Konten + Detail"). Below
- * the breakpoint the caller navigates to the detail as its own screen instead, which is why this
- * takes a nullable [detail] rather than owning the selection: **the list is the same list in both
- * layouts**, and only what a tap does differs.
- *
- * The two panes are separated by a hairline rather than by elevation or a gap, because the design
- * system draws every division that way — depth comes from hairlines and brackets, never shadow.
- *
- * With nothing selected the detail side shows a short prompt rather than staying blank. An empty
- * half-screen reads as a screen that failed to load; a sentence naming what to tap reads as a
- * screen waiting for you.
+ * On a narrow window only [list] is shown and the caller navigates to the detail itself. The panes
+ * are divided by a hairline; with nothing selected the detail side shows [emptyDetailMessage].
  *
  * @param detail the detail pane for the current selection, or `null` when nothing is selected.
  *   Ignored entirely on a narrow window.
@@ -107,17 +92,10 @@ fun KrtListDetail(
 }
 
 /**
- * One detail pane, with the head its content would otherwise have put in the app bar.
+ * One detail pane, drawing as its own head the [ScreenTopBar] its content publishes.
  *
- * A pushed detail publishes a [ScreenTopBar] and the shell renders it as the bar's title — correct
- * on a phone, where the detail *is* the destination. In a list-detail it is a pane of a section the
- * rail is still highlighting, so a selected row used to leave the bar reading „#1 · Offen · Prio 1"
- * above a rail that said AUFTRÄGE, with the two disagreeing about where the member was.
- *
- * Suppressing the publication alone would have been worse: the pane then identified nothing, and
- * the list does not mark its selection either, so the detail belonged to no visible row. The
- * publication is therefore *redirected* — the slot is local to this pane, and what the content
- * publishes is drawn at the top of it.
+ * The publication goes to a pane-local slot instead of the app bar, so the app bar keeps naming the
+ * section.
  *
  * @param detail the pane's content.
  */
@@ -135,9 +113,7 @@ private fun DetailPane(detail: @Composable () -> Unit) {
 /**
  * The title, subtitle and actions a detail pane published, drawn as its head.
  *
- * Deliberately not a `KrtTopBar`: that one applies status-bar insets and owns the org chip and the
- * bell, none of which belong to a pane sitting below the real bar. What is kept is its subject
- * styling, so a pane head and a pushed screen's head read as the same thing.
+ * Uses the top bar's title styling without its insets, org chip or bell.
  *
  * @param head what the pane published.
  */

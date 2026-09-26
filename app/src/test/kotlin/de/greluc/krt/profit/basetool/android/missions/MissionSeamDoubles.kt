@@ -32,12 +32,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.IOException
 import java.time.Instant
 
-// The doubles and fixtures the Einsatz-detail tests share.
-//
-// They were nested in MissionDetailViewModelTest until that class passed detekt's size cap. Shared
-// is the better shape anyway: these interfaces are the same ones for every test of that screen, and
-// a second copy of a fake is a second place for a signature change to be missed.
-
 /**
  * The Kern patch as the badge's lifecycle sends it.
  *
@@ -318,9 +312,6 @@ internal class RecordingSource(
     /**
      * The caller's own row as this fake hands it back.
      *
-     * Defined on the fake rather than on the test class: a nested class cannot reach the
-     * outer one's helpers, and the row is the fake's own answer anyway.
-     *
      * @param checkedIn whether it is checked in.
      * @param donating whether the share is donated.
      * @return the row.
@@ -348,8 +339,6 @@ internal class RecordingSource(
 
     var jobTypeAnswer: List<MissionJobType> = listOf(MissionJobType("j1", "Pilot"))
 
-    // No userId: `join` derives the member from the token, so the request carries only
-    // the sheet's two answers (backend ADR-0154).
     val joinRequests = mutableListOf<Pair<String?, Boolean>>()
 
     override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
@@ -484,7 +473,6 @@ internal fun missionDetail(
 ) = MissionDetail(
     id = "m1",
     name = name,
-    // Filled rather than null so a Kern echo that drops a field is visible in the assertion.
     description = "Briefing",
     status = status,
     rawStatus = status.name,

@@ -21,22 +21,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * A book-out that empties the stack answers `204`, and that is a success.
- *
- * `POST /inventory/{id}/book-out` returns `200` with the remaining row — unless the book-out takes
- * the last of it, and then the row is gone and there is no row to return. The app read every
- * response through a parser that required one, so the successful case surfaced as „Konnte nicht
- * gespeichert werden."
- *
- * What that cost is the point. The member retried, and every retry was a truthful `403`, because
- * the row the first call had already removed no longer exists — the gate refuses an id it cannot
- * find. Production, 2026-09-03: one `204` at 06:15:12 followed by four `403`s on the same id, from
- * a member who believed nothing had happened. Their material had in fact been booked out on the
- * first press.
- *
- * So the failure mode is worse than a wrong error message: the app told a member the opposite of
- * what the server did, and the retries it invited produced real refusals that looked like
- * confirmation.
+ * A book-out that empties the stack answers `204` with no row, and that must read as a success.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -102,8 +87,6 @@ class BookOutEmptiesTheRowTest {
     @Test
     fun `a refusal is still a failure`() =
         runTest {
-            // The guard that matters: tolerating an empty body must not turn into tolerating
-            // anything. A 403 on a row the caller may not edit stays a failure.
             server.enqueue(MockResponse.Builder().code(HTTP_FORBIDDEN).build())
 
             val result =

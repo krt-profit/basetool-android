@@ -31,14 +31,6 @@ const val DISABLED_WRITE_ALPHA: Float = 0.45f
 /** The band that says why the write actions are greyed out. */
 @Composable
 fun OfflineBand() {
-    // Chapter 14's offline exemplar is a banner, not a sentence: a yellow edge, the wifi-off
-    // glyph, the state uppercase in the warning tint, and the reason under it. This was one muted
-    // line the eye skips — on a screen whose buttons have just gone grey, the notice that explains
-    // why has to be the thing you see first.
-    //
-    // No "Zuletzt aktualisiert" stamp: the artboard quotes one, and the app has nothing truthful to
-    // put there — it holds no cache and records no load time, so any timestamp would be invented.
-    // The same goes for the CACHE chip the artboard puts on the row beneath.
     KrtOfflineBanner(
         title = stringResource(R.string.offline_banner_title),
         reason = stringResource(R.string.offline_writes_disabled),

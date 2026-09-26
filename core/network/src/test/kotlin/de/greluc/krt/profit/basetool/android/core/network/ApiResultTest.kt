@@ -13,12 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The three combinators every repository now leans on instead of a hand-written `when`.
- *
- * The property that matters is the failure half: a failure must come out as the **same** object it
- * went in as, so its [ApiError] subtype — the thing every screen branches on — cannot be lost in a
- * re-wrap, and the transformation must not run at all, because for a repository it is a DTO mapper
- * that would dereference a value that does not exist.
+ * The [ApiResult] combinators: a failure comes out as the same object and the transformation never
+ * runs on it.
  */
 class ApiResultTest {
     private val failure: ApiResult<Int> = ApiResult.Failure(ApiError.NotFound(problem = null))

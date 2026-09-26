@@ -112,8 +112,8 @@ sealed interface EntriesPhase {
  * @property opened the state of each opened group, keyed by material id
  * @property withStockOnly whether groups holding nothing are hidden
  * @property openedStacks the state of each opened stack, keyed by [stackKey]
- * @property released which rows are already offered on the Materialbörse. Accumulated as stacks
- *   open, because that is when their ids become known.
+ * @property released which rows are already offered on the Materialbörse, accumulated as stacks
+ *   open
  * @property online whether a booking can be sent at all
  * @property allocation the open Zuordnung sheet, or `null`
  * @property selection the rows long-pressed into selection mode; empty means the mode is off
@@ -139,11 +139,7 @@ data class InventoryState(
     val checkout: BulkCheckoutState? = null,
 ) {
     /**
-     * The entries currently selected, as far as the tree has read them.
-     *
-     * Needed because the selection is a set of **ids** while the question a screen asks about it —
-     * "does this include somebody else's row?" — is about the rows. An id whose entry is no longer
-     * loaded is left out rather than guessed at; the server still refuses what it must.
+     * The selected entries among those the tree has loaded; ids whose entry is not loaded are left out.
      *
      * @return the selected entries.
      */
@@ -155,19 +151,13 @@ data class InventoryState(
             .filter { it.id in selection }
 
     /**
-     * How much of one material group is in the selection.
+     * How many rows of one material group are selected, counted from the loaded entries.
      *
-     * Counted from the entries the tree has already read rather than from the group's own totals,
-     * because those are amounts and this is a count of rows. A group whose stacks were never opened
-     * has none loaded and reports `null` for the total — the chip then says „n gewählt" instead of
-     * „n/m gewählt", which is exactly the distinction design ch. 09, artboard 5 draws between an
-     * open and a collapsed group.
-     *
-     * Collapsing does not drop the entries, so a group closed after picking rows still counts them.
+     * Collapsing a group keeps its entries, so it still counts them.
      *
      * @param materialId the group.
-     * @return how many of its rows are selected, and how many it has — the latter `null` when it
-     *   has never been opened.
+     * @return how many of its rows are selected, and how many it has; the latter `null` when it has
+     *   never been opened.
      */
     fun selectionIn(materialId: String): Pair<Int, Int?> {
         val prefix = "$materialId|"
@@ -184,13 +174,9 @@ data class InventoryState(
     }
 
     /**
-     * The rows the tree actually shows.
+     * The groups the tree shows, with "Nur mit Bestand" applied on the device to the loaded page.
      *
-     * "Nur mit Bestand" is applied **on the device**, and that is deliberate rather than an
-     * oversight: the endpoint has no such parameter, and the alternative would be to leave the
-     * chip out. What makes it safe is that the chip hides rows from a page the member already has —
-     * it never claims to have filtered the whole warehouse, and the count below the list keeps
-     * stating the server's total.
+     * The count below the list still states the server's total.
      */
     val visibleGroups: List<InventoryGroup>
         get() =
@@ -209,9 +195,7 @@ data class InventoryState(
  * @property morePlaces whether the catalogue holds places this page does not carry.
  * @property saving whether the move is running.
  * @property error the last refusal.
- * @property result what the server did, once it has — the sheet's **second step** rather than a
- *   toast (design ch. 09, artboard 9). A skipped row needs its explaining sentence, and a toast is
- *   too fleeting to carry one.
+ * @property result what the server did, shown as the sheet's second step.
  */
 data class BulkMoveState(
     val place: LocationOption? = null,
@@ -223,17 +207,14 @@ data class BulkMoveState(
 )
 
 /**
- * The Sammel-Ausbuchen sheet (design ch. 09 artboard 20).
+ * The Sammel-Ausbuchen sheet.
  *
- * Thinner than the artboard, and deliberately: `POST /inventory/bulk-checkout` carries **only the
- * ids**. There is no reason field on it („Verbraucht" / „Verworfen"), no note, and no per-row
- * source planner — the rows are deleted whole and their earmarks cascade away with them. The
- * sheet therefore says what will happen and asks once, instead of collecting three inputs the call
- * cannot send.
+ * `POST /inventory/bulk-checkout` carries only the ids, so the sheet asks once and collects no
+ * reason, note or source plan; the rows are deleted whole with their earmarks.
  *
  * @property saving whether the call is in flight.
  * @property error what it was refused with, or `null`.
- * @property done whether it succeeded — the sheet's result step.
+ * @property done whether it succeeded; the sheet's result step.
  * @property count how many rows it was asked to book out.
  */
 data class BulkCheckoutState(
@@ -246,20 +227,13 @@ data class BulkCheckoutState(
 /**
  * Drives the Lager tree.
  *
- * **A group's stacks are fetched when it is opened, never before.** The tree's first level is one
- * request; fetching every group's holdings up front would pull the whole warehouse to draw a dozen
- * headings, most of which a member never opens.
- *
- * Closing a group **keeps** what was loaded, so re-opening it is instant. The Lager changes slowly
- * enough that a member re-opening a group within one visit expects what they just saw; pull-to-
- * refresh is how they ask for more.
+ * A group's stacks are fetched only when it is opened, and closing it keeps what was loaded.
  *
  * @property source where the Lager comes from
- * @property connectivity whether the device has a network, which is what decides whether the
- *   booking actions are offered at all
- * @property liveSync the live-sync bridge, or `null` in a test or a preview. The shared Lager is
- *   the surface where a peer's booking matters most — two members moving the same stock is the
- *   ordinary case, not the exception — so this screen re-reads what is open when the room speaks.
+ * @property connectivity whether the device has a network, which decides whether the booking
+ *   actions are offered
+ * @property liveSync the live-sync bridge, or `null` in a test or a preview; a peer's change
+ *   re-reads what is open
  */
 class InventoryViewModel(
     private val source: InventorySource,
@@ -297,9 +271,6 @@ class InventoryViewModel(
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.INVENTORY)) { sections ->
             if (LiveSyncSections.INVENTORY_STOCK in sections) {
-                // Only once the screen has something to refresh. Before that the member has not
-                // loaded the Lager yet, and re-reading it in the background would spend a request
-                // on a screen nobody is looking at.
                 if (loadedOnce) {
                     reReadOpenPath()
                 }
@@ -360,14 +331,10 @@ class InventoryViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The group stays open and says so. Closing it would look like the tap did not
-                    // register, and the member would try again.
                     KrtLog.w(LOG_TAG) { "stacks could not be read: ${result.error}" }
                     StackPhase.Failed
                 }
             }
-        // Only if the group is still open: a member who closed it while the read was in flight
-        // must not have it spring open again.
         val current = mutableState.value
         if (materialId in current.opened) {
             mutableState.value = current.copy(opened = current.opened + (materialId to phase))
@@ -376,10 +343,7 @@ class InventoryViewModel(
     }
 
     /**
-     * Opens or closes one stack's entries.
-     *
-     * Keyed by the four values that identify a stack — material, holder, place, quality — because
-     * that is exactly what the entry read is narrowed by, and nothing shorter is unique.
+     * Opens or closes one stack's entries, keyed by material, holder, place and quality.
      *
      * @param materialId the group's material.
      * @param stack the stack inside it.
@@ -417,8 +381,6 @@ class InventoryViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // Same rule as one level up: the stack stays open and says so, rather than
-                    // closing itself and looking like a tap that did not register.
                     KrtLog.w(LOG_TAG) { "entries could not be read: ${result.error}" }
                     EntriesPhase.Failed
                 }
@@ -428,10 +390,6 @@ class InventoryViewModel(
             mutableState.value = latest.copy(openedStacks = latest.openedStacks + (key to phase))
         }
         if (phase is EntriesPhase.Ready) {
-            // After the rows, not with them: the Lager read has nothing to do with the exchange,
-            // and a member waiting for the second call to see the first would be paying for a
-            // mark. A failure leaves the set as it was — no mark is the honest answer when nobody
-            // asked, and a banner over the tree would be about something the tree does not do.
             val ids = phase.entries.map { it.id }
             viewModelScope.launch {
                 val released = source.releasedEntryIds(ids)
@@ -443,30 +401,16 @@ class InventoryViewModel(
     }
 
     /**
-     * Re-reads whatever is open, after a booking changed it.
-     *
-     * A booking changes what a stack holds and not only the entry that moved, so the whole open
-     * path is re-read rather than patched: the group's total, the stack's total and the entry list
-     * can all have changed at once.
-     *
-     * **What is open stays open.** Collapsing the tree back to its top level after every booking
-     * would make the member re-open the group and the stack to see what their own booking did —
-     * which is the one thing they are looking at.
+     * Re-reads the whole open path after a booking changed it, keeping every open group and stack open.
      */
     fun onBookingSaved() {
-        // The member's own booking is the one that has to reach everybody else. A peer's change
-        // arrives through the room and must NOT be re-announced, or two clients would keep
-        // bouncing one booking off each other.
         publishLiveSync(liveSync, LiveSyncTopic.INVENTORY, LiveSyncSections.INVENTORY_STOCK)
         reReadOpenPath()
     }
 
     /**
-     * Re-reads the open path in place, whether the change was the member's own or a peer's.
-     *
-     * In place is the whole point: no spinner over the tree, no collapse, no emptied list. A
-     * member who did not ask for anything must not watch their screen blank itself because
-     * somebody on the other side of the organisation booked something out.
+     * Re-reads the open path in place, with no spinner, collapse or emptied list, for own and peer
+     * changes alike.
      */
     private fun reReadOpenPath() {
         val openGroups = mutableState.value.opened.keys.toList()
@@ -480,9 +424,6 @@ class InventoryViewModel(
                     .filter { stackKey(materialId, it) in openStacks }
                     .forEach { readEntries(materialId, it) }
             }
-            // A stack that no longer exists — the booking emptied it — leaves its key behind, and
-            // the row it belonged to is gone with it. Dropping the orphans keeps the map from
-            // growing over a session.
             val latest = mutableState.value
             val alive =
                 latest.opened.entries
@@ -526,9 +467,7 @@ class InventoryViewModel(
     /**
      * Puts a row into the selection, or takes it out.
      *
-     * Long-press starts the mode (design ch. 02 §4) and an empty selection ends it: there is no
-     * separate "leave selection mode", because a mode a member can be in with nothing selected is a
-     * mode they have to notice they are in.
+     * The first long-press starts selection mode and an empty selection ends it.
      *
      * @param entryId the row.
      */
@@ -539,15 +478,9 @@ class InventoryViewModel(
     }
 
     /**
-     * Selects — or, when they are all in already, deselects — every entry under one branch.
+     * Selects, or when all are already in deselects, every loaded entry under one branch.
      *
-     * The design makes selection **always a set of entries** (design ch. 09, artboard 5: „Auswahl
-     * ist IMMER Eintrags-Menge"). A group or stack row therefore carries no selection state of its
-     * own; long-pressing one is shorthand for its leaves, which is what `bulk-rebook` takes — entry
-     * ids plus one target, and the source may differ per entry.
-     *
-     * A branch whose entries are not loaded selects nothing rather than guessing at ids. The row is
-     * still tappable to open it, so the member's next action reaches the same place.
+     * Selection is always a set of entries; a branch whose entries are not loaded selects nothing.
      *
      * @param materialId the group, or the group a stack belongs to.
      * @param stack the stack to limit to, or `null` for the whole group.
@@ -578,12 +511,10 @@ class InventoryViewModel(
     }
 
     /**
-     * Closes the result step, which is what ends the whole batch.
+     * Closes the bulk move's result step, ending the batch.
      *
-     * Only here does the selection go and the tree re-read. The opened stacks are dropped as well,
-     * not just the group list: their entries are cached per stack and the rows that just moved
-     * still carry the OLD place, so leaving them would show a member the move they just made as not
-     * having happened.
+     * Clears the selection and the opened stacks, whose cached entries still show the old place, and
+     * re-reads the tree.
      */
     fun onBulkMoveFinished() {
         mutableState.update { it.copy(bulk = null, selection = emptySet(), openedStacks = emptyMap()) }
@@ -621,10 +552,9 @@ class InventoryViewModel(
         }
 
         /**
-         * Closes it.
+         * Closes the Sammel-Ausbuchen sheet.
          *
-         * A sheet abandoned before it ran leaves the selection alone; one closed after the rows are
-         * gone ends the mode, because there is nothing left to act on.
+         * Before it ran the selection stays; after the rows are gone selection mode ends.
          */
         fun close() {
             val current = mutableState.value
@@ -640,12 +570,9 @@ class InventoryViewModel(
         }
 
         /**
-         * Books every selected row out.
+         * Books every selected row out in one all-or-nothing call.
          *
-         * **All or nothing.** The endpoint refuses the whole call on a foreign row or an unknown
-         * id, so there is no „ausgebucht / übersprungen" to report the way the bulk rebooking does
-         * — the sheet shows either the done step or the refusal, and the selection survives a
-         * refusal.
+         * The sheet shows either the done step or the refusal, and a refusal keeps the selection.
          */
         fun confirm() {
             val current = mutableState.value
@@ -659,8 +586,6 @@ class InventoryViewModel(
                 when (val result = source.bulkCheckout(ids)) {
                     is ApiResult.Success -> {
                         mutableState.update { it.copy(checkout = open.copy(saving = false, done = true)) }
-                        // The rows are gone from the shared Lager; every other open Lager has to
-                        // know.
                         publishLiveSync(
                             liveSync,
                             LiveSyncTopic.INVENTORY,
@@ -704,7 +629,6 @@ class InventoryViewModel(
                             checkout = open.copy(saving = false, done = true),
                         )
                     }
-                    // The rows are gone from the shared Lager; every other open Lager has to know.
                     publishLiveSync(
                         liveSync,
                         LiveSyncTopic.INVENTORY,
@@ -761,11 +685,7 @@ class InventoryViewModel(
     }
 
     /**
-     * Moves every selected row to the chosen place.
-     *
-     * One call, not one per row: the endpoint is all-or-nothing on its own terms, which is what a
-     * member selecting twelve stacks expects — a half-applied move would leave them reading a list
-     * they can no longer reason about.
+     * Moves every selected row to the chosen place in one all-or-nothing call.
      */
     fun onBulkMoveConfirmed() {
         val open = mutableState.value.bulk
@@ -779,17 +699,10 @@ class InventoryViewModel(
         viewModelScope.launch {
             when (val result = source.bulkRebook(entryIds = ids, locationId = place.id)) {
                 is ApiResult.Success -> {
-                    // The sheet stays open on its result step. Closing here and re-reading would
-                    // drop the one number a member cannot reconstruct — how many rows were skipped
-                    // because they already stood at the target, which is not a failure and needs
-                    // its sentence (design ch. 09, artboard 9).
                     mutableState.update { it.copy(bulk = open.copy(saving = false, result = result.value)) }
                 }
 
                 is ApiResult.Failure -> {
-                    // The selection is deliberately left standing: nothing was changed, and a
-                    // member who has just picked twelve rows must not have to pick them again to
-                    // retry (artboard 10).
                     mutableState.update { it.copy(bulk = open.copy(saving = false, error = result.error)) }
                 }
             }
@@ -871,11 +784,7 @@ class InventoryViewModel(
     }
 
     /**
-     * Adds a target to a split, at zero.
-     *
-     * At zero rather than at the whole rest: the member picked what to promise to, not how much,
-     * and a row that arrives pre-filled with everything left is one tap away from a split nobody
-     * intended.
+     * Adds a target to a split at zero, leaving the amount to the member.
      *
      * @param kind which split.
      * @param target what was picked.
@@ -913,15 +822,9 @@ class InventoryViewModel(
     }
 
     /**
-     * Writes every changed row, in sequence.
+     * Writes every changed row in sequence, each carrying the version the previous write returned.
      *
-     * Sequential and not parallel, because each write returns a new optimistic-locking version that
-     * the next one has to carry — firing them together would make all but the first collide with
-     * their own predecessor.
-     *
-     * A failure stops the sequence rather than pushing on. What already landed stays landed, and
-     * the count is reported: "three of five were written" is a fact the member needs, and pretending
-     * the save was atomic would leave them re-entering changes that are already in.
+     * A failure stops the sequence; rows already written stay written and their count is reported.
      */
     fun onAllocationSave() {
         val open = mutableState.value.allocation ?: return
@@ -1047,11 +950,8 @@ class InventoryViewModel(
 }
 
 /**
- * The key one stack is opened under.
- *
- * Material, holder, place and quality together — the same four the entry read is narrowed by.
- * Anything shorter collides: one member can hold the same material at two places, and the same
- * place can hold two qualities of it.
+ * The key one stack is opened under: material, holder, place and quality together, the same four
+ * values the entry read is narrowed by.
  *
  * @param materialId the group's material.
  * @param stack the stack.

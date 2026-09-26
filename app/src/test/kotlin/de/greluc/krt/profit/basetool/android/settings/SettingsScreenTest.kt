@@ -22,12 +22,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * The way out of the app.
- *
- * Sign-out is the one control on this screen whose cost cannot be undone by tapping it again: the
- * stored refresh token and its Keystore key are destroyed, and the way back is the browser's
- * sign-in form. These tests hold the confirmation in place — a regression that wires the button
- * straight to [SettingsScreen]'s `onLogout` again would still look right on a screenshot.
+ * Tests the sign-out confirmation, since signing out destroys the stored refresh token and its Keystore key.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")

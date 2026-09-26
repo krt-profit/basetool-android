@@ -23,24 +23,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
- * One authenticated request, its body parsed, its failures classified — the part every repository
- * repeats.
+ * Performs one authenticated request, parses its body and classifies its failures.
  *
- * It exists because the third copy was about to be written. The first two were fine: a repository
- * that owns its own request building is easy to read. What is not fine is that the **failure
- * semantics** were copied with them, and those are not obvious:
+ * - a transport failure is [ApiError.Network];
+ * - a 2xx whose body will not parse is [ApiError.Server];
+ * - everything else goes through [ApiErrorMapper], by problem `code` (ADR-0001).
  *
- * - a transport failure is [ApiError.Network], because the member can act on it;
- * - a 2xx whose body will not parse is [ApiError.Server], **not** `Network` — the connection
- *   plainly worked, and telling somebody to check their connection is advice that cannot help;
- * - everything else goes through [ApiErrorMapper], which classifies by the backend's stable problem
- *   `code` rather than by HTTP status (ADR-0001).
- *
- * Three hand-copies of that would agree today and drift the first time one of them is "improved".
- *
- * What deliberately stays with the caller is *meaning*: which failures to fold into a success,
- * which absent field is an error, how to page-walk. This type answers "what came back", never "what
- * it means".
+ * Interpreting the result is left to the caller.
  *
  * @property httpClient the shared API client, which supplies the mandatory headers
  * @property baseUrl the flavour's API origin, e.g. `https://api.profit-base.online`
@@ -69,15 +58,7 @@ class ApiReader(
     ): ApiResult<T> = call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).get(), deserializer)
 
     /**
-     * Fetches a body that is not JSON.
-     *
-     * Reports have no schema to decode: the server answers a PDF or a CSV with a
-     * `Content-Disposition` naming the file. Everything else the reader does — the bearer token,
-     * the mandatory headers, the failure classification — applies unchanged.
-     *
-     * The whole body is read into memory. That is right for these two reports, which are a page of
-     * bookings and a quarter of them; it would not be for something unbounded, and a streaming
-     * variant should be its own function rather than a flag on this one.
+     * Fetches a non-JSON body, such as a PDF or CSV report, reading it fully into memory.
      *
      * @param path where to fetch from.
      * @param params query parameters, in order.
@@ -117,16 +98,8 @@ class ApiReader(
         }
 
     /**
-     * Performs one GET whose answer may legitimately have **no body**.
-     *
-     * `GET /api/v1/announcement` is the case this exists for: it answers `204 No Content` when
-     * there is nothing to announce, and that is a result, not a failure. Read through [get] the
-     * empty body would fail to parse and surface as a broken server contract — an error banner
-     * where the correct rendering is no banner at all.
-     *
-     * An empty body on a `200` is treated the same way. A server that answers "nothing" with a
-     * zero-length body rather than a status is being sloppy, not broken, and the distinction is
-     * invisible to the member either way.
+     * Performs one GET whose answer may legitimately have no body, such as `204 No Content`; an empty
+     * `200` body is treated the same way.
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -167,13 +140,7 @@ class ApiReader(
     /**
      * Performs one GET with query parameters and parses its body.
      *
-     * The parameters are handed to `HttpUrl` as **raw** values and encoded exactly once, by it.
-     * Building the query by string concatenation instead is how a member's search term containing
-     * `&`, `=` or `+` either truncates the request or arrives double-encoded and matches nothing —
-     * a failure that looks like "the server found nothing" rather than like a bug.
-     *
-     * The values never reach the diagnostic: [call] logs the bare path, and a search term is member
-     * input (REQ-OBS-004 in the main repo).
+     * The parameters are encoded exactly once by `HttpUrl` and never logged (REQ-OBS-004).
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -194,11 +161,8 @@ class ApiReader(
     }
 
     /**
-     * Sends a body and parses what comes back.
-     *
-     * The server answers a write with the saved row, and that answer is not a courtesy: it carries
-     * the **new `version`**, which the next edit has to echo. A client that ignored the response
-     * and kept its old version would 409 on its own second save.
+     * Sends a body and parses the saved row that comes back, whose new `version` the next edit must
+     * echo.
      *
      * @param B the request type
      * @param T the response type
@@ -235,12 +199,7 @@ class ApiReader(
     ): ApiResult<T> = send(path, "PUT", body, bodySerializer, deserializer)
 
     /**
-     * Sends a body and expects no answer.
-     *
-     * For an endpoint whose answer the caller does not need — `202 Accepted` with an empty body,
-     * which is what the live-sync signal gets, or a `201 Created` whose returned row the caller
-     * re-reads anyway. Distinct from [post] for the reason [delete] is: handing an empty body to
-     * the parser would turn every such success into a reported server error.
+     * Sends a body and ignores the answer, e.g. an empty `202 Accepted` or a `201` the caller re-reads.
      *
      * @param B the request type
      * @param path the API path, beginning with a slash
@@ -261,11 +220,7 @@ class ApiReader(
         )
 
     /**
-     * Replaces a row and ignores what comes back.
-     *
-     * The [put] sibling parses the answer, which is right when the caller needs the new version.
-     * It is wrong when the caller re-reads the row anyway: a field the app never touches drifting
-     * on the server would then fail a write that in fact succeeded.
+     * Replaces a row and ignores what comes back, for callers that re-read the row anyway.
      *
      * @param B the request type
      * @param path the API path, beginning with a slash
@@ -286,13 +241,8 @@ class ApiReader(
         )
 
     /**
-     * Sends a `POST` that carries no body and ignores what comes back.
-     *
-     * The pairing of [post] and [postAccepted] one level up, for the writes that are addressed
-     * entirely by their path — "put this member on this Einsatz" names both in the URL. The `/slim`
-     * writes answer with the part they touched, and a caller that re-reads the aggregate anyway has
-     * no use for it: parsing it would let a field the app never touches fail a write that in fact
-     * succeeded.
+     * Sends a `POST` that carries no body and ignores what comes back, for writes addressed entirely by
+     * their path.
      *
      * @param path the API path, beginning with a slash
      * @return success, or the classified failure
@@ -301,11 +251,7 @@ class ApiReader(
         withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).post(EMPTY_BODY))
 
     /**
-     * Deletes a row.
-     *
-     * Separate from the three above because the answer is `204 No Content`: there is no body to
-     * parse, and running it through the parser would turn every successful delete into a reported
-     * server error.
+     * Deletes a row, expecting `204 No Content`.
      *
      * @param path the API path, beginning with a slash
      * @return success, or the classified failure
@@ -314,18 +260,8 @@ class ApiReader(
         withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).delete())
 
     /**
-     * Sends a `POST` with a JSON body whose **answer** may legitimately have none.
-     *
-     * `POST /inventory/{id}/book-out` is the case this exists for. It answers `200` with the
-     * remaining row — unless the book-out empties the stack, and then the row is gone and the answer
-     * is `204 No Content`. Read through [post] that empty body fails to parse, and a book-out that
-     * **succeeded** is reported to the member as "could not be saved": they retry, the row no longer
-     * exists, and every retry is a truthful `403`. Seen in production on 2026-09-03 — one `204`
-     * followed by four `403`s on the same id, from a member who thought nothing had happened.
-     *
-     * Distinct from [delete] only in the verb and the payload;
-     * the point is the same, which is that discarding the answer must not mean refusing to accept
-     * one that is empty.
+     * Sends a `POST` with a JSON body whose answer may legitimately be empty, e.g. a book-out that
+     * answers `204` once the stack is emptied.
      *
      * @param B the request type
      * @param path the API path, beginning with a slash
@@ -346,11 +282,8 @@ class ApiReader(
         )
 
     /**
-     * Sends a `POST` that carries no body and parses what comes back.
-     *
-     * Some writes are entirely addressed by their path — "put this member on this order" names
-     * both in the URL and has nothing left to say in a payload. Sending `{}` instead would work
-     * and would be a lie about the shape of the request.
+     * Sends a `POST` that carries no body and parses what comes back, for writes addressed entirely by
+     * their path.
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -370,15 +303,10 @@ class ApiReader(
     /**
      * Uploads one file as `multipart/form-data` and parses what comes back.
      *
-     * The hangar's Fleetview endpoint takes a file part rather than a JSON body, and it takes the
-     * same part whether the member picked a file or pasted the export into a box — the paste is
-     * turned into bytes here rather than becoming a second endpoint.
-     *
      * @param T the response type
      * @param path the API path, beginning with a slash
      * @param partName the form field the server reads, `file` for every current caller
-     * @param fileName the name sent with the part; servers log it, so it should say where the
-     *   bytes came from rather than be invented
+     * @param fileName the name sent with the part; it should say where the bytes came from
      * @param bytes the file's content
      * @param mediaType the part's content type
      * @param deserializer the serializer for [T]
@@ -403,11 +331,8 @@ class ApiReader(
     }
 
     /**
-     * Sends a `PUT` that carries no body and parses what comes back.
-     *
-     * The sibling of the body-less `POST` above, for a write whose whole instruction is its path —
-     * an account's all-members switch is `.../all-members/true`, and there is nothing left to put
-     * in a payload.
+     * Sends a `PUT` that carries no body and parses what comes back, for writes addressed entirely by
+     * their path.
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -425,11 +350,7 @@ class ApiReader(
         )
 
     /**
-     * Deletes a row and parses the answer.
-     *
-     * The `Unit` variant above is for the `204` case. This one is for a delete that answers with
-     * the parent it just changed — the assignee edge does, and the screen redraws the whole order
-     * from it rather than guessing at the new version.
+     * Deletes a row and parses the answer, for a delete that returns the changed parent.
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -463,13 +384,8 @@ class ApiReader(
     ): ApiResult<T> = delete(path, emptyList(), deserializer)
 
     /**
-     * Builds and runs one body-carrying request under any verb.
-     *
-     * The escape hatch behind [post] and [put], public because this API uses two verbs they do not
-     * cover: `PATCH`, and a `DELETE` that carries a body — the inventory's allocation endpoint
-     * names its target in the payload rather than in the path, so removing one is a DELETE with
-     * `{field, targetId, version}`. Reach for the named methods first; this is for the verbs that
-     * have no named method rather than a second way to POST.
+     * Builds and runs one body-carrying request under any verb, for verbs without a named method such
+     * as `PATCH` or a `DELETE` with a body.
      *
      * @param B the request type
      * @param T the response type
@@ -522,10 +438,7 @@ class ApiReader(
         }
 
     /**
-     * Executes a prepared request and parses its body.
-     *
-     * The builder arrives without a URL so the caller cannot accidentally address a different host
-     * than the flavour's; the path is applied here.
+     * Executes a prepared request against the flavour's host and parses its body.
      *
      * @param T the response type
      * @param path the API path, beginning with a slash
@@ -568,9 +481,6 @@ class ApiReader(
                 KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
                 ApiResult.Failure(ApiError.Network(io))
             } catch (malformed: SerializationException) {
-                // A 200 whose body cannot be read is a broken server contract, not a connectivity
-                // problem. Reporting it as Network would tell the member to check their
-                // connection, which is advice that cannot possibly help.
                 KrtLog.w(logTag, malformed) { "response could not be parsed: $path" }
                 ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
             }
@@ -601,10 +511,7 @@ data class DownloadedFile(
     val mediaType: String?,
 ) {
     /**
-     * Compares by content.
-     *
-     * `ByteArray` compares by identity, which would make two equal downloads unequal and is exactly
-     * the trap a data class hides.
+     * Compares by content, including the `ByteArray`.
      *
      * @param other what to compare with.
      * @return whether the two carry the same file.

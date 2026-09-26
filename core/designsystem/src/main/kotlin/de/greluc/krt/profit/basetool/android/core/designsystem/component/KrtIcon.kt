@@ -19,16 +19,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Renders one glyph of the in-house KRT icon set.
+ * Renders one glyph of the in-house KRT icon set (`ic_krt_*` VectorDrawables), tinted to a single
+ * colour.
  *
- * The icons live as VectorDrawables in this module (`ic_krt_*`), generated from the design system's
- * sprite: 24 dp viewport, stroke-only 2 dp, round caps and joins. They are drawn in white and
- * recoloured here, so a glyph always adopts the surrounding content colour unless told otherwise —
- * icons are never multi-coloured. No third-party icon library is used anywhere in the app, and
- * emoji are not used as icons.
- *
- * Pass `contentDescription = null` only when the icon is decorative and an adjacent label already
- * names the action; icon-only buttons must always pass a description.
+ * Pass `contentDescription = null` only when an adjacent label already names the action.
  *
  * @param id the drawable resource, e.g. `R.drawable.ic_krt_check`.
  * @param contentDescription spoken description for TalkBack, or `null` when purely decorative.

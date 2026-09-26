@@ -102,18 +102,12 @@ class OrgUnitRepositoryTest {
                 ),
                 units,
             )
-            // The pinnable-units endpoint, not the membership list: an admin holds no Staffel
-            // membership and would otherwise be offered no unit at all (REQ-SEC-048).
             assertEquals("/api/v1/me/org-units", server.takeRequest().target)
         }
 
     @Test
     fun `a kind this build has never heard of is still offered`() =
         runTest {
-            // The reader coerces an unknown enum constant to null (REQ-APP-API-005), which is what
-            // keeps a server-side addition from crashing a build in the field. The unit is
-            // perfectly usable — it has an id and a name — so hiding it would lose the member a
-            // scope over a label the app could not read.
             respond("""[{"orgUnitId":"c3","orgUnitName":"Neue Einheit","kind":"FLOTTENKOMMANDO"}]""")
 
             val result = repository.memberships()
@@ -149,7 +143,6 @@ class OrgUnitRepositoryTest {
     @Test
     fun `no memberships is a success, not a failure`() =
         runTest {
-            // A member who belongs to nothing yet is an ordinary case — the shell has to render.
             respond("[]")
 
             assertEquals(emptyList<OrgUnit>(), (repository.memberships() as ApiResult.Success).value)

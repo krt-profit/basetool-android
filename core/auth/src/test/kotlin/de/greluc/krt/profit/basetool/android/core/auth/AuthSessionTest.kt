@@ -39,13 +39,8 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * The session is where a wrong decision costs the member their login.
- *
- * Two of these tests exist because the obvious implementation gets them backwards. A refresh that
- * fails on a train must not wipe the stored token — a tunnel is not a logout — while a refusal from
- * the realm must wipe it, or the app retries a dead grant on every start-up. And a refresh response
- * that carries no new refresh token must keep the old one, because the realm does not rotate them
- * and overwriting the field with `null` throws away the only way back into the session.
+ * Tests the session's decisions: a transport failure keeps the stored token, a realm refusal wipes it, and a refresh
+ * without a new refresh token keeps the old one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -98,7 +93,6 @@ class AuthSessionTest {
     @Test
     fun `restores a stored session and exposes the access token synchronously`() =
         runTest {
-            // Synchronously, because the OkHttp interceptor that reads it cannot suspend (ADR-0001).
             store.write(STORED_REFRESH)
             server.enqueue(grant())
 
@@ -118,8 +112,6 @@ class AuthSessionTest {
     @Test
     fun `an unreachable realm leaves the stored session intact`() =
         runTest {
-            // A tunnel is not a logout. Wiping here would ask the member for a password they never
-            // needed, and the session is very probably still valid.
             store.write(STORED_REFRESH)
             server.close()
 
@@ -132,11 +124,6 @@ class AuthSessionTest {
     @Test
     fun `a transient failure leaves an established session standing`() =
         runTest {
-            // The member unlocks a phone whose radio is still reconnecting. The first refresh
-            // fails, and the app used to replace itself with "the session could not be confirmed"
-            // for the second or two until the next caller's refresh succeeded -- an error that
-            // repaired itself, in front of somebody who was signed in the whole time. Stale is a
-            // start-up state: it says "we have nothing to show you", not "your session is gone".
             store.write(STORED_REFRESH)
             server.enqueue(grant())
             session.restore()
@@ -155,10 +142,6 @@ class AuthSessionTest {
     @Test
     fun `a second restore does not spend another refresh`() =
         runTest {
-            // Two callers reach restore around an unlock: the gate's own, and the retry the stale
-            // screen runs when connectivity comes back. Restore used to sit outside the single-
-            // flight mutex, so the second one sent its own token request -- another DPoP proof for
-            // the realm to verify, and another result to publish over the first.
             store.write(STORED_REFRESH)
             server.enqueue(grant())
 
@@ -172,8 +155,6 @@ class AuthSessionTest {
     @Test
     fun `a refused refresh token is cleared`() =
         runTest {
-            // The opposite case: the grant is gone at the realm, so keeping the blob only means
-            // failing again on every start-up.
             store.write(STORED_REFRESH)
             server.enqueue(oauthError())
 
@@ -186,9 +167,6 @@ class AuthSessionTest {
     @Test
     fun `concurrent refreshes send exactly one token request`() =
         runTest {
-            // Several screens loading at once would each notice the expiry. Without single-flight
-            // that is one token request per screen, each with a DPoP proof for the realm to verify,
-            // and all but one result discarded.
             store.write(STORED_REFRESH)
             repeat(CONCURRENT_CALLERS) { server.enqueue(grant()) }
 
@@ -202,9 +180,6 @@ class AuthSessionTest {
     @Test
     fun `a refused token is exchanged even when it has not expired yet`() =
         runTest {
-            // The server's 401 outranks the local expiry estimate: the device clock can be wrong
-            // and a token can be revoked long before it runs out. refreshIfNeeded would do nothing
-            // here, which is what left the app stuck on "Signal Lost" until it was restarted.
             store.write(STORED_REFRESH)
             server.enqueue(grant())
             session.restore()
@@ -219,8 +194,6 @@ class AuthSessionTest {
     @Test
     fun `a token another caller already renewed is handed back unspent`() =
         runTest {
-            // Every screen hits the 401 at the same moment. Only the first may spend the refresh
-            // token; the rest must be given the result rather than each starting an exchange.
             store.write(STORED_REFRESH)
             server.enqueue(grant())
             session.restore()
@@ -234,8 +207,6 @@ class AuthSessionTest {
     @Test
     fun `a refresh without a new refresh token keeps the stored one`() =
         runTest {
-            // The realm does not rotate refresh tokens, so a response may legitimately omit it.
-            // Taking that as "there is none now" would discard the only way back into the session.
             store.write(STORED_REFRESH)
             server.enqueue(grant(refreshToken = null))
 
@@ -260,7 +231,6 @@ class AuthSessionTest {
     @Test
     fun `an ID token minted for another attempt is refused`() =
         runTest {
-            // The injection the nonce exists to prevent. Nothing is stored and no session starts.
             val request = authorizationRequest()
             server.enqueue(grant(nonce = "some-other-attempt"))
 
@@ -289,7 +259,7 @@ class AuthSessionTest {
             val request = authorizationRequest()
             server.enqueue(grant(nonce = request.nonce))
             session.completeLogin(request, code = "auth-code")
-            server.enqueue(MockResponse.Builder().code(HTTP_OK).build()) // revocation
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
 
             val endSession = session.logout()
 
@@ -305,8 +275,6 @@ class AuthSessionTest {
     @Test
     fun `logout completes even when the realm refuses the revocation`() =
         runTest {
-            // What protects the device is the local wipe; revocation only shortens the window for
-            // a copy that escaped. A logout must not be blockable by the network.
             val request = authorizationRequest()
             server.enqueue(grant(nonce = request.nonce))
             session.completeLogin(request, code = "auth-code")
@@ -374,11 +342,7 @@ class AuthSessionTest {
             .build()
 
     /**
-     * Builds an unsigned ID token carrying the claims the session reads.
-     *
-     * Unsigned on purpose: the app does not verify the signature — the token arrives directly from
-     * the token endpoint over TLS, which OIDC Core section 3.1.3.7 accepts — so a fixture that
-     * forged one would be testing a check that does not exist.
+     * Builds an unsigned ID token carrying the claims the session reads; the app does not verify ID-token signatures.
      *
      * @param nonce the `nonce` claim to embed
      * @return a three-part compact JWT

@@ -21,14 +21,7 @@ private const val LOG_TAG = "MissionRoster"
 /**
  * What a manager may do to somebody else's row on the Teilnehmer tab.
  *
- * A holder beside [MissionDetailViewModel] rather than three more methods on it, following the
- * `MaterialPaneLoader` precedent: the detail screen drives seven tabs and the class had reached the
- * point where every new capability made it harder to see which handler belonged to which tab. The
- * manager's roster is one capability, gated as a whole, so it lives as one thing.
- *
- * It owns no state of its own beyond the catalogue — the roster rows and the version they carry
- * live in the screen's state, and this reads them through [rowToManage] rather than keeping a
- * second copy that could disagree with what is on screen.
+ * It holds no state beyond the catalogue; rows and their versions are read through [rowToManage].
  *
  * @property missionId the Einsatz whose roster this is.
  * @property source where the writes go.
@@ -44,12 +37,7 @@ class MissionRoster(
     private val write: (suspend () -> ApiResult<MissionParticipant>) -> Unit,
 ) {
     /**
-     * Reads the Funktionen catalogue the roster's select offers.
-     *
-     * Only for a caller who may actually assign one, and only once. A member who cannot manage sees
-     * the select **locked** — which needs the row's own function and wish, both already in hand,
-     * and not the catalogue. Reading it for them would be a request for a list they can look at and
-     * never use, on the tab most members open every time.
+     * Reads the Funktionen catalogue the roster offers, once and only for a caller who may assign.
      *
      * @param canManage whether the caller may assign at all.
      * @param known what has already been read; a non-empty list means there is nothing to do.
@@ -70,8 +58,6 @@ class MissionRoster(
                 }
 
                 is ApiResult.Failure -> {
-                    // Assigning is optional, so a catalogue that will not load must not break the
-                    // roster: the select simply does not appear, and every other row action works.
                     KrtLog.w(LOG_TAG) { "the Funktionen catalogue could not be read: ${result.error}" }
                 }
             }
@@ -128,17 +114,10 @@ class MissionRoster(
     }
 
     /**
-     * Changes the job a member ASKED for, after they have already signed up.
+     * Changes the job the caller asked for after signing up.
      *
-     * Until 2026-09-07 the wish could only be set at sign-up: `join` carried it and nothing else
-     * did, so a member who changed their mind had to withdraw and sign up again — and the
-     * Funktionen sheet would have shown a value nobody could move. The server always accepted it
-     * on the participant update; this is the app catching up.
-     *
-     * The row comes in rather than being looked up by id: this is the **caller's own** row, which
-     * [rowToManage] deliberately does not vouch for. Tapping the job already wished for clears it,
-     * because the wish is optional and a chip pair would otherwise make „no preference"
-     * unreachable after the first tap.
+     * Takes the caller's own row directly, since [rowToManage] does not vouch for it. Tapping the job
+     * already wished for clears it.
      *
      * @param participant the caller's own row, as last read.
      * @param jobType the job they would like.

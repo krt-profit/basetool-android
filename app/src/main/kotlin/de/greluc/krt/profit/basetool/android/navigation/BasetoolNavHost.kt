@@ -113,18 +113,15 @@ import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 /**
  * The navigation graph.
  *
- * Every destination registers the deep link that opens it, so a notification tap, a web link and an
- * in-app navigation converge on one address per screen. Transitions are a plain 200 ms cross-fade:
- * the design system allows colour and fade only — no slide-in stacks, no parallax — and a fade also
- * keeps the predictive-back preview honest, because the previous screen is shown as it really is.
+ * Every destination registers its deep link, so notifications, web links and in-app navigation
+ * share one address per screen. Transitions are a plain 200 ms cross-fade.
  *
  * @param navController the controller driving the graph.
  * @param onOpenDestination invoked when a list entry opens another destination.
  * @param missions drives the Einsatz list.
- * @param missionDetail builds a view model for one Einsatz; the graph knows the id, the activity
- *   knows the dependencies, and this is where the two meet.
+ * @param missionDetail builds a view model for one Einsatz from its id.
  * @param operations drives the Operationen list.
- * @param operationDetail builds a view model for one Operation, the same way [missionDetail] does.
+ * @param operationDetail builds a view model for one Operation from its id.
  * @param notifications drives the inbox and the bell badge.
  * @param dashboard drives the Übersicht.
  * @param hangar drives the Hangar.
@@ -192,8 +189,6 @@ fun BasetoolNavHost(
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
-    // Captured outside the transition lambdas: they are not composable, so the value has to be
-    // read here. Zero on a device asking for reduced motion, which makes the fade a cut.
     val motionMs = KrtTheme.motionMs
     NavHost(
         navController = navController,
@@ -209,16 +204,9 @@ fun BasetoolNavHost(
                 route = destination.route,
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) { backStackEntry ->
-                // Each destination sees only its own re-tap counter, so a re-tap on „Lager" cannot
-                // scroll „Einsätze" -- and a root screen obeys the rule without knowing its route.
                 CompositionLocalProvider(
                     LocalRootScrollTick provides rootScroll.ticksFor(destination.route),
                 ) {
-                    // Two functions rather than one: nine areas hang off this graph, and the split
-                    // follows a real seam — a LIST destination is one a member reaches from the bar or
-                    // from "Mehr" and that loads itself; a PUSHED one is opened with an id from
-                    // somewhere else. Anything neither handles is still a screen this build does not
-                    // have, and says so.
                     val handled =
                         listDestination(
                             destination = destination,
@@ -288,12 +276,9 @@ fun BasetoolNavHost(
 }
 
 /**
- * Renders a destination a member navigates **to**, and reports whether it did.
+ * Renders a top-level destination, and reports whether it did.
  *
- * Each of these loads itself when it is shown. The dashboard reloads on every visit — it is the
- * screen a member returns to between other things, and its whole subject is what changed while they
- * were away — while the lists load once and offer pull-to-refresh, because coming back to a list
- * should show it rather than re-fetch it.
+ * The dashboard reloads on every visit; the lists load once and offer pull-to-refresh.
  *
  * @param destination the destination being composed.
  * @param navController the controller, for the rows that open something.
@@ -310,9 +295,6 @@ fun BasetoolNavHost(
  * @param inventory drives the Lager tree.
  * @param memberName the member's name, for the greeting.
  * @param orgUnitName the active org unit's name, for the same line.
- * Named in lower case on purpose: it returns a value, and Compose's own naming rule reserves the
- * capitalised form for functions that only emit.
- *
  * @return `true` when this function rendered the destination.
  */
 @Composable
@@ -384,9 +366,6 @@ private fun listDestination(
                 orgUnitName = orgUnitName,
                 onMarkAnnouncementRead = dashboard::onAnnouncementRead,
                 onRefresh = dashboard::onRefresh,
-                // A mission detail belongs on this tab's stack; the other three open a
-                // top-level destination and must go through the shell's helper, or the
-                // navigation bar can no longer get back here (see TopLevelNavigation.kt).
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigateToTopLevel(KrtDestination.Missions.route) },
                 onQuickAction = { action -> navController.navigateToTopLevel(action.destination.route) },
@@ -395,7 +374,6 @@ private fun listDestination(
         }
 
         KrtDestination.Notifications -> {
-            // The badge is already live from the shell, so this only adds the list.
             LaunchedEffect(Unit) { notifications.loadOnce() }
             NotificationsRoute(
                 viewModel = notifications,
@@ -409,8 +387,6 @@ private fun listDestination(
             LaunchedEffect(Unit) { hangar.loadOnce() }
             HangarRoute(
                 viewModel = hangar,
-                // A plain push, NOT navigateToTopLevel: the import is a sub-page of the Hangar, so
-                // back has to return here rather than to Übersicht.
                 onOpenImport = { navController.navigate(KrtDestination.FleetImport.route) },
             )
         }
@@ -446,10 +422,6 @@ private fun listDestination(
 /**
  * „Handel" — the material list beside one material's prices.
  *
- * Its own function rather than another branch of [listDetailDestination]: that switch is already at
- * the complexity the project's static analysis allows, and a screen is a poor reason to raise a
- * limit that exists to keep this file readable.
- *
  * @param destination the route being drawn.
  * @param navController for the phone's push.
  * @param materials the catalogue list.
@@ -466,8 +438,6 @@ private fun materialsDestination(
     if (destination != KrtDestination.Materials) {
         return false
     }
-    // Design ch. 16: „Tablet 1280×800 — Liste (480 dp) + Detail". The same split as the Einsätze
-    // and the Aufträge: beside the list on a wide window, pushed on a phone.
     val wide = isWideWindow()
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     KrtListDetail(
@@ -483,8 +453,6 @@ private fun materialsDestination(
             onOpen = {
                 if (wide) selected = it else navController.navigate(materialDetailRoute(it))
             },
-            // A plain push on both form factors: neither is a row of the list, so neither belongs
-            // in the detail pane beside it.
             onOpenMatrix = { navController.navigate(KrtDestination.MaterialMatrix.route) },
             onOpenProfit = { navController.navigate(KrtDestination.MaterialProfit.route) },
         )
@@ -493,16 +461,10 @@ private fun materialsDestination(
 }
 
 /**
- * The four destinations that show a list beside its detail on a wide window.
+ * The four destinations that show a list beside its detail on a wide window, each with its own
+ * selection.
  *
- * Split out of [listDestination] rather than living beside the others, and not only to keep that
- * function under the complexity gate: these four are the same shape four times over — hold a
- * selection, build a detail view model for it, hand the list a tap handler that either selects or
- * navigates — and reading them together is what makes that shape visible. A fifth one belongs
- * here too.
- *
- * Each keeps its own selection rather than sharing one, because the selections are unrelated:
- * picking an Auftrag says nothing about which Konto should be open.
+ * A tap selects beside the list on a wide window and pushes the detail on a phone.
  *
  * @param destination which destination to draw.
  * @param navController used for the phone's push navigation and for sibling destinations.
@@ -546,7 +508,6 @@ private fun listDetailDestination(
 
         KrtDestination.Bank -> {
             LaunchedEffect(Unit) { bank.loadOnce() }
-            // Design ch. 12: "Tablet 1280×800 — Konten + Detail".
             val wide = isWideWindow()
             var selected by rememberSaveable { mutableStateOf<String?>(null) }
             KrtListDetail(
@@ -567,9 +528,6 @@ private fun listDetailDestination(
                     onOpenAccount = {
                         if (wide) selected = it else navController.navigate(bankAccountRoute(it))
                     },
-                    // A full screen rather than the detail pane: the holder register is a section
-                    // of the Konten tab, not a list of its own, so there is nothing to keep beside
-                    // it.
                     onOpenHolder = { navController.navigate(bankHolderRoute(it)) },
                 )
             }
@@ -577,7 +535,6 @@ private fun listDetailDestination(
 
         KrtDestination.Orders -> {
             LaunchedEffect(Unit) { orders.loadOnce() }
-            // Design ch. 10: "Tablet 1280×800 — Queue + Detail".
             val wide = isWideWindow()
             var selected by rememberSaveable { mutableStateOf<String?>(null) }
             KrtListDetail(
@@ -614,8 +571,6 @@ private fun listDetailDestination(
 
         KrtDestination.Refinery -> {
             LaunchedEffect(Unit) { refinery.loadOnce() }
-            // Design ch. 11: "Tablet 1280×800 — Orders + Detail". No load() here, matching the
-            // standalone destination — this view model reads on construction.
             val wide = isWideWindow()
             var selected by rememberSaveable { mutableStateOf<String?>(null) }
             KrtListDetail(
@@ -626,7 +581,6 @@ private fun listDetailDestination(
                             RefineryOrderDetailRoute(
                                 viewModel = detailModel,
                                 onEdit = { navController.navigate(refineryEditRoute(id)) },
-                                // The pane's subject is gone; the list beside it stays.
                                 onDeleted = { selected = null },
                             )
                         }
@@ -660,11 +614,8 @@ private fun listDetailDestination(
 }
 
 /**
- * Einsätze — the list and, beside it on a tablet, the Einsatz a member picked.
- *
- * Design ch. 06: „Tablet 1280×800 — list-detail". On a wide window a tap selects beside the list;
- * on a phone it pushes the detail as its own screen, which is what the back arrow in the top bar
- * already expects.
+ * Einsätze — the list, and beside it on a wide window the picked Einsatz; on a phone a tap pushes
+ * the detail (design ch. 06).
  *
  * @param navController for the phone's pushed detail and the other half's route.
  * @param missions the list's view model.
@@ -694,20 +645,14 @@ private fun MissionsListDetail(
             onOpenMission = {
                 if (wide) selected = it else navController.navigate(missionDetailRoute(it))
             },
-            // The segment navigates rather than toggling: the two halves are their own routes, and
-            // a local toggle would leave the rail highlighting the one no longer on screen. Both
-            // now map to EINSÄTZE, which is what makes them one surface (S30).
             onOpenOperations = { navController.navigate(KrtDestination.Operations.route) },
         )
     }
 }
 
 /**
- * Operationen — the **second half of the Einsätze surface** (round 14 · S30).
- *
- * Same entry, same answer: list beside detail on a tablet, a pushed detail on a phone. It used to
- * be a full-width list reached from „Mehr", which made one segment behave like two screens — one
- * half with a pane and one without.
+ * Operationen — the second half of the Einsätze surface: list beside detail on a wide window, a
+ * pushed detail on a phone.
  *
  * @param navController for the phone's pushed detail and the edit form.
  * @param operations the list's view model.
@@ -741,8 +686,6 @@ private fun OperationsListDetail(
             onOpenOperation = {
                 if (wide) selected = it else navController.navigate(operationDetailRoute(it))
             },
-            // Einsätze is a navigation-bar destination, so it goes through the shell's helper
-            // rather than onto the Operationen stack (see TopLevelNavigation.kt).
             onOpenMissions = { navController.navigateToTopLevel(KrtDestination.Missions.route) },
         )
     }
@@ -762,11 +705,7 @@ private data class MaterialBindings(
 )
 
 /**
- * The pushed screens that need nothing from the route but, at most, one id.
- *
- * Grouped rather than given a branch each: `PushedDestination`'s switch is at the complexity the
- * project's static analysis allows, and these four are the same shape — read at most one argument,
- * build one view model, draw one route.
+ * The pushed screens that read at most one id from the route and build one view model.
  *
  * @param destination which of them.
  * @param backStackEntry carries the id where there is one.
@@ -816,11 +755,9 @@ private fun SimplePushedDestination(
 }
 
 /**
- * Renders a destination that is **pushed** from another screen, plus the two settings pages.
+ * Renders a destination pushed from another screen, plus the two settings pages.
  *
- * Each detail view model is keyed on its id and scoped to this back-stack entry, so opening a second
- * record builds a second view model rather than showing the first one's content under the second
- * one's title.
+ * Each detail view model is keyed on its id and scoped to this back-stack entry.
  *
  * @param destination the destination being composed.
  * @param backStackEntry the entry carrying the route's arguments.
@@ -828,7 +765,6 @@ private fun SimplePushedDestination(
  * @param missionDetail builds a view model for one Einsatz.
  * @param operationDetail builds a view model for one Operation.
  * @param bankAccount builds a view model for one account.
- * @param bankHolder builds a view model for one holder's custody.
  * @param bankHolder builds a view model for one holder's custody.
  * @param bankStaff answers whether the caller may move custody.
  * @param orderDetail builds a view model for one order.
@@ -973,8 +909,6 @@ private fun PushedDestination(
                 onOpenPrivacy = settings.onOpenPrivacy,
                 onOpenImprint = settings.onOpenImprint,
                 onOpenTerms = settings.onOpenTerms,
-                // A plain push, NOT navigateToTopLevel: the notice is a sub-page of this screen, so
-                // back has to return here rather than to Übersicht.
                 onOpenLicenses = { navController.navigate(KrtDestination.Licenses.route) },
                 onLogout = onLogout,
                 versionName = version.versionName.orEmpty(),
@@ -1000,10 +934,6 @@ private fun PushedDestination(
         KrtDestination.NotFound -> {
             RouteNotFoundScreen(
                 onBackToBase = {
-                    // Back to the Übersicht that is already at the bottom of the stack, not a
-                    // second copy on top of it. Popping only this screen and pushing Home leaves
-                    // two, and then back on Übersicht lands on Übersicht instead of leaving the
-                    // app -- which is the one thing ch. 03 says back on Übersicht must do.
                     navController.navigate(KrtDestination.Home.route) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = false }
                         launchSingleTop = true
@@ -1021,11 +951,8 @@ private fun PushedDestination(
 /**
  * The org-wide blueprint availability, as the shell hands it over.
  *
- * Two values rather than two parameters, because they travel together through four signatures and
- * the host already carries every argument detekt allows.
- *
  * @property allowed whether the caller may open it — `canSeeBlueprintOverview` from
- *   `/me/capabilities`. `false` draws the „Mehr" row locked with its reason rather than hiding it.
+ *   `/me/capabilities`; `false` draws the „Mehr" row locked with its reason.
  * @property build builds the view model, on first navigation.
  */
 data class BlueprintOverviewBindings(
@@ -1034,12 +961,8 @@ data class BlueprintOverviewBindings(
 )
 
 /**
- * Everything the Einstellungen screen needs from outside the navigation graph.
- *
- * Bundled into one holder rather than threaded through as ten parameters, because every one of them
- * would otherwise have to be declared twice more — on [BasetoolNavHost] and on `BasetoolApp` — for
- * a screen that is the only consumer. The activity owns all of it: the session, the Keystore-backed
- * lock, and the browser hand-off.
+ * Everything the Einstellungen screen needs from outside the navigation graph, owned by the
+ * activity.
  *
  * @property accountName the signed-in member's username from the ID token, or `null` while unknown.
  * @property language the language currently on screen.
@@ -1052,13 +975,11 @@ data class BlueprintOverviewBindings(
  * @property onOpenPrivacy opens the privacy policy in a browser.
  * @property onOpenImprint opens the imprint in a browser.
  * @property onOpenTerms opens the terms of use in a browser.
- * @property onOpenUrl opens an arbitrary URL in a browser; used by the open-source notice.
- *   Returns `false` when nothing on the device handled it, which is what turns the licence
- *   action into a copy (design ch. 15).
+ * @property onOpenUrl opens an arbitrary URL in a browser; returns `false` when nothing on the
+ *   device handled it, which turns the licence action into a copy (design ch. 15).
  * @property versionCode the app's build number, from `BuildConfig`.
- * @property orgUnitName the active org unit, as the top bar's chip names it, or `null` while the
- *   scope is unknown. The settings row shows the same value rather than reading it again — two
- *   copies of a scope are two things that can disagree.
+ * @property orgUnitName the active org unit as the top bar's chip names it, or `null` while the
+ *   scope is unknown.
  * @property onSwitchOrgUnit opens the org switcher, the same sheet the chip opens.
  * @property preferences the two standing choices that live on the server.
  * @property onPayout sets where the member's share goes by default.
@@ -1080,8 +1001,6 @@ data class SettingsBindings(
     val onOpenTerms: () -> Unit,
     val onOpenUrl: (String) -> Boolean,
     val versionCode: Int,
-    // Filled by `BasetoolApp`, not by the activity: the active scope and the switcher sheet both
-    // live in the shell, and a second copy in the activity would be a second thing to keep in step.
     val orgUnitName: String? = null,
     val onSwitchOrgUnit: () -> Unit = {},
     val preferences: MemberPreferencesState,
@@ -1092,9 +1011,6 @@ data class SettingsBindings(
 
 /**
  * The create and edit forms, behind one branch.
- *
- * Grouped the way the two bank details are: each form is its own composable below, and the host's
- * `when` stays under detekt's complexity limit without any branch being suppressed away.
  *
  * @param destination which of the two forms.
  * @param navController where to go afterwards.
@@ -1117,7 +1033,6 @@ private fun CreateFormDestination(
 ) {
     when (destination) {
         KrtDestination.OperationCreate, KrtDestination.OperationEdit -> {
-            // One screen for both, so the id decides which write happens rather than which layout.
             val edited =
                 backStackEntry.arguments?.getString(OPERATION_ID_ARG).takeIf {
                     destination == KrtDestination.OperationEdit
@@ -1133,12 +1048,7 @@ private fun CreateFormDestination(
         }
 
         KrtDestination.OrderEdit -> {
-            // The same screen as the create, so it lands in the same destination — design ch. 10
-            // artboard 10 is explicit that there is no second layout.
             val editedId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
-            // An unreadable mode falls back to the requester's narrower form rather than the
-            // Logistician's: the narrow one refuses what the caller may not write, the wide one
-            // would offer it and be refused by the server after the member had typed it.
             val editMode =
                 backStackEntry.arguments?.getString(ORDER_EDIT_MODE_ARG)?.let { raw ->
                     OrderFormMode.entries.firstOrNull { it.name == raw }
@@ -1150,8 +1060,6 @@ private fun CreateFormDestination(
         }
 
         else -> {
-            // The edit is the same form pre-filled, so it lands in the same destination; only the
-            // id decides which of the two writes the CTA performs.
             val edited =
                 backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).takeIf {
                     destination == KrtDestination.RefineryEdit
@@ -1166,9 +1074,6 @@ private fun CreateFormDestination(
 
 /**
  * The three destinations that are one composable each and carry no argument of their own.
- *
- * Grouped for the reason the two bank details and the create forms are: the host's `when` stays
- * under detekt's complexity ceiling without any branch being suppressed away.
  *
  * @param destination which of the three.
  * @param blueprints the org-wide blueprint availability.
@@ -1210,10 +1115,7 @@ private fun LeafDestination(
 }
 
 /**
- * The Operation form as a pushed destination.
- *
- * Same shape as the order form's: the form's job ends when the Operation exists or has changed, and
- * the member wants to look at the Operation rather than at a form they are finished with.
+ * The Operation form as a pushed destination; on success it navigates to the Operation.
  *
  * @param navController where to go afterwards.
  * @param build builds the view model.
@@ -1237,9 +1139,7 @@ private fun OperationFormDestination(
 /**
  * The „Neuer Auftrag" form as a pushed destination.
  *
- * Same shape as [RefineryCreateDestination] and for the same reason: the form's job ends when the
- * order exists, and the member wants to look at the order rather than at an emptied form. The
- * created form is popped first so „back" from the detail returns to the queue.
+ * On success the form is popped and the new order's detail opens, so back returns to the queue.
  *
  * @param navController where to go afterwards.
  * @param build builds the view model.
@@ -1254,8 +1154,6 @@ private fun OrderCreateDestination(
     LaunchedEffect(state.created) {
         state.created?.let {
             navController.popBackStack()
-            // An edit reports the id it rewrote, so this lands on the order either way — for a
-            // create the one that now exists, for an edit the one the member came from.
             navController.navigate(orderDetailRoute(it))
         }
     }
@@ -1263,11 +1161,8 @@ private fun OrderCreateDestination(
 }
 
 /**
- * The „Neuer Raffinerieauftrag" form as a pushed destination.
- *
- * Its own composable so the host's `when` stays under detekt's complexity limit, and because the
- * navigation on success is a rule of its own: the form's job ends when the order exists, and the
- * member wants to look at the order, not at an emptied form.
+ * The „Neuer Raffinerieauftrag" form as a pushed destination; on success it navigates to the new
+ * order.
  *
  * @param navController where to go afterwards.
  * @param build builds the view model.
@@ -1292,9 +1187,6 @@ private fun RefineryCreateDestination(
 /**
  * The two bank records that are pushed rather than paned.
  *
- * Split out of the host's `when` so it stays under detekt's complexity limit; the two belong
- * together anyway, since both read through the office when the caller has one.
- *
  * @param destination which of the two.
  * @param backStackEntry carries the record's id.
  * @param bankAccount builds the account detail's view model.
@@ -1314,8 +1206,6 @@ private fun BankPushedDestination(
             val holderId = backStackEntry.arguments?.getString(HOLDER_ID_ARG).orEmpty()
             val viewModel = remember(holderId) { bankHolder(holderId) }
             LaunchedEffect(holderId) { viewModel.loadOnce() }
-            // Whether custody may be moved is the staff dashboard's answer, not a role this screen
-            // works out — the same source the rest of the Verwaltung scope draws from.
             val staff by bankStaff.state.collectAsStateWithLifecycle()
             BankHolderRoute(viewModel = viewModel, management = staff.management)
         }

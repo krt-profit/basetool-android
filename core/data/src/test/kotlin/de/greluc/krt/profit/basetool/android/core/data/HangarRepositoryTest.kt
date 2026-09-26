@@ -165,8 +165,6 @@ class HangarRepositoryTest {
     @Test
     fun `a ship without a name, maker, place or insurance is still a ship`() =
         runTest {
-            // All four are optional in the web app's own form. A card missing them must render, not
-            // vanish.
             respond(SHIPS)
 
             val second = (repository.myShips() as ApiResult.Success).value.rows[1]
@@ -240,8 +238,6 @@ class HangarRepositoryTest {
     @Test
     fun `the aggregate is read from its own path, never from the all-ships one`() =
         runTest {
-            // `/hangar/ships` reads every member's ships behind a permission most members lack, and
-            // is deliberately not on the vhost's allow-list.
             respond(OVERVIEW)
 
             repository.orgOverview()
@@ -252,7 +248,6 @@ class HangarRepositoryTest {
     @Test
     fun `a ship carries the ids and the version an edit has to send back`() =
         runTest {
-            // A read-only card had no use for these; a writing one cannot save without them.
             respond(SHIPS)
 
             val ship = (repository.myShips() as ApiResult.Success).value.rows.first()
@@ -265,8 +260,6 @@ class HangarRepositoryTest {
     @Test
     fun `a create sends the hull and the insurance, and no version`() =
         runTest {
-            // There is nothing yet to conflict with, and the frozen contract records the
-            // difference (REQ-API-009).
             respond(SAVED_SHIP)
 
             repository.create(draft())
@@ -302,8 +295,6 @@ class HangarRepositoryTest {
     @Test
     fun `a write never goes to the admin path`() =
         runTest {
-            // /hangar/users/{id}/ships names a member and is the admin surface. The vhost does not
-            // admit it and neither does this client.
             respond(SAVED_SHIP)
 
             repository.update(id = "s1", version = VERSION, draft = draft())
@@ -314,8 +305,6 @@ class HangarRepositoryTest {
     @Test
     fun `a saved ship without an id is a broken contract, not a silent drop`() =
         runTest {
-            // The list is keyed by id. A row that cannot be keyed would vanish on the next render
-            // with nothing said about it.
             respond("""{"name": "Meridian"}""")
 
             val result = repository.update(id = "s1", version = VERSION, draft = draft())
@@ -337,7 +326,6 @@ class HangarRepositoryTest {
     @Test
     fun `the hull picker matches on the maker as well as the hull`() =
         runTest {
-            // "Anvil" is how somebody looks for a Carrack they cannot spell.
             respond(SHIP_TYPES)
 
             val hulls = (repository.shipTypes("anvil") as ApiResult.Success).value

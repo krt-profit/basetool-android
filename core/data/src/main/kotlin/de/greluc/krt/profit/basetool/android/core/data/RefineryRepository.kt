@@ -38,16 +38,11 @@ import java.util.UUID
 /**
  * One material coming out of a refining run.
  *
- * **[amount] is in the member's unit, not the wire's.** The server tracks `outputQuantity` in
- * *units*, and one SCU is a hundred of them — so a run yielding 288 SCU arrives as `28800`. The web
- * app divides by a hundred to show it and the app now does the same, because the two must read
- * alike and because the booking sends this number: shipping the raw value would have created a
- * Lager entry a hundred times too large, and there is no undo for that.
- *
- * A `PIECE` material is already counted in pieces and is not divided.
+ * [amount] is in the member's unit: the server's `outputQuantity` counts units, a hundred to the
+ * SCU, and is divided accordingly; a `PIECE` material is not divided.
  *
  * @property materialId the refined material's id; `null` when the server named no output material,
- *   which is the one case a good cannot be booked into the Lager.
+ *   in which case the good cannot be booked into the Lager.
  * @property materialName what to call it.
  * @property amount how much, in the material's own unit — SCU or pieces, never wire units.
  * @property unitIsPiece whether that unit is pieces rather than SCU.
@@ -62,12 +57,10 @@ data class RefineryYield(
 )
 
 /**
- * How the member sees an order, which is not how the server stores it.
+ * How the member sees an order, as opposed to how the server stores it.
  *
- * The server has four statuses; the screen has the three of design chapter 11 plus the cancelled
- * one. The difference is [READY]: the server does not have a "ready to collect" status at all —
- * an order stays `IN_PROGRESS` until somebody books it in — so readiness is the run's end time
- * having passed, computed here.
+ * [READY] has no server status: an order stays `IN_PROGRESS` until booked, so readiness is computed
+ * from the run's end time having passed.
  */
 enum class RefineryPhase {
     /** Refining; the remaining time is counted down on the device. */
@@ -110,10 +103,8 @@ enum class RefineryServerStatus {
  * @property methodName the refining method, as the server spells it.
  * @property startedAt when the run began, as the server rendered it; `null` when not recorded.
  * @property endsAt when it ends, as the server rendered it; `null` when it cannot be computed.
- * @property status what the server stores. The member-facing phase is [phaseAt], because
- *   "ready to collect" is the end time having passed and therefore changes without any server
- *   round trip — a phase frozen at mapping time would leave a finished run reading „In Arbeit"
- *   until the screen was reloaded.
+ * @property status what the server stores; the member-facing phase comes from [phaseAt], since it
+ *   changes with time.
  * @property yields the goods the run produces.
  * @property oreSales the ore-sales figure recorded on the order, as the server rendered it.
  * @property profit the recorded gain or loss, as the server rendered it.
@@ -135,20 +126,16 @@ data class RefineryOrder(
     val version: Long?,
 ) {
     /**
-     * Total output across every good, in the member's units.
-     *
-     * A sum across mixed units is a rough figure by nature — the list row uses it to say how big a
-     * run was, not to state a quantity anybody acts on.
+     * Total output across every good, in the member's units; a rough size figure, since units may be
+     * mixed.
      */
     val totalAmount: Double get() = yields.sumOf { it.amount }
 
     /**
      * What the member sees at [now].
      *
-     * `READY` exists only here: the server keeps an order `IN_PROGRESS` until somebody books it
-     * in, so "ready to collect" is the end time having passed and nothing else. An unknown or
-     * unparseable end time reads as still running — the safe direction, since offering „In Lager
-     * buchen" on a run that has not finished books a yield that does not exist yet.
+     * `READY` means the end time has passed while the server still says `IN_PROGRESS`; an unknown or
+     * unparseable end time reads as still running.
      *
      * @param now the moment to judge against; the screen passes a clock that ticks every minute.
      * @return the phase to show.
@@ -163,10 +150,8 @@ data class RefineryOrder(
     /**
      * Whether „In Lager buchen" may be offered at [now].
      *
-     * Three conditions, and the last is the one that is easy to miss: the run must have finished,
-     * the order must carry a location to book into, **and** at least one good must name an output
-     * material. A booking addresses materials by id, so an order whose goods have none would send
-     * an empty item list — and the endpoint marks the order stored whatever that list contains.
+     * Requires a finished run, a location to book into, and at least one good naming an output
+     * material, because the endpoint marks the order stored whatever the item list contains.
      *
      * @param now the moment to judge against.
      * @return whether the action belongs on screen.
@@ -245,16 +230,10 @@ private fun RefineryOrderDraft.totalMinutes(): Int? {
 /**
  * Maps one good of the form onto the wire.
  *
- * Two fields the draft holds are deliberately **not** sent, both because the server owns them:
+ * The output material and the yield bonus are not sent: the server derives the former from the
+ * input and ignores the latter.
  *
- *  * the **output material**, which `resolveGood` derives from the input's `refinedMaterial` when
- *    it is absent and rejects outright when it disagrees. Sending the derived value back would buy
- *    nothing and would turn a legacy row whose output no longer matches its input into a `400` the
- *    member cannot read. The web form omits it for the same reason.
- *  * the **yield bonus**, which is UEX-derived and read-only: the write path ignores it and the
- *    database persists nothing for it.
- *
- * @return the good, or `null` without an input material — a line that names nothing is not a line.
+ * @return the good, or `null` without an input material.
  */
 private fun RefineryGoodDraft.toDto(): RefineryGoodDto? =
     inputMaterialId?.let { input ->
@@ -283,12 +262,8 @@ private fun RefineryStoreLine.toItem(): RefineryOrderStoreItemDto? {
         materialId = materialId,
         locationId = where,
         quality = quality,
-        // SCU, not wire units: the endpoint reads this as the member's own figure and writes it
-        // into the Lager as-is.
         amount = figure,
         userId = userId,
-        // The server refuses the pair; the form must not send it either, or the 400 arrives as a
-        // mystery rather than as the rule it is.
         jobOrderId = jobOrderId?.takeIf { !personal },
         note = note.trim().takeIf { it.isNotEmpty() },
         owningOrgUnitId = owningOrgUnitId,
@@ -302,18 +277,16 @@ private fun RefineryStoreLine.toItem(): RefineryOrderStoreItemDto? {
  * @property materialId which material — fixed by the run, never chosen here.
  * @property materialName what to show.
  * @property computed what the run calculated, in SCU.
- * @property amount what is actually being booked, in SCU. Pre-filled with [computed] and meant to be
- *   overridden: that is the whole reason this form exists.
+ * @property amount what is actually being booked, in SCU; pre-filled with [computed] and editable.
  * @property quality the grade, 0–1000.
  * @property locationId where it goes. Mandatory; pre-filled with the order's refinery.
  * @property personal whether it becomes the member's own entry rather than the unit's.
- * @property jobOrderId the Auftrag to earmark it against, or `null`. **Excludes [personal]** — the
- *   server answers 400 for the pair, and a personal line never inherits the order's mission earmark
- *   either.
+ * @property jobOrderId the Auftrag to earmark it against, or `null`. Excludes [personal]; the server
+ *   answers 400 for the pair.
  * @property note free text, at most 1000 characters.
  * @property userId who receives it, or `null` for the caller.
- * @property owningOrgUnitId which unit to book into. The server requires it when the receiver holds
- *   more than one membership; pre-filled with the order's unit.
+ * @property owningOrgUnitId which unit to book into; required when the receiver holds more than one
+ *   membership, pre-filled with the order's unit.
  */
 data class RefineryStoreLine(
     val materialId: String,
@@ -330,11 +303,8 @@ data class RefineryStoreLine(
     val owningOrgUnitId: String? = null,
 ) {
     /**
-     * What identifies this line among the run's others.
-     *
-     * **Not the material alone.** A run can yield the same material at two grades — Agricium at 733
-     * and at 874 — and keying on the material makes them one line, which Compose rejects outright as
-     * a duplicate list key and which would otherwise edit and acknowledge both at once.
+     * This line's identity among the run's others: material and quality, since a run can yield the
+     * same material at two grades.
      */
     val key: String get() = "$materialId@$quality"
 }
@@ -377,11 +347,8 @@ data class RefineryInputMaterial(
 /**
  * One line of a new order: what went in, what came out.
  *
- * The output material is **derived, never chosen**. `RefineryOrderService.resolveGood` sets it from
- * the input material's `refinedMaterial` when the payload leaves it out, and refuses any other
- * value with a `400` whose message the server deliberately withholds -- so a picker here could only
- * ever produce a rejection nobody can read. It is carried on the draft to be shown, and left off
- * the wire, exactly as the web form does it.
+ * The output material is derived from the input by the server and is carried here only for
+ * display; it is never sent.
  *
  * @property inputMaterialId the ore.
  * @property inputMaterialName what to show for it.
@@ -390,13 +357,9 @@ data class RefineryInputMaterial(
  * @property outputMaterialName what to show for it.
  * @property outputQuantity how much came out, as typed, in UNITS -- 100 units are one SCU.
  * @property quality the grade, as typed, 0–1000.
- * @property yieldBonusPercent the refinery's UEX bonus for this material, read-only, as read back
- *   from the server. The wire ignores it on write and the database persists nothing for it.
- * @property key this line's identity on the device, for the form's `LazyColumn`. Never sent — a
- *   goods line has no id of its own on the wire. It is a constructor property so `copy` keeps it:
- *   an edit must not turn a line into a new one. Without it the list was keyed by position, so
- *   removing the first of two lines handed the second line's slot — and every state remembered in
- *   it, such as whether the material picker's menu is open — to a different line.
+ * @property yieldBonusPercent the refinery's UEX bonus for this material, read-only; ignored on write.
+ * @property key this line's stable identity on the device, used as the `LazyColumn` key; kept by
+ *   `copy` and never sent.
  */
 data class RefineryGoodDraft(
     val inputMaterialId: String? = null,
@@ -422,13 +385,8 @@ data class RefineryGoodDraft(
                 (outputQuantity.trim().toIntOrNull() ?: 0) >= 1
 
     /**
-     * [outputQuantity] read back in SCU, or `null` when it is not a number yet.
-     *
-     * The field on the wire counts **units**, a hundred to the SCU, and REQ-APP-REF-004a records
-     * what assuming otherwise cost: a booking that would have created a Lager entry a hundred times
-     * the yield. The form therefore labels its fields in units and shows this beside them, the way
-     * the web form's read-only SCU box does -- so the member sees the figure they think in without
-     * anything converting behind their back.
+     * [outputQuantity] read back in SCU (a hundred units each), or `null` when it is not a number yet
+     * (REQ-APP-REF-004a).
      */
     val outputScu: Double?
         get() = outputQuantity.trim().toIntOrNull()?.let { it / UNITS_PER_SCU }
@@ -498,13 +456,8 @@ data class RefineryOrderDraft(
             }.getOrNull()
 
     /**
-     * Whether the form may be sent.
-     *
-     * A location and a method, and **every** goods line complete. The server requires an input
-     * material and both quantities at 1 or more on each line (`@NotNull @Min(1)`), so a half-filled
-     * line is not an omission it tolerates — it refuses the whole order with a `goods[0]`-shaped
-     * message nobody can act on. Requiring all of them keeps the refusal here, where the field is,
-     * rather than there, where the field name is an index.
+     * Whether the form may be sent: a location, a method, and every goods line complete, since the
+     * server refuses the whole order for one half-filled line.
      */
     val sendable: Boolean
         get() =
@@ -533,18 +486,8 @@ interface RefineryCreateSource : RefineryOrderDeleteSource {
     suspend fun methods(): ApiResult<List<RefiningMethod>>
 
     /**
-     * Searches the ores a goods line can name.
-     *
-     * **Not** the Lager's material search, which this once was. A refinery consumes raw ore, and
-     * `RefineryOrderService.resolveGood` refuses anything else — with an
-     * `IllegalArgumentException` the global handler deliberately strips of its message, so the
-     * member is told a line is invalid and never which one or why. Asking the server for
-     * `rawOnly=true` is what keeps that rejection off the screen: the same narrowing the web form's
-     * `remote-materials-raw` combobox does, and the same definition behind it (`type = RAW` or the
-     * manual raw flag).
-     *
-     * Each row carries the refined material the input resolves to, because the form shows it
-     * instead of asking for it.
+     * Searches the raw ores a goods line can name (`rawOnly=true`), each with the refined material it
+     * resolves to.
      *
      * @param query what was typed; blank asks for the first page unfiltered.
      * @return the candidates and whether the catalogue holds more of them, or the classified
@@ -561,11 +504,7 @@ interface RefineryCreateSource : RefineryOrderDeleteSource {
     suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String>
 
     /**
-     * Reads one order back as a form.
-     *
-     * The detail model the list and the detail screen use keeps only what those screens draw, so
-     * the edit reads the order again rather than filling a form from a model that never carried
-     * the method id, the two cost fields or the linked Einsatz.
+     * Reads one order back as a pre-filled form, including the fields the detail model does not carry.
      *
      * @param orderId which order.
      * @return the pre-filled form, or the classified failure.
@@ -599,9 +538,8 @@ interface RefineryOrderDeleteSource {
     /**
      * Deletes one order.
      *
-     * The server *cancels* it — the row is soft-deleted and `status` becomes `CANCELED` — and it
-     * does so for a booked order too. The rule that a booked run may not be deleted is the app's
-     * (`REQ-APP-REF-012`), because no gate enforces it.
+     * The server soft-deletes it (`status` becomes `CANCELED`), booked or not; refusing a booked run is
+     * the app's rule (`REQ-APP-REF-012`).
      *
      * @param orderId which order.
      * @return nothing on success, or the classified failure.
@@ -610,12 +548,8 @@ interface RefineryOrderDeleteSource {
 }
 
 /**
- * Booking a finished run's materials into the Lager.
- *
- * **One call for the whole run, not one per material.** The server books whatever the call carries
- * and then marks the order completed; every later call is refused with „Refinery order is already
- * completed and stored." A per-card submit therefore loses every material after the first — which
- * is what a device showed before this was one call.
+ * Books a finished run's materials into the Lager in one call for the whole run, since the server
+ * marks the order completed after the first booking.
  */
 interface RefineryStoreSource {
     /**
@@ -635,14 +569,8 @@ interface RefineryStoreSource {
 /**
  * The member's own Raffinerie orders (REQ-APP-REF-001…006).
  *
- * **Only `my-orders`.** The controller also serves `/all`, `/users/{id}` and `/mission/{id}`, which
- * are the Logistik surface; the app stays on the member-facing one, in the same way the Bank slice
- * stays off the bank-employee endpoints.
- *
- * **The extractor import is deliberately absent** (owner decision, 2026-08-23). Design chapter 11
- * puts a scan icon on this screen; it moves to phase 5 with the other file flows, because all three
- * need a file picker plus the permission and privacy work they share. Recorded in
- * `docs/specs/refinery.md` rather than left as a silent difference from the design.
+ * Uses only the member-facing endpoints; the Logistik surfaces (`/users/{id}`, `/mission/{id}`)
+ * and the extractor import are not part of the app.
  *
  * @property reader performs the calls and classifies their failures.
  */
@@ -669,9 +597,6 @@ class RefineryRepository(
     ): ApiResult<RefineryOrderPage> {
         val params =
             buildList {
-                // UNKNOWN is dropped rather than sent: it is this build's name for a status the
-                // server introduced, and echoing it back would turn an unrecognised row into a
-                // `400` on the whole page.
                 statuses
                     .filter { it != RefineryServerStatus.UNKNOWN }
                     .forEach { add(STATUS_PARAM to it.name) }
@@ -717,9 +642,6 @@ class RefineryRepository(
     override suspend fun methods(): ApiResult<List<RefiningMethod>> =
         when (
             val result =
-                // A page, not a list — `/locations/refineries` beside it answers with a bare
-                // array and the two are easy to assume alike. Parsed as a list this yields nothing,
-                // the picker renders empty, and the form is silently unsendable.
                 reader.get(METHODS_PATH, PageResponseRefiningMethodDto.serializer())
         ) {
             is ApiResult.Failure -> {
@@ -823,8 +745,6 @@ class RefineryRepository(
         lines: List<RefineryStoreLine>,
     ): ApiResult<Unit> {
         val items = lines.mapNotNull { it.toItem() }
-        // All or nothing: the call closes the order, so a line the app could not read must stop the
-        // whole submit rather than quietly leave one material behind.
         if (items.isEmpty() || items.size != lines.size) {
             return ApiResult.Failure(ApiError.Validation())
         }
@@ -846,22 +766,13 @@ class RefineryRepository(
                         RefineryOrderStoreItemDto(
                             materialId = it,
                             locationId = locationId,
-                            // The server requires a quality. An order that records none books at
-                            // zero rather than refusing: the member's material exists either way,
-                            // and a booking withheld over a missing grade loses the yield.
                             quality = good.quality ?: DEFAULT_QUALITY,
-                            // SCU, not wire units: the endpoint reads this as the member's own
-                            // figure, writes it into the Lager as-is and multiplies it back by a
-                            // hundred into the order's good. Sending the raw `outputQuantity`
-                            // would book a hundred times the yield.
                             amount = good.amount,
                         )
                     }
                 }
             }
         if (items.isEmpty()) {
-            // Refused here rather than sent. The endpoint marks the order stored whatever the item
-            // list contains, so an empty one is the quiet way to lose a whole run's yield.
             return ApiResult.Failure(ApiError.Validation())
         }
         return reader.postAccepted(
@@ -879,16 +790,10 @@ class RefineryRepository(
         private const val LOG_TAG = "refinery"
 
         /**
-         * The **squadron-wide** list, which is what the screen is about.
+         * The squadron-wide list the screen shows.
          *
-         * It read `/my-orders` until 2026-09-08 and therefore showed the caller their own runs and
-         * nothing else. The web has defaulted to this endpoint all along and keeps `/my-orders`
-         * behind its „Meine Aufträge" toggle, so the app was the outlier — and design round 16,
-         * which asks every card to name its owner, only makes sense once foreign orders are on
-         * screen at all.
-         *
-         * Read-only for everyone authenticated; the service scopes the rows. Writing still belongs
-         * to the owner alone, which the detail draws as a lock rather than hiding.
+         * Readable for everyone authenticated, with rows scoped by the service; writing stays with the
+         * owner.
          */
         private const val ALL_ORDERS_PATH = "/api/v1/refinery-orders/all"
 
@@ -916,11 +821,7 @@ class RefineryRepository(
         const val RAW_ONLY_PARAM = "rawOnly"
 
         /**
-         * How many candidates one search offers.
-         *
-         * Fifty, the web combobox's render cap. The page is not the whole answer and never was, so
-         * the search reports the overflow rather than trimming in silence (ADR-0104) — the
-         * shipped 25 with nothing beside it read as "there is no such ore".
+         * How many candidates one search offers; the overflow is reported rather than trimmed (ADR-0104).
          */
         private const val PICKER_PAGE_SIZE = 50
 
@@ -983,9 +884,6 @@ private fun RefineryOrderDraft.toWire(): RefineryOrderDto? {
         otherExpenses = parseTypedAmount(otherExpenses),
         oreSales = parseTypedAmount(oreSales),
         mission = missionId?.let { MissionReferenceDto(id = it, name = missionName) },
-        // The create has exactly one status to send — the other two describe what happened to the
-        // run afterwards. The edit echoes whatever the order already carries: this form moves an
-        // order's contents, never its state.
         status = status ?: REFINERY_STATUS_IN_PROGRESS,
         version = version,
     )
@@ -1102,16 +1000,11 @@ private fun RefineryOrderDto.toModel(requestedId: String): RefineryOrder? {
         id = orderId,
         ownerId = owner?.id,
         ownerName = owner?.krtName().orEmpty(),
-        // Required on the detail DTO and optional on the list one, which is why the two mappings
-        // differ here rather than sharing a line.
         locationId = location.id,
         locationName = location.name,
         methodName = refiningMethod?.name,
         startedAt = startedAt,
         durationMinutes = durationMinutes,
-        // The detail DTO carries no `endsAt`; the list one does. Computing it from the start and
-        // the duration is what makes the two screens agree — a detail that showed no end time
-        // while the list counted down would read as a different order.
         endsAtRaw = null,
         status = status,
         goods = goods,
@@ -1122,12 +1015,7 @@ private fun RefineryOrderDto.toModel(requestedId: String): RefineryOrder? {
 }
 
 /**
- * The name to show for an order's owner.
- *
- * `effectiveName` is the server's own resolution (display name, else username) and the other two
- * are its inputs — taken in that order so a member who has set a display name is called by it.
- * Never empty in practice: deleting a member REASSIGNS their refinery orders to a surviving
- * admin rather than orphaning them (backend `REQ-DATA-008`), so no row loses its owner.
+ * The name to show for an order's owner: `effectiveName`, else its inputs in order.
  *
  * @return the name, or the empty string.
  */
@@ -1238,10 +1126,7 @@ private fun hasEndedBy(
 }
 
 /**
- * Maps one good.
- *
- * The **output** material is what gets booked, not the input: the ore went in, the refined material
- * comes out, and booking the input would put ore in the Lager that no longer exists.
+ * Maps one good, taking the output material as the one that gets booked.
  *
  * @return the yield row, with its amount already in the member's unit.
  */
@@ -1254,7 +1139,6 @@ private fun RefineryGoodDto.toModel(): RefineryYield {
                 ?.name
                 ?.takeIf { it.isNotBlank() }
                 ?: inputMaterial.name?.takeIf { it.isNotBlank() }.orEmpty(),
-        // Units to SCU. The one conversion in this file, and the one the booking depends on.
         amount = if (piece) outputQuantity.toDouble() else outputQuantity / UNITS_PER_SCU,
         unitIsPiece = piece,
         quality = quality,

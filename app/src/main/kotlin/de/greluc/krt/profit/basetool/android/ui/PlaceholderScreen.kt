@@ -20,13 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.KrtDestination
 
 /**
- * Stands in for a destination whose screen has not been built yet.
- *
- * Deliberately an ordinary empty state rather than the in-fiction error copy: nothing is broken
- * here, the area simply has no screen yet. The in-fiction wording is reserved for real failures
- * (403, 404, 500) so it keeps its meaning.
- *
- * Every one of these disappears as its chapter of the design specification is implemented.
+ * Stands in for a destination whose screen has not been built yet, as an ordinary empty state.
  *
  * @param destination the area the user navigated to.
  * @param modifier layout modifier.

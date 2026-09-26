@@ -25,22 +25,12 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Everything the app says to Keycloak's token endpoint: the code exchange, the refresh, the
- * revocation, and the logout URL.
+ * Everything the app says to Keycloak's token endpoint: code exchange, refresh, revocation and the logout URL.
  *
- * **This is the only place a DPoP proof is attached.** Under the realm's refresh-only binding
- * policy (main repo ADR-0131), a proof sent anywhere else makes Keycloak bind the *access* token
- * too, and the backend's bearer filter rejects a bound access token — so a well-meant interceptor
- * would break every API call after the next login. Proof creation therefore lives behind
- * [DpopProofFactory] and is called from here only.
+ * This is the only place a DPoP proof is attached (ADR-0131). The HTTP client must be the
+ * token-scoped one, never the API client, whose bearer header makes Keycloak answer `invalid_client`.
  *
- * **The client must not be the API client.** [OkHttpClient] instances are shared cheaply, but the
- * API client carries `MandatoryHeadersInterceptor`, which would put an `Authorization: Bearer`
- * header on a token request — Keycloak reads that as an attempt at client authentication and
- * answers `invalid_client`, i.e. login would fail as soon as a session already existed. Build the
- * client for this class with `KrtHttpClient.createTokenClient`.
- *
- * @property httpClient a token-scoped client; see above
+ * @property httpClient a token-scoped client from `KrtHttpClient.createTokenClient`
  * @property configuration realm URLs and the public client id
  * @property proofFactory builds the DPoP proofs
  * @property serverClock turns the response's `expires_in` into an absolute instant
@@ -88,10 +78,8 @@ class TokenClient(
     /**
      * Exchanges a refresh token for a new token set.
      *
-     * The realm does **not** rotate refresh tokens (main repo REQ-SEC-012 / ADR-0019 amendment 4),
-     * which is precisely why the refresh token is DPoP-bound instead: a stolen one is useless
-     * without the device key. A response may still carry a refresh token, and the caller stores
-     * whatever came back rather than assuming it is unchanged.
+     * The realm does not rotate refresh tokens (REQ-SEC-012), but the caller stores whatever refresh
+     * token comes back.
      *
      * @param refreshToken the stored refresh token
      * @return the outcome; [TokenResult.SessionEnded] means the stored token is spent and the
@@ -108,19 +96,12 @@ class TokenClient(
         )
 
     /**
-     * Asks the realm to revoke a refresh token, and never fails the caller.
+     * Asks the realm to revoke a refresh token, best-effort and without ever failing the caller.
      *
-     * Best-effort by design: logout must complete on a phone with no connectivity, and what
-     * actually protects the device is the local wipe. Revocation shortens the window in which a
-     * copy of the token that escaped the device is still worth something — valuable, but not worth
-     * blocking a logout on.
-     *
-     * No DPoP proof is attached. RFC 9449 binds *token issuance*; revocation identifies the token
-     * by value, and a proof there would be a claim about a request the realm does not check.
+     * No DPoP proof is attached.
      *
      * @param refreshToken the token to revoke
-     * @return `true` when the realm confirmed the revocation; for diagnostics and tests, not a
-     *   branch the logout flow should take
+     * @return `true` when the realm confirmed the revocation; for diagnostics and tests only
      */
     suspend fun revokeRefreshToken(refreshToken: String): Boolean =
         try {
@@ -143,12 +124,8 @@ class TokenClient(
         }
 
     /**
-     * Builds the RP-initiated logout URL to open in the browser.
-     *
-     * Opening it — rather than only wiping locally — is what ends the realm's SSO cookie; without
-     * it the next login silently reuses the browser session and "log out, log in as someone else"
-     * does not work. Keycloak accepts `post_logout_redirect_uri` only together with an
-     * `id_token_hint` or a `client_id`; both are sent.
+     * Builds the RP-initiated logout URL whose opening ends the realm's SSO cookie; it carries both `id_token_hint` and
+     * `client_id`.
      *
      * @param idToken the ID token of the session being ended
      * @return the absolute URL for the Custom Tab
@@ -164,12 +141,7 @@ class TokenClient(
             .toString()
 
     /**
-     * Sends a grant request, retrying once if the realm demands a fresh nonce.
-     *
-     * The retry is the whole of RFC 9449 §8.3: the rejected response carried the nonce to use, it
-     * was captured on the way past, and the second attempt is identical apart from the proof. One
-     * retry only — a server that rejects the nonce it just issued is broken, and a loop there
-     * would hammer the token endpoint.
+     * Sends a grant request, retrying exactly once when the realm demands a fresh DPoP nonce (RFC 9449 §8).
      *
      * @param form the grant parameters
      * @return the outcome
@@ -184,9 +156,6 @@ class TokenClient(
                 first
             }
         } catch (io: IOException) {
-            // Logged, because Unreachable is the one outcome that tells the member nothing useful
-            // ("you are offline") and can just as easily mean a blocked cleartext connection, a
-            // wrong port or a TLS failure. Without this line the difference is invisible on device.
             KrtLog.w(LOG_TAG, io) { "token request did not reach the realm" }
             TokenResult.Unreachable(io)
         }
@@ -257,8 +226,6 @@ class TokenClient(
             parse(TokenResponseBody.serializer(), body)
                 ?: return TokenResult.Malformed("token endpoint answered 2xx with a body that is not a grant")
         return if (!grant.tokenType.equals(TOKEN_TYPE_BEARER, ignoreCase = true)) {
-            // The realm bound the access token. Named here so the 401 storm that would follow is
-            // not mistaken for an app defect; see TokenResult.AccessTokenBound.
             KrtLog.e(LOG_TAG) { "realm issued token_type=${grant.tokenType}, expected $TOKEN_TYPE_BEARER" }
             TokenResult.AccessTokenBound(grant.tokenType)
         } else {

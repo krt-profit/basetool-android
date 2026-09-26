@@ -15,11 +15,9 @@ package de.greluc.krt.profit.basetool.android.core.data
  * @property status where it stands
  * @property rawStatus the untranslated server value, for [OperationStatus.UNKNOWN]
  * @property description the free text, or `null`
- * @property version the optimistic lock the edit echoes; without it a rewrite could only
- *   overwrite blindly
+ * @property version the optimistic lock the edit echoes
  * @property payoutPreliminary whether the payout figures may still rebalance because some Einsatz
- *   of this Operation has no actual end time yet; `null` when the server did not compute it, which
- *   the screen treats as "do not claim either way" rather than as "final"
+ *   has no actual end time yet; `null` when the server did not compute it
  */
 data class OperationDetail(
     val id: String,
@@ -45,16 +43,10 @@ data class OperationMissionResult(
 )
 
 /**
- * The Operation's Finanz-Rollup.
- *
- * **Net only, no income/expense split.** The server's roll-up carries one figure per Einsatz and
- * one for the Operation; the split the design mock shows exists nowhere in the API, and deriving it
- * would mean summing every entry of every Einsatz on the device — a per-Einsatz round trip and a
- * money figure this client computed. The web page shows the same net-plus-donations pair.
+ * The Operation's Finanz-Rollup: the net result only, with no income/expense split.
  *
  * @property total the Operation's net result, as the server rendered it
- * @property truncated whether the per-Einsatz list is capped — surfaced, never swallowed
- *   (main repo ADR-0104)
+ * @property truncated whether the per-Einsatz list is capped (ADR-0104)
  * @property missions the per-Einsatz results
  */
 data class OperationRollup(
@@ -69,19 +61,18 @@ data class OperationRollup(
  * @property participantId the participant key, unique within the Operation
  * @property participantName the display name
  * @property donating whether they waived their share in favour of the org treasury
- * @property share the share of the Operation's result, as the server rendered it
+ * @property share the share of the Operation's result, as the server rendered it; zero for a
+ *   donating participant
  * @property donated the amount contributed to the org, for a donating participant
  * @property payout what is actually transferred: reimbursement plus share minus the in-game
- *   transfer fee, already rounded by the server to whole aUEC
+ *   transfer fee, rounded by the server to whole aUEC
  * @property paidOut whether a manager has marked this participant as paid
  * @property participationPercentage the share of the Operation this participant's attendance
- *   earned, as a percentage; what makes [share] a figure a member can check rather than accept
- * @property personalExpenses the participant's own outlay, reimbursed **inside** [payout] — the
- *   part of the transfer that is their money coming back rather than profit
- * @property transferFee the in-game fee already deducted from [payout], so the difference between
- *   what was earned and what arrives is stated rather than left as an unexplained gap
+ *   earned, as a percentage
+ * @property personalExpenses the participant's own outlay, reimbursed inside [payout]
+ * @property transferFee the in-game fee already deducted from [payout]
  * @property paidOutAt when a manager marked this paid, ISO-8601 UTC; `null` while it is open
- * @property paidOutByName who marked it paid. A member name: shown, never logged.
+ * @property paidOutByName who marked it paid; a member name, shown but never logged
  */
 data class OperationPayout(
     val participantId: String?,
@@ -98,12 +89,7 @@ data class OperationPayout(
     val paidOutByName: String? = null,
 ) {
     /**
-     * What attendance earned this participant, before they decided where it goes.
-     *
-     * The server sets `shareAmount` to zero for a donating participant by construction and moves
-     * the same figure to `donatedAmount`, so `share` alone answers "what is transferred to them",
-     * not "what did they earn". Reading it as the latter prints a nought against a member who
-     * earned as much as everyone else.
+     * What attendance earned this participant, whether paid out or donated.
      */
     val earnedShare: String? get() = if (donating) donated else share
 }
@@ -120,25 +106,15 @@ data class OperationPayouts(
     val rows: List<OperationPayout>,
 ) {
     /**
-     * How many people took part, which is what the head states and what the per-head share divides
-     * by.
-     *
-     * Read from the payout rows rather than counted across the Einsätze: a member who took part in
-     * two Einsätze of the same Operation is one participant here, and summing the Einsätze's own
-     * counts would count them twice.
+     * How many people took part, counted from the payout rows so a member in two Einsätze counts once.
      */
     val participants: Int get() = rows.size
 
     /**
-     * The smallest and the largest share earned, as the server wrote them.
+     * The smallest and the largest share earned, as the server wrote them; equal when attendance was
+     * equal.
      *
-     * The Operation's pool is split by how long each member took part, so one "Anteil je
-     * Teilnehmer" figure is only true when attendance was equal; where it is not, the two ends are
-     * what can honestly be stated. Both are equal when everybody earned the same, which is the
-     * ordinary case and the one the design mock shows.
-     *
-     * `null` when there are no participants, or when any one of them has no share figure at all —
-     * a range computed from a subset would understate the spread without saying so.
+     * `null` when there are no participants or any of them has no share figure.
      */
     val shareRange: Pair<String, String>?
         get() {

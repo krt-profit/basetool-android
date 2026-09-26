@@ -23,11 +23,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 /**
- * The one property this preference must never get wrong: **unset means blocked**.
- *
- * A fresh install has nothing stored, and so does an install whose store failed to read. Both must
- * behave as if the member had never asked for screenshots, because the alternative — defaulting to
- * allowed — would silently undo `REQ-APP-AUTH-010` for everyone who never opens Einstellungen.
+ * Pins that an unset or unreadable screen-capture preference means blocked (REQ-APP-AUTH-010).
  */
 class ScreenCapturePreferenceTest {
     @get:Rule val tmp = TemporaryFolder()
@@ -35,10 +31,8 @@ class ScreenCapturePreferenceTest {
     /**
      * Builds a preference over a throwaway store file.
      *
-     * **Write to it at most once per test.** DataStore commits by renaming its temp file over the
-     * target, and `File.renameTo` refuses an existing destination on Windows — so a second write
-     * dies with "multiple instances of DataStore for this file", which is neither what happened nor
-     * a defect in the code under test. The round trip is covered against [RecordingStore] instead.
+     * Write to it at most once per test: on Windows a second DataStore commit fails because
+     * `File.renameTo` refuses an existing destination.
      *
      * @return the preference under test, backed by a file that dies with the test.
      */
@@ -50,7 +44,6 @@ class ScreenCapturePreferenceTest {
     @Test
     fun `an untouched install blocks capture`() =
         runTest {
-            // The default is the security property. Nothing in the UI has to run for it to hold.
             assertTrue(fileBackedPreference().blocked.first())
         }
 
@@ -67,9 +60,6 @@ class ScreenCapturePreferenceTest {
     @Test
     fun `blocking it again is remembered rather than dropped`() =
         runTest {
-            // A tester who took their screenshot must be able to put the guard back. The risk is a
-            // "restore the default" implementation that removes the key: reading it back would then
-            // still say blocked, so this asserts the value was actually written.
             val store = RecordingStore()
             val pref = ScreenCapturePreference(store)
             pref.set(blocked = false)

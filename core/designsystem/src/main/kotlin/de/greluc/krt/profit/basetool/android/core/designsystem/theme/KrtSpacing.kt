@@ -10,17 +10,9 @@ package de.greluc.krt.profit.basetool.android.core.designsystem.theme
 import androidx.compose.ui.unit.dp
 
 /**
- * The spacing and metric scale. Nothing in the app may sit off this scale.
+ * The spacing and metric scale; nothing in the app may sit off it.
  *
- * **Nine steps, positional names** — `4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 32`, straight from
- * `01 Foundations.dc.html` §5 and the token artifact `artifacts/compose/KrtTokens.kt`. A screen
- * that wants 18 dp has a layout problem, not a special case.
- *
- * > **Why the names are numbers.** They were `xs · sm · md · lg · xl` here and `xs · sm · md ·
- * > lg · xl` in the artifact too — for **different values**. The app's `md` was 12 dp and the
- * > artifact's was 16, so any measurement carried from one side to the other landed on a value
- * > nobody had chosen, silently. The scale was ratified on 2026-08-30 with positional names for
- * > exactly that reason, and the rename moved 933 call sites in one pass.
+ * Nine steps with positional names: `4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 32` dp.
  */
 @Suppress("MagicNumber")
 object KrtSpacing {
@@ -52,11 +44,8 @@ object KrtSpacing {
     val s32 = 32.dp
 
     /**
-     * **Minimum tap area** — 44 dp, for rows, accordion heads and menu entries (ch. 01 §5).
-     *
-     * > Never derive a control's height from this. [controlHeight] is that, and conflating the two
-     * > shrank every input, button, select and segmented control in the app the day ch. 01 lowered
-     * > the floor from 48 to 44. Chapter 02 §1 now states all three sizes together for that reason.
+     * Minimum tap area — 44 dp, for rows, accordion heads and menu entries; control height is
+     * [controlHeight], not this.
      */
     val touchTarget = 44.dp
 
@@ -97,12 +86,8 @@ object KrtSpacing {
     val hairline = 1.dp
 
     /**
-     * The focus glow's radius — 6 dp, the smallest of the three (design ch. 01 §1).
-     *
-     * The capped scale is **radius ≤ 12 dp and alpha ≤ 0.10** in three sizes: focus 6 dp/.10 on an
-     * input, emphasis 12 dp/.07 on the bar carrying the one primary action, overlay 12 dp/.10 on a
-     * sheet, a modal or a toast. Nothing in the app glows harder than that, and the 20 dp bloom
-     * this replaced was above the cap on both counts.
+     * The focus glow's radius — 6 dp, the smallest of the three capped glows (radius ≤ 12 dp,
+     * alpha ≤ 0.10).
      */
     val glowFocus = 6.dp
 
@@ -117,13 +102,9 @@ object KrtSpacing {
 }
 
 /**
- * Duration of every colour and fade transition, in milliseconds.
+ * Duration of every colour and fade transition, in milliseconds, before reduced motion is applied.
  *
- * The design system allows exactly this one motion: 200 ms colour/fade. No bounces, no parallax, no
- * decorative movement — and animations must be skipped when the system reports reduced motion.
- *
- * Do not pass this to `tween(...)` directly. Read `KrtTheme.motionMs`, which resolves to `0` on a
- * device that asks for reduced motion; this constant is only the unreduced value it falls back to.
+ * Pass `KrtTheme.motionMs` to `tween(...)` instead, which resolves to `0` under reduced motion.
  */
 const val KRT_MOTION_MS = 200
 

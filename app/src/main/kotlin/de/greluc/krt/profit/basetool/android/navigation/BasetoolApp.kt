@@ -98,11 +98,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 /**
  * The application shell: top bar, navigation surface and the content of the active destination.
  *
- * Implements the back rules of the design spec, which are behavioural, not cosmetic:
- * re-tapping the active destination pops it to its root, back from any destination root returns to
- * Übersicht, and back on Übersicht leaves the app — there is deliberately no "press again to exit"
- * toast. Per-destination back stacks are preserved through `saveState`/`restoreState`, so switching
- * tabs and coming back keeps the scroll position and the open detail.
+ * Re-tapping the active destination pops it to its root, back from any root returns to Übersicht,
+ * and back on Übersicht leaves the app. Per-destination back stacks survive tab switches.
  *
  * @param onLogout ends the session; the caller opens the realm's end-session URL.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -187,20 +184,10 @@ fun BasetoolApp(
     val expanded = isWideWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
-    // The badge and the inbox read one state, so they cannot disagree — a member seeing "3 neu"
-    // over a list whose top rows are already read has been told something false by the app itself.
-    //
-    // The badge is the reason that state is read at all, so the read is asked for HERE rather than
-    // from whichever screen happens to be first. It used to hang off the dashboard, which showed an
-    // unread preview until 2026-08-31; leaving it there would have left the badge at zero until the
-    // member opened the inbox. `loadOnce` is idempotent.
     LaunchedEffect(Unit) { notifications.loadOnce() }
     val notificationState by notifications.state.collectAsStateWithLifecycle()
     val unreadCount = notificationState.unread.toInt()
 
-    // The push stream and the poll behind the badge run only while the app is in the foreground.
-    // Holding a socket open for a screen nobody is looking at spends the member's battery to learn
-    // something they cannot see.
     LifecycleResumeEffect(notifications) {
         notifications.onForeground()
         onPauseOrDispose { notifications.onBackground() }
@@ -208,9 +195,6 @@ fun BasetoolApp(
 
     UnknownLinkGuard(navController)
 
-    // Design ch. 03: "Re-tapping the active destination pops to its root and scrolls to top."
-    // The pop is navigation's; the scroll needs a signal that reaches the list, which is what this
-    // carries. Held here rather than inside the graph so it survives the graph's own rebuilds.
     val rootScroll = remember { RootScrollSignals() }
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
@@ -218,18 +202,10 @@ fun BasetoolApp(
 
     val onSelect: (KrtNavItem) -> Unit = { item ->
         when {
-            // "Mehr" is a menu, not a place. Every tap on it shows the menu — restoring the tab's
-            // saved state instead would land a member back on whatever secondary screen they left
-            // (Bank, Hangar, the licence register), and the one control that is supposed to get
-            // them OUT of a secondary screen would look broken. The other tabs keep their state,
-            // because those are places and coming back to where you were is the point.
             item.route == KrtDestination.More.route -> {
                 navController.navigateToTopLevel(item.route, restoreState = false)
             }
 
-            // Re-tapping the active destination goes back to that destination's own root — and
-            // to the top of it. A member who taps the tab they are already on is asking to start
-            // over; popping alone leaves them mid-list, which looks like the tap did nothing.
             item.route == selectedRoute -> {
                 navController.popBackStack(item.route, inclusive = false)
                 rootScroll.request(item.route)
@@ -247,23 +223,14 @@ fun BasetoolApp(
                 route = destination.route,
                 label = stringResource(destination.navLabelRes),
                 iconRes = destination.iconRes,
-                // No badge on any navigation entry. The Einsätze one carried a hardcoded 2 from
-                // the shell — a permanent claim that two of something were waiting, which no
-                // endpoint backs and which a device run found still on screen. The one real count
-                // in the app is the unread one, and it lives on the bell in the top bar; nothing in
-                // the API offers a "pending Einsätze" figure for this one to show instead.
                 badgeCount = null,
             )
         }
 
-    // Back on a destination root returns to Übersicht; back on Übersicht falls through to the
-    // system, which finishes the activity.
     BackHandler(enabled = current != KrtDestination.Home && navController.previousBackStackEntry == null) {
         navController.navigateToTopLevel(KrtDestination.Home.route)
     }
 
-    // What a pushed screen has published for the bar, if anything. A detail owns its head:
-    // chapters 06/10/11/12 all put the subject's own name there rather than its category.
     val screenBar = remember { mutableStateOf<ScreenTopBar?>(null) }
     val who by caller.caller.collectAsStateWithLifecycle()
     val detail = screenBar.value
@@ -295,10 +262,6 @@ fun BasetoolApp(
                 onSwitchOrg = { orgSwitcherOpen = true },
                 onNotifications = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
             )
-            // The content column caps at 1200 dp and centres; the top and bottom chrome keep
-            // spanning the full width. Foundations ch. 01 § 5 asks for exactly this, and the
-            // token existed while nothing applied it — on a 1280 dp tablet every list ran edge
-            // to edge, which is the readability problem the cap is there to prevent.
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter,
@@ -307,17 +270,12 @@ fun BasetoolApp(
                     LocalScreenTopBar provides screenBar,
                     LocalCaller provides who,
                 ) {
-                    // No content cap. Design ch. 01 §5 struck the 1200 dp one as a web rule: a
-                    // tablet surface picks one of §8's three answers instead, and each of those
-                    // decides its own widths.
                     BasetoolNavHost(
                         modifier = Modifier.fillMaxSize(),
                         navController = navController,
                         rootScroll = rootScroll,
                         onOpenDestination = { navController.navigateToTopLevel(it.route) },
                         onLogout = onLogout,
-                        // The shell owns the scope and the switcher, so it fills those two in
-                        // rather than making the activity carry a copy of either.
                         settings =
                             settings.copy(
                                 orgUnitName =
@@ -368,9 +326,6 @@ fun BasetoolApp(
                     )
                 }
             }
-            // While a selection runs, the foot of the screen belongs to its action bar — the
-            // navigation would offer a way out that silently drops what was picked (design ch. 09,
-            // artboard 5: „FAB und Bottom-Nav weichen der Aktionsleiste").
             if (!expanded && detail?.selection == null) {
                 KrtBottomBar(
                     items = navItems,
@@ -387,26 +342,6 @@ fun BasetoolApp(
             onDismiss = { orgSwitcherOpen = false },
             title = stringResource(R.string.org_switcher_title),
         ) {
-            // The no-pin row goes FIRST, and the list below it scrolls. Both matter once an admin
-            // is offered the whole catalogue: `KrtBottomSheet` lays its body out in a plain Column
-            // with no scroll of its own, so at roughly 48 dp a row an expanded phone sheet holds
-            // about fourteen — and this row, emitted last, was the first thing clipped off the
-            // bottom and out of reach. It is also the entry an admin wants most often, which is a
-            // second reason for it not to be at the end of eight units.
-            //
-            // Two wordings, because sending no pin means two different things. An ADMIN gets
-            // `adminAllScope` — literally every org unit; everyone else gets the union of their own
-            // reach (RequestScopeResolver#currentScopePredicate), never a unit they do not belong
-            // to (design ch. 02, artboard 7, verified in docs/archive/TENANCY_VERIFICATION.md). One label
-            // said „Alle Org-Einheiten" to both, which promises a member more than it delivers:
-            // measured on the test stack 2026-09-01, a member of two Staffeln read 884.8 SCU under
-            // this row while an admin read 1403.4.
-            //
-            // Read from `who` rather than through `isAdmin()`: this sheet is a sibling of the
-            // shell's content Box, so it sits OUTSIDE the CompositionLocalProvider that supplies
-            // LocalCaller — the composable would silently answer `null` here and every admin would
-            // get the narrow wording. Unknown still takes the narrow wording on purpose;
-            // over-promising during the load window is the same defect in miniature.
             KrtSheetOption(
                 text =
                     stringResource(
@@ -441,9 +376,8 @@ fun BasetoolApp(
 /**
  * Maps the current destination onto the navigation item that should appear selected.
  *
- * A destination reached through "Mehr" (Bank, Beförderung, …) keeps "Mehr" highlighted on a phone,
- * so the bar never claims the user is somewhere they are not. On a tablet the same destination may
- * have its own rail entry, in which case that one lights up instead.
+ * A destination reached through „Mehr" keeps „Mehr" highlighted unless the form factor gives it
+ * its own entry.
  *
  * @param current the active destination, already resolved to its navigation root.
  * @param destinations the navigation items of the current form factor.
@@ -462,16 +396,12 @@ private fun selectedTopLevelRoute(
 /**
  * The bar above every screen — either the destination's own title, or a pushed screen's head.
  *
- * Its own composable because assembling it is three decisions (which title, whether the org chip
- * belongs there, whether the bell does) and folding them into `BasetoolApp` pushed that function
- * past detekt's complexity cap. The cap was right: the bar is a thing, not a detail of the shell.
- *
  * @param destination the active destination, for its static title and for the back arrow.
  * @param detail what a pushed screen published, or `null` on a root.
  * @param orgUnit the active org context, for the chip.
  * @param unreadCount unread notifications, for the bell's badge.
- * @param navigable whether the navigation itself offers this destination — the bottom bar's five on
- *   a phone, the rail's eight on a tablet. It decides who owns the bar's right-hand side.
+ * @param navigable whether the navigation itself offers this destination; decides who owns the
+ *   bar's right-hand side.
  * @param onBack pops the back stack.
  * @param onSwitchOrg opens the org switcher.
  * @param onNotifications opens the inbox.
@@ -487,9 +417,6 @@ private fun AppTopBar(
     onSwitchOrg: () -> Unit,
     onNotifications: () -> Unit,
 ) {
-    // A running selection replaces the bar outright rather than decorating it: while a member is
-    // picking rows, the org chip and the bell offer a change of subject they did not ask for
-    // (design ch. 09, artboard 5). Checked first, because it outranks both other shapes.
     detail?.selection?.let { selecting ->
         KrtSelectionTopBar(
             label = pluralStringResource(R.plurals.inventory_selected, selecting.count, selecting.count),
@@ -499,13 +426,6 @@ private fun AppTopBar(
         )
         return
     }
-    // A published TITLE always names a thing; a destination title always names a section. A screen
-    // that publishes only actions — the Hangar's overflow — keeps its section bar, badge and bell.
-    //
-    // A tablet's list-detail pane does not reach this: `KrtListDetail` gives its detail slot its own
-    // publication target and draws the head inside the pane, because there the detail is a pane of
-    // the section rather than a destination — a selected row used to put „#1 · Offen · Prio 1" in a
-    // bar whose rail still highlighted AUFTRÄGE.
     val subject = detail?.title
     KrtTopBar(
         title = subject ?: stringResource(destination.titleRes),
@@ -513,35 +433,12 @@ private fun AppTopBar(
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         titleBadge = detail?.titleBadge,
         subtitle = detail?.subtitle,
-        // The back arrow and the right-hand side answer the same question and used to be asked
-        // differently: the arrow from the destination, the chip and the bell from whether a screen
-        // happened to publish a title. So every pushed screen that publishes none — the inbox, the
-        // settings, the licences, the Fleetview import, and everything reached from „Mehr" — got a
-        // back arrow AND the chip AND the bell. Artboards 07.1, 08.4, 13.1 and 15.1 all draw the
-        // same head: back arrow, title, and whatever that screen owns on the right. Nothing else.
         onBack = if (navigable) null else onBack,
-        // The bell is for choosing what to look at, so it belongs to the destinations the
-        // navigation itself offers; on anything pushed it competes with the thing being looked at,
-        // and on the inbox it would point at the screen it is on.
-        //
-        // The org pill is **not** the same case (round 14 · S13). A pushed screen keeps it when
-        // everything on it is bounded by the active unit — the Bank and the Handel are the two —
-        // because there it names the scope the numbers were read under, which a member cannot
-        // otherwise tell: „0 aUEC" means one thing for a Staffel and another for all units. A
-        // screen about one record still never gets it.
         orgBadge =
             if (!navigable && !destination.orgScoped) {
                 null
             } else {
                 {
-                    // No badge at all until the scope is known. A placeholder would be a
-                    // claim about which unit the member is acting in, and the header that
-                    // scopes every request would disagree with it. "All units" is a known
-                    // scope, not an unknown one, so it gets a badge of its own — dropping it
-                    // there would read as "no scope resolved" for a scope the member chose.
-                    // „Alle Einheiten" is the component sheet's own badge value (ch. 02 §3, which
-                    // lists it beside „Bereich Profit" and „SK VANGUARD"), not a short form invented
-                    // here for a chip that had to fit.
                     val label =
                         when {
                             orgUnit.allChosen -> stringResource(R.string.org_switcher_all_short)
@@ -550,9 +447,6 @@ private fun AppTopBar(
                     label?.let { text ->
                         KrtOrgBadge(
                             text = text,
-                            // Not tappable with a single membership: the sheet would offer
-                            // the choice the member is already in. Same rule as the web
-                            // sidebar.
                             onClick =
                                 if (orgUnit.switchable) onSwitchOrg else null,
                         )
@@ -566,18 +460,10 @@ private fun AppTopBar(
 }
 
 /**
- * Sends a `basetool://…` address this build does not declare to the in-fiction 404.
+ * Sends a `basetool://…` address the navigation graph does not match to the in-fiction 404 (design
+ * ch. 03).
  *
- * Design ch. 03 asks for exactly this — „Unbekannte Route → 404 in-fiction" — rather than the
- * dashboard, so a link that goes nowhere says so instead of looking like a link that went home. It
- * is reachable in practice: a notification from a newer server, a hand-typed address, a web link
- * into an area this build predates.
- *
- * The **graph** answers the question rather than a second copy of the route table, so the two
- * cannot drift apart. A catch-all `basetool://{route}` deep link was the first attempt and is
- * wrong: Navigation ranks a match by how many arguments it fills, the wildcard fills one, every
- * literal route fills none — so the wildcard outranked all of them and every deep link in the app
- * landed on „Signal Lost". It read correctly in review and only the device showed it.
+ * The graph itself is asked whether the link resolves, rather than a separate route table.
  *
  * @param navController the graph to ask and, when it has no answer, to navigate.
  */

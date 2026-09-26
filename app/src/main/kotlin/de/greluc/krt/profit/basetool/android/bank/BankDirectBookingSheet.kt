@@ -59,16 +59,11 @@ const val BANK_DIRECT_CONFIRM_TAG: String = "bank-direct-confirm"
 private val MODES = listOf(DirectBookingKind.DEPOSIT, DirectBookingKind.WITHDRAWAL, DirectBookingKind.TRANSFER)
 
 /**
- * What the in-game transfer fee does to this booking, before it is made.
+ * Shows what the in-game transfer fee does to this booking before it is made.
  *
- * The default is **on top**: the figure the member typed is what the recipient must receive, and
- * the account is debited `amount + fee` (ADR-0052, REQ-BANK-033). The app used to send neither the
- * flag nor any word about the fee, so a member typing 100 000 watched more than 100 000 leave the
- * account with nothing on screen having said so — and „Stand nach Buchung" beneath it showed the
- * balance the account would have had **without** the fee.
- *
- * Shown only where a fee applies. Guidance only: the authoritative fee is computed server-side at
- * booking time, and the block says so rather than implying this figure is binding.
+ * By default the fee is on top: the recipient receives the typed amount and the account is debited
+ * `amount + fee` (ADR-0052, REQ-BANK-033). Shown only where a fee applies, and marked as guidance,
+ * since the server computes the binding fee.
  *
  * @param state the form.
  * @param onEdit how the toggle reports back.
@@ -110,18 +105,10 @@ private fun FeeBlock(
 }
 
 /**
- * Who the money came from, or who it went to (REQ-BANK-044).
+ * Who the money came from or went to (REQ-BANK-044); not shown on a transfer.
  *
- * Not on a transfer: `BankTransferRequest` carries no counterparty at all, because both sides of a
- * transfer are accounts of the same unit and are already named by the two account fields.
- *
- * **Two identities, one of them.** A counterparty either holds a tool account — and is then picked
- * from `/users/search-bank`, the same list the web's picker uses — or does not, and is then typed
- * as a name. The toggle chooses; sending both would leave the server to guess which the member
- * meant, so the view model sends exactly the one the toggle points at.
- *
- * The **unit** is independent of that choice: a registered member can be acting for a unit, and an
- * external party can belong to one.
+ * A counterparty is either a registered member picked from `/users/search-bank` or a typed external
+ * name; only the one the toggle selects is sent. The org unit is chosen independently.
  *
  * @param state the form.
  * @param options what the picker currently offers.
@@ -160,9 +147,6 @@ private fun CounterpartyBlock(
         )
         KrtCheckboxRow(
             checked = state.counterpartyExternal,
-            // Switching identity clears the other one rather than leaving it in the state: a name
-            // typed under one mode and an id picked under the other are two answers to a question
-            // that takes one.
             onCheckedChange = { value ->
                 onEdit {
                     it.copy(
@@ -225,17 +209,11 @@ private fun CounterpartyBlock(
 }
 
 /**
- * Spreading a deposit across the squadron accounts.
+ * Spreads a deposit across the squadron accounts.
  *
- * Deposit only, and the two halves are one control: `BankDepositRequest` carries an
- * `@AssertTrue` refusing a split without a percentage and a percentage without a split. That rule
- * is `@Schema(hidden = true)`, so it reaches no generated client and no contract test — which is
- * exactly why the toggle and the field are drawn and cleared together here rather than left to
- * agree by habit.
- *
- * The preview rounds the way the web rounds: half-up on the share, remainder by subtraction, so
- * the two figures always add back to the deposit and the two clients cannot show different totals
- * for the same booking.
+ * Deposit only. The toggle and the percentage are set and cleared together, since the server refuses
+ * one without the other. The preview rounds half-up on the share and takes the remainder by
+ * subtraction, matching the web.
  *
  * @param state the form.
  * @param onEdit how the controls report back.
@@ -251,8 +229,6 @@ private fun SplitBlock(
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtCheckboxRow(
             checked = state.splitEnabled,
-            // Clearing the percentage with the toggle is the rule, not tidiness: a percentage left
-            // behind on an unticked toggle is exactly what the server refuses.
             onCheckedChange = { value ->
                 onEdit { it.copy(splitEnabled = value, splitPercent = if (value) it.splitPercent else "") }
             },
@@ -288,16 +264,10 @@ private fun SplitBlock(
 }
 
 /**
- * „Direktbuchung" — design ch. 12 artboard 9.
+ * „Direktbuchung": one sheet for deposit, withdrawal and transfer.
  *
- * **One sheet, three modes**, not the web's three forms: they differ in one field each, and a
- * member picking between three screens would have to know which one they wanted before seeing any
- * of them.
- *
- * The **holder is required in all three**, which is the server's rule too — custody is kept per org
- * unit, so a balance without a holder is money nobody is accountable for. „Stand nach Buchung" and
- * the „no second approval" warning both stand **above** the CTA, because they are what distinguish
- * this from a request and a member has to read them before typing, not after.
+ * A holder is required in every mode. „Stand nach Buchung" and the „no second approval" warning
+ * stand above the confirm button.
  *
  * @param state what the sheet holds.
  * @param accounts the unit's accounts, for the two pickers.
@@ -344,8 +314,6 @@ fun BankDirectBookingSheet(
                     ),
                 selectedIndex = MODES.indexOf(state.kind).coerceAtLeast(0),
                 onSelect = { picked -> onEdit { it.copy(kind = MODES[picked]) } },
-                // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
-                // the control is one row high, so they wrapped instead of fitting.
                 stretch = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -353,9 +321,6 @@ fun BankDirectBookingSheet(
                 label = stringResource(R.string.bank_direct_account),
                 accounts = accounts,
                 selected = state.accountId,
-                // The kind travels with the id, because the justification rule turns on it and the
-                // state is where that rule is enforced. Re-deriving it at submit time would put
-                // the rule in a second place, which is how the two drift apart.
                 onSelect = { id ->
                     val picked = accounts.firstOrNull { account -> account.id == id }
                     onEdit { it.copy(accountId = id, accountType = picked?.type) }
@@ -368,8 +333,6 @@ fun BankDirectBookingSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Validation-dimmed rather than locked, and said at the field: nothing here is
-            // forbidden, the figure is simply larger than the account holds.
             if (state.kind == DirectBookingKind.WITHDRAWAL &&
                 balance != null &&
                 (state.figure ?: BigDecimal.ZERO) > balance
@@ -415,9 +378,6 @@ fun BankDirectBookingSheet(
                     label = stringResource(R.string.bank_direct_justification),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                // Said at the field rather than only on the CTA: the requirement belongs to the
-                // ACCOUNT, so a member who has typed everything else needs to know why this one
-                // is asking and the next one did not.
                 if (state.justificationRequired && state.justification.isBlank()) {
                     KrtFieldError(text = stringResource(R.string.bank_direct_justification_required))
                 }
@@ -524,8 +484,6 @@ private fun HolderPicker(
     onSelect: (String) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    // Only active holders: an inactive one is somebody who no longer keeps custody, and offering
-    // them would set up a refusal the member cannot read off the list.
     val choices = holders.filter { it.active }
     KrtSelectField(
         value = choices.firstOrNull { it.id == selected }?.handle.orEmpty(),

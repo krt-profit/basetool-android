@@ -25,7 +25,7 @@ import java.math.BigDecimal
 /** Log tag for the price matrix. */
 private const val LOG_TAG = "MaterialMatrix"
 
-/** A page-walk that has read this many pages has met a matrix this screen was not built for. */
+/** The maximum number of pages the matrix page-walk reads before it stops. */
 private const val MAX_PAGES = 60
 
 /** Which side of the market the matrix is showing. */
@@ -51,13 +51,10 @@ data class MatrixRow(
     val prices: Map<String, BigDecimal>,
 ) {
     /**
-     * The best price in this row, or `null` when it has none.
-     *
-     * „Best" depends on the side, which is why the mode has to be passed in: the dearest buyer on
-     * the sell side, the cheapest seller on the buy side.
+     * The best price in this row: the highest on the sell side, the lowest on the buy side.
      *
      * @param mode which side is showing.
-     * @return the figure to tint.
+     * @return the figure to tint, or `null` when the row has none.
      */
     fun best(mode: MatrixMode): BigDecimal? =
         if (mode == MatrixMode.SELL) {
@@ -117,10 +114,7 @@ data class MaterialMatrixState(
         }
 
     /**
-     * The terminals that are still columns after the filters.
-     *
-     * Derived from the visible cells rather than from the whole matrix: a system filter that left
-     * a hundred empty columns standing would make the table unreadable to prove a point.
+     * The terminals that remain columns after the filters, derived from the visible cells.
      */
     val columns: List<MatrixColumn>
         get() =
@@ -149,12 +143,9 @@ data class MaterialMatrixState(
 }
 
 /**
- * Drives the Preis-Übersicht — the Material × Terminal matrix (REQ-APP-MAT-003).
+ * Drives the Preis-Übersicht, the Material × Terminal matrix (REQ-APP-MAT-003).
  *
- * **The matrix arrives a page at a time and is drawn as it arrives.** Design ch. 16 artboard 3:
- * „Nachladen zeilenweise … die Ladezeile bleibt unten stehen und wird nie durch einen Vollbild-
- * Spinner ersetzt." A full-screen spinner over a read that can take several round trips is the
- * thing the artboard rules out by name.
+ * The matrix is read a page at a time and drawn as it arrives.
  *
  * @property source where the matrix comes from.
  */
@@ -239,8 +230,6 @@ class MaterialMatrixViewModel(
                     }
                     page += 1
                 }
-                // The cap is a backstop, not an answer: say so rather than letting a truncated
-                // matrix read as the whole one (ADR-0104).
                 mutableState.update { it.copy(loading = false) }
             }
     }
