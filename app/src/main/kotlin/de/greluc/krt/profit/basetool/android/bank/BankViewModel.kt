@@ -74,23 +74,20 @@ data class BankAccountsState(
     /**
      * Seconds until the automatic retry, or `null` when none is pending.
      *
-     * Only ever set while the **first** load has failed with a retryable status. A screen that
-     * already has accounts on it keeps them and gets its banner instead — replacing loaded content
-     * with a countdown would take away what the member was reading to tell them something they can
-     * see without losing their place (design chapter 14).
+     * Only set while the first load has failed with a retryable status; a screen with accounts on it
+     * keeps them and shows a banner instead.
      */
     val retryIn: Int? = null,
 )
 
 /**
- * One Freigabe-Limit being set or removed (design ch. 12 artboard 10).
+ * One Freigabe-Limit being set or removed.
  *
- * @property target which limit — everyone, the Bereich, a role, or one member.
- * @property label what to call it on screen; the server's role code and the member's display name
- *   both arrive as text and neither is translated here.
+ * @property target which limit: everyone, the Bereich, a role, or one member.
+ * @property label what to call it on screen, shown untranslated as the server sent it.
  * @property amount what was typed.
- * @property fallback the limit that applies once this one is gone, already formatted. The removal
- *   confirmation names it, because removing a limit is not the same as setting it to zero.
+ * @property fallback the already formatted limit that applies once this one is gone, named by the
+ *   removal confirmation.
  */
 data class BankLimitDraft(
     val target: BankLimitTarget,
@@ -161,8 +158,6 @@ class BankViewModel(
 
     init {
         observeLiveSync(liveSync, setOf(LiveSyncTopic.ORGUNIT_BANK)) { _ ->
-            // Every section of this room ends in the same read, so the keys are not inspected:
-            // a balance moving and a setting changing both mean the overview is out of date.
             if (loadedOnce) {
                 reload(keepContent = true)
             }
@@ -181,11 +176,7 @@ class BankViewModel(
     }
 
     /**
-     * The chapter-14 retry ladder for this screen's first load.
-     *
-     * Shared rather than re-derived: the conditions under which a countdown is right are the same
-     * on every screen, and the copy this class used to hold is what [FirstLoadRetry] was extracted
-     * from.
+     * The shared [FirstLoadRetry] ladder for this screen's first load.
      */
     private val retry =
         FirstLoadRetry(
@@ -244,15 +235,9 @@ class BankViewModel(
 }
 
 /**
- * The Verwaltung-side seams of one account.
+ * The Verwaltung-side seams of one account, all supplied by the `bankStaff` repository.
  *
- * One holder rather than three constructor parameters, because they are one fact: the object graph
- * supplies all three from the same `bankStaff` repository, and a caller who has one has all of
- * them. Splitting them let the account view model grow to eight parameters, which is where detekt's
- * `LongParameterList` stopped it — correctly, since the third one was added without anybody asking
- * whether the first two were still separate concerns.
- *
- * `null` in place of the holder is what a member gets: no reversal, no office read, no report.
+ * A member gets `null` in place of this holder: no reversal, no office read, no report.
  *
  * @property reversals reverses a booking; bank staff only.
  * @property account reads the account and its ledger through the office rather than as a member.
@@ -267,10 +252,8 @@ data class BankStaffSeams(
 /**
  * Drives one account and its ledger.
  *
- * **The account and its first ledger page are read together and fail together.** Both carry the
- * same `canSee` gate, so a split state would model a case the server cannot produce — and a balance
- * shown over a missing ledger reads as an account with no history rather than one that failed to
- * load.
+ * The account and its first ledger page are read together and fail together, since both share the
+ * same `canSee` gate.
  *
  * @property source where the account comes from
  * @property accountId which account to load
@@ -286,10 +269,8 @@ class BankAccountViewModel(
     /**
      * Whether to read this account through the office rather than as a member.
      *
-     * A bank employee holding no view grant gets **403** on the member path for an account they are
-     * nevertheless responsible for — found on a device, where opening an account from the
-     * Verwaltung scope answered „Dieses Konto ist für dich nicht einsehbar." The office path answers
-     * for every account of the organisation, closed ones included.
+     * A bank employee without a view grant gets 403 on the member path; the office path answers for
+     * every account of the organisation, closed ones included.
      */
     private val viaOffice: Boolean
         get() = staff != null && throughTheOffice()
@@ -305,8 +286,6 @@ class BankAccountViewModel(
             liveSync,
             setOf(LiveSyncTopic.bankAccount(accountId), LiveSyncTopic.ORGUNIT_BANK),
         ) { _ ->
-            // A booking lands in the account's own room, a settings change in the org-unit one,
-            // and the screen shows both — so either re-reads both, in place.
             reload(keepContent = true)
             readSettings()
         }
@@ -334,8 +313,7 @@ class BankAccountViewModel(
          *
          * @param target which limit.
          * @param label what to call it.
-         * @param current what it stands at, prefilled so an adjustment is an edit rather than a
-         *   retype.
+         * @param current what it stands at, prefilled into the field.
          */
         fun edit(
             target: BankLimitTarget,
@@ -350,7 +328,7 @@ class BankAccountViewModel(
         }
 
         /**
-         * The amount changed.
+         * Records a change to the limit amount field.
          *
          * @param amount what was typed.
          */
@@ -376,7 +354,7 @@ class BankAccountViewModel(
         }
 
         /**
-         * Asks before „Entfernen".
+         * Opens the confirmation before „Entfernen".
          *
          * @param target which limit.
          * @param label what to call it.
@@ -447,14 +425,13 @@ class BankAccountViewModel(
             mutableState.value =
                 current.copy(
                     settingsOpen = true,
-                    // The wire carries `250000.0000`, and the field takes digits.
                     targetDraft = it.balanceTarget?.substringBefore('.')?.filter(Char::isDigit).orEmpty(),
                     error = null,
                 )
         }
     }
 
-    /** Closes it, discarding what was typed. */
+    /** Closes the settings sheet, discarding what was typed. */
     fun onDismissSettings() {
         mutableState.update { it.copy(settingsOpen = false, targetDraft = null, error = null) }
     }
@@ -532,8 +509,6 @@ class BankAccountViewModel(
                             error = null,
                         )
                     }
-                    // The settings region lives in the org-unit room, not the account's: it is what
-                    // the overview renders, and a peer looking at the list is who needs to know.
                     publishLiveSync(
                         liveSync,
                         LiveSyncTopic.ORGUNIT_BANK,
@@ -571,8 +546,6 @@ class BankAccountViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The lines on screen stay: a failed continuation is not a reason to replace a
-                    // working ledger with an error.
                     KrtLog.w(LOG_TAG) { "next ledger page failed: ${result.error}" }
                     mutableState.update { it.copy(loadingMore = false) }
                 }
@@ -645,9 +618,7 @@ class BankAccountViewModel(
     /**
      * Asks to reverse one booking.
      *
-     * Refused for a row that already carries a reversal — the server answers
-     * `BANK_ALREADY_REVERSED` and the row says so, so offering it would be a button that cannot
-     * work. Refused too without a transaction id, which is what the reversal addresses.
+     * Refused for a row that is already a reversal or has no transaction id.
      *
      * @param booking which one.
      */

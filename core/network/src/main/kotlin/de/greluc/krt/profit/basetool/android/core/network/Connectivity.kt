@@ -18,23 +18,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * Whether the device has a network at all.
+ * Whether the device has a network at all, so the app can disable writes while offline rather than
+ * queue them.
  *
- * It exists for one rule, and only for that rule: **offline disables writes** rather than queueing
- * them (design spec ch. 14). The optimistic-locking contract makes a queued mutation a conflict
- * factory — a save composed against a `version` that is minutes old is precisely the write the
- * server must refuse — so the app never holds one back for later. The honest alternative is to say
- * so before the member types: a greyed-out action is information, an error after a filled-in form
- * is a waste of their time.
- *
- * **It answers "is there a network", not "does the backend answer".** A captive portal, a dead VPN
- * or a backend outage all report connected. That is deliberate: the reads on the same screen fail
- * with their own message in those cases, and a stricter signal would need a probe request of its
- * own, running on a timer, to tell the member something the next tap tells them anyway.
- *
- * Backed by `ACCESS_NETWORK_STATE` — a normal permission, granted at install, with no runtime
- * prompt. Nothing leaves the device: the callback reports the local link's state and no request is
- * made (owner decision 2026-08-23, recorded in the plan's permission inventory).
+ * Reports the local link only, not whether the backend answers; backed by `ACCESS_NETWORK_STATE`
+ * and makes no request.
  */
 interface Connectivity {
     /**
@@ -60,9 +48,6 @@ class SystemConnectivity(
                 val manager =
                     context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
                 if (manager == null) {
-                    // No ConnectivityManager at all is not a device this app runs on, but the
-                    // getter is nullable and reporting "offline" would lock every write on a
-                    // phone that is very probably online.
                     trySend(true)
                     awaitClose {}
                     return@callbackFlow
@@ -80,8 +65,6 @@ class SystemConnectivity(
                             trySend(available.isNotEmpty())
                         }
                     }
-                // The set is tracked by hand because onLost fires per network: a phone dropping
-                // Wi-Fi while mobile data stays up would otherwise report itself offline.
                 trySend(manager.hasNetwork())
                 val request =
                     NetworkRequest.Builder()

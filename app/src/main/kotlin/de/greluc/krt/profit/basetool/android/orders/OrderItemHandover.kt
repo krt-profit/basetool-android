@@ -26,9 +26,9 @@ private const val LOG_TAG = "OrderItemHandover"
  * @property itemName what is being handed over.
  * @property ordered how many the line asked for.
  * @property delivered how many have already changed hands.
- * @property deliverable how many may still go — built and not yet delivered.
+ * @property deliverable how many may still go: built and not yet delivered.
  * @property amount how many this handover carries, as typed.
- * @property recipient who receives them, as typed. The server requires a non-blank handle.
+ * @property recipient who receives them, as typed; the server requires a non-blank handle.
  * @property saving whether the write is in flight.
  * @property error the last refusal.
  */
@@ -89,11 +89,10 @@ fun JobOrderItem.krtItemHandoverDraft(): ItemHandoverDraft? {
 }
 
 /**
- * „Übergabe erfassen" for an item Auftrag — the write that finishes one.
+ * „Übergabe erfassen" for an item Auftrag, the write that finishes one.
  *
- * > **The item order's own handover, not the material one with a count.** The server keeps the two
- * > on separate endpoints and separate logs; this one moves `deliveredAmount` and closes the order
- * > once every line is fully delivered.
+ * Uses the item order's own handover endpoint, which moves `deliveredAmount` and closes the order
+ * once every line is fully delivered.
  *
  * @property source where the write goes.
  * @property scope the view model's scope.
@@ -147,8 +146,6 @@ class OrderItemHandover(
                     itemId = draft.itemId,
                     amount = units,
                     recipientHandle = draft.recipient.trim(),
-                    // The device's clock: the member is the one who witnessed the handover, which
-                    // is why the web fills this in the browser for the same reason.
                     handoverTime = Instant.now().toString(),
                 )
             when (result) {

@@ -157,11 +157,8 @@ const val MISSION_FINANCE_SHEET_TAG: String = "mission-finance-sheet"
 const val MISSION_FINANCE_SAVE_TAG: String = "mission-finance-save"
 
 /**
- * One Einsatz in full (design spec ch. 06 §2), read-only.
- *
- * The head and the tab row stay put; only the tab's content scrolls, which is what the design
- * means by a sticky head. Signing up, checking in and adding a finance entry are mutations and
- * belong to Phase 3 — this screen deliberately carries no call to action.
+ * One Einsatz in full (design spec ch. 06 §2), with a sticky head and tab row over the scrolling
+ * tab content.
  *
  * @param state what to draw.
  * @param onTabSelected a tab was picked.
@@ -195,16 +192,9 @@ fun MissionDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
-    // Bound so the smart cast below survives; `state.phase` is a property read and Kotlin will not
-    // narrow it across the branch.
     val phase = state.phase
-    // Design ch. 14's conflict dialog, once for the screen rather than at each place an error
-    // is drawn: every one of them reads this same state, and a member must not be able to miss
-    // a refused save under a scrolled form.
     ConflictOn(error = state.error, onReload = onRefresh)
     state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
-    // Taking a manager off withdraws a right, so it asks first and names the person — the artboard's
-    // own distinction from changing the Einsatzleitung, which is replaced rather than taken away.
     state.structure.removingManager?.let { manager ->
         KrtModal(
             title = stringResource(R.string.mission_member_remove_manager_title),
@@ -221,10 +211,6 @@ fun MissionDetailScreen(
             )
         }
     }
-    // Boxed so the refusal can overlay the content. The toast belongs to the SCREEN and not to the
-    // route above it: this is the composable that draws the locked controls, so it is the one that
-    // has to be able to explain them — and a screen test that can reach the lock can then reach the
-    // explanation too, which is the half that makes the lock worth anything.
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             when {
@@ -243,9 +229,6 @@ fun MissionDetailScreen(
                     PullToRefreshBox(
                         isRefreshing = state.refreshing,
                         onRefresh = onRefresh,
-                        // weight, not fillMaxSize: the tab content takes what is left after the head,
-                        // the tab row and the CTA bar, so the bar stays on screen instead of being
-                        // pushed off by a long Ablauf.
                         modifier = Modifier.fillMaxWidth().weight(1f),
                     ) {
                         MissionTabContent(
@@ -261,14 +244,6 @@ fun MissionDetailScreen(
                             members = members,
                         )
                     }
-                    // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
-                    // tab row, where the screen's primary action scrolled away with the briefing and
-                    // read as one more fact about the Einsatz.
-                    //
-                    // Not on the Verwaltung tab. That tab carries its own primary action — starting
-                    // the Einsatz, and three section saves — and a filled „Anmelden" pinned over
-                    // them is a second primary about a different subject, which is the same rule
-                    // being broken from the other side. It also covered the form's last field.
                     if (state.tab != MissionTab.ADMIN) {
                         SignUpBar(state = state, actions = actions)
                     }
@@ -288,9 +263,6 @@ fun MissionDetailScreen(
                 }
 
                 phase is MissionDetailPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // failure state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -326,11 +298,8 @@ fun MissionDetailScreen(
 }
 
 /**
- * Everything the Einsatz detail floats over its content.
- *
- * All six are owned by the **screen** rather than by a tab, and for one reason: a sheet or a modal
- * owned by a `LazyColumn` item dies the moment that item recycles, which on a long Ablauf happens
- * while the member is still looking at it.
+ * Everything the Einsatz detail floats over its content, owned by the screen so a recycled list
+ * item cannot dismiss it.
  *
  * @param state what the screen knows.
  * @param admin what the Verwaltung tab can do.
@@ -386,16 +355,11 @@ private fun MissionDetailOverlays(
 /**
  * What a manager may do to somebody else's roster row, and what to say when they may not.
  *
- * A single object rather than five parameters threaded through three composables — the row is deep
- * in a `LazyListScope`, and each new manager action would otherwise widen every signature between
- * here and it.
- *
  * @property canManage whether the caller may act on another member's row; the server's own verdict.
- * @property enabled whether a write may run **right now** — online and not already saving. Separate
- *   from [canManage] on purpose: offline is not a missing grant, and the refusal must not claim it
- *   is.
- * @property checkInPossible whether the Einsatz has actually started, which is what the server
- *   requires before it accepts a check-in at all.
+ * @property enabled whether a write may run right now — online and not already saving; distinct
+ *   from [canManage].
+ * @property checkInPossible whether the Einsatz has started, which the server requires for a
+ *   check-in.
  * @property jobTypes the Funktionen a manager may assign; empty for a caller who may not.
  * @property denials where a refused tap is announced.
  * @property onCheckIn check the named row in or out.
@@ -462,14 +426,9 @@ data class MissionFinanceActions(
 )
 
 /**
- * The band under the head: what the caller may do to their own participation.
+ * The band under the head with the caller's own participation actions.
  *
- * It sits above the tabs rather than inside the roster because it is about the caller and not
- * about the list — and because a member opening an Einsatz to sign up should not have to find the
- * right tab first.
- *
- * Check-in and the payout preference appear only once there is a sign-up to apply them to. An
- * action that would 404 for want of a row is not an action.
+ * Check-in and the payout preference appear only once the caller has signed up.
  *
  * @param state the screen.
  * @param actions what it reports back.
@@ -486,9 +445,6 @@ private fun SignUpBar(
                 SignUpError(error = error)
             }
         }
-        // Only once the Einsatz has actually started: the server refuses a check-in before then,
-        // and a control that can only return a refusal is a control that lies. Saying why beats
-        // an action that is simply absent.
         if (mine != null && !state.checkInPossible) {
             Text(
                 text = stringResource(R.string.mission_detail_check_in_not_yet),
@@ -497,10 +453,6 @@ private fun SignUpBar(
                 modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             )
         }
-        // No standing payout row here any more (owner decision, 2026-09-07). The choice is made
-        // in the join sheet when signing up, and a radio pair pinned above the CTA bar for the rest
-        // of the Einsatz redrew that decision on every screen the member opened — a setting
-        // occupying the place the chapter reserves for the action they came for.
         KrtBottomCtaBar {
             SignUpAction(mine = mine, state = state, actions = actions)
             if (mine != null && state.checkInPossible) {
@@ -511,13 +463,7 @@ private fun SignUpBar(
 }
 
 /**
- * Signing up, and back out again — the bar's first action.
- *
- * **„Anmelden" is the filled one; „Abmelden" is not.** The chapter's ladder for this bar is „ONE
- * filled CTA, bottom-anchored: Anmelden → signed up it becomes green ‚Check-In', then ghost
- * ‘Check-Out'" — so exactly one button on the screen may be filled at a time, and once a member is
- * signed up that one is the green check-in beside this. Withdrawing drawn in filled orange put two
- * filled buttons side by side and gave the louder one to the action nobody came for.
+ * Signing up, and back out again — the bar's first action; only „Anmelden" is drawn filled.
  *
  * @param mine the caller's own row, or `null` when they have not signed up.
  * @param state the screen.
@@ -536,8 +482,6 @@ private fun RowScope.SignUpAction(
             .writeAlpha(state.writable)
     if (mine == null) {
         KrtCtaButton(
-            // The artboard's CTA carries the login glyph beside its label; signing up is an entry,
-            // and the icon says so before the word is read.
             text = stringResource(R.string.mission_detail_sign_up),
             iconRes = DesignR.drawable.ic_krt_login,
             onClick = actions.onToggleSignUp,
@@ -556,12 +500,8 @@ private fun RowScope.SignUpAction(
 }
 
 /**
- * Checking in, and back out — the second action of the bar, and only once the Einsatz has started.
- *
- * It carries a weight so the row divides evenly between the two buttons. `KrtBottomCtaBar` is an
- * End-aligned row and distributes nothing by itself: without weights the first button keeps its
- * measured width and the second is squeezed into whatever is left, which is how a label ends up
- * one letter per line.
+ * Checking in and back out, shown only once the Einsatz has started; weighted to share the row
+ * evenly.
  *
  * @param mine the caller's own row.
  * @param state the screen.
@@ -578,9 +518,6 @@ private fun RowScope.CheckInAction(
             .testTag(MISSION_CHECK_IN_TAG)
             .weight(1f)
             .writeAlpha(state.writable)
-    // Check-In is the example the button ladder gives for the success style: green marks a
-    // transition INTO an active state, and this is the one the whole screen exists for.
-    // Checking out is the reverse and stays a ghost — green both ways would say nothing.
     if (mine.checkedIn) {
         KrtGhostButton(
             text = stringResource(R.string.mission_detail_check_out),
@@ -610,9 +547,6 @@ private fun RowScope.CheckInAction(
  */
 @Composable
 internal fun SignUpError(error: ApiError) {
-    // A validation refusal is shown in the server's own words: it names the field and the rule
-    // („<3 digits>.<2 digits> erwartet"), which is what design ch. 02 §6 draws under a field. The
-    // generic sentence stays for everything the server did not spell out.
     val named = error.fieldMessage()
     KrtFieldError(
         text =
@@ -637,21 +571,10 @@ internal fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
- * The tab row — all eight, always.
+ * The horizontally scrollable row of all eight tabs.
  *
- * Horizontally scrollable because eight German tab labels do not fit a phone's width, and the
- * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen"
- * indistinguishable.
- *
- * > **Verwaltung is LOCKED for a non-manager, never hidden** (design ch. 06 artboard 6). An
- * > earlier build hid it, on the argument that a member who does not run this Einsatz is not one
- * > grant away from running it. The designer rejected that on 2026-08-29 and the rule stands as
- * > `REQ-APP-AUTH-013` always stated it: this organisation grants roles by hand, and **a function
- * > nobody sees is never requested**. The app's own Bank had it right all along.
- * >
- * > A tap on the locked tab does **not** open it. It raises the corner-bracket toast naming the
- * > Missions-Manager role, and the active tab stays where it was — which is why the gate lives
- * > here rather than only inside the tab.
+ * Verwaltung is drawn locked, never hidden, for a non-manager (REQ-APP-AUTH-013); tapping it raises
+ * the toast naming the Missions-Manager role and keeps the current tab.
  *
  * @param selected which tab is showing.
  * @param detail the Einsatz, for the per-tab counts.
@@ -681,8 +604,6 @@ private fun MissionTabRow(
                 KrtPageTab(
                     label = stringResource(tab.labelRes()),
                     count = detail?.let(tab::countIn),
-                    // 45 % alpha PLUS a lock glyph: alpha alone is indistinguishable from a
-                    // loading state, which is why the design system pairs the two.
                     locked = locked,
                 )
             },
@@ -769,9 +690,6 @@ private fun MissionTabContent(
                 financesTab(state, onRetryFinances, finances)
             }
 
-            // The form is filled by `onTabSelected` as the tab is entered, so it is present
-            // whenever this tab is. Null-safe rather than forced: a state restored with the tab
-            // already selected must draw an empty tab, never crash the screen.
             MissionTab.ADMIN -> {
                 state.adminForm?.let {
                     adminTab(
@@ -806,9 +724,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
         item { EmptyTab(R.string.mission_detail_empty_units) }
     }
     items(detail.units, key = { it.id }) { unit ->
-        // A flush card with its own header band — artboard 06-14. The unit is a container, and
-        // drawing it as one is what keeps a second unit's crew from reading as a continuation of
-        // the first one's.
         KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
             UnitHeader(unit = unit, structure = structure)
             Column(
@@ -857,15 +772,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
         item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
         return
     }
-    // One item for the whole checklist, not one per step. The rail between two steps runs through
-    // the gap between them, and a LazyColumn's own arrangement would cut it at every row. An
-    // Ablauf is a briefing checklist — bounded by what a person can read out before a start — so
-    // there is nothing here that laziness was protecting.
     item {
         Column {
-            // „Now" is derived, because the wire carries only `done` per step: the first step that
-            // is not ticked is the one the Einsatz is about. Artboard 13 marks it even on a
-            // „Geplant" Einsatz, which is what makes the list read as a plan rather than a log.
             val now = detail.steps.indexOfFirst { !it.done }
             detail.steps.forEachIndexed { index, step ->
                 KrtStepRow(
@@ -910,9 +818,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
         return
     }
     itemsIndexed(detail.objectives, key = { _, row -> row.id }) { index, objective ->
-        // Artboard 06-2's Ziele tab draws each goal as its own bordered row rather than as loose
-        // text on the page: a Ziel is a record with a kind and its own actions, and the frame is
-        // what separates it from the next one now that the actions sit on the same line.
         Row(
             modifier =
                 Modifier
@@ -930,10 +835,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
                 color = KrtPalette.Gray1,
                 modifier = Modifier.weight(1f),
             )
-            // A kind the app knows gets its German label; one it does not is shown verbatim.
-            // Both halves matter: „SECONDARY" is a wire constant and has no business on a
-            // German screen now that the picker has a word for it — and a goal whose kind the
-            // app does not recognise must still be marked rather than silently unlabelled.
             objective.kind?.let { KrtChip(text = it.kindLabel(), tone = it.kindTone()) }
             ObjectiveRowActions(
                 objective =
@@ -980,8 +881,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
             }
             Unit
         }
-        // A bordered row with the antenna glyph, per artboard 06-2. The whole row copies, and the
-        // trailing button says so — a surface whose only gesture is invisible is one nobody uses.
         Row(
             modifier =
                 Modifier
@@ -1006,8 +905,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
                 color = KrtPalette.TextMuted,
                 modifier = Modifier.weight(1f),
             )
-            // Data tone: the value stays white, never orange — a frequency is a readout, not an
-            // action (design system, chip canon).
             KrtChip(text = frequency.value, tone = KrtChipTone.Data)
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_clipboard_check,
@@ -1024,11 +921,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
 private val FREQUENCY_GLYPH = 20.dp
 
 /**
- * Dropping a frequency, as the trailing icon button of its row.
- *
- * Artboard 06-2 draws the row for **reading**, so it places no delete. The write exists and nothing
- * strikes it; it takes the row's own vocabulary rather than a labelled button that would be wider
- * than the value it removes.
+ * Removes a frequency, as the trailing icon button of its row.
  *
  * @param frequency the row.
  * @param structure the actions, for the gate and the refusal slot.
@@ -1071,11 +964,8 @@ internal fun EmptyTab(messageRes: Int) {
 }
 
 /**
- * The whole screen when the Einsatz could not be read.
- *
- * Three different sentences, because these are three different facts: refused, gone, or broken.
- * One generic message for all of them would tell a member to try again on an Einsatz they will
- * never be allowed to see.
+ * The whole screen when the Einsatz could not be read, with distinct text for refused, gone and
+ * broken.
  *
  * @param error what went wrong.
  */
@@ -1166,8 +1056,6 @@ fun MissionDetailRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // One refusal at a time, owned by the screen: the roster is a LazyColumn, and a toast owned by
-    // a row would vanish the moment that row scrolled out from under it.
     val denials = rememberDenialState()
     MissionDetailScreen(
         state = state,
@@ -1182,8 +1070,6 @@ fun MissionDetailRoute(
                 onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
                 onJoinPayout = viewModel::onJoinPayout,
                 onDesiredFunction = viewModel::onDesiredFunction,
-                // Through the roster, like every other write to a participant row — and only
-                // on a row that exists and while a write may run at all.
                 onChangeDesiredFunction = { job ->
                     state.mySignUp?.takeIf { state.writable }?.let { viewModel.roster.wish(it, job) }
                 },
@@ -1229,10 +1115,6 @@ fun MissionDetailRoute(
                 onDismissRemoveManager = viewModel.structure::dismissRemoveManager,
                 onRemoveCrew = viewModel.structure::removeCrew,
                 onEditUnit = { unit ->
-                    // Opens the rename sheet, filled from the unit — including its version, because
-                    // the write is a replace and a guessed counter would overwrite a concurrent
-                    // rename instead of colliding with it, and including its HVU mark, which the
-                    // one-field sheet does not show but the call still carries.
                     viewModel.structure.change {
                         it.copy(
                             unitName = unit.name,
@@ -1240,7 +1122,6 @@ fun MissionDetailRoute(
                             editingUnitVersion = unit.version,
                             editingUnitOriginalName = unit.name,
                             editingUnitHighValue = unit.highValue,
-                            // Carried into the draft so the save can send them back unchanged.
                             unitFields = unit.fields,
                         )
                     }
@@ -1252,9 +1133,6 @@ fun MissionDetailRoute(
                         draft.unitName,
                         draft.editingUnitHighValue,
                         version,
-                        // Echoed, not edited: the endpoint replaces the whole unit, so leaving
-                        // these out cleared the ship, the frequency, the responsible member and
-                        // the note on every rename.
                         draft.unitFields,
                     )
                 },
@@ -1322,9 +1200,7 @@ fun MissionDetailRoute(
  * How many rows this tab holds.
  *
  * @param detail the Einsatz as read.
- * @return the count the tab chip shows, or `null` for a tab whose content is not a list — Übersicht
- *   is prose and Finanzen is loaded separately, so a figure there would be either meaningless or a
- *   promise the screen cannot keep before the second read lands.
+ * @return the count the tab chip shows, or `null` for Übersicht and Finanzen.
  */
 private fun MissionTab.countIn(detail: MissionDetail): Int? =
     when (this) {
@@ -1339,19 +1215,10 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
     }
 
 /**
- * „Anmelden" — the sheet that collects what a sign-up carries with it.
+ * „Anmelden" — the sheet that collects the payout destination and an optional desired function
+ * (design ch. 06, artboard 3).
  *
- * One tap used to do it. Design ch. 06, artboard 3 makes it a sheet because two answers belong to
- * the moment of signing up and are awkward to find afterwards: where the share goes, and which
- * function the member would like on board.
- *
- * **The function is a wish, not a claim.** The artboard says so in as many words — „Optional —
- * Wunsch (desired), keine Zusage" — and the sheet repeats it under the chips, because a row of
- * pickable roles reads like an assignment unless something says otherwise. The mission's leadership
- * sets the planned function on the participants tab; this only records what was asked for.
- *
- * A refusal keeps the sheet and everything in it: nothing was written, and re-answering two
- * questions to retry is a charge for the server's reply.
+ * The function is a wish, not an assignment. A refusal keeps the sheet and its contents.
  *
  * @param sheet what has been collected so far.
  * @param subject the mission and its time, drawn under the title.
@@ -1400,8 +1267,6 @@ private fun MissionJoinSheet(
             )
             if (sheet.jobTypes.isNotEmpty()) {
                 JoinSectionLabel(text = stringResource(R.string.mission_join_function))
-                // FlowRow: five Funktionen do not fit one phone line, and a horizontal scroller
-                // would hide the ones past the edge behind a gesture nothing announces.
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -1444,13 +1309,7 @@ private fun MissionJoinSheet(
 }
 
 /**
- * A section heading inside the sign-up sheet.
- *
- * Neither [KrtFieldLabel][de.greluc.krt.profit.basetool.android.core.designsystem.component
- * .KrtFieldLabel], which is sentence-case body text for a single field, nor
- * [KrtSectionTitle][de.greluc.krt.profit.basetool.android.core.designsystem.component
- * .KrtSectionTitle], which fills the rest of its line with a rule. The artboard's sheet headings
- * are short uppercase labels with nothing after them.
+ * A short uppercase section heading inside the sign-up sheet, with no rule after it.
  *
  * @param text the heading.
  */

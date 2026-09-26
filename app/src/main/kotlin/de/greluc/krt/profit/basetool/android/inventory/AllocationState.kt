@@ -21,8 +21,8 @@ import java.math.BigDecimal
  * @property label what it is called.
  * @property subtitle its second line, or `null`.
  * @property amount what the member has set it to, as typed.
- * @property serverAmount what the server currently holds, so the sheet knows what actually has to
- *   be written — and whether the target needs a `POST` or a `PATCH`.
+ * @property serverAmount what the server currently holds, which decides what must be written and
+ *   whether as `POST` or `PATCH`.
  */
 data class AllocationRow(
     val targetId: String,
@@ -39,11 +39,7 @@ data class AllocationRow(
 }
 
 /**
- * The open Zuordnung sheet.
- *
- * The two splits are held apart all the way through, because the server reconciles them apart: the
- * same 642 SCU can be promised to an Auftrag and to an Einsatz, and one shared rest would be wrong
- * in both directions.
+ * The open Zuordnung sheet, with the Auftrag and Einsatz splits held separately.
  *
  * @property entry the stock entry being split.
  * @property jobOrders the Auftrag rows.
@@ -53,8 +49,7 @@ data class AllocationRow(
  * @property picking which add-picker is open, or `null`.
  * @property saving whether the write sequence is running.
  * @property error the last refusal.
- * @property partial how many rows had already been written when one failed — the sheet says so
- *   rather than implying nothing happened.
+ * @property partial how many rows had already been written when one failed.
  */
 data class AllocationSheetState(
     val entry: InventoryEntry,

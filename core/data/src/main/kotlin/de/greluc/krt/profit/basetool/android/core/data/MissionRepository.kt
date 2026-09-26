@@ -47,17 +47,13 @@ import java.math.BigDecimal
 import java.time.Instant
 
 /**
- * What the member has narrowed the Einsatz list to.
- *
- * A value type rather than a bag of parameters so the screen can hold one object, compare two for
- * equality (which is what decides whether a re-fetch is even needed) and reset to [NONE] in one
- * assignment.
+ * What the member has narrowed the Einsatz list to, compared by value to decide whether a re-fetch
+ * is needed.
  *
  * @property text the free-text name fragment, blank when the member has not searched
  * @property statuses the statuses the member ticked; empty means "decide from [includePast]"
- * @property includePast whether Einsätze that are over belong in the list — that is, whether
- *   `COMPLETED` and `CANCELLED` are asked for. It only has an effect while no status is ticked, in
- *   which case the ticked ones are the filter (the web app behaves the same way)
+ * @property includePast whether `COMPLETED` and `CANCELLED` are asked for; only effective while no
+ *   status is ticked
  * @property from lower bound on the planned start, or `null`
  * @property until upper bound on the planned start, or `null`
  */
@@ -79,10 +75,7 @@ data class MissionQuery(
 }
 
 /**
- * One function a member can ask to fill on board.
- *
- * The organisation calls these Funktionen and the API calls them job types; the app follows the
- * organisation, because that is the word on the artboard and in the room.
+ * One Funktion (API: job type) a member can ask to fill on board.
  *
  * @property id what the sign-up sends as `desiredJobTypeId`.
  * @property name what the member reads.
@@ -95,11 +88,7 @@ data class MissionJobType(
 /**
  * The Einsatz's books: the bookings a member makes against their own sign-up.
  *
- * Split from [MissionSource] rather than sitting inside it because the money is a **separately
- * guarded** surface — a member may read an Einsatz and still be refused its finances
- * (`isMemberOrAbove` + `canSeeMission`) — and because the interface had grown past what one
- * abstraction should carry. The same implementation serves both; the split is about what a caller
- * has to depend on, not about where the code lives.
+ * Guarded separately from the Einsatz itself (`isMemberOrAbove` + `canSeeMission`).
  */
 interface MissionFinanceSource {
     /**
@@ -148,52 +137,32 @@ interface MissionFinanceSource {
 }
 
 /**
- * Editing the Einsatz itself — the Verwaltung half of the detail screen.
- *
- * Its own seam rather than three more methods on [MissionSource]: these are the writes only a
- * manager may make, and they are the ones that carry the **section version counters**. Keeping them
- * together is what makes it obvious that the three sections are independent, which is the whole
- * point of there being three counters instead of one.
+ * The manager-only writes to the Einsatz's own record, each against its own section version
+ * counter.
  */
 interface MissionAdminSource {
     /**
      * The Operations the Kern section may attach this Einsatz to.
      *
-     * Read here rather than from the Operation side because that is where the write lives: an
-     * Einsatz joins an Operation through `PATCH /missions/{id}/core`, and the Operation's own
-     * form has no such field.
-     *
-     * @return what the picker may offer, id to name; empty on a failure, which shows as „nothing
-     *   to attach to" rather than as a banner over a form about something else.
+     * @return what the picker may offer, id to name; empty on a failure.
      */
     suspend fun operationOptions(): List<Pair<String, String>>
 
     /**
-     * The ships one of this Einsatz's units may be crewed with.
-     *
-     * Every ship a **registered participant** owns, plus every ship already pinned to one of the
-     * mission's units. Deliberately not org-unit-scoped: a participant brings their own ship
-     * whichever unit they belong to, so a cross-unit participant's ship is selectable here and
-     * nowhere else.
+     * The ships one of this Einsatz's units may be crewed with: every ship a registered participant
+     * owns plus every ship already pinned to one of its units, regardless of org unit.
      *
      * @param missionId the Einsatz.
-     * @return the ships, id to a readable label; empty on a failure, which reads as „no ship to
-     *   pick" rather than as a banner over a form about something else.
+     * @return the ships, id to a readable label; empty on a failure.
      */
     suspend fun unitShipOptions(missionId: String): List<Pair<String, String>>
 
     /**
-     * Rewrites the Kern section: title, briefing, meeting point, calendar link, status.
+     * Rewrites the Kern section: title, briefing, meeting point, calendar link, status, Operation.
      *
-     * > **This replaces the whole section, it does not merge into it.** The server assigns every
-     * > one of these fields unconditionally, so anything left out is set to `null` — which is how
-     * > the app used to clear a mission's `calendarLink` on every rename, having never mapped the
-     * > field at all. Pass the value as it stands unless you mean to change it.
-     *
-     * `status` is the exception and the only sparse field: `null` leaves the status alone. Setting
-     * it to `ACTIVE` also stamps `actualStartTime` server-side, in the same transaction, and bumps
-     * the **schedule** counter with it — which is what makes „Starten" one call rather than two,
-     * and why the caller must take the returned detail's counters rather than its own.
+     * The write replaces the whole section: every field left `null` is cleared, except `status`, where
+     * `null` leaves it untouched. Setting `ACTIVE` also stamps `actualStartTime` and bumps the schedule
+     * counter, so take the counters from the returned detail.
      *
      * @param missionId the Einsatz.
      * @param name the title; the server requires one.
@@ -201,15 +170,10 @@ interface MissionAdminSource {
      * @param meetingPoint the gathering place, or `null` to clear it.
      * @param calendarLink the external calendar entry, or `null` to clear it.
      * @param status the new lifecycle status, or `null` to leave it untouched.
-     * @param operationId which Operation the Einsatz belongs to, or `null` for none.
-     *
-     *   **This is the only way an Einsatz joins an Operation.** The Operation's own form carries no
-     *   such field — the wire has none — so the assignment lives here, on the mission's Kern
-     *   section, and needs that section's counter like everything else on it. The app used to send
-     *   neither, which left its own Operation form pointing at a control that did not exist.
-     * @param version the **Kern** section's counter as last read.
-     * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
-     *   stale, which is a concurrent edit of *this* section and nothing else.
+     * @param operationId which Operation the Einsatz belongs to, or `null` for none; the only way an
+     *   Einsatz joins an Operation.
+     * @param version the Kern section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure; `409` when the counter is stale.
      */
     suspend fun patchCore(
         missionId: String,
@@ -225,21 +189,16 @@ interface MissionAdminSource {
     /**
      * Rewrites the Zeitplan section.
      *
-     * `actualStartTime` is the one that matters operationally: the server refuses every check-in
-     * until it is set, so this is what opens the Einsatz for its participants.
+     * Check-ins are refused until `actualStartTime` is set.
      *
      * @param missionId the Einsatz.
      * @param meetingTime Teamspeak gathering, or `null`.
      * @param plannedStartTime the scheduled server join, or `null`.
      * @param plannedEndTime the scheduled end, or `null`.
      * @param actualStartTime when it actually began, or `null`.
-     * @param actualEndTime when it actually ended, or `null`.
-     *
-     *   **This is the only way an Einsatz ends.** No status stamps it — activation auto-stamps the
-     *   *start* and nothing does the same for the end — and setting it also closes every
-     *   participant's open end-time, which is what the payout figures rest on. The app sent it
-     *   never, so an Einsatz begun on a phone stayed open for everyone on it.
-     * @param version the **Zeitplan** section's counter as last read.
+     * @param actualEndTime when it actually ended, or `null`; the only way an Einsatz ends, and setting
+     *   it closes every participant's open end-time.
+     * @param version the Zeitplan section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun patchSchedule(
@@ -253,14 +212,12 @@ interface MissionAdminSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Switches the Einsatz between internal and open.
-     *
-     * Not cosmetic: an internal Einsatz is invisible to guests and to anonymous visitors, so this
-     * is the control that decides who can find it at all.
+     * Switches the Einsatz between internal and open; an internal Einsatz is invisible to guests and
+     * anonymous visitors.
      *
      * @param missionId the Einsatz.
      * @param internal whether it is squadron-internal.
-     * @param version the **flags** section's counter as last read.
+     * @param version the flags section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun patchFlags(
@@ -275,7 +232,7 @@ interface MissionAdminSource {
      * @param missionId the Einsatz.
      * @param userId the member, or `null` together with a [guestName].
      * @param guestName a guest's name when no member leads.
-     * @param version the **party-lead** section's counter, which is its own again.
+     * @param version the party-lead section's own counter.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun setPartyLead(
@@ -286,10 +243,7 @@ interface MissionAdminSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Grants somebody the right to manage this Einsatz.
-     *
-     * Gated on `canManageManagers`, which is a **narrower** right than managing the Einsatz — being
-     * able to run it does not imply being able to hand that out.
+     * Grants somebody the right to manage this Einsatz; gated on the narrower `canManageManagers`.
      *
      * @param missionId the Einsatz.
      * @param userId who.
@@ -327,20 +281,12 @@ interface MissionAdminSource {
 
 /**
  * The Einsatz's **structure**: its Einheiten, who is aboard them, and its radio plan.
- *
- * Split from [MissionAdminSource] because the two answer different questions — that one edits the
- * Einsatz's own record, this one edits what it is made of — and because one seam carrying both had
- * grown past what a single abstraction should ask a caller to depend on.
  */
 interface MissionStructureSource {
     /**
-     * Adds a frequency the catalogue does not hold — a channel invented for this Einsatz.
+     * Adds a frequency the catalogue does not hold, invented for this Einsatz.
      *
-     * A custom frequency exists **only** as a `/slim` endpoint, which answers with the new frequency
-     * list rather than the whole Einsatz — `POST …/frequencies/custom` is a `405` whose
-     * `supportedMethods` is `[DELETE]`, found on a device. So this takes the Einsatz as last read
-     * and splices the answer onto it, which keeps the caller's contract the same as every other
-     * structure write.
+     * The `/slim` endpoint answers with the frequency list only, which is spliced onto [current].
      *
      * @param missionId the Einsatz.
      * @param current the Einsatz as last read, for everything the slim answer does not carry.
@@ -402,11 +348,8 @@ interface MissionStructureSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Sets which Funktionen somebody holds aboard an Einheit.
-     *
-     * A **replace**: the request carries the whole set, so a caller that sends one id has assigned
-     * exactly that one and revoked the rest. Roles come from the **CREW** catalogue, which shares
-     * its names with the MISSION one — see [MissionPeopleSource.crewJobTypes].
+     * Replaces the set of Funktionen somebody holds aboard an Einheit, from the **CREW** catalogue
+     * ([MissionPeopleSource.crewJobTypes]).
      *
      * @param missionId the Einsatz.
      * @param unitId which Einheit.
@@ -436,13 +379,12 @@ interface MissionStructureSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Puts a participant aboard an Einheit — the artboard's „+ Person zuweisen".
+     * Puts a participant aboard an Einheit („+ Person zuweisen").
      *
      * @param missionId the Einsatz.
      * @param unitId which unit.
      * @param participantId who goes aboard; a roster row, not a user.
-     * @param jobTypeIds the roles they hold there. These are **CREW** job types, not the MISSION
-     *   ones a participant's own Funktion uses — the two catalogues share their names.
+     * @param jobTypeIds the roles they hold there, from the **CREW** catalogue.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun addCrew(
@@ -492,9 +434,8 @@ interface MissionSource : MissionFinanceSource {
      * Reads one Einsatz in full.
      *
      * @param id the Einsatz's id.
-     * @return everything the detail tabs draw, or a failure the caller can show. `NotFound` and
-     *   `Forbidden` are ordinary answers here: the backend refuses an outsider an internal or
-     *   terminal Einsatz with 403, and a stale link is a 404.
+     * @return everything the detail tabs draw, or a failure the caller can show; `Forbidden` and
+     *   `NotFound` are ordinary answers.
      */
     suspend fun detail(id: String): ApiResult<MissionDetail>
 
@@ -518,20 +459,7 @@ interface MissionSource : MissionFinanceSource {
     suspend fun jobTypes(): ApiResult<List<MissionJobType>>
 
     /**
-     * Signs the caller up, with what they asked for.
-     *
-     * Sent through `join`, which since basetool#1765 takes an optional body carrying the sheet's
-     * two answers — the desired function and the payout preference (backend ADR-0154).
-     *
-     * It used to go through `participants/add`, on the reasoning that both endpoints are guarded by
-     * `canSeeMission` and that this was therefore the same permission through a door that fits. The
-     * permission reasoning was right and the door was not: the **API vhost is a default-deny
-     * allow-list** and does not expose `participants/add`, so every sign-up was refused at the edge
-     * and never reached the backend — reported 2026-09-02, after the app had shipped. The check
-     * that endorsed the old route ran against the test stack, which has no vhost in front of it.
-     *
-     * `join` needs no `userId`: it derives the member from the token and can only ever enrol the
-     * caller, which is also why it needs no self-vs-manager check.
+     * Signs the caller up through `join`, which derives the member from the token (ADR-0154).
      *
      * @param missionId the mission.
      * @param desiredJobTypeId the function they would like, or `null` for no preference.
@@ -548,8 +476,8 @@ interface MissionSource : MissionFinanceSource {
      * Withdraws one sign-up.
      *
      * @param missionId the Einsatz.
-     * @param participantId the row to remove — the caller's own; the server refuses anyone else's
-     *   unless the caller manages the Einsatz.
+     * @param participantId the row to remove; the server refuses anyone else's unless the caller
+     *   manages the Einsatz.
      * @return success, or the classified failure.
      */
     suspend fun leave(
@@ -586,22 +514,15 @@ interface MissionSource : MissionFinanceSource {
     ): ApiResult<MissionParticipant>
 
     /**
-     * Assigns the job a participant flies — the design's „Funktion an Bord" select (chapter 06,
-     * artboard 2). Mission-management only; the server refuses it for anyone else.
+     * Assigns the job a participant flies („Funktion an Bord"); mission-management only.
      *
-     * **It sends the row whole, and it has to.** `PUT …/participants/{id}` is a replace, not a
-     * patch: the server clears `desiredMissionJobType`, `plannedMissionJobType` and `comment` when
-     * the request omits them, and only `payoutPreference` survives a null. So a call that carried
-     * nothing but the new function would silently wipe the member's own stated wish and their note
-     * — a data loss with no error and no visible cause, discoverable only by the member who typed
-     * the note. [participant] is therefore the row as last read, and everything not being changed
-     * is echoed back from it.
+     * `PUT …/participants/{id}` replaces the row, so every field not being changed is echoed from
+     * [participant].
      *
      * @param missionId the Einsatz.
      * @param participant the row as last read; supplies the version and the fields left alone.
      * @param jobTypeId the job to assign, or `null` to clear the assignment.
-     * @return the row as it now stands, or the classified failure — `409` when the version is
-     *   stale, which is the case a concurrent manager edit produces.
+     * @return the row as it now stands, or the classified failure; `409` when the version is stale.
      */
     suspend fun setPlannedFunction(
         missionId: String,
@@ -610,23 +531,14 @@ interface MissionSource : MissionFinanceSource {
     ): ApiResult<MissionParticipant>
 
     /**
-     * Changes the job a member ASKED for, after they have already signed up.
+     * Changes the job a member asked for after signing up.
      *
-     * The wish was previously settable only at sign-up: `join` carried it, and nothing else did, so
-     * a member who changed their mind had to withdraw and sign up again. The server has always
-     * accepted it on the participant update — this is the app catching up (owner decision,
-     * 2026-09-07), so the Funktionen modal can offer the wish beside the payout rather than showing
-     * a value nobody can change.
-     *
-     * Same echo discipline as [setPlannedFunction], and for the same reason: the `PUT` REPLACES the
-     * row, so everything not being changed is sent back exactly as last read. Getting that wrong
-     * here would clear an assignment a manager made, or check somebody out.
+     * The `PUT` replaces the row, so every field not being changed is echoed from [participant].
      *
      * @param missionId the Einsatz.
      * @param participant the row as last read; supplies the version and the fields left alone.
-     * @param jobTypeId the job they would like, or `null` to say they have no preference.
-     * @return the row as it now stands, or the classified failure — `409` when the version is
-     *   stale.
+     * @param jobTypeId the job they would like, or `null` for no preference.
+     * @return the row as it now stands, or the classified failure; `409` when the version is stale.
      */
     suspend fun setDesiredFunction(
         missionId: String,
@@ -636,21 +548,11 @@ interface MissionSource : MissionFinanceSource {
 }
 
 /**
- * Reads Einsätze from the backend.
+ * Reads and writes Einsätze through the backend, filtering the list server-side via
+ * `/missions/search`.
  *
- * **`/missions/search`, not `/missions`.** The plain list takes only paging, so every filter the
- * design puts in the chip row — text, status, date range, "Vergangene aus" — would have to be
- * applied on the device, over a page the server already truncated. One endpoint that filters
- * server-side is both correct and the only version that can say how many rows the filter matched.
- *
- * **The org scope is not sent here and must not be.** Which units a member sees is decided
- * server-side from their memberships and the `X-Active-Org-Unit-Id` header that
- * `MandatoryHeadersInterceptor` puts on every request. A client-side unit filter would be a second,
- * weaker copy of a rule that already exists.
- *
- * Nothing is cached. An Einsatz list is the kind of data whose staleness a member notices
- * immediately — someone signs up, a start time moves — and the screen offers pull-to-refresh
- * precisely because the answer is expected to change.
+ * The org scope is not sent; it follows from memberships and the `X-Active-Org-Unit-Id` header.
+ * Nothing is cached.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -671,18 +573,8 @@ class MissionRepository(
     /**
      * Reads one page of Einsätze.
      *
-     * "Vergangene aus" is a **status** filter, not a time one, exactly as the web app has it: it
-     * asks for `PLANNED` + `ACTIVE` and leaves out what is over. Expressed as a lower bound on the
-     * start instead — which is what this did until a device walk-through caught it — it also hides
-     * every *running* Einsatz, whose gathering time is by definition in the past. That is the row a
-     * member most needs, and the design's own "seit 15:57" wording for it could never appear.
-     *
-     * A ticked status wins: the member has then said which ones they want, and subtracting from
-     * that would answer "show me the finished ones" with an empty list.
-     *
-     * A row without an id is dropped: it cannot be opened, so offering it would produce a tap that
-     * does nothing. The drop is counted into neither total, because the server's total is what the
-     * screen states and quietly lowering it would hide the fault.
+     * "Vergangene aus" is a status filter (`PLANNED` + `ACTIVE`), applied only while no status is
+     * ticked. Rows without an id are dropped without lowering the server's total.
      *
      * @param query what the member narrowed to.
      * @param page the zero-based page index.
@@ -717,11 +609,7 @@ class MissionRepository(
     }
 
     /**
-     * Reads one Einsatz in full.
-     *
-     * One call, not seven: `GET /missions/{id}` already carries the participants, units, steps,
-     * objectives and frequencies, so a tab switch costs nothing and the seven tabs cannot disagree
-     * with each other about the same Einsatz.
+     * Reads one Einsatz in full with a single `GET /missions/{id}`, which carries every tab's data.
      *
      * @param id the Einsatz's id.
      * @return the Einsatz, or the classified failure.
@@ -731,12 +619,7 @@ class MissionRepository(
             .map { it.toModel(id) }
 
     /**
-     * Reads an Einsatz's money.
-     *
-     * **Two calls, and they succeed or fail together.** The totals band and the entries are one
-     * tab; showing a total over an empty list, or a list under a blank total, would read as data
-     * rather than as the partial answer it is. Both are guarded identically server-side
-     * (`isMemberOrAbove` + `canSeeMission`), so in practice they never disagree.
+     * Reads an Einsatz's money from two calls that succeed or fail together.
      *
      * @param missionId the Einsatz's id.
      * @return the Finanzen tab's contents, or the first failure.
@@ -835,8 +718,6 @@ class MissionRepository(
                     ListSerializer(OperationReferenceDto.serializer()),
                 )
         ) {
-            // Empty rather than a failure: the picker is one field on a form about something else,
-            // and a banner over the Kern section would be about the wrong thing.
             is ApiResult.Failure -> {
                 emptyList()
             }
@@ -864,8 +745,6 @@ class MissionRepository(
             is ApiResult.Success -> {
                 result.value.mapNotNull { ship ->
                     ship.id?.let { id ->
-                        // The type beside the name, because a participant may bring two of a kind
-                        // and „Carrack" twice is not a choice.
                         val label =
                             listOfNotNull(
                                 ship.name?.takeIf { it.isNotBlank() },
@@ -978,23 +857,10 @@ class MissionRepository(
         rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId/slim"))
 
     /**
-     * A manager puts a registered member on the roster, by user id.
+     * Lets a manager put a registered member on the roster by user id via
+     * `POST …/participants/by-id/slim` (REQ-MISSION-020).
      *
-     * `POST …/participants/by-id/slim` is manager-only (`canManageMission`) and takes the user id
-     * and nothing else (basetool REQ-MISSION-020, ADR-0170 amended 2026-09-22). It replaced two
-     * paths this method used before: the deprecated `POST …/participants`, which the server deleted
-     * early on 2026-09-22, and — since 2026-09-07 — `POST …/participants/slim`, which the API vhost
-     * never admitted. That second one is the add-ANYBODY endpoint (free-text name, org units,
-     * comment, open to every member who can see the Einsatz) and stays off the public edge on
-     * purpose, so from 2026-09-07 until this change the manager's „Teilnehmer hinzufügen" was
-     * refused at the edge.
-     *
-     * The answer is the **participant list**, not the whole Einsatz, so the Einsatz is re-read
-     * rather than patched from the answer: `registeredParticipants` is the server's own count and
-     * drives the head's „14 Teilnehmer", and deriving it from the list here would be inventing a
-     * number the server is the authority on. Every other slim write in this file does the same for
-     * the same reason; `addCustomFrequency` gets away with patching only because no counter hangs
-     * off a frequency.
+     * The answer is the participant list, so the Einsatz is re-read afterwards.
      */
     override suspend fun addParticipant(
         missionId: String,
@@ -1022,11 +888,6 @@ class MissionRepository(
                 UpdateParticipantRequest(
                     version = participant.version,
                     plannedMissionJobTypeId = jobTypeId,
-                    // Everything below is echoed, not chosen. `PUT …/participants/{id}` replaces
-                    // the row: the server clears desiredMissionJobType and comment on a null, and
-                    // assigns startTime/endTime UNCONDITIONALLY — so an omitted startTime checks
-                    // the member out. Only payoutPreference survives a null, and it is echoed too
-                    // rather than relying on that asymmetry.
                     desiredMissionJobTypeId = participant.desiredJobTypeId,
                     comment = participant.comment,
                     startTime = participant.startTime,
@@ -1054,8 +915,6 @@ class MissionRepository(
                 UpdateParticipantRequest(
                     version = participant.version,
                     desiredMissionJobTypeId = jobTypeId,
-                    // Echoed, not chosen — see setPlannedFunction: this PUT replaces the row, and
-                    // an omitted startTime checks the member out.
                     plannedMissionJobTypeId = participant.plannedJobTypeId,
                     comment = participant.comment,
                     startTime = participant.startTime,
@@ -1129,11 +988,7 @@ class MissionRepository(
         reader.delete("$FINANCE_ENTRIES_PATH/$entryId")
 
     /**
-     * Keeps the outcome of a write and throws its body away.
-     *
-     * The three finance writes answer with the entry, and the tab is re-read afterwards anyway:
-     * the totals above the list move with every one of them, and patching a row would leave a sum
-     * that disagrees with the rows under it.
+     * Keeps a finance write's outcome and discards its body; the tab is re-read afterwards.
      *
      * @param result what the write returned.
      * @return success or the failure, without the body.
@@ -1143,14 +998,10 @@ class MissionRepository(
             .map { }
 
     /**
-     * Turns a slim write's answer into the row.
-     *
-     * The slim endpoints answer with the participant alone rather than the whole Einsatz, which is
-     * the point of them: a check-in changes one timestamp and the detail is large.
+     * Turns a slim write's answer, the participant alone, into the row.
      *
      * @param result what the write returned.
-     * @return the row, or the failure — including an answer with no id, which no row can be built
-     *   from.
+     * @return the row, or the failure, including an answer with no id.
      */
     private fun oneRow(result: ApiResult<MissionParticipantDto>): ApiResult<MissionParticipant> =
         when (result) {
@@ -1166,9 +1017,6 @@ class MissionRepository(
 
     /**
      * Fetches the entries and folds them together with the already-read summary.
-     *
-     * Split out so [finances] reads as the one decision it makes -- either read fails, the tab
-     * fails -- rather than as a chain of early returns.
      *
      * @param missionId the Einsatz's id.
      * @param summary the totals already read.
@@ -1224,12 +1072,7 @@ class MissionRepository(
         const val DEFAULT_SORT: String = "plannedStartTime,asc"
 
         /**
-         * The sort once past missions are included.
-         *
-         * The screen is a flat list with no grouping, so the ascending order that serves the
-         * upcoming view puts the oldest mission the org ever ran at the top the moment „Vergangene"
-         * is switched on — burying everything recent pages deep. Looking backwards means most
-         * recent first, which is also what the web app's mission index uses.
+         * The sort once past missions are included: most recent planned start first.
          */
         const val PAST_SORT: String = "plannedStartTime,desc"
 
@@ -1254,18 +1097,8 @@ class MissionRepository(
         private const val OPERATIONS_LOOKUP_PATH = "/api/v1/operations/lookup"
 
         /**
-         * The Funktionen a **participant** can be asked for or assigned — read when the sign-up
-         * sheet opens, and by a manager on the Teilnehmer tab.
-         *
-         * `archetype=MISSION` is load-bearing, not tidiness. The catalogue holds two kinds and the
-         * backend refuses the wrong one outright — "Planned JobType Pilot is not of archetype
-         * MISSION", a 400 found on a device. `CREW` types (Pilot, Turret, Cargo, Scan, Medic) are
-         * the roles inside an Einheit and are assigned through the unit's crew, not through the
-         * participant. The two share names, which is exactly why an unfiltered read looks right on
-         * screen and fails on write.
-         *
-         * The web asks the same way, through two separate cached catalogues (`JOB_TYPES_MISSION` /
-         * `JOB_TYPES_CREW`).
+         * The participant Funktionen, restricted to `archetype=MISSION`; the server refuses a `CREW` type
+         * on a participant.
          */
         private const val JOB_TYPES_PATH = "/api/v1/job-types?archetype=MISSION&page=0&size=200"
 
@@ -1280,9 +1113,6 @@ class MissionRepository(
 
         /**
          * One participant row's slim path.
-         *
-         * The slim pair throughout: the legacy full-DTO endpoints are `@ApiDeprecation`-marked
-         * with a sunset, and they answer with the whole Einsatz for a change to one row.
          *
          * @param missionId the Einsatz's id.
          * @param participantId the row's id.
@@ -1356,9 +1186,6 @@ private fun MissionListDto.toModel(): Mission? {
     val missionId = id ?: return null
     return Mission(
         id = missionId,
-        // A nameless Einsatz would render as a blank row. The design has no placeholder for one, and
-        // an empty row is indistinguishable from a rendering bug, so the id stands in — meaningless
-        // to a member, but at least something to point at when reporting it.
         name = name?.takeIf { it.isNotBlank() } ?: missionId,
         status = MissionStatus.from(status),
         rawStatus = status,
@@ -1372,19 +1199,12 @@ private fun MissionListDto.toModel(): Mission? {
         orgUnitShorthand = owningSquadron?.shorthand,
         meetingPoint = meetingPoint,
         description = description?.takeIf { it.isNotBlank() },
-        // `registeredCount` **is** on `MissionListDto` — it was recorded as a contract gap when it
-        // was not, and the note outlived the gap. The dashboard band's „{n} angemeldet" (design
-        // ch. 05) has had something behind it since.
         registeredCount = registeredCount?.toInt(),
     )
 }
 
 /**
- * Parses an ISO-8601 instant from the wire.
- *
- * Returns `null` rather than throwing: one unparseable timestamp must cost that row its time
- * label, not the whole list its page. The contract says UTC ISO-8601, so this is a guard against a
- * server change, not an expected branch.
+ * Parses an ISO-8601 instant from the wire, so a bad timestamp costs only that value.
  *
  * @return the instant, or `null` when the value is not parseable.
  */
@@ -1392,10 +1212,7 @@ private fun String.toInstantOrNull(): Instant? =
     runCatching { Instant.parse(this) }.getOrNull()
 
 /**
- * The Einsatz's radio plan.
- *
- * Lifted out of [toModel] rather than nested in it: the mapper had grown past detekt's length
- * limit, and a frequency without an id is a row nothing can address, so it is dropped here.
+ * The Einsatz's radio plan, dropping frequencies without an id.
  *
  * @receiver what the server sent.
  * @return the frequencies, in the server's order.
@@ -1404,12 +1221,9 @@ private fun MissionDto.frequencyModels(): List<MissionFrequency> =
     frequencies.orEmpty().mapNotNull { frequency -> frequency.model() }
 
 /**
- * One frequency as the screen reads it.
+ * One frequency as the screen reads it: `name` is the label and `value` the number.
  *
- * **`name` is the label and `value` is the number**, and the app had them the other way round: the
- * label was rendered as the value and the number — the only reason the tab exists — was never read
- * at all. A custom frequency has no `frequencyType`, so its own `name` is its label; a preset one
- * takes the type's name and leaves `name` empty.
+ * A custom frequency labels itself with its own `name`; a preset one takes the type's name.
  *
  * @receiver the wire row.
  * @return the model, or `null` for a row the server sent without an id.
@@ -1419,8 +1233,6 @@ private fun MissionFrequencyDto.model(): MissionFrequency? =
         MissionFrequency(
             id = it,
             type = frequencyType?.name ?: name,
-            // The server's own digits, plain: `148.50` stays `148.50` rather than becoming
-            // `1.485E+2`, and no locale grouping is applied to a radio frequency.
             value = value?.toString().orEmpty(),
         )
     }
@@ -1428,11 +1240,8 @@ private fun MissionFrequencyDto.model(): MissionFrequency? =
 /**
  * One manager as the Verwaltung tab holds them.
  *
- * A row without an id is dropped: the id is what a removal addresses, so a chip without one is a
- * name nobody can act on.
- *
  * @receiver what the server sent.
- * @return the manager, or `null` when it carries no id.
+ * @return the manager, or `null` when it carries no id, which a removal needs.
  */
 private fun UserReferenceDto.toManager(): MissionManager? =
     id?.let {
@@ -1445,9 +1254,7 @@ private fun UserReferenceDto.toManager(): MissionManager? =
 /**
  * Maps the full wire DTO onto the detail model.
  *
- * @param requestedId the id that was asked for, used when the server omits its own. A detail read
- *   is addressed by id, so the answer is about that Einsatz whether or not it repeats it — which
- *   is why this cannot fail for want of one, and why there is no error branch for it.
+ * @param requestedId the id that was asked for, used when the server omits its own.
  * @return the Einsatz.
  */
 private fun MissionDto.toModel(requestedId: String): MissionDetail {
@@ -1455,8 +1262,6 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
     return MissionDetail(
         id = missionId,
         name = name.takeIf { it.isNotBlank() } ?: missionId,
-        // Absent for an outsider read (ADR-0034) rather than missing — the screen omits the
-        // section instead of showing an empty one.
         description = description?.takeIf { it.isNotBlank() },
         status = MissionStatus.from(status),
         rawStatus = status,
@@ -1499,9 +1304,6 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
                 )
             },
         frequencies = frequencyModels(),
-        // The server's own verdict, not a role check repeated here. An absent field means "no",
-        // so a server that predates the flag locks the manager actions instead of offering writes
-        // it would refuse.
         canManage = canEdit ?: false,
         coreVersion = sectionVersion(coreVersion),
         scheduleVersion = sectionVersion(scheduleVersion),
@@ -1513,12 +1315,7 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
 }
 
 /**
- * The Einsatz's structure, over HTTP.
- *
- * A second class rather than more methods on [MissionRepository], which had reached the point where
- * one type carried the list, the detail, the books, the roster, the Einsatz's own record **and**
- * everything it is made of. They share the same [ApiReader] and the same base URL; what differs is
- * what a caller has to depend on.
+ * The Einsatz's structure writes over HTTP, beside [MissionRepository] on the same [ApiReader].
  *
  * @property reader the HTTP seam.
  */
@@ -1607,9 +1404,6 @@ class MissionStructureRepository(
             missionId,
             reader.putAccepted(
                 "${missionPath(missionId)}/units/$unitId/slim",
-                // The version is echoed, not omitted. `UpdateUnitRequest` makes it nullable and the
-                // server treats an absent one as "do not check" — which turns a concurrent rename
-                // into a silent overwrite instead of the 409 the counter exists to raise.
                 UpdateUnitRequest(
                     name = name,
                     highValueUnit = highValue,
@@ -1672,14 +1466,7 @@ class MissionStructureRepository(
 }
 
 /**
- * Folds a write's answer back into the model.
- *
- * The Einsatz's writes answer with the **whole** Einsatz, so a screen swaps one object rather than
- * re-reading — which also means every other section's counter arrives fresh, and a manager can make
- * two edits in a row without a 409 from a version they never saw.
- *
- * At file scope because both [MissionRepository] and [MissionStructureRepository] fold the same
- * answer; two copies would be two places for the id fallback to drift.
+ * Folds a write's whole-Einsatz answer back into the model, with fresh counters for every section.
  *
  * @param missionId the Einsatz, for the id fallback.
  * @param result what the write answered.
@@ -1693,16 +1480,7 @@ private fun oneMission(
         .map { it.toModel(missionId) }
 
 /**
- * Re-reads the Einsatz after a write that answered with less than the whole of it.
- *
- * Every `/slim` write answers with the part it touched — one unit, one crew row, a manager list, or
- * `204` and nothing at all — rather than the whole Einsatz its deprecated twin returned. That is
- * the point of them: renaming one Einheit no longer ships every participant, every step and every
- * objective back over a mobile connection. It also means the answer cannot be folded into the
- * screen's model, so the Einsatz is re-read on a path the caller has just been reading anyway.
- *
- * At file scope beside [oneMission] and for the same reason: both repositories here make these
- * writes, and two copies would be two places for the re-read to drift.
+ * Re-reads the Einsatz after a `/slim` write that answered with only the part it touched.
  *
  * @param reader the API seam to re-read through.
  * @param missionId the Einsatz.
@@ -1735,10 +1513,8 @@ internal fun missionPath(missionId: String): String = "/api/v1/missions/$mission
 /**
  * A section's optimistic-lock counter as the client should hold it.
  *
- * An absent counter becomes `0`, which is deliberately **not** a value the server ever issues: a
- * write carrying it is refused with a `409` rather than silently overwriting whatever is there. The
- * three sections each have their own, so a stale one only ever collides with an edit of that same
- * section.
+ * An absent counter becomes `0`, which the server never issues, so a write carrying it is refused
+ * with a `409`.
  *
  * @param raw what the wire carried, or `null`.
  * @return the counter to echo on the next write against that section.
@@ -1756,28 +1532,17 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
     return MissionParticipant(
         id = participantId,
         userId = user?.id,
-        // The server redacts identity for an outsider, so all three can legitimately be absent.
         name = user?.effectiveName ?: user?.displayName ?: guestName.orEmpty(),
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
-        // The shorthand where there is one: the roster's second line has about 150 dp, and
-        // „SK Vanguard" fits where „Spezialkommando Vanguard" would be cut off mid-word.
         orgUnitNames = orgUnits.orEmpty().mapNotNull { it.shorthand ?: it.name },
-        // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
         startTime = startTime,
         endTime = endTime,
         comment = comment?.takeIf { it.isNotBlank() },
-        // Absent means the server stated no preference, which is a different thing from "pays
-        // out": the screen shows nothing rather than claiming one of the two.
         donating = payoutPreference?.let { it == MissionParticipantDto.PayoutPreference.DONATE },
-        // Both job types are carried separately even though `role` collapses them for display. A
-        // manager's write has to send the row whole (see setPlannedFunction), so the one it is not
-        // changing must survive the round trip.
         desiredJobTypeId = desiredMissionJobType?.id,
         desiredJobName = desiredMissionJobType?.name,
         plannedJobTypeId = plannedMissionJobType?.id,
-        // A row with no version cannot be written to. 0 is not a valid server version, so the
-        // write fails loudly with a 409 rather than silently overwriting a concurrent edit.
         version = version ?: 0L,
     )
 }
@@ -1827,8 +1592,6 @@ private fun MissionFinanceEntryDto.toModel(): MissionFinanceEntry? {
     val entryId = id ?: return null
     return MissionFinanceEntry(
         id = entryId,
-        // The sign is read once, here, from the server's own classification. Deriving it a second
-        // time from the amount's sign would let the two disagree.
         income = type?.value.equals("INCOME", ignoreCase = true),
         amount = amount?.toString().orEmpty(),
         note = note?.takeIf { it.isNotBlank() },

@@ -19,14 +19,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The org-unit pin, and the property everything else rests on: it answers **synchronously**.
- *
- * `MandatoryHeadersInterceptor` reads it on an OkHttp dispatcher thread that cannot suspend, and
- * the first request of a cold start goes out before anything has had a chance to warm a cache. The
- * earlier DataStore-backed version failed exactly there — measured on a device, the first three
- * requests of every launch carried no header — and the `runBlocking` patch for it deadlocked the
- * first test written against it. Hence a store whose contract is synchronous, and a test that reads
- * it the way the interceptor does: fresh object, no priming, no coroutine.
+ * Tests that the org-unit pin answers synchronously from a fresh, unprimed store, as `MandatoryHeadersInterceptor`
+ * reads it on an OkHttp thread.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -49,7 +43,6 @@ class ActiveOrgUnitStoreTest {
     fun `a pin is readable straight away, from a fresh instance and without priming`() {
         store().pin("b2")
 
-        // What the interceptor does on the first request of a cold start: build, read, done.
         assertEquals("b2", store().current())
     }
 
@@ -86,8 +79,6 @@ class ActiveOrgUnitStoreTest {
 
     @Test
     fun `the file name the backup rules exclude is the one the store uses`() {
-        // A rename here with no matching edit in the backup rules fails nothing at build time; it
-        // just starts carrying one member's org scope onto another member's device.
         assertEquals("${ActiveOrgUnitStore.FILE_NAME}.xml", ActiveOrgUnitStore.BACKUP_PATH)
     }
 

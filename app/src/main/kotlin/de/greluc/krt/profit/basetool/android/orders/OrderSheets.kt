@@ -42,10 +42,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * Where the order should stand.
+ * The status picker: where the order should stand.
  *
- * The current status is shown as chosen rather than left out: a picker that hides where the order
- * is now reads as if it had no status at all.
+ * The current status is shown as chosen rather than left out.
  *
  * @param current where it stands.
  * @param state the screen, for the save gate.
@@ -78,8 +77,6 @@ internal fun StatusSheet(
                     color = KrtPalette.TextMuted,
                 )
             }
-            // UNKNOWN is absent on purpose: it carries a status this build has never seen, and
-            // asking the server to move an order into one is not a request that means anything.
             STATUS_CHOICES.forEach { status ->
                 StatusOption(
                     status = status,
@@ -94,9 +91,6 @@ internal fun StatusSheet(
                 style = MaterialTheme.typography.labelSmall,
                 color = KrtPalette.TextMuted,
             )
-            // Two buttons, as artboard 8 draws them. A sheet whose only control commits is one a
-            // member leaves by guessing — the drag handle and the system gesture both work, and
-            // neither is a written way out of a screen that is about to change a state.
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.order_detail_status_cancel),
@@ -114,9 +108,6 @@ internal fun StatusSheet(
     val choice = state.statusChoice
     if (state.statusConfirmOpen && choice != null) {
         KrtModal(
-            // One title for both terminal moves asked "Auftrag abschließen?" while rejecting one.
-            // They are equally final and they do not mean the same thing — the modal has to name
-            // the move it is about to make, or the confirmation confirms the wrong thing.
             title =
                 stringResource(
                     if (choice == JobOrderStatus.REJECTED) {
@@ -125,9 +116,6 @@ internal fun StatusSheet(
                         R.string.order_detail_status_confirm_title
                     },
                 ),
-            // The button names the act it commits, not the mechanism. „Status übernehmen" on a
-            // modal that ends the order reads as one more step of the picker behind it (artboard
-            // 10-9 writes „ENDGÜLTIG ABSCHLIESSEN" / „… ABLEHNEN").
             confirmText =
                 stringResource(
                     if (choice == JobOrderStatus.REJECTED) {
@@ -138,16 +126,10 @@ internal fun StatusSheet(
                 ),
             onConfirm = actions.onApplyStatus,
             onDismiss = actions.onDismissStatusConfirm,
-            // Artboard 9 distinguishes the two terminal ends: finishing an order is orange, and
-            // refusing one is red. They are equally final, but they do not mean the same thing.
             tone =
                 if (choice == JobOrderStatus.REJECTED) KrtModalTone.Danger else KrtModalTone.Standard,
         ) {
             Text(
-                // Names the order as well as the state: the modal covers the sheet that covers the
-                // detail, and by the third layer „der Auftrag" no longer says which one. Where
-                // reopening happens belongs here too — it is the answer to the question the word
-                // „endgültig" raises (artboard 10-9).
                 text =
                     stringResource(
                         R.string.order_detail_status_confirm_body,
@@ -162,16 +144,10 @@ internal fun StatusSheet(
 }
 
 /**
- * One row of the status picker.
+ * One row of the status picker: a colour square, the status name and what choosing it commits to.
  *
- * Design ch. 10 artboard 8: a colour square for the status, its name, what choosing it commits the
- * member to, and - on the one the order is already in - an inert "Aktuell" chip instead of a
- * choice. Showing the current status rather than hiding it is orientation before brevity.
- *
- * **What this row cannot do yet:** the chapter wants the offered set to come from the API
- * (`transitions[]`, with a reason on the ones the caller's role forbids). `JobOrderDto` carries no
- * such field, so every non-current status is offered and the server refuses what it must. Guessing
- * the rules here would put a second, drifting copy of the permission model in the client.
+ * The current status carries an inert „Aktuell" chip instead of being selectable. Every other status
+ * is offered; the server refuses a transition the caller may not make.
  *
  * @param status the row's status.
  * @param current where the order stands.
@@ -202,15 +178,10 @@ private fun StatusOption(
         Box(modifier = Modifier.size(STATUS_SWATCH).background(status.swatch()))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                // Uppercase and bold, as artboard 8 draws the names: the row's own label is the
-                // thing being chosen, and the consequence line under it is the explanation. Set in
-                // the same weight they read as one paragraph of two sentences.
                 text = stringResource(status.labelRes()).krtUppercase(),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = if (isCurrent) KrtPalette.TextMuted else KrtPalette.White,
             )
-            // Only for a move that is on offer. The current status carries no consequence,
-            // because choosing it is not a thing the sheet lets anyone do.
             status.consequenceRes()?.takeIf { !isCurrent }?.let { note ->
                 Text(
                     text = stringResource(note),

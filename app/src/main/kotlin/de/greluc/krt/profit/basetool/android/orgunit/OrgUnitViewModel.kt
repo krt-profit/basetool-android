@@ -26,10 +26,10 @@ import kotlinx.coroutines.launch
  *
  * @property units the member's org units, in the order the server returned them.
  * @property activeId the unit currently pinned, or `null` while none is known or when [allChosen].
- * @property allChosen whether the member deliberately chose to act across all their units at once
- *   (design ch. 02, artboard 7). Distinct from "no unit resolved yet", which renders no badge.
- * @property loaded whether the list has been read at least once — `false` is "not asked yet",
- *   which is a different thing from "asked and there are none" and must not render the same way.
+ * @property allChosen whether the member chose to act across all their units at once; distinct from
+ *   no unit resolved yet, which renders no badge.
+ * @property loaded whether the list has been read at least once; `false` is not the same as an
+ *   empty list and renders differently.
  */
 data class OrgUnitState(
     val units: List<OrgUnit> = emptyList(),
@@ -52,41 +52,16 @@ data class OrgUnitState(
 /**
  * Decides which org unit the app acts in, and remembers it.
  *
- * The rule has three steps and each exists for a case that happens:
- *
- * 1. **A pin on this device wins.** It is the member's own choice and it survives restarts.
- * 2. **Otherwise the server decides** (`GET /api/v1/me/active-org-unit`) — a member who has never
- *    touched the switcher gets the same scope the web app would give them, rather than whichever
- *    unit happens to sort first.
- * 3. **Otherwise the first membership**, so a member with exactly one unit never sees an empty
- *    badge for a scope that was never in doubt.
- *
- * „Alle Org-Einheiten" sits outside those three: it sends no header, which the backend answers with
- * the union of the member's own units. It has to be *remembered as a choice* rather than stored as
- * the absence of one, or step 2 would quietly resolve a single unit again on the next cold start.
- *
- * A pin naming a unit the member no longer belongs to is dropped rather than kept: an administrator
- * can remove a membership, and a stale pin would send `X-Active-Org-Unit-Id` for a unit the backend
- * will refuse, which reads as "everything is empty" rather than as "you are no longer in that unit".
- *
- * Failures are not fatal here. The switcher is part of the frame around every screen, so a failed
- * read leaves the previous state and logs; blocking the shell on it would turn one failed request
- * into an unusable app.
- *
- * **An administrator is the exception to step 3, and it is not cosmetic.** The fallback below picks
- * `units.firstOrNull()` when nothing else settles it, which is right for a member — a single-unit
- * member should see their unit's name, not „Alle" for a scope that was never in doubt. For an
- * admin the offered list is the whole catalogue rather than a membership list, so that fallback
- * pins whatever sorts first (the Organisationsleitung, since the picker orders top-down) on the
- * very first launch. The consequence is not merely a wrong badge: a pinned admin is *excluded*
- * from ownerless rows, because `AccessGateService` grants those only while the header is absent.
- * So the one caller for whom „alles sehen" is the point would silently start narrowed. An admin
- * with no stored pin therefore defaults to „Alle Org-Einheiten", not to a unit.
+ * Resolution order: a pin on this device, else the server's default
+ * (`GET /api/v1/me/active-org-unit`), else the first membership; an administrator without a pin
+ * defaults to „Alle Org-Einheiten" instead. „Alle Org-Einheiten" is stored as an explicit choice
+ * and sends no header. A pin for a unit the member no longer belongs to is dropped. Read failures
+ * keep the previous state and are logged.
  *
  * @property source reads the memberships and the server's default
  * @property store the pin, shared with the request interceptor
- * @property identity answers whether the caller is an admin; a failed read is treated as "not an
- *   admin", which lands on the pre-existing member behaviour rather than on a widened one
+ * @property identity answers whether the caller is an admin; a failed read is treated as not an
+ *   admin
  */
 class OrgUnitViewModel(
     private val source: OrgUnitSource,
@@ -125,18 +100,11 @@ class OrgUnitViewModel(
                 return@launch
             }
             if (store.current() == null && isAdmin()) {
-                // First launch for an administrator. Left to resolveActive() this would pin the
-                // first unit of the whole catalogue and start them narrowed — see the note on the
-                // class. Written to the store, not just to the state, so the interceptor and the
-                // next cold start agree with the badge.
                 store.pinAll()
                 mutableState.value = OrgUnitState(units = units, allChosen = true, loaded = true)
                 return@launch
             }
             val active = resolveActive(units)
-            // Written back so the interceptor and the next cold start agree with what is on screen.
-            // Resolving to a unit and NOT storing it would leave the header absent while the badge
-            // claimed a scope — the two must not be able to disagree.
             if (active != null && active != store.current()) {
                 store.pin(active)
             }
@@ -155,8 +123,6 @@ class OrgUnitViewModel(
             KrtLog.w(LOG_TAG) { "ignored a pin for an org unit that is not one of the member's" }
             return
         }
-        // No coroutine: the store is synchronous now, and the badge should move on the tap
-        // rather than a frame later.
         store.pin(orgUnitId)
         mutableState.update { it.copy(activeId = orgUnitId, allChosen = false) }
     }
@@ -187,8 +153,6 @@ class OrgUnitViewModel(
             if (stored in known) {
                 return stored
             }
-            // The membership is gone. Dropping the pin here rather than at the next request means
-            // the badge and the header change together.
             KrtLog.w(LOG_TAG) { "the pinned org unit is no longer a membership; dropping the pin" }
             store.clear()
         }

@@ -56,15 +56,10 @@ data class OrderItemHandoverActions(
 )
 
 /**
- * „Übergabe erfassen" for an item line — the write that finishes an item Auftrag.
+ * „Übergabe erfassen" for an item line, the write that finishes an item Auftrag.
  *
- * Design ch. 10's own note: „Getrennter Screen vom Material-Fall, weil die Einheit ‚Stück' ist …
- * dieselbe Form, andere Felder." The shape is the material handover's; the fields are counts, and
- * there is no stock row to book out because the units were built rather than fetched.
- *
- * > **The ceiling is what has been built, not what was ordered.** A unit can only be handed over
- * > once it has been manufactured, and the server refuses anything above the
- * > manufactured-but-undelivered count. The stepper stops there and the form says why.
+ * Counts pieces and books out no stock row, since the units were built. The stepper stops at the
+ * manufactured-but-undelivered count, which is the server's ceiling, and the form says why.
  *
  * @param actions the draft and what it reports.
  */

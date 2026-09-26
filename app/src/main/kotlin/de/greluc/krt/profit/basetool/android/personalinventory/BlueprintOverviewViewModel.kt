@@ -108,10 +108,8 @@ data class BlueprintOverviewState(
     /**
      * The rows the list draws.
      *
-     * „Nicht erfasst" is applied **here**, not on the wire: the endpoint takes a search term and
-     * paging and nothing else. So the filter narrows what has been loaded, and the screen says so
-     * while more pages exist rather than letting a short list read as a complete answer
-     * (ADR-0104).
+     * The „Nicht erfasst" filter is applied client-side to the loaded rows, and the screen says so while
+     * more pages exist (ADR-0104).
      */
     val visible: List<BlueprintOverviewEntry>
         get() =
@@ -126,14 +124,9 @@ data class BlueprintOverviewState(
 }
 
 /**
- * Drives „Blueprint-Verfügbarkeit" (design ch. 17 artboard 6, `REQ-APP-PI-014`).
+ * Drives „Blueprint-Verfügbarkeit" (REQ-APP-PI-014).
  *
- * **A screen of its own under „Mehr", not a third tab of „Mein Inventar".** The data is org-wide
- * and the screen has its own role; org-wide rows in a personal list would be the wrong place twice
- * over.
- *
- * **Owners load per row.** The overview carries counts only, and one row's failure must not take
- * the list with it — the artboard draws all three per-row states.
+ * Owners load per row, so one row's failure does not fail the list.
  *
  * @property source the two reads.
  */
@@ -214,10 +207,7 @@ class BlueprintOverviewViewModel(
     }
 
     /**
-     * Reads one row's owners, once.
-     *
-     * Called as the card appears rather than for the whole page: the list is org-wide and a
-     * request per row up front would be dozens of calls for rows nobody scrolled to.
+     * Reads one row's owners, once, when its card appears.
      *
      * @param entry the row.
      */

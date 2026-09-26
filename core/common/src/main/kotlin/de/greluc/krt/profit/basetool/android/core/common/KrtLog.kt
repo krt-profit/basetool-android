@@ -10,20 +10,13 @@ package de.greluc.krt.profit.basetool.android.core.common
 import android.util.Log
 
 /**
- * The single logging facade of the app.
+ * The app's single logging facade; `android.util.Log` is called nowhere else.
  *
- * `android.util.Log` is not called anywhere else — a CI gate forbids it (security concept §4,
- * "static guardrails"). Two reasons, and neither is style:
+ * - It is the one place redaction applies: tokens, callsigns and e-mail addresses never reach a log
+ *   sink (REQ-OBS-004).
+ * - [minimumLevel] is raised for release builds.
  *
- * 1. **Redaction has to have one place.** Tokens, callsigns and e-mail addresses must never reach a
- *    log sink (main repo REQ-OBS-004, which this app inherits by contract). A facade is where a
- *    redaction rule can actually be applied and tested; scattered `Log.d` calls are where one gets
- *    forgotten.
- * 2. **Release builds must be quiet by default.** [minimumLevel] is raised for release builds
- *    rather than relying on every call site remembering to guard itself.
- *
- * The API is deliberately small: no varargs formatting, no lazy-message overloads beyond the lambda
- * below, no per-class logger instances. A tag is a short subsystem name, not a class name.
+ * A tag is a short subsystem name, not a class name.
  */
 object KrtLog {
     /** Emitted for every message this facade writes, so a subsystem is greppable in logcat. */

@@ -13,17 +13,10 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * A PKCE verifier and the challenge derived from it (RFC 7636).
+ * A PKCE verifier and its S256 challenge (RFC 7636).
  *
- * PKCE is what makes the authorization code useless to anyone who intercepts it: the code is
- * redeemed only together with the verifier, and the verifier never leaves the app. On Android that
- * matters concretely — the redirect travels through the OS, and on the dev realm it travels through
- * a custom scheme any installed app may claim.
- *
- * **S256 only.** The `plain` method puts the verifier in the authorization request, which is the
- * one place the code's protection must not be. The realm enforces S256 for this client
- * (security concept §3); sending anything else would be refused, and offering the option in code
- * would only create a way to get it wrong.
+ * The code is redeemable only with the verifier, which never leaves the app. The `plain` method is
+ * not supported.
  *
  * @property verifier the high-entropy secret, kept until the code is redeemed
  * @property challenge the base64url SHA-256 of [verifier], sent in the authorization request

@@ -40,7 +40,6 @@ class NotificationDestinationsTest {
 
     @Test
     fun `a booking request leads nowhere, because this build has no approvals screen`() {
-        // Sending a member to the account instead would answer a question they did not ask.
         assertNull(notificationDestination(notification("BANK_BOOKING_REQUEST")))
     }
 

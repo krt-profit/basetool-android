@@ -121,8 +121,6 @@ class BankScreenTest {
         showAccounts(BankAccountsState(accounts = listOf(account()), phase = BankPhase.Ready))
 
         compose.onNodeWithText("Einsatzkasse").assertIsDisplayed()
-        // Twice on screen with a single account: once in the GESAMT card above the list (design
-        // ch. 12 artboard 1) and once on the card itself. That the two agree is the point.
         compose.onAllNodesWithText("84.200").assertCountEquals(2)
         compose.onNodeWithText("GESAMT").assertIsDisplayed()
         compose.onNodeWithTag(BANK_ACCOUNTS_TAG).assertIsDisplayed()
@@ -146,7 +144,6 @@ class BankScreenTest {
 
     @Test
     fun `no visible account is stated as a fact`() {
-        // A member without a view grant sees only what is public to everyone, which can be nothing.
         showAccounts(BankAccountsState(phase = BankPhase.Ready))
 
         compose.onNodeWithText("Keine Konten").assertIsDisplayed()
@@ -183,7 +180,6 @@ class BankScreenTest {
 
     @Test
     fun `a kind this build does not know renders without a sign`() {
-        // Better an unsigned figure than a direction nobody checked.
         showAccount(
             BankAccountState(
                 accountId = "a1",
@@ -231,7 +227,6 @@ class BankScreenTest {
 
     @Test
     fun `an account offers its settings only to the member who may change them`() {
-        // The flags are per-account facts the server states, not a role the app worked out.
         showAccount(readyAccount(settings = null))
 
         compose.onAllNodesWithTag(BANK_SETTINGS_TAG).assertCountEquals(0)

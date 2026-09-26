@@ -12,29 +12,14 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Every DataStore in this app is opened once per **process**, and only by the application.
+ * Checks the sources so every DataStore is opened only by [BasetoolApplication], once per process.
  *
- * DataStore refuses a second instance on the same file by throwing, and the throw lands wherever
- * the store is first read — which is never where the mistake was made. The symptom is that the app
- * vanishes to the home screen, so it reads as a crash in whatever screen happened to be opening.
- *
- * This has now happened twice. The token store was moved to [BasetoolApplication] after a language
- * change killed the app; the settings store repeated it and killed the app on a notification tap,
- * because that intent carries `FLAG_ACTIVITY_NEW_TASK`, Navigation rebuilds the task, and the
- * replacement activity opened a second `krt_settings`.
- *
- * Both fixes were correct and neither was pinned, which is why the second one was possible. This
- * test is deliberately about the **class** of defect rather than either instance: it reads the
- * sources and fails if a store is opened anywhere but the application. A future store gets the same
- * guard for free — and the failure message says where to put it.
+ * A second instance on the same file throws wherever the store is first read.
  */
 class ProcessStoreOwnershipTest {
     private companion object {
         /**
-         * The calls that open a store. Anything matching these outside [OWNER] is the defect.
-         *
-         * Matched as text on purpose: the question is "does this source file open a store", which
-         * is a syntactic fact, and a reflective check could only see the store that was reached.
+         * The calls that open a store; any match outside [OWNER] is a defect. Matched as text.
          */
         val OPENERS =
             listOf(

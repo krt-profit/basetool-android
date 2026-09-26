@@ -54,7 +54,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 /** Test handle for the price table. */
 const val MATERIAL_PRICES_TAG: String = "material-prices"
 
-/** The two price columns of the table, after the terminal name. */
+/** The price table's column count: the terminal name and its two prices. */
 private const val PRICE_COLUMNS = 3
 
 /** The buy column's index in the price table. */
@@ -64,12 +64,10 @@ private const val BUY_COLUMN = 1
 private const val SELL_COLUMN = 2
 
 /**
- * „Preise und Terminals" — one material's market (design spec ch. 16, artboard 2).
+ * „Preise und Terminals": one material's prices per terminal.
  *
- * > **This table stays a table on the phone**, which chapter 16 calls out as a deliberate exception
- * > to the design system's „a table is the tablet shape" rule: comparing prices *is* reading down a
- * > column, and a stack of cards makes that impossible. The way it stays inside the rules is that
- * > the column headings shorten on a narrow window rather than the page scrolling sideways.
+ * The table stays a table on the phone; its column headings shorten on a narrow window instead of
+ * scrolling sideways.
  *
  * @param state what to draw.
  * @param onFilter the terminal search changed.
@@ -111,10 +109,7 @@ fun MaterialDetailScreen(
 }
 
 /**
- * The failure state.
- *
- * A 404 here is the design's „Material nicht gefunden" and is chapter 14's own picture, because a
- * material that does not exist is a signal-lost, not an empty price list.
+ * The failure state; a 404 shows „Material nicht gefunden".
  *
  * @param state what to draw.
  * @param onRefresh ask again.
@@ -249,8 +244,6 @@ private fun BestPrices(state: MaterialDetailState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
-            // The place goes under the figure, never inside the tile: the tile draws one number,
-            // and a terminal name in it would read as part of that number.
             sell?.let { Place(name = it.terminal) }
             buy?.let { Place(name = it.terminal) }
         }
@@ -299,8 +292,6 @@ private fun PriceTable(state: MaterialDetailState) {
         )
         return
     }
-    // Chapter 16: the headings shorten on a narrow window; the rule against sideways scrolling is
-    // kept, and the table stays a table.
     val wide = isWideWindow()
     val columns =
         listOf(
@@ -333,8 +324,6 @@ private fun PriceTable(state: MaterialDetailState) {
         KrtTableCell(
             text = text ?: stringResource(R.string.krt_empty_value),
             column = columns[column],
-            // The best row on each side is the answer the page came for; the weight marks it where
-            // it stands rather than making the reader compare a column of equals.
             emphasis = column in 1 until PRICE_COLUMNS && text != null && price.krtIsBest(state, column),
             tone = priceTone(column = column, present = text != null),
         )
@@ -342,15 +331,10 @@ private fun PriceTable(state: MaterialDetailState) {
 }
 
 /**
- * What each price column MEANS, in the chapter's own two tints.
- *
- * A buy price is money out and a sell price is money in. Both columns were drawn in the same
- * neutral grey, which made „Einkauf" and „Verkauf" tell apart only by their heading — and on a
- * table a reader scans down a column rather than across a row.
+ * The tint of a price column: buy prices as money out, sell prices as money in.
  *
  * @param column the cell's column index.
- * @param present whether the cell holds a figure at all; a dash takes no tint, because there is no
- *   cost and no return to colour.
+ * @param present whether the cell holds a figure at all; a dash takes no tint.
  * @return the colour, or `null` to keep the table's default.
  */
 @Composable
@@ -384,10 +368,7 @@ private fun MaterialTerminalPrice.krtIsBest(
     }
 
 /**
- * „Veredelt · SCU", where the server said so.
- *
- * Unlike the list row this page **has** the type and the unit — `/materials/{id}` answers with the
- * whole record — so the artboard's subtitle is drawn here in full.
+ * „Veredelt · SCU": the material's type and unit, where the server sent them.
  *
  * @receiver the material.
  * @return the subtitle.

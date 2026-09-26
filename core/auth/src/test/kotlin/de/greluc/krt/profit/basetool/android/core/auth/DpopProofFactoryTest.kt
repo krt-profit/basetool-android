@@ -83,8 +83,6 @@ class DpopProofFactoryTest {
 
     @Test
     fun `every proof has its own jti`() {
-        // Keycloak rejects a replayed jti, so a factory that reused one would make the second
-        // refresh of a session fail — intermittently, and only in the field.
         val factory = DpopProofFactory(keyPair, ServerClock())
 
         val first = parseVerified(factory.createProof("POST", TOKEN_URI)).jwtClaimsSet.jwtid
@@ -95,8 +93,6 @@ class DpopProofFactoryTest {
 
     @Test
     fun `the nonce claim appears only once the realm has issued one`() {
-        // RFC 9449 §8: a proof carrying a nonce the server never issued is rejected, and one
-        // missing a nonce the server demands is rejected too. Both directions have to hold.
         val factory = DpopProofFactory(keyPair, ServerClock())
 
         val without = parseVerified(factory.createProof("POST", TOKEN_URI))
@@ -108,8 +104,6 @@ class DpopProofFactoryTest {
 
     @Test
     fun `the thumbprint names the key the proof embeds`() {
-        // Sent as `dpop_jkt` on the authorization request. A thumbprint over a different key would
-        // not fail here — it would fail at the token endpoint, after the member logged in.
         val factory = DpopProofFactory(keyPair, ServerClock())
 
         val embedded = parseVerified(factory.createProof("POST", TOKEN_URI)).header.jwk.toECKey()
@@ -119,8 +113,6 @@ class DpopProofFactoryTest {
 
     @Test
     fun `iat follows server time, not the device clock`() {
-        // The whole reason ServerClock exists: Keycloak allows 10 s lifetime with 15 s skew, so a
-        // device a minute off cannot log in unless the proof is stamped with server time.
         val clock = ServerClock()
         val deviceNow = Instant.now()
         clock.observe(serverTime = deviceNow.plusSeconds(DRIFT_SECONDS), deviceTime = deviceNow)

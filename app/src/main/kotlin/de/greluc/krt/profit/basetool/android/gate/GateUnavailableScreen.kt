@@ -45,26 +45,14 @@ private val COLUMN_MAX_WIDTH = 480.dp
 private val STATUS_ICON = 40.dp
 
 /**
- * Shown when the app is signed in but cannot find out whether the member is allowed in.
+ * Shown when the member is signed in but the approval status could not be read.
  *
- * This is **not** the approval-pending screen with a different sentence, and conflating the two
- * would be the actual bug: a member who is long since approved would be told their account is
- * waiting for an administrator, which is both false and impossible to act on. All this screen
- * claims is that the question could not be asked.
- *
- * Design chapter 14, artboard 3. The state is its own, not a borrowed 5xx: the member is
- * authenticated and their credentials are fine — the server that says whether their registration is
- * approved simply did not answer. **No status code appears in the copy**, deliberately, and the
- * tone is a statement rather than an accusation: „Your credentials remain valid" is the sentence
- * that does the work, because there is nothing here the member did or can fix.
- *
- * The app keeps asking on its own — 3 → 6 → 12 → 30 s — and a manual attempt resets that rhythm.
- * A screen whose only way forward is a button the member has to keep pressing turns a passing
- * outage into a chore.
+ * It claims only that the question could not be asked, states that the credentials remain valid and
+ * shows no status code. The app retries on its own every 3, 6, 12, then 30 s, and a manual attempt
+ * resets that ladder.
  *
  * @param offline `true` when no response arrived at all, `false` when the server answered badly
- * @param accountName who is signed in, so the screen can say the session is intact rather than
- *   merely assert it; `null` when the ID token carried no username
+ * @param accountName who is signed in, or `null` when the ID token carried no username
  * @param secondsUntilRetry seconds until the next automatic attempt, or `null` while one is in
  *   flight
  * @param onRetry asks again, now
@@ -121,9 +109,6 @@ fun GateUnavailableScreen(
             )
             Spacer(Modifier.height(KrtSpacing.s8))
             Text(
-                // The countdown lives INSIDE the sentence that explains the wait, as the chapter
-                // draws it. Split across two lines, the number reads as a fact about the app and
-                // not as the answer to "why am I looking at this".
                 text =
                     secondsUntilRetry?.let { seconds ->
                         stringResource(R.string.gate_still_signed_in) + " " +
@@ -145,8 +130,6 @@ fun GateUnavailableScreen(
             if (escalate) {
                 Spacer(Modifier.height(KrtSpacing.s12))
                 Text(
-                    // One line after the third failed attempt, and nothing else changes — no red,
-                    // no error face. The state is still waiting, not blame (design ch. 14).
                     text = stringResource(R.string.gate_escalation),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,

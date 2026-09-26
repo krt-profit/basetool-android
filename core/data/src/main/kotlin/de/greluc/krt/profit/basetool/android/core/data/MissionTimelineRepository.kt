@@ -31,11 +31,7 @@ private const val PICKER_SIZE = 50
 private const val CATALOGUE_SIZE = 200
 
 /**
- * What a Ziel is for.
- *
- * The server's own three-valued enum, kept as a type rather than a string so a write cannot invent
- * a fourth. `MissionObjective.kind` stays a raw string on the read side deliberately — an
- * unrecognised kind must still be shown rather than hidden.
+ * What a Ziel is for: the server's three-valued enum, used on the write side.
  *
  * @property wire what goes on the wire.
  */
@@ -55,24 +51,16 @@ enum class MissionObjectiveKind(
 /**
  * The Ablauf and the Ziele, as a manager writes them.
  *
- * > **Every one of these endpoints answers with the LIST, never with the Einsatz.** There is no
- * > plain variant to reach for — `/slim` is all there is — so each method takes the Einsatz as last
- * > read and splices the answer onto it, which keeps the caller's contract identical to the
- * > structure writes.
- * >
- * > That has a second consequence the callers must not have to think about: the answer carries no
- * > new section counter. The server bumps it by exactly one per accepted write
- * > (`bumpStepsVersionIfMatches`: `SET steps_version = steps_version + 1 WHERE steps_version = ?`),
- * > so the splice advances the local counter by one. Leaving it stale would make the *second* edit
- * > in a sitting fail with a `409` the member did nothing to cause.
+ * Every endpoint answers with the list only, which each method splices onto the Einsatz as last
+ * read, advancing the local section counter by one as the server does per accepted write.
  */
 interface MissionTimelineSource {
     /**
      * Appends one Ablauf step.
      *
      * @param missionId the Einsatz.
-     * @param current the Einsatz as last read, for its `stepsVersion` and everything the slim
-     *   answer does not carry.
+     * @param current the Einsatz as last read, for its `stepsVersion` and everything the slim answer
+     *   does not carry.
      * @param title what happens.
      * @param meta the time-and-place line beneath it, or `null`.
      * @return the Einsatz as it now stands, or the classified failure.
@@ -108,8 +96,7 @@ interface MissionTimelineSource {
      * @param missionId the Einsatz.
      * @param current the Einsatz as last read.
      * @param stepId which step.
-     * @param done the state it is to be in — sent explicitly rather than as a toggle, so two
-     *   managers tapping at once converge instead of cancelling each other out.
+     * @param done the target state, sent explicitly rather than as a toggle.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun toggleStep(
@@ -134,11 +121,7 @@ interface MissionTimelineSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Reorders the whole Ablauf.
-     *
-     * The request carries **every** id in the order they are to hold — the server rejects a set
-     * that is not exactly the Einsatz's own steps, which is what keeps a reorder from silently
-     * dropping a step somebody else added while this screen was open.
+     * Reorders the whole Ablauf; the server rejects a set that is not exactly the Einsatz's own steps.
      *
      * @param missionId the Einsatz.
      * @param current the Einsatz as last read.
@@ -152,7 +135,8 @@ interface MissionTimelineSource {
     ): ApiResult<MissionDetail>
 
     /**
-     * Reorders the whole Ziele list, under the same whole-set rule.
+     * Reorders the whole Ziele list; the server rejects a set that is not exactly the Einsatz's own
+     * objectives.
      *
      * @param missionId the Einsatz.
      * @param current the Einsatz as last read.
@@ -225,19 +209,15 @@ interface MissionPeopleSource {
      * Members whose name matches, for the party-lead, manager and „Teilnehmer hinzufügen" pickers.
      *
      * @param query what was typed; blank returns the first page unfiltered.
-     * @return at most [PICKER_SIZE] matches, or the classified failure. The caller states the cap
-     *   in the picker's notice — a filtered list must always say what it is hiding.
+     * @return at most [PICKER_SIZE] matches, or the classified failure.
      */
     suspend fun members(query: String): ApiResult<PickerPage<MemberOption>>
 
     /**
      * The **CREW** Funktionen: the roles somebody holds aboard an Einheit.
      *
-     * > The second catalogue, and it shares its names with the first. `job_type.archetype` is
-     * > `MISSION` or `CREW`; a participant's Funktion must be a `MISSION` type and a crew role must
-     * > be a `CREW` one. Reading either unfiltered offers the wrong names and the backend refuses
-     * > the write with *"is not of archetype …"* — a `400` that looks right on screen and fails only
-     * > on save, because the two sets read identically.
+     * They share names with the `MISSION` catalogue, and the server refuses a type of the wrong
+     * archetype.
      *
      * @return the catalogue, or the classified failure.
      */
@@ -305,8 +285,6 @@ class MissionTimelineRepository(
     ): ApiResult<MissionDetail> =
         withSteps(
             current,
-            // PATCH has no named method on the reader; `send` is the sanctioned escape hatch for
-            // exactly the verbs `post`/`put`/`delete` do not cover.
             reader.send(
                 "${missionPath(missionId)}/steps/$stepId/done/slim",
                 "PATCH",

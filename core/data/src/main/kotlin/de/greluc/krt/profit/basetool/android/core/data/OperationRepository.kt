@@ -27,12 +27,6 @@ import java.time.Instant
 /**
  * What the member has narrowed the Operationen list to.
  *
- * Deliberately **not** the same type as [MissionQuery] even though the chip row above both lists is
- * the same control. An Operation has no start time of its own — the server filters on its earliest
- * and latest linked Einsatz — and "Vergangene aus" therefore has no meaning here: the list's second
- * group *is* the finished ones. Sharing one type would have carried a flag that silently does
- * nothing on half the screen.
- *
  * @property text the free-text name fragment, blank when the member has not searched
  * @property statuses the statuses to include; empty means every status the caller may see
  * @property from lower bound, matched against the earliest linked Einsatz's planned start
@@ -55,15 +49,8 @@ data class OperationQuery(
 }
 
 /**
- * Everything the Operation detail draws, read in one go.
- *
- * **The three reads succeed or fail together, and that is the difference from the Einsatz detail.**
- * There, the Finanzen tab is guarded by a *second* permission (`isMemberOrAbove` on top of
- * `canSeeMission`), so it has its own load state and its own refusal. Here all three endpoints
- * carry the identical `isAuthenticated() and canSeeOperation(#id)` gate: a member who may open the
- * Operation may read all of it, so splitting the states would model a case the server cannot
- * produce — and the head itself needs the payouts, because the participant count and the per-head
- * share come from there.
+ * Everything the Operation detail draws, from three reads that succeed or fail together under the
+ * same `canSeeOperation` gate.
  *
  * @property detail the head
  * @property rollup the Finanz-Rollup and the per-Einsatz results
@@ -78,17 +65,13 @@ data class OperationOverview(
 /**
  * An Operation being raised or rewritten.
  *
- * > **The Einsatz assignment is not in here, and cannot be.** A mission joins an Operation through
- * > its own core section (`PATCH /missions/{id}/core` with `operationId`), which needs that
- * > mission's name and its core version. Design ch. 06 artboard 15 draws the assignment as a
- * > multi-select inside this form; the wire has no such field. See the design gap list.
+ * Einsätze are not assigned here; a mission joins an Operation through its own Kern section.
  *
  * @property name what it is called; the server requires it.
  * @property description the free text, or `null`.
- * @property status where it stands — required on both writes, which is why the form always shows
- *   it rather than only on the edit.
+ * @property status where it stands; required on both writes.
  * @property owningOrgUnitId which unit owns it, on a create; `null` lets the server stamp it.
- * @property version the optimistic lock on an **edit**, `null` when raising a new one.
+ * @property version the optimistic lock on an edit, `null` when raising a new one.
  */
 data class OperationDraft(
     val name: String,
@@ -133,9 +116,8 @@ interface OperationSource {
      * @param operationId the Operation.
      * @param participantKey the payout row's key, unique within the Operation.
      * @param paidOut whether it should end up confirmed.
-     * @return success, or the classified failure. `403` is ordinary rather than exceptional:
-     *   confirming needs the mission-manager grant, and **taking a confirmation back** needs an
-     *   officer or an admin on top — a distinction the app cannot make for itself.
+     * @return success, or the classified failure; `403` when confirming lacks the mission-manager
+     *   grant or revoking lacks officer or admin.
      */
     suspend fun setPaidOut(
         operationId: String,
@@ -144,12 +126,7 @@ interface OperationSource {
     ): ApiResult<Unit>
 
     /**
-     * Raises an Operation.
-     *
-     * > **No start and no end.** `OperationCreateDto` carries a name, a description, a status and
-     * > the owning unit — nothing else. Design ch. 06 artboard 15 draws „Beginn" and „Ende
-     * > (geplant)"; an Operation has no times of its own, they live on its Einsätze. Flagged rather
-     * > than invented.
+     * Raises an Operation; it has no start or end time of its own.
      *
      * @param draft what to raise.
      * @return the new Operation's id, or the classified failure.
@@ -157,9 +134,7 @@ interface OperationSource {
     suspend fun create(draft: OperationDraft): ApiResult<String>
 
     /**
-     * Rewrites an Operation's head.
-     *
-     * The version is echoed, so a concurrent edit is a 409 rather than a silent overwrite.
+     * Rewrites an Operation's head, echoing the version so a concurrent edit is a 409.
      *
      * @param operationId which Operation.
      * @param draft what it should become.
@@ -172,14 +147,8 @@ interface OperationSource {
 }
 
 /**
- * Reads Operationen from the backend.
- *
- * `/operations/search` rather than the plain `/operations`, for the reason [MissionRepository]
- * gives: the plain list takes only paging, so every filter in the chip row would have to be applied
- * to a page the server had already truncated.
- *
- * Nothing is cached. A payout that was marked as paid while the member had the screen open is
- * exactly the change they came to see.
+ * Reads and writes Operationen through the backend, filtering the list server-side via
+ * `/operations/search`; nothing is cached.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -197,11 +166,8 @@ class OperationRepository(
     )
 
     /**
-     * Reads one page of Operationen.
-     *
-     * A row without an id is dropped: it cannot be opened, so offering it would produce a tap that
-     * does nothing. The drop is counted into neither total, because the server's total is what the
-     * screen states and quietly lowering it would hide the fault.
+     * Reads one page of Operationen, dropping rows without an id while passing the server's total
+     * through.
      *
      * @param query what the member narrowed to.
      * @param page the zero-based page index.
@@ -244,9 +210,6 @@ class OperationRepository(
     /**
      * Fetches the roll-up and then the payouts, folding both onto the already-read head.
      *
-     * Split out so [overview] reads as the one decision it makes rather than as a chain of early
-     * returns.
-     *
      * @param id the Operation's id.
      * @param detail the head already read.
      * @return the overview, or the first failure of the two remaining reads.
@@ -281,9 +244,6 @@ class OperationRepository(
 
             is ApiResult.Success -> {
                 result.value.id?.let { ApiResult.Success(it) }
-                    // A 201 that names no Operation leaves the caller with nothing to open. That is
-                    // a contract break rather than an empty result, so it fails rather than
-                    // reporting a success the screen cannot act on.
                     ?: ApiResult.Failure(ApiError.Server(status = HTTP_CREATED))
             }
         }

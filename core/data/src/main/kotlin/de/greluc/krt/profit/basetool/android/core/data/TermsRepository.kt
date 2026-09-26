@@ -62,13 +62,8 @@ interface TermsSource {
 /**
  * Reads the Terms of Use and records consent to them.
  *
- * Separate from [AccountGateRepository] although both feed gates: that one answers a single enum
- * from a single endpoint, this one carries a document, its version and a write. Folding the two
- * together would put the app's only legal-text handling inside a class named after approvals.
- *
- * **Nothing is cached, and here that is not merely a default.** The document is the text a member is
- * about to agree to; a cached copy is a copy that can be older than the version consent is recorded
- * against, which is the exact failure this whole design (main repo ADR-0138) exists to remove.
+ * Nothing is cached, so the text shown is never older than the version consent is recorded
+ * against (ADR-0138).
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -88,10 +83,7 @@ class TermsRepository(
     /**
      * Reads the consent status.
      *
-     * A `TERMS_ACCEPTANCE_REQUIRED` refusal **is** the answer — it says "not accepted", which is
-     * what was asked — so it becomes a successful `false` rather than an error. The version is lost
-     * with it, because a problem body carries none; the caller has to cope with a `null` version
-     * anyway, for a server that predates the field.
+     * A `TERMS_ACCEPTANCE_REQUIRED` refusal becomes a successful `false` with a `null` version.
      *
      * @return the consent status, or a failure the caller can show
      */
@@ -120,12 +112,7 @@ class TermsRepository(
             .map { it.toModel() }
 
     /**
-     * Records consent.
-     *
-     * **Sends no request body**, and that is the server's contract rather than an omission (main
-     * repo REQ-SEC-028): the version accepted is the one the server has in force, never a value the
-     * client names. A client-supplied version would let a caller accept an older wording and pass
-     * the gate without ever having seen the current one.
+     * Records consent for the version the server has in force; sends no request body (REQ-SEC-028).
      *
      * @return the resulting status, or a failure the caller can show
      */
@@ -138,12 +125,7 @@ class TermsRepository(
             .map { it.toModel() }
 
     /**
-     * Performs one authenticated GET.
-     *
-     * @param T the response type
-     * @param path the API path, beginning with a slash
-     * @param deserializer the serializer for [T]
-     * @return the parsed value, or the classified failure
+     * The paths and constants of the Terms-of-Use endpoints.
      */
     private companion object {
         /** Log subsystem. The wording is public, but no member identity is ever written here. */
@@ -178,12 +160,7 @@ private fun TermsStatusDto.toModel(): TermsStatus =
     TermsStatus(accepted = accepted == true, version = currentVersion)
 
 /**
- * Maps the document onto the model.
- *
- * Every field is nullable in the generated model because the contract marks nothing required, so
- * the mapping decides what absent means: empty text rather than a parse failure. A DTO that cannot
- * represent a missing field would turn an unexpected body into a crash on the consent gate instead
- * of an error the member can act on.
+ * Maps the document onto the model, reading every absent field as empty text rather than failing.
  *
  * @return the document
  */

@@ -65,11 +65,7 @@ private const val DISABLED_FIELD_ALPHA = 0.45f
 private const val DATE_WEIGHT = 1.35f
 
 /**
- * The field label.
- *
- * Labels are neutral grey and bold — **never orange**. Orange in a form would compete with the
- * single primary action, and the brightest element inside a form must be the value the user typed,
- * not its caption.
+ * The field label: neutral grey and bold, never orange.
  *
  * @param text the label.
  * @param modifier layout modifier.
@@ -90,10 +86,8 @@ fun KrtFieldLabel(
 }
 
 /**
- * An inline validation message with the warning glyph.
- *
- * Rendered in the danger *text* tint rather than the canonical danger red, which would fail WCAG AA
- * at this size on the dark ground.
+ * An inline validation message with the warning glyph, in the danger text tint for WCAG AA
+ * contrast.
  *
  * @param text the message, phrased as what to do ("Menge muss größer als 0 sein.").
  * @param modifier layout modifier.
@@ -123,16 +117,10 @@ fun KrtFieldError(
 }
 
 /**
- * An inline **warning** with the same glyph as [KrtFieldError], in the warning tint `#FFD23F`.
+ * An inline warning with the same glyph as [KrtFieldError], in the warning tint `#FFD23F`.
  *
- * **Ratified as a component 2026-08-30** (design ch. 02 §1): two message lines under a field, same
- * shape, different tone. An **error** means something is invalid and submitting is blocked; a
- * **warning** means something is notable and permitted, and nothing is locked. Its first case is
- * „liegt in der Vergangenheit" at a date field (§11) — the server, not the field, decides whether a
- * past timestamp is legal.
- *
- * > **Never both at once.** The chapter is explicit: the error displaces the warning. A field that
- * > shows two lines has told the member to fix something and, underneath, that it is fine.
+ * A warning marks something notable but permitted and locks nothing; an error displaces it, so a
+ * field never shows both.
  *
  * @param text the observation, stated plainly („Liegt in der Vergangenheit").
  * @param modifier layout modifier.
@@ -162,29 +150,10 @@ fun KrtFieldWarning(
 }
 
 /**
- * The KRT text field.
+ * The KRT text field: square, 48 dp high, orange border and bloom on focus, danger border on error.
  *
- * Square, 48 dp high, filled with the input half-step so the control sits above the surface. Focus
- * is signalled by an orange border plus the small bloom — the same pair the whole system uses for
- * focus — and an error swaps the border to the danger fill while the message below uses the danger
- * text tint.
- *
- * Built on `BasicTextField` rather than `OutlinedTextField` because Material's field brings a
- * floating label, its own shape and 16 dp of internal padding, none of which match this system.
- *
- * **Accessibility is wired here rather than left to the caller**, because a field built from
- * `BasicTextField` has none of it by default and the omission is invisible on screen:
- *
- * - The **placeholder lives in the field's own `decorationBox`**, not beside it. A sibling drawn
- *   *behind* a full-width text field is obscured, and the accessibility layer prunes obscured
- *   nodes — measured on a device: the hint was legible to the eye and entirely absent from the
- *   tree, so a screen-reader user met an unlabelled box.
- * - The field carries an explicit **accessible name** (`label`, else `placeholder`). Without one
- *   `uiautomator` reports `NAF="true"` and TalkBack announces nothing but "edit box". The name has
- *   to be a semantic property rather than the visible hint alone, because the hint disappears the
- *   moment the member types — which is exactly when the field stops saying what it is for.
- * - An error is attached to the field via the **`error` semantics**, not merely rendered beneath
- *   it. A message that is only a sibling is read minutes later in traversal order, or never.
+ * Built on `BasicTextField`, with the placeholder inside the decoration box, an explicit accessible
+ * name (`label`, else `placeholder`) and the error attached as `error` semantics.
  *
  * @param value current text.
  * @param onValueChange invoked on every edit.
@@ -198,13 +167,11 @@ fun KrtFieldWarning(
  * @param keyboardOptions keyboard configuration, e.g. a numeric keyboard for amounts.
  * @param textAlign horizontal alignment of the text; centre it for stepper-style numeric inputs.
  * @param tabularFigures whether digits render with fixed width; switch on for amounts.
- * @param minLines how many lines the field stands at before it grows. Above one it takes multi-line
- *   input — a pasted export, a briefing — and the value sits at the top rather than centred.
- * @param valueStyle overrides how the typed value is rendered - size, weight and colour. Reach for
- *   it when the number IS the screen, as the aUEC amount is on the Finanz-Eintrag sheet; leave it
- *   null everywhere else so fields stay uniform.
- * @param trailing optional control at the end of the field — the combobox caret, for example. It
- *   sits inside the frame and the text area yields the width it takes.
+ * @param minLines how many lines the field stands at before it grows; above one the value sits at
+ *   the top.
+ * @param valueStyle overrides size, weight and colour of the typed value; `null` for the uniform
+ *   default.
+ * @param trailing optional control inside the frame at the end of the field, e.g. a combobox caret.
  */
 @Composable
 fun KrtTextField(
@@ -289,17 +256,11 @@ fun KrtTextField(
 }
 
 /**
- * Everything a screen reader needs from a field, in one place.
+ * Applies the accessible name and error semantics a `BasicTextField` lacks by itself.
  *
- * A `BasicTextField` carries none of this by itself, and the absence is invisible on screen — which
- * is why it is a named modifier rather than three lines inlined somewhere: it is easy to leave out
- * of the next field and impossible to notice afterwards.
- *
- * @param accessibleName what the field is for, read before its content. Applied unconditionally so
- *   it survives the member typing, which is precisely when a visible hint stops naming the field.
- * @param errorMessage the validation failure to attach, or `null` when the field is valid. Attached
- *   to the field rather than left as a sibling below it, which is read minutes later in traversal
- *   order, or never.
+ * @param accessibleName what the field is for, read before its content; applied unconditionally so
+ *   it survives typing.
+ * @param errorMessage the validation failure to attach to the field, or `null` when it is valid.
  * @return the modifier chain.
  */
 private fun Modifier.krtFieldSemantics(
@@ -313,9 +274,6 @@ private fun Modifier.krtFieldSemantics(
 
 /**
  * The field's own frame: fill, border, glow and the room its content needs.
- *
- * Pulled out of [KrtTextField] so the composable itself stays under the complexity gate. Every
- * branch here is a state the field can be in rather than a variation a caller picked.
  *
  * @param enabled whether the field takes input; a disabled one is dimmed rather than recoloured, so
  *   its error border stays legible.
@@ -341,14 +299,10 @@ private fun Modifier.krtFieldFrame(
         .padding(horizontal = KrtSpacing.s12, vertical = if (minLines > 1) KrtSpacing.s8 else 0.dp)
 
 /**
- * How the typed value is rendered.
+ * Merges the ambient style, the caller's override and the field's fixed settings into the style of
+ * the typed value.
  *
- * Pulled out of [KrtTextField] because the three-way merge - the ambient style, the caller's
- * override, and the field's own non-negotiables - is the one piece of that composable with real
- * branching in it.
- *
- * A caller's override wins on size and weight, but only wins on colour when it actually set one:
- * `TextStyle` reports an unset colour as `Color.Unspecified`, which as a foreground paints nothing.
+ * The override wins on size and weight, and on colour only when it sets one.
  *
  * @param valueStyle the caller's override, or null for the field default.
  * @param textAlign which edge the value sits against.
@@ -370,13 +324,8 @@ private fun krtValueStyle(
         )
 
 /**
- * The inside of a [KrtTextField]: the hint, and the editable text itself.
- *
- * **This is the field's own decoration box, not a sibling of it**, and that placement is the whole
- * point. A placeholder drawn beside the field — behind a `fillMaxWidth` text field, in the same
- * `Box` — is obscured, and the accessibility layer prunes obscured nodes: measured on a device, the
- * hint was plainly legible and entirely absent from the tree. Inside the decoration box it belongs
- * to the field's node and is both drawn and readable.
+ * The decoration box of a [KrtTextField]: the hint and the editable text, so the hint belongs to
+ * the field's accessibility node.
  *
  * @param showPlaceholder whether the field is empty and the hint should therefore be visible.
  * @param placeholder the hint, or `null` when the field has none.
@@ -392,11 +341,6 @@ private fun KrtFieldDecoration(
     top: Boolean,
     innerTextField: @Composable () -> Unit,
 ) {
-    // Full width and aligned by the field's own `textAlign`: without it the box wraps its content,
-    // an End-aligned value has no room to move into and renders mid-field, and the placeholder of
-    // such a field would sit on the opposite side from the value that replaces it.
-    // A multi-line field is as tall as its `minLines`, and the box wraps that height: centring the
-    // hint in it puts it three lines below the caret that will replace it.
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment =
@@ -419,10 +363,7 @@ private fun KrtFieldDecoration(
 }
 
 /**
- * A numeric stepper: minus button, centred value, plus button.
- *
- * Both buttons are full 48 dp targets, which is what makes the control usable one-handed on a
- * phone. The value itself stays editable so a large amount can be typed instead of tapped.
+ * A numeric stepper: minus button, editable centred value, plus button, each button a 48 dp target.
  *
  * @param value current value as text, already formatted with thousands separators.
  * @param onValueChange invoked when the text is edited directly.
@@ -475,11 +416,8 @@ fun KrtStepperField(
 }
 
 /**
- * The small "?" affordance that explains a domain rule in place.
- *
- * The web app uses it for the SCU precision note next to amount fields; the same pattern serves any
- * rule too important to omit and too long for a label. A long-press tooltip costs no layout space
- * and stays reachable for TalkBack.
+ * The small "?" affordance that explains a domain rule in place through a long-press tooltip that
+ * TalkBack can reach.
  *
  * @param explanation the rule, one sentence.
  * @param modifier layout modifier.

@@ -15,13 +15,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The outer layer that carries the app lock down to the refresh token at rest.
- *
- * Two properties matter more than the round trip. **A sealed blob must not be readable without an
- * unlock** — that is the entire point, and a `seal` that quietly passed data through when the
- * session key was missing would leave a green build guarding nothing. And **a locked read must be
- * distinguishable from a broken one**, because the caller discards what it cannot decrypt: confuse
- * the two and arming the lock deletes the member's session.
+ * Tests the envelope: a sealed blob is unreadable without an unlock, and a locked read is distinguishable from a broken
+ * one.
  */
 class SessionEnvelopeTest {
     private val inner = "token-cipher-output".toByteArray()
@@ -58,10 +53,7 @@ class SessionEnvelopeTest {
     }
 
     /**
-     * **A sealed blob cannot be opened without an unlock.**
-     *
-     * The property the whole change exists for: the refresh token at rest is unreadable until the
-     * member has authenticated.
+     * A sealed blob cannot be opened without an unlock.
      */
     @Test
     fun `a sealed blob is unreadable before an unlock`() {
@@ -139,10 +131,7 @@ class SessionEnvelopeTest {
     }
 
     /**
-     * An unsealed blob is still recognised as such once the lock is armed.
-     *
-     * This is what lets a member arm the lock mid-session: the token they already had was written
-     * without an outer layer, and the envelope has to hand it through rather than refuse it.
+     * An unsealed blob passes through an armed envelope, so the lock can be armed mid-session.
      */
     @Test
     fun `an unsealed blob still passes through an open envelope`() {

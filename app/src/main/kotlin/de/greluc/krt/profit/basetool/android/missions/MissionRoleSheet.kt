@@ -50,11 +50,7 @@ import de.greluc.krt.profit.basetool.android.ui.rememberGated
 internal const val MISSION_ROLE_SHEET_TAG = "mission-role-sheet"
 
 /**
- * What the caller may do to their OWN row from the sheet.
- *
- * Separate from [MissionRosterActions] because these two are not the manager's to make: the payout
- * and the wish belong to the member whose row it is, and the manager's own payout entry writes a
- * different call.
+ * What the caller may do to their own row from the sheet, separate from [MissionRosterActions].
  *
  * @property onPayout switch the caller's own share between paid out and donated.
  * @property onDesired the caller asked for a different job, or tapped the one they had to clear it.
@@ -67,22 +63,11 @@ internal data class MissionOwnRoleActions(
 /**
  * Anteil, Wunschfunktion and the assigned Funktion — one sheet, opened from the row's ⋮.
  *
- * **Why a sheet at all (owner decision, 2026-09-07).** All three were drawn INLINE in the roster
- * row, and the two job sections drew the whole catalogue as choice chips: fifteen members each
- * showing every Funktion the organisation has defined, so the roster read as a wall of chips in
- * which the one that was actually chosen was indistinguishable at a glance. The row now shows only
- * what is set; the catalogue is here, one tap away, where a picker belongs.
+ * Every section is drawn; one the caller may not use is locked rather than absent (ADR-0011):
  *
- * **Every section is drawn, and a section the caller may not use is locked rather than absent**
- * (ADR-0011). The three do not share an owner:
- *
- *  - **Anteil** — the member's own choice on their own row; on somebody else's it is the manager's
- *    entry, which is the one thing this ⋮ already carried before.
- *  - **Wunsch** — the member's own, and nobody else's. On a foreign row it is drawn as the plain
- *    value with a line saying whose choice it is. Not a locked control: a lock offers a role that
- *    would unlock it, and no role lets one member wish on another's behalf, so the toast would name
- *    the wrong thing.
- *  - **Funktion an Bord** — the Einsatzleitung's, locked with the role for everyone else.
+ * - **Anteil** — the member's own on their own row, the manager's entry on another's.
+ * - **Wunsch** — the member's own only; on a foreign row shown as a plain value.
+ * - **Funktion an Bord** — the Einsatzleitung's, locked with the role for everyone else.
  *
  * @param participant the row the sheet was opened on.
  * @param isMine whether that row is the caller's own.
@@ -103,12 +88,6 @@ internal fun MissionRoleSheet(
         title = stringResource(R.string.mission_role_sheet_title),
         modifier = Modifier.testTag(MISSION_ROLE_SHEET_TAG),
     ) {
-        // KrtBottomSheet does NOT scroll its content — it hands the decision to each sheet, and
-        // the long ones (ShipEditor, Booking, Allocation …) bring their own. This one is the
-        // longest of them all on the caller's own row: the catalogue is drawn twice, once as the
-        // wish and once as the assignment, so an organisation with two dozen Funktionen fills more
-        // than a screen. Without this the bottom section was simply cut off (found on a device,
-        // 2026-09-08).
         Column(
             modifier =
                 Modifier
@@ -146,8 +125,6 @@ private fun PayoutSection(
 ) {
     SectionLabel(stringResource(R.string.mission_detail_payout_label))
     val gate = missionManagerGate(roster.canManage)
-    // On the caller's own row the choice is theirs and needs no grant; on anybody else's it is the
-    // manager's, and the tap is routed through the gate so a refusal explains itself.
     val (dim, click) = rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
     val donating = participant.donating == true
     Column(
@@ -191,8 +168,6 @@ private fun WishSection(
     }
     SectionLabel(stringResource(R.string.mission_join_function))
     if (!isMine) {
-        // The value, and whose it is. See the class comment: a lock here would offer a role that
-        // does not exist.
         KrtChip(
             text =
                 roster.jobTypes.firstOrNull { it.id == participant.desiredJobTypeId }?.name
@@ -254,8 +229,6 @@ private fun AssignedSection(
                 selected = participant.plannedJobTypeId == jobType.id,
                 onClick = click,
                 modifier = dim,
-                // Never `enabled = false` for a missing grant: a chip that cannot be tapped cannot
-                // say why it is dim (ADR-0011). Offline is the one case that does disable it.
                 enabled = roster.enabled,
             )
         }

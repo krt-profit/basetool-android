@@ -10,15 +10,10 @@ package de.greluc.krt.profit.basetool.android.core.network
 import kotlin.time.Duration
 
 /**
- * What went wrong with an API call, as a state the UI can switch on.
+ * What went wrong with an API call, as a sealed state the UI can switch on.
  *
- * The backend's problem codes are first-class app states rather than strings compared at call sites
- * (`CLAUDE.md`, "Concurrency & API contract"): a pending approval drives a whole screen, an
- * unaccepted terms version drives a gate, a 409 drives a reload-and-retry prompt. Modelling them as
- * a sealed hierarchy means a new state cannot be forgotten by a `when` that stops compiling.
- *
- * [problem] is carried on every variant so the localised [ProblemDetail.title] / [ProblemDetail.detail]
- * and the correlation id remain available for display, even where the app renders its own copy.
+ * [problem] is carried on every variant so the localised [ProblemDetail.title] /
+ * [ProblemDetail.detail] and the correlation id remain available for display.
  */
 sealed interface ApiError {
     /** The parsed problem body, when the server sent one. */
@@ -43,11 +38,8 @@ sealed interface ApiError {
     ) : ApiError
 
     /**
-     * The account is authenticated and approved but holds no role.
-     *
-     * Its own variant rather than a [Forbidden]: a plain 403 is "you may not do *this*", and the
-     * app answers it in place with a toast. This one refuses every call the app can make, so the
-     * only honest response is the gate — which cannot be reached from a per-request toast.
+     * The account is authenticated and approved but holds no role, so every call is refused and the
+     * app shows its gate rather than a per-request [Forbidden] toast.
      *
      * @property problem the parsed body, if any
      */
@@ -94,16 +86,10 @@ sealed interface ApiError {
     ) : ApiError
 
     /**
-     * The server refused on a rule, not on a race.
+     * A `409` refusal on a rule rather than a race: any code other than `OPTIMISTIC_LOCK`, e.g.
+     * `BANK_ACCOUNT_NOT_EMPTY` or `BUSINESS_CONFLICT`.
      *
-     * A `409` whose code is **not** `OPTIMISTIC_LOCK`: a state-machine or cross-aggregate refusal
-     * such as `BANK_ACCOUNT_NOT_EMPTY`, `BANK_REQUEST_NOT_PENDING`, `BANK_NOT_REVERSIBLE`,
-     * `ENTITY_IN_USE` or the generic `BUSINESS_CONFLICT`. These used to be shown as
-     * [OptimisticLock], which told the member somebody else had edited the row and to reload —
-     * false on both counts, and the advice loops because reloading changes nothing.
-     *
-     * The server's own `detail` is the only text that says what was actually refused, so a screen
-     * rendering this **must** show it rather than a generic phrase.
+     * A screen rendering this must show the server's `detail`.
      *
      * @property problem the parsed body, if any
      */

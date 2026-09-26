@@ -100,10 +100,8 @@ sealed interface BoardSheet {
         /**
          * Whether „Gesuch veröffentlichen" may be pressed.
          *
-         * The material — or the product — has to be **picked**, not typed: the request addresses
-         * it by an id the wire needs, and a name the member typed and never selected has none. That
-         * is the failure mode the web app's comboboxes have hit before: a field that looks filled
-         * and submits nothing.
+         * The material or product must have been picked, not only typed, since the request addresses it by
+         * id.
          */
         val submittable: Boolean
             get() =
@@ -143,14 +141,9 @@ sealed interface BoardSheet {
     }
 
     /**
-     * „Eigenen Eintrag bearbeiten" (design ch. 17 artboard 3).
+     * „Eigenen Eintrag bearbeiten": one sheet for editing an own offer or request.
      *
-     * One sheet for both halves, because the two writes differ in one field. What may be changed
-     * is **not** what the artboard says: it claims only the remark is editable on an offer and
-     * calls that the web rule, while the web's own modal edits the amount with an „Alles" shortcut
-     * and `MaterialExchangeOfferUpdateRequest` requires `offeredAmount`. So the amount is editable
-     * here too, and the stock bound stays the server's to enforce — the board row carries no
-     * stock figure to check it against.
+     * The amount is editable on both; the stock bound for an offer is enforced by the server.
      *
      * @property entry the row being rewritten, which carries the version to echo.
      * @property amount the amount, as typed.
@@ -175,10 +168,8 @@ sealed interface BoardSheet {
 }
 
 /**
- * The item half's write, or `null` when the sheet does not describe one.
- *
- * The two create sheets carry the same three item fields and hand them to two different endpoints,
- * so the *shape* of the check lives here once rather than as a return ladder in each.
+ * The item half's write, or `null` when the sheet does not describe one; shared by both create
+ * sheets.
  *
  * @receiver the sheet.
  * @param write what to do with a picked key and a whole number of pieces.
@@ -244,10 +235,8 @@ data class MaterialBoardState(
 /**
  * Drives the Materialbörse (REQ-APP-MARKET-001…008).
  *
- * **A write updates the row it was made on, never the whole page.** Every board write answers with
- * the updated row, so the toggle replaces one entry in place. Re-reading the page instead would
- * scroll the member back to the top on every tap — on a board whose entire interaction is tapping
- * rows.
+ * A row write replaces only that row in place with the row the server returns, so the list keeps its
+ * scroll position.
  *
  * @property source where the board comes from
  * @property materials the catalogue behind „Gesuch erstellen"
@@ -278,8 +267,6 @@ class MaterialBoardViewModel(
 
     init {
         observeLiveSync(liveSync, setOf(LiveSyncTopic.MATERIALBOARD)) { sections ->
-            // Both halves ride one room. A change to the half the member is not looking at is
-            // ignored on purpose: reloading it would cost a request for a list nobody can see.
             val mine =
                 when (mutableState.value.side) {
                     BoardSide.OFFERS -> LiveSyncSections.BOARD_OFFERS
@@ -400,15 +387,11 @@ class MaterialBoardViewModel(
         viewModelScope.launch {
             when (val result = source.withdraw(entry)) {
                 is ApiResult.Success -> {
-                    // Dropped from the list rather than replaced: a withdrawn row is no longer on
-                    // the board, and leaving it there with a changed status would invite the
-                    // member to withdraw it again.
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
                             entries = latest.entries.filterNot { it.id == entry.id },
                             busyEntryId = null,
-                            // The sheet the withdrawal was started from has lost its subject.
                             sheet =
                                 if (latest.sheet is BoardSheet.EditEntry) {
                                     BoardSheet.None
@@ -430,13 +413,8 @@ class MaterialBoardViewModel(
     /**
      * The member pressed „Zurückziehen" in the edit sheet.
      *
-     * With interested members it asks first and names them, because withdrawing is visible to
-     * them; with nobody waiting it withdraws straight away. Design ch. 17 artboard 3.
-     *
-     * > **No undo.** The artboard offers a five-second undo toast. Withdrawal is
-     * > `POST …/deactivate` and there is **no endpoint that reactivates a row**, so an undo would
-     * > have to re-post the entry as a new one — a different row, with a new id, a new timestamp
-     * > and no interested members. Flagged on the design gap list rather than faked.
+     * With interested members waiting it asks first and names them; otherwise it withdraws at once.
+     * There is no undo, since no endpoint reactivates a withdrawn row.
      */
     fun onWithdrawRequested() {
         val sheet = mutableState.value.sheet as? BoardSheet.EditEntry ?: return
@@ -463,8 +441,6 @@ class MaterialBoardViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the releasable stock could not be read: ${result.error}" }
-                    // The sheet stays open with an empty list and its own message: closing it
-                    // under the member would lose whatever they had already typed.
                     updateOfferSheet { it.copy(loadingStock = false) }
                     mutableState.update { it.copy(error = result.error) }
                 }
@@ -490,9 +466,7 @@ class MaterialBoardViewModel(
     /**
      * Searches the catalogue for the request sheet.
      *
-     * **The picked id is cleared as soon as the text changes.** A member who picks „Quantainium"
-     * and then edits the field is no longer describing the material they picked, and submitting
-     * the stale id would post a request for something they did not choose.
+     * Any text change clears the picked material id, so a stale id is never submitted.
      *
      * @param query what the member typed.
      */
@@ -563,8 +537,6 @@ class MaterialBoardViewModel(
 
     /** Publishes the request the sheet describes — material or item, as the switch stands. */
     fun onRequestSubmitted() {
-        // Guarded rather than trusted: `submittable` gates the button, and this repeats the check
-        // because a screen is not the only thing that can call a public method on a ViewModel.
         val sheet = (mutableState.value.sheet as? BoardSheet.NewRequest)?.takeIf { it.submittable }
         val write: (suspend () -> ApiResult<Unit>)? =
             when {
@@ -763,8 +735,6 @@ class MaterialBoardViewModel(
                 }
             when (result) {
                 is ApiResult.Success -> {
-                    // The write answers with the row, so it is replaced in place rather than the
-                    // page re-read — the member keeps their scroll position.
                     mutableState.update { it.copy(saving = false, sheet = BoardSheet.None) }
                     replace(result.value)
                     announce()
@@ -786,9 +756,7 @@ class MaterialBoardViewModel(
     /**
      * Runs a create, then closes the sheet and re-reads the board.
      *
-     * A re-read rather than an in-place insert: the create endpoints answer `202` with no body, so
-     * the app does not have the row it just made and inventing one locally would show a member an
-     * entry the server might have shaped differently.
+     * The create endpoints answer `202` without a body, so there is no row to insert in place.
      *
      * @param write the create to run.
      */
@@ -804,7 +772,6 @@ class MaterialBoardViewModel(
 
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the board entry could not be created: ${result.error}" }
-                    // The sheet stays open, holding what the member typed.
                     mutableState.update { it.copy(saving = false, error = result.error) }
                 }
             }
@@ -813,9 +780,6 @@ class MaterialBoardViewModel(
 
     /**
      * Applies whichever of the two edits fits the open create sheet.
-     *
-     * The item half lives on both sheets and behaves identically on each, so one call site rather
-     * than a `when` repeated at every one of them.
      *
      * @param request what to change on the request sheet.
      * @param offer what to change on the offer sheet.

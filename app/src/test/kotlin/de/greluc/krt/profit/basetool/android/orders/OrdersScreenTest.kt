@@ -154,10 +154,6 @@ class OrdersScreenTest {
     ) {
         compose.setContent {
             KrtTheme {
-                // The shell in miniature: the detail publishes its head into the slot and the host
-                // renders the trailing controls. Without it the overflow — which is where the
-                // assignment and the status change live since design ch. 10 artboard 2 — is never
-                // composed and cannot be asserted on.
                 val slot = remember { mutableStateOf<ScreenTopBar?>(null) }
                 CompositionLocalProvider(LocalScreenTopBar provides slot) {
                     OrderDetailScreen(
@@ -209,10 +205,6 @@ class OrdersScreenTest {
                         onRetryNow = {},
                         actions = detailActions(assigned, statuses, notes, produced, handedOver),
                     )
-                    // Drawn AFTER the screen, and therefore above it: the detail fills the window,
-                    // so a bar rendered first is laid out but every tap on it is swallowed by the
-                    // list on top. The shell has a real app bar for this; the test only needs the
-                    // trailing controls to be reachable.
                     slot.value?.actions?.invoke()
                 }
             }
@@ -220,12 +212,8 @@ class OrdersScreenTest {
     }
 
     /**
-     * A member without the grant still sees the Herstellung — and is told what to ask for.
-     *
-     * Hiding the control was the alternative and is what this project's gate rule forbids: roles
-     * here are handed out by a person, and a feature nobody can see is a feature nobody requests
-     * (ADR-0011). So the button is drawn, it takes the tap, it writes nothing, and it names the
-     * role.
+     * A member without the grant still sees the Herstellung action, which takes the tap, writes nothing and names the
+     * role (ADR-0011).
      */
     @Test
     fun `the production action is drawn for a member who may not use it`() {
@@ -306,8 +294,6 @@ class OrdersScreenTest {
     /**
      * Everything one order's screen reports back, wired to the lists a test reads.
      *
-     * Its own function so [showDetail] stays inside the length the project's analysis allows.
-     *
      * @param assigned records the assignment toggle.
      * @param statuses records every status the screen asked for.
      * @param notes records the note editor's own steps.
@@ -358,20 +344,12 @@ class OrdersScreenTest {
 
     @Test
     fun `a queue card carries everything the design puts on it`() {
-        // Design ch. 10 draws a card, not a line: the queue is scanned for priority, kind, age and
-        // who owns the work, and an earlier revision showed only the number, a Prio chip and one
-        // muted sentence. Each assertion below is one thing that was missing from it.
         showQueue(OrdersState(orders = listOf(order()), total = 1, phase = OrdersPhase.Ready))
 
         compose.onNodeWithText("#1042").assertIsDisplayed()
-        // The priority block: the figure the queue is sorted by, and its label underneath.
         compose.onNodeWithText("1").assertIsDisplayed()
         compose.onNodeWithText("PRIO").assertIsDisplayed()
-        // The kind chip, which the card did not show at all. Uppercased by the chip, like the
-        // badges below it.
         compose.onNodeWithText("MATERIAL").assertIsDisplayed()
-        // Both parties as org badges. Uppercased by the badge, which is how the design draws them
-        // and why asserting the raw "Staffel 1" would now be asserting the wrong thing.
         compose.onNodeWithText("STAFFEL 1").assertIsDisplayed()
         compose.onNodeWithText("SK VANGUARD").assertIsDisplayed()
         compose.onNodeWithTag(ORDERS_LIST_TAG).assertIsDisplayed()
@@ -379,8 +357,6 @@ class OrdersScreenTest {
 
     @Test
     fun `the material list is collapsed until its own control is tapped`() {
-        // Collapsed by default, as the web app has it, and on a tap target of its own so opening
-        // the list and opening the order cannot be confused.
         val toggled = mutableListOf<String>()
         showQueue(
             OrdersState(orders = listOf(order()), total = 1, phase = OrdersPhase.Ready),
@@ -405,8 +381,6 @@ class OrdersScreenTest {
         )
 
         compose.onNodeWithText("Quantainium").assertIsDisplayed()
-        // Two texts since the position became a card: the booked figure is the data and carries the
-        // weight, what was asked for is the scale beside it (design ch. 10, artboard 2).
         compose.onNodeWithText("125").assertIsDisplayed()
         compose.onNodeWithText("/ 500 SCU").assertIsDisplayed()
     }
@@ -422,12 +396,7 @@ class OrdersScreenTest {
             ),
         )
 
-        // The card printed „SCU" over every line, so an order for 500 *pieces* read as 500 SCU —
-        // a quantity a member acts on. The rule is `RefineryScreen`'s own: never a hardcoded SCU.
         compose.onNodeWithText("/ 500 Stück").assertIsDisplayed()
-        // ignoreCase, because `KrtChip` uppercases anything but a Data-toned chip; assertExists
-        // rather than assertIsDisplayed, because the chip row sits below the fold in the test's
-        // viewport and what is under test is the word it carries, not where it lands.
         compose.onNodeWithText("Gebucht: 125 Stück", ignoreCase = true).assertExists()
     }
 
@@ -442,14 +411,11 @@ class OrdersScreenTest {
             ),
         )
 
-        // Naming the wrong unit is worse than naming none.
         compose.onNodeWithText("/ 500", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun `a quantity the server did not send reads as a dash`() {
-        // Left empty it rendered as " / 500", which looks like a rendering fault rather than an
-        // absent number — found on a device, on an order for a material nothing is stocked of.
         showQueue(
             OrdersState(
                 orders = listOf(order(materials = listOf(material().copy(inStock = null)))),
@@ -489,9 +455,6 @@ class OrdersScreenTest {
 
     @Test
     fun `an empty queue can still be pulled to refresh`() {
-        // PullToRefreshBox hears the gesture through nested scroll, so an empty screen with nothing
-        // to scroll swallowed the pull entirely — on a device the queue looked frozen at exactly the
-        // moment a member wants to re-read it.
         val refreshed = mutableListOf<Unit>()
         showQueue(OrdersState(phase = OrdersPhase.Ready), refreshed = refreshed)
 
@@ -511,7 +474,6 @@ class OrdersScreenTest {
 
     @Test
     fun `a redacted order says so`() {
-        // Otherwise a requester reads a reduced order as the whole one (REQ-ORDERS-023).
         showDetail(
             OrderDetailState(
                 orderId = "o1",
@@ -543,9 +505,6 @@ class OrdersScreenTest {
             ),
         )
 
-        // The comment and the materials are the Positionen tab; who is on it is its own tab
-        // (design ch. 10 artboard 2). Asserting all four on one screen asserted a layout this
-        // screen deliberately no longer has.
         compose.onNodeWithText("Qualität ist zweitrangig.").assertIsDisplayed()
         compose.onNodeWithText("Quantainium").assertIsDisplayed()
         compose.onNodeWithTag(ORDER_DETAIL_TAG).assertIsDisplayed()
@@ -595,8 +554,6 @@ class OrdersScreenTest {
 
     @Test
     fun `only the caller's own row offers the note`() {
-        // Someone else's note is theirs to write. Offering an action that would be refused is how
-        // a member concludes the app is unreliable.
         showDetail(
             ready(assignees = listOf(assignee(), JobOrderAssignee("u2", "Kell", "Frühschicht", 1L))),
         )
@@ -641,8 +598,6 @@ class OrdersScreenTest {
         )
 
         compose.onNodeWithTag(ORDER_NOTE_SHEET_TAG).assertIsDisplayed()
-        // The row behind the sheet says it too, which is the point: the editor opens on what is
-        // already there rather than on nothing.
         compose.onAllNodesWithText("alt").assertCountEquals(2)
     }
 
@@ -675,9 +630,6 @@ class OrdersScreenTest {
 
         compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
-        // Offline the writes are not offered at all: the overflow keeps only the reads. A disabled
-        // item that says nothing about why is worse than an item that is simply not there while the
-        // banner above already names the reason.
         compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onAllNodesWithText("Übernehmen", ignoreCase = true).assertCountEquals(0)
     }
@@ -697,8 +649,6 @@ class OrdersScreenTest {
         order = order().copy(assignees = assignees),
         phase = OrderDetailPhase.Ready,
         me = Identity("u1", logistician = logistician),
-        // Every caller of this helper asserts something about the assignee rows, and those live on
-        // their own tab now (design ch. 10 artboard 2).
         tab = OrderTab.ASSIGNEES,
     )
 }

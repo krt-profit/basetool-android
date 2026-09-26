@@ -66,13 +66,7 @@ enum class MissionTab {
     /** Income, expense and the entries behind them. */
     FINANCES,
 
-    /**
-     * Editing the Einsatz itself.
-     *
-     * The eighth tab, and the only one that is not on every caller's screen: it is drawn only for a
-     * caller the server says may manage this Einsatz. That is a decision by the repository owner on
-     * 2026-08-29, which answers round 10's question 10a — the Verwaltung is a tab, not a sheet.
-     */
+    /** Verwaltung: editing the Einsatz itself, usable only by a caller the server says may manage it. */
     ADMIN,
 }
 
@@ -99,10 +93,8 @@ sealed interface MissionDetailPhase {
 /**
  * How far the Finanzen tab has got.
  *
- * Separate from [MissionDetailPhase] because the money is a **second, differently guarded** read:
- * a member sees the Einsatz and may still be refused its finances (`isMemberOrAbove` +
- * `canSeeMission`). Folding the two together would either hide the Einsatz behind a permission it
- * does not need, or claim the money loaded when it did not.
+ * Separate from [MissionDetailPhase] because the finances are a second, differently guarded read
+ * that may be refused while the Einsatz itself is visible.
  */
 sealed interface MissionFinancesPhase {
     /** Not asked for yet — the tab has never been opened. */
@@ -131,17 +123,13 @@ sealed interface MissionFinancesPhase {
 }
 
 /**
- * The open sign-up sheet.
- *
- * Signing up used to be one tap. Design ch. 06, artboard 3 makes it a sheet, because two answers go
- * with it that nobody can give afterwards without hunting for them: where the share goes, and which
- * function the member would like on board.
+ * The open sign-up sheet (design ch. 06, artboard 3).
  *
  * @property jobTypes the Funktionen catalogue, read when the sheet opens; empty until it arrives.
- * @property desired the function they picked, or `null` — the field is optional and stays optional.
+ * @property desired the function they picked, or `null`; optional.
  * @property donate whether the share goes to the org treasury.
  * @property saving whether the write is running.
- * @property error the last refusal, kept **in the sheet** so the answers are not lost with it.
+ * @property error the last refusal, kept in the sheet so the answers are not lost.
  */
 data class JoinSheet(
     val jobTypes: List<MissionJobType> = emptyList(),
@@ -152,11 +140,7 @@ data class JoinSheet(
 )
 
 /**
- * The three seams the Einsatz detail depends on.
- *
- * One object rather than three constructor parameters, because seven parameters is past what the
- * gate allows and because the three always travel together — the screen reads through one, edits
- * the Einsatz through the second and edits what it is made of through the third.
+ * The three seams the Einsatz detail depends on, bundled as one constructor argument.
  *
  * @property read the list, the detail, the books and the roster.
  * @property admin the Einsatz's own record: the three sections, the party lead, the managers.
@@ -180,20 +164,17 @@ data class MissionSeams(
  * @property finances how far the money has got, on its own timeline
  * @property refreshing whether a pull-to-refresh is running over content already on screen
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
- * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
- *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
+ * @property rosterJobTypes the MISSION Funktionen the roster offers a manager; empty until the
+ *   Teilnehmer tab is opened by someone who may assign one
  * @property adminForm the open Verwaltung form, or `null` when the tab is not on screen
- * @property lifecycleAsk the status the member is being asked to confirm, or `null`. Deliberately
- *   **not** part of [adminForm]: the action lives on the badge, which is on the overview, and the
- *   form is `null` until the Verwaltung tab is opened.
+ * @property lifecycleAsk the status the member is being asked to confirm, or `null`; kept outside
+ *   [adminForm]
  * @property structure what a manager is composing on the Einheiten or Frequenzen tab
  * @property timeline what a manager is composing on the Ablauf or Ziele tab
  * @property memberPicker the one member lookup behind the party lead, the managers and
  *   „Teilnehmer hinzufügen"
- * @property crewJobTypes the CREW Funktionen a crew slot can hold; empty until the Einheiten tab is
- *   opened by someone who may assign one. A **second** catalogue from [rosterJobTypes], sharing its
- *   names — a participant's Funktion is a MISSION type and a crew role is a CREW one, and the
- *   backend refuses a write that confuses them.
+ * @property crewJobTypes the CREW Funktionen a crew slot can hold, a separate catalogue from
+ *   [rosterJobTypes]; empty until the Einheiten tab is opened by someone who may assign one
  */
 data class MissionDetailState(
     val missionId: String,
@@ -267,16 +248,10 @@ data class MissionDetailState(
         get() = writable && mySignUp != null
 
     /**
-     * Whether the caller may act on **another** member's row.
+     * Whether the caller may act on another member's row — the server's own `canEdit`, never derived
+     * from role strings.
      *
-     * The server's own `canEdit`, carried through untouched. It is deliberately not derived from a
-     * role string here: the role hierarchy means an admin satisfies a mission-manager gate without
-     * holding that role, and a client that compares strings hides the controls from exactly the
-     * people most entitled to them — the single most common way a client diverges from the web.
-     *
-     * Note this is *not* `writable`: manage rights and being able to write right now are different
-     * questions. A manager who is offline still holds the right; the control is disabled by
-     * [writable] and locked by neither.
+     * Independent of [writable]: an offline manager still holds the right.
      */
     val canManage: Boolean
         get() = detail?.canManage == true
@@ -284,11 +259,8 @@ data class MissionDetailState(
     /**
      * The row a manager action may address, or `null` when it may not run.
      *
-     * One gate for all three manager actions, so none of them can be added later without it. It
-     * refuses on three counts and the third is the one worth naming: an unknown participant id.
-     * A row that is not in the roster the client last read is a row whose version the client does
-     * not have, and a write against a guessed version is exactly the concurrent-edit collision the
-     * version exists to catch.
+     * The single gate for all manager actions: refuses when not writable, not permitted, or the
+     * participant id is not in the roster last read.
      *
      * @param participantId the row the caller tapped.
      * @return the row as last read, or `null`.
@@ -323,21 +295,14 @@ data class FinanceEntryDraft(
 }
 
 /**
- * Drives one Einsatz's detail.
- *
- * **The money is fetched lazily, when its tab is first opened.** Six of the seven tabs come from
- * one response; the seventh is a second pair of calls that most members opening an Einsatz never
- * look at, and that a member without the permission cannot make succeed at all. Fetching it
- * up-front would spend two requests per open and turn an ordinary lack of permission into an error
- * on a screen that is otherwise fine.
+ * Drives one Einsatz's detail; the finances are fetched lazily when their tab is first opened.
  *
  * @property source where the Einsatz comes from
  * @property identity who the caller is — which decides which sign-up on the roster is theirs
  * @property connectivity whether the device has a network
  * @property missionId which Einsatz to load
- * @property liveSync the live-sync bridge, or `null` in a test or a preview. An Einsatz is the
- *   surface several people work on at once — one signs up while another books the money — so this
- *   screen listens to its own room and announces its own writes into it.
+ * @property liveSync the live-sync bridge, or `null` in a test or a preview; the screen listens to
+ *   its own room and announces its own writes into it
  */
 class MissionDetailViewModel(
     private val seams: MissionSeams,
@@ -450,12 +415,9 @@ class MissionDetailViewModel(
         )
 
     /**
-     * The manager's half of the Teilnehmer tab.
+     * The manager's half of the Teilnehmer tab, called by the screen directly.
      *
-     * Public, and called by the screen directly rather than through wrappers here — the same shape
-     * as the inventory's `MaterialPaneLoader`. It reads the roster through this view model rather
-     * than holding its own copy, so a row it writes against is always the row the member is looking
-     * at, which is what makes the version it sends the right one.
+     * It reads the roster through this view model rather than holding its own copy.
      */
     val roster =
         MissionRoster(
@@ -497,9 +459,6 @@ class MissionDetailViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // Silent: an empty catalogue renders as a picker with no options, which is the
-                    // truth for an organisation that has never defined a CREW type either. The
-                    // write the member is heading for reports its own failure.
                     KrtLog.w(LOG_TAG) { "the CREW catalogue could not be read: ${result.error}" }
                 }
             }
@@ -532,13 +491,9 @@ class MissionDetailViewModel(
         }
 
         /**
-         * Advances the lifecycle, in one call.
+         * Advances the lifecycle in one Kern-section PATCH, echoing every other Kern field as it stands.
          *
-         * The status lives in the **Kern** section, and that PATCH replaces the section rather than
-         * merging into it — so every other Kern field is echoed back as it stands. Setting `ACTIVE`
-         * also stamps `actualStartTime` server-side, which is what actually opens check-in; doing it
-         * from here means the badge and the check-in gate can never disagree, which two separate calls
-         * could not promise.
+         * Setting `ACTIVE` also stamps `actualStartTime` server-side, which opens check-in.
          */
         fun confirm() {
             val current = mutableState.value
@@ -558,9 +513,6 @@ class MissionDetailViewModel(
                         meetingPoint = detail.meetingPoint,
                         calendarLink = detail.calendarLink,
                         status = next.name,
-                        // Echoed, not changed. The Kern PATCH replaces the section, so a status
-                        // change that left this out would detach the Einsatz from its Operation
-                        // as a side effect — the same trap `calendarLink` carries above.
                         operationId = detail.operationId,
                         version = detail.coreVersion,
                     )
@@ -587,14 +539,9 @@ class MissionDetailViewModel(
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.mission(missionId))) { sections ->
-            // Each section costs only the read it names. The roster and the money are separate
-            // requests, and refreshing both because one moved would double what a peer's check-in
-            // costs every viewer.
             if (sections.any { it in ROSTER_SECTIONS }) {
                 reload(keepContent = true)
             }
-            // Only when the member has actually opened the Finanzen tab. Loading it because a peer
-            // booked would fetch a tab nobody is looking at, and the tab is lazy on purpose.
             if (LiveSyncSections.MISSION_FINANCE in sections &&
                 mutableState.value.finances !is MissionFinancesPhase.Idle
             ) {
@@ -639,9 +586,6 @@ class MissionDetailViewModel(
             return
         }
         val mine = current.mySignUp
-        // Signing up opens the sheet; withdrawing does not. Asking a member to confirm leaving
-        // through a form that collects preferences they are about to discard would be a question
-        // about nothing (design ch. 06, artboard 3).
         if (mine == null) {
             onJoinSheetOpened()
             return
@@ -650,9 +594,6 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             val result =
                 run {
-                    // The withdrawal answers 204, so the roster is re-read rather than patched:
-                    // the counts above it move too, and inventing them here would put two numbers
-                    // on screen that disagree.
                     when (val left = seams.read.leave(missionId, mine.id)) {
                         is ApiResult.Failure -> left
                         is ApiResult.Success -> seams.read.detail(missionId)
@@ -678,8 +619,6 @@ class MissionDetailViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The function is optional, so a catalogue that will not load must not block a
-                    // sign-up. The chips simply do not appear and the rest of the sheet works.
                     KrtLog.w(LOG_TAG) { "the Funktionen catalogue could not be read: ${result.error}" }
                 }
             }
@@ -720,10 +659,6 @@ class MissionDetailViewModel(
         if (open.saving || !current.writable) {
             return
         }
-        // No `me?.userId` guard any more: `join` derives the member from the token, so the sign-up
-        // no longer waits on the `/me` read. It used to, because the old route had to name the
-        // member — which meant a failed `/me` silently disabled signing up for a reason the member
-        // could not see.
         mutableState.value = current.copy(joinSheet = open.copy(saving = true, error = null))
         viewModelScope.launch {
             when (
@@ -740,8 +675,6 @@ class MissionDetailViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The sheet stays and so do the answers: nothing was written, and a member who
-                    // has to re-pick after a refusal is paying for the server's reply.
                     mutableState.update {
                         it.copy(
                             joinSheet = open.copy(saving = false, error = result.error),
@@ -796,11 +729,6 @@ class MissionDetailViewModel(
                     FinanceEntryDraft(
                         entryId = entry.id,
                         income = entry.income,
-                        // The wire carries `2500.0000`, and the field takes digits alone: opening
-                        // the editor on the raw form shows a number the member cannot edit without
-                        // it changing shape under them (found on a device, 2026-08-23). Money here
-                        // is whole aUEC — the server's own `@WholeNumber` — so the fraction is
-                        // nothing to keep.
                         amount = entry.amount.substringBefore('.').filter(Char::isDigit),
                         note = entry.note.orEmpty(),
                         version = entry.version,
@@ -905,7 +833,6 @@ class MissionDetailViewModel(
                     announce(LiveSyncSections.MISSION_FINANCE)
                 }
 
-                // The editor stays open with what was typed.
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the booking could not be written: ${result.error}" }
                     mutableState.update { it.copy(saving = false, error = result.error) }
@@ -915,11 +842,8 @@ class MissionDetailViewModel(
     }
 
     /**
-     * Runs a write that answers with one row, and patches that row in place.
-     *
-     * The slim endpoints answer with the participant alone, so the roster around it is left as it
-     * was rather than re-read: nothing else on the Einsatz changed, and a second full read would
-     * make a check-in cost what opening the screen costs.
+     * Runs a write that answers with one participant row and patches that row in place without
+     * re-reading the roster.
      *
      * @param request the call.
      */
@@ -1000,12 +924,10 @@ class MissionDetailViewModel(
     }
 
     /**
-     * Switches tab, fetching the money the first time its tab is chosen.
+     * Switches tab, fetching the finances the first time their tab is chosen.
      *
-     * The Verwaltung tab carries the form's whole lifecycle: arriving fills it from the Einsatz as
-     * last read, and leaving clears it. Clearing is not tidiness — the form holds the three section
-     * counters it was filled with, and coming back to a stale set is exactly the 409 the per-section
-     * locking exists to avoid.
+     * Arriving on Verwaltung fills the form from the Einsatz as last read; leaving clears it, so its
+     * section counters are never stale.
      *
      * @param tab the tab the member picked.
      */
@@ -1019,16 +941,8 @@ class MissionDetailViewModel(
         if (tab == MissionTab.FINANCES && mutableState.value.finances is MissionFinancesPhase.Idle) {
             loadFinances()
         }
-        // The CREW catalogue, once, and only for somebody who may assign a role. It is the second
-        // of two catalogues that share their names; reading it on the Teilnehmer tab instead would
-        // offer Pilot and Turret for a participant's Funktion, which the server refuses with a 400.
         if (tab == MissionTab.UNITS) {
             loadCrewJobTypes()
-            // The unit pickers' options, on the same terms as the CREW catalogue above: only for
-            // a caller who may manage, once, and silently on failure — an empty picker is the
-            // truth for an Einsatz whose roster owns no ships. The ships are the MISSION's own
-            // list, not the hangar's: a hangar-wide one would offer ships nobody on the roster
-            // can bring.
             val current = mutableState.value
             if (current.canManage && current.unitShips.isEmpty()) {
                 viewModelScope.launch {
@@ -1129,11 +1043,8 @@ class MissionDetailViewModel(
 }
 
 /**
- * The Einsatz with one participant row replaced by a newer copy of itself.
- *
- * The counts above the roster are recomputed from it rather than taken from the write's answer:
- * the slim endpoints answer with the row alone, and a screen that showed "3 angemeldet, davon 2
- * eingecheckt" from a stale header would contradict the list right under it.
+ * The Einsatz with one participant row replaced by a newer copy, with the roster counts recomputed
+ * from the rows.
  *
  * @param row the row as the server now has it.
  * @return the Einsatz, or itself unchanged when the row is not on this one.

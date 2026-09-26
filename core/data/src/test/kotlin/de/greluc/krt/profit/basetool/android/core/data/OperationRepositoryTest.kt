@@ -158,8 +158,6 @@ class OperationRepositoryTest {
     @Test
     fun `CANCELED with one L is the operation spelling and must map`() =
         runTest {
-            // The backend writes CANCELED here and CANCELLED on a mission. Mirroring the server is
-            // what keeps the badge off UNKNOWN; "correcting" the spelling here would break it.
             respond(
                 """
                 {"content": [{"id": "o9", "name": "Abgesagt", "status": "CANCELED"}],
@@ -177,8 +175,6 @@ class OperationRepositoryTest {
     @Test
     fun `a row without an id is dropped but the server total is not lowered`() =
         runTest {
-            // It cannot be opened, so offering it would produce a tap that does nothing. Quietly
-            // lowering the stated total would hide the fault instead of showing it.
             respond(
                 """
                 {"content": [{"name": "Namenlos", "status": "ACTIVE"},
@@ -206,8 +202,6 @@ class OperationRepositoryTest {
     @Test
     fun `an unknown status is never sent to the server`() =
         runTest {
-            // UNKNOWN is this build's word for "the server said something new"; sending it back
-            // would be a filter for a status that does not exist.
             respond(ONE_PAGE)
 
             repository.search(
@@ -258,9 +252,6 @@ class OperationRepositoryTest {
     @Test
     fun `a payout carries what it is made of, not just the total`() =
         runTest {
-            // 4150 earned, 4129.25 transferred. The 20.75 gap is the fee, and 300 of what does
-            // arrive is the member's own outlay coming back — the app showed the total and dropped
-            // both, leaving a figure nobody could check.
             respond(HEAD)
             respond(ROLLUP)
             respond(PAYOUTS)
@@ -277,9 +268,6 @@ class OperationRepositoryTest {
     @Test
     fun `every digit the server sent survives the mapping`() =
         runTest {
-            // The wire carries a fixed-scale decimal and the screen formats it. Nothing here may
-            // round or go through a Double -- that is how a total gains an error the server never
-            // had.
             respond(HEAD)
             respond(ROLLUP)
             respond(PAYOUTS)
@@ -293,9 +281,6 @@ class OperationRepositoryTest {
     @Test
     fun `a refused roll-up fails the whole overview`() =
         runTest {
-            // All three endpoints carry the identical canSeeOperation gate, so a refusal on one is
-            // a refusal on the screen. Rendering a head over a missing roll-up would show an
-            // Operation that claims to have earned nothing.
             respond(HEAD)
             respond("{}", status = HTTP_FORBIDDEN)
 
@@ -307,8 +292,6 @@ class OperationRepositoryTest {
     @Test
     fun `a missing truncated flag is read as not truncated`() =
         runTest {
-            // The field is a warning. Inventing one where the server sent none would put a caveat
-            // on a complete list.
             respond(HEAD)
             respond("""{"operationId": "o1", "totalSum": 1.0, "missions": []}""")
             respond("""{"payouts": []}""")

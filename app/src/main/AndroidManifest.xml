@@ -8,38 +8,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!--
-      Reads whether a network exists at all, for one rule: offline DISABLES writes rather than
-      queueing them (design ch. 14 — the optimistic-locking contract makes a queued mutation a
-      conflict factory). Normal permission, granted at install, no runtime prompt, and nothing
-      leaves the device: the callback reports the local link. Owner decision 2026-08-23; the
-      plan's permission inventory and the TDDDG analysis carry it.
-    -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!--
-      Posting to the shade for something the running app's own SSE stream delivered (chapter 14).
-      There is NO push channel (plan Q2), so this never wakes a closed app; it reaches a member who
-      switched screens or locked the device. Kept in the permission inventory of the plan's privacy
-      gate alongside the other three.
-    -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!--
-      allowBackup is OFF, rather than on-with-exclusions. Both files this app persists — the
-      encrypted refresh token and the org-unit pin — are excluded from backup and device transfer
-      anyway, so a restore would produce an empty app: backup buys a member nothing here. What it
-      costs is a standing invariant, that every file added in future is remembered in every rule
-      section, and a class of mistake nobody would notice. `dataExtractionRules` stays, because on
-      Android 12+ allowBackup=false alone does not reliably stop a device-to-device transfer.
-
-      There is no `fullBackupContent`. Only API 30 and lower reads it, the floor is 31 (ADR-0015),
-      and on those old releases allowBackup=false already switches off cloud backup AND device
-      transfer — so the legacy rule file protected nothing at any floor. Removed 2026-09-22.
-    -->
-    <!-- Package visibility (API 30+): without this declaration PackageManager answers "no
-         browser" for every device, and design ch. 15 decides between opening a licence URL and
-         copying it on exactly that answer. Narrow by intent, not by package name. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -47,16 +19,6 @@
         </intent>
     </queries>
 
-    <!--
-      enableOnBackInvokedCallback: predictive back, which design ch. 03 asks of every screen.
-      targetSdk 37 makes the platform enable it by default on Android 16+, but minSdk is 31 and on
-      a device running 13 through 15 the back-preview only runs when the app opts in here. The one
-      case the flag exists for is therefore also the one a current emulator image cannot show.
-
-      tools:targetApi rather than a blanket ignore: lint is right that the attribute is newer than
-      minSdk 31 (it arrived in API 33), and wrong that this is a problem: being ignored below 33
-      is what an opt-in flag is for. The marker says which level it starts mattering at instead of silencing the check.
-    -->
     <application
         android:name=".BasetoolApplication"
         tools:targetApi="33"
@@ -79,12 +41,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!--
-              In-app deep links (basetool://…). Notifications and internal links resolve to the
-              same routes the navigation graph declares, so every screen has exactly one address.
-              Verified https App Links for the web domain follow once the server publishes
-              assetlinks.json (see docs/ANDROID_APP_SECURITY.md).
-            -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -93,23 +49,6 @@
             </intent-filter>
         </activity>
 
-        <!--
-          Receives the browser's redirect at the end of a login. The intent filter that matches it
-          lives in the flavour manifests, because the two realms register different redirect URIs:
-          a verified App Link in production, a custom scheme on the dev realm only.
-
-          singleTask because the Custom Tab sits on top of this task while the login runs — a
-          singleTop activity would be created a second time on top of the browser instead of
-          returning to the app. Translucent and with no layout, so nothing flashes between the
-          browser closing and the app appearing.
-        -->
-        <!--
-          Opts AppCompat's per-app language backport into persisting the choice itself
-          (ADR-0007). Without this metadata `AppCompatDelegate.setApplicationLocales` applies the
-          language for the current process only on API 31-32 and the app reverts to the device
-          language on the next cold start, which reads as the setting not having been saved. On
-          API 33+ the platform stores it and this declaration is inert.
-        -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
@@ -126,11 +65,6 @@
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
-        <!--
-            Reports are handed to the member through a share sheet, never written to shared
-            storage: no storage permission, nothing world-readable, and the grant lasts for the one
-            intent. `exported="false"` with `grantUriPermissions` is what makes that true.
-        -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

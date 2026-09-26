@@ -57,21 +57,11 @@ private val BRAND_MARK = 64.dp
 /**
  * What covers the app while it is locked.
  *
- * **This screen shows nothing.** No counts, no names, no last-seen mission — the design chapter is
- * explicit ("No data hints on this screen"), and the reason is that the lock exists precisely for
- * the moment somebody else is holding the phone. A badge with an unread count would leak exactly
- * the kind of thing the lock is there to withhold.
- *
- * **It carries no input of its own either.** Authentication happens in the platform's
- * `BiometricPrompt`, which draws above this process; an app-rendered PIN pad would be a credential
- * this app could read. So the screen is a backdrop with one action: ask the system to prompt again.
- * The design's second button, "Gerätesperre verwenden", is not drawn — the prompt already offers
- * the device credential as its own fallback (`BIOMETRIC_STRONG or DEVICE_CREDENTIAL`), so a second
- * button would open the same sheet and only suggest that the first one had not.
+ * It shows no data and has no input of its own; its one action asks the system prompt again, which
+ * already offers the device credential as fallback.
  *
  * @param messageRes a message from the previous attempt, or `null`
- * @param onUnlock asks the system to prompt, or `null` when the lock can no longer be satisfied and
- *   a retry could only fail
+ * @param onUnlock asks the system to prompt, or `null` when the lock can no longer be satisfied
  * @param onSignOut the way out, offered only when there is nothing left to retry
  * @param modifier layout modifier from the caller
  */

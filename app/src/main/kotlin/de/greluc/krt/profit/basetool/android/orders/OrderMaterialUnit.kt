@@ -13,12 +13,7 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 
 /**
- * The material's own unit word.
- *
- * **Never a hardcoded SCU** — the rule `RefineryScreen` writes down and this card broke: it
- * printed „SCU" over every line, so an order for eight *pieces* read as eight SCU, a figure a
- * member acts on. An unknown unit is left unsaid rather than guessed, because naming the wrong one
- * is worse than naming none.
+ * The material's own unit word, never a hardcoded SCU.
  *
  * @return the word to put after the figure, or an empty string when the server named no unit.
  */

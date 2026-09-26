@@ -22,17 +22,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Where the bank's two flags come from, and where they deliberately do **not**.
- *
- * The first attempt derived them from `UserDto.roles`, applying Spring's
- * `ADMIN > BANK_MANAGEMENT > BANK_EMPLOYEE` hierarchy on the client. That could never have worked,
- * and a device run proved it: the me-response reports role **display names** — `"Bank Employee"`,
- * not `BANK_EMPLOYEE` — the bank roles carry no permissions at all, and the hierarchy lives in the
- * server's `SecurityConfig`. The scope segment showed its padlock to a user who holds the role.
- *
- * `GET /api/v1/me/capabilities` answers both questions with the hierarchy already applied. These
- * tests pin that the client asks it and keeps no rule of its own — including the inverse case a
- * role-name reading would get wrong, and the refusal that must lock rather than open.
+ * Pins that the bank's two flags come from `GET /api/v1/me/capabilities`, not from the
+ * me-response's roles, and that a failed capabilities read locks rather than opens.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -53,11 +44,10 @@ class IdentityCapabilitiesTest {
     /**
      * Reads the identity against a me-response and a capabilities answer.
      *
-     * @param roles what the me-response reports as assigned; deliberately populated, so a
-     *   regression that starts reading them again is visible.
+     * @param roles what the me-response reports as assigned; populated so a regression that reads them
+     *   shows up.
      * @param capabilities the capabilities body, or `null` to make that read fail.
-     * @param meExtras extra me-response fields, appended raw. Used to state the membership flags
-     *   explicitly so a regression that starts reading them again shows up as a failure.
+     * @param meExtras extra me-response fields, appended raw, e.g. explicit membership flags.
      * @return the identity the app assembled.
      */
     private suspend fun identityWith(
@@ -94,12 +84,6 @@ class IdentityCapabilitiesTest {
     @Test
     fun `an admin reaches Logistician and Mission-Manager without holding either membership`() =
         runTest {
-            // The defect this whole change exists for. The me-response's isLogistician /
-            // isMissionManager report whether a STAFFEL MEMBERSHIP ROW carries the flag, and an
-            // admin holds no Staffel membership by design — so both were false and the app greyed
-            // out the Lager writes, the Auftrag writes and the payout confirmation for the one role
-            // that may do everything. The me-response below still says false, on purpose: if a
-            // regression starts reading it again, this test goes red.
             val identity =
                 identityWith(
                     roles = """"Admin"""",
@@ -153,8 +137,6 @@ class IdentityCapabilitiesTest {
     @Test
     fun `a failed capabilities read locks the grants rather than guessing them`() =
         runTest {
-            // The narrower reading: an outage must not hand somebody a control the server refuses.
-            // The me-response deliberately claims the membership flags are set.
             val identity =
                 identityWith(
                     roles = """"KRT Member"""",
@@ -183,9 +165,6 @@ class IdentityCapabilitiesTest {
     @Test
     fun `the flags come from the capabilities, not from the role names beside them`() =
         runTest {
-            // The role list says nothing about the bank; the server says the caller runs it. This
-            // is the Bankleitung case, whose display name is "Bank Management" and whose code the
-            // client never sees.
             val identity =
                 identityWith(
                     roles = """"KRT Member"""",
@@ -199,8 +178,6 @@ class IdentityCapabilitiesTest {
     @Test
     fun `a role list that mentions the bank does not by itself open anything`() =
         runTest {
-            // The inverse guard: a client that went back to reading role names would pass the test
-            // above and fail this one.
             val identity =
                 identityWith(
                     roles = """"Bank Employee","Bank Management"""",
@@ -229,8 +206,6 @@ class IdentityCapabilitiesTest {
         runTest {
             val identity = identityWith(roles = """"Bank Employee"""", capabilities = null)
 
-            // The member record loaded, so the identity is usable; what could not be learned is
-            // simply not offered.
             assertFalse(identity.bankEmployee)
             assertFalse(identity.bankManagement)
         }

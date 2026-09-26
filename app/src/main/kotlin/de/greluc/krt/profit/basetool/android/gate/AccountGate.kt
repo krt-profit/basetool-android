@@ -21,16 +21,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 
 /**
- * Stands between a valid session and the app, and renders [content] only once the member is in.
+ * Stands between a valid session and the app, and renders [content] only once the member is
+ * cleared.
  *
- * A token proves who somebody is; it does not prove they are allowed in. The backend refuses every
- * gated endpoint for a member whose registration is unapproved, so without this wrapper the first
- * screen would load, fire its requests, and paint a wall of failures that say nothing about the
- * actual reason.
- *
- * **[content] is not composed while the gate is closed**, which is the point of taking it as a
- * lambda rather than rendering it behind an overlay: a dashboard composed underneath would start
- * its own loads against endpoints that are guaranteed to answer 403.
+ * [content] is not composed while the gate is closed, so no screen fires requests the backend would
+ * refuse for an unapproved member.
  *
  * @param viewModel holds the gate state and owns the polling loop
  * @param accountName the member's login name from the ID token, shown while they wait
@@ -71,9 +66,6 @@ fun AccountGate(
 
         is AccountGateState.Unavailable -> {
             GateUnavailableScreen(
-                // Only a request that never reached the server may be called "offline". A 500 or a
-                // malformed body means the server answered — telling the member to check their
-                // connection there would send them chasing a fault that is not on their side.
                 offline = current.error is ApiError.Network,
                 onRetry = viewModel::refresh,
                 onLogout = onLogout,
@@ -87,9 +79,6 @@ fun AccountGate(
 }
 
 /**
- * How many failed attempts in a row before the gate names a fallback channel.
- *
- * Design ch. 14: after the third. Earlier would be noise on a thirty-second blip; later and a
- * member sitting through a real outage never learns there is somewhere else to ask.
+ * How many consecutive failed attempts before the gate names a fallback channel.
  */
 private const val GATE_ESCALATE_AFTER = 3

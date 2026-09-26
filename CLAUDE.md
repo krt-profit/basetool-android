@@ -269,8 +269,8 @@ The `prod` flavor never trusts custom anchors and has no runtime-switchable endp
 Android Lint (`warningsAsErrors`; baseline files are forbidden without an owner decision),
 **detekt** and **Spotless (ktlint)** run in `check`. **Every new or modified piece of code is
 linted before the task is done, and all findings introduced by your change are fixed — never
-silenced** with `@Suppress` unless the rule is genuinely wrong at that call site (then leave
-a one-line comment saying why). Run `./gradlew spotlessApply` before **every** push; all lint
+silenced** with `@Suppress` unless the rule is genuinely wrong at that call site (then the
+reason goes into the commit message and the PR, never into a code comment). Run `./gradlew spotlessApply` before **every** push; all lint
 gates must be green before every push. Pre-existing findings you did not touch are out of
 scope — but never add a new one on top.
 
@@ -377,6 +377,28 @@ scope — but never add a new one on top.
   three sentences — what changed and why it matters to the user. No design essays.
 - README, the concept docs, and the German handbook (the `basetool-android.wiki` repo) move with
   the change (see Requirements).
+
+## Code comments (HARD RULE — no comments besides KDoc)
+
+**The code carries no comments besides proper KDoc, the KDoc is short and precise, and no history is
+kept in either.** Binding on every change and every agent, main and test sources alike — the same
+rule as the main repository's ADR-0214 (`basetool/docs/adr/0214-code-carries-no-comments-besides-javadoc.md`).
+
+- **No comments.** No `//` or `/* */` in Kotlin, no `<!-- -->` in XML resources, no `#` in YAML,
+  properties, ProGuard rules or scripts, no commented-out code or config.
+- **What stays:** KDoc `/** */` on the declarations it documents (Python docstrings and PowerShell
+  comment-based help under the same rules), licence headers, and tool directives with no prose
+  after them (`# shellcheck disable=`, `# noqa`, …). `@Suppress` and other annotations are not
+  comments.
+- **KDoc is short, precise and carries no history.** One summary sentence, a contract sentence only
+  when a caller needs it, then the tags. No dates, PR or issue numbers, "previously" / "now" /
+  "used to", migration or incident stories, rationale essays or pointers to other comments; a bare
+  `REQ-…` / `ADR-…` pointer is fine.
+- **The reasoning goes into the commit message and the PR body.** A durable fact a later change
+  needs goes into the spec, the ADR, the docs or the Basetool knowledge base — never into a comment.
+- **Out of scope:** generated and vendored files, Markdown, and test fixtures whose comments are the
+  data under test.
+- **Mind live syntax.** Before deleting a comment, check it held nothing a tool reads.
 
 ## Git
 

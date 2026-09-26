@@ -147,12 +147,10 @@ enum class BankRequestStatus {
 }
 
 /**
- * Which class of approver a flagged request waits on.
+ * Which class of approver a flagged request waits on, fixed by the server when the request is raised.
  *
- * Decided by the server when the request is raised and immutable afterwards. For every
- * request-capable account except the KRT one it is [RESPONSIBLE_HOLDER]; only the KRT account
- * escalates by amount (REQ-BANK-047), and that ladder escalates **who** must approve, never how
- * many must. There is no approval count anywhere in this flow.
+ * [RESPONSIBLE_HOLDER] for every request-capable account except KRT, whose ladder escalates the
+ * approver class by amount (REQ-BANK-047); there is never an approval count.
  */
 enum class BankRequestApprover {
     /** The account's responsible holder — Staffelleiter / SK-Lead, or Bereichsleiter. */
@@ -168,10 +166,8 @@ enum class BankRequestApprover {
 /**
  * A booking request as the member sees it.
  *
- * The approval model is **two-step and single-vote** (REQ-BANK-041): a request above the caller's
- * limit is flagged, one holder of [requiredApprover] grants the owner approval, and only then may
- * a bank employee confirm it. [ownerApprovalGranted] is therefore a gate that has or has not been
- * passed — not a tally.
+ * Approval is two-step and single-vote (REQ-BANK-041): a flagged request needs one owner approval
+ * from [requiredApprover] before a bank employee may confirm it.
  *
  * @property id the request.
  * @property accountId which account it moves, needed to reopen the sheet on it.
@@ -182,21 +178,16 @@ enum class BankRequestApprover {
  * @property note what it is for, or `null`.
  * @property status where it stands, or `null` if the server sent a value this build predates.
  * @property requester who raised it, by handle.
- * @property rejectReason why a bank employee refused it, or `null`. Shown on the row, because a
- *   rejection without its reason leaves the requester nothing to correct.
- * @property applicableLimit the threshold that flagged it, as the server snapshotted it at
- *   creation. Kept for display: it is what makes the approval line state a number rather than a
- *   vague warning.
- * @property requiresOwnerApproval whether it was flagged as needing an owner approval before a
- *   bank employee may act. `false` means a bank employee can confirm it straight away.
- * @property ownerApprovalGranted whether that approval has been given. Meaningless while
+ * @property rejectReason why a bank employee refused it, or `null`; shown on the row.
+ * @property applicableLimit the threshold that flagged it, as snapshotted at creation.
+ * @property requiresOwnerApproval whether an owner approval is needed before a bank employee may
+ *   act; `false` means it can be confirmed straight away.
+ * @property ownerApprovalGranted whether that approval has been given; meaningless while
  *   [requiresOwnerApproval] is `false`.
  * @property ownerApprovalBy who granted it, by handle, or `null` while it is outstanding.
  * @property requiredApprover which class must grant it; `null` when none is needed.
  * @property createdAt when it was raised, in UTC.
- * @property version the optimistic-locking version. Every write against a request echoes it, so
- *   two approvers acting on the same request at the same moment collide with a 409 instead of one
- *   silently overwriting the other.
+ * @property version the optimistic-locking version every write against the request echoes.
  */
 data class BankBookingRequest(
     val id: String,
@@ -244,11 +235,9 @@ data class BankRequestDraft(
  * @property note what it was for, or `null`
  * @property holder whose holding it moved, or `null`
  * @property createdAt when it was posted, in UTC
- * @property transferFee what the transfer itself cost, when the server charged one. Shown so the
- *   amount on the row and the amount that left the account are reconcilable rather than silently
- *   different.
- * @property counterpartyHandle the recipient as recorded on the transfer, or `null`. A member
- *   handle: shown, never logged.
+ * @property transferFee what the transfer itself cost, when the server charged one
+ * @property counterpartyHandle the recipient as recorded on the transfer, or `null`; a member
+ *   handle, shown but never logged
  */
 data class BankBooking(
     val id: String,
@@ -272,12 +261,8 @@ data class BankBooking(
     val isReversal: Boolean get() = reversesTransactionId != null
 
     /**
-     * Whether this line adds to the account.
-     *
-     * Derived from the **kind**, never from the digits: the ledger stores every amount as a
-     * positive magnitude, so reading the sign off the number would show every withdrawal as a
-     * deposit. A kind this build does not know is treated as neither — it renders without a sign
-     * rather than guessing one.
+     * Whether this line adds to the account, derived from [type] because amounts are stored as positive magnitudes;
+     * `null` for a kind this build does not know.
      */
     val incoming: Boolean? get() =
         when (type) {
@@ -308,17 +293,15 @@ data class BankApprovalLimitUser(
 )
 
 /**
- * The account's Freigabe-Limits (design ch. 12 artboard 10).
+ * The account's Freigabe-Limits (design ch. 12, artboard 10).
  *
- * **Limits per tier, not „approval steps by amount".** Up to the limit a booking may be requested
- * without a further approval; above it the account's owner has to release it. A **user** limit
- * beats the tier limit.
+ * Up to its limit a booking may be requested without further approval; above it the account's owner
+ * must release it. A user limit beats the tier limit.
  *
  * @property canEdit whether the caller may change them.
  * @property configurable whether this account has them at all.
  * @property allMembersSupported whether „Alle Mitglieder der Org-Einheit" applies here.
- * @property areaMembersSupported whether the Bereich tier applies here — a dimension the artboard
- *   does not draw and the server does support, so it is shown when the server says it exists.
+ * @property areaMembersSupported whether the Bereich tier applies here.
  * @property allMembersLimit the limit for everyone, or `null` when none is set.
  * @property areaMembersLimit the same for the Bereich.
  * @property roleLimits the limit per role code, in the server's own map.
@@ -371,11 +354,7 @@ sealed interface BankLimitTarget {
 }
 
 /**
- * What the holder of an account may change about it, and what it currently says.
- *
- * **The two `can*` flags come from the server, not from a role the app worked out.** Which member
- * is responsible for an account is a per-account fact, and the settings answer states it — so the
- * screen offers exactly the controls the server would accept and guesses at nothing.
+ * What the holder of an account may change about it, and what it currently says; the `can*` flags come from the server.
  *
  * @property accountId which account
  * @property accountName how it reads
@@ -478,10 +457,7 @@ interface BankSource {
     ): ApiResult<BankAccountSettings>
 
     /**
-     * Removes one.
-     *
-     * The tier below it then applies, which the confirmation names — removing a limit is not the
-     * same as setting it to zero, and a member has to be told which one takes over.
+     * Removes one Freigabe-Limit, so the tier below it applies.
      *
      * @param id the account.
      * @param target which limit.
@@ -572,11 +548,7 @@ interface BankRequestSource {
     ): ApiResult<BankBookingRequest>
 
     /**
-     * Corrects one of the caller's own pending, unapproved requests.
-     *
-     * The account and the kind are deliberately absent: the server refuses a change to either, so
-     * a signature that accepted them would promise something the API does not do. Correcting those
-     * means withdrawing the request and raising a new one.
+     * Corrects one of the caller's own pending, unapproved requests; the account and the kind cannot change.
      *
      * @param id the request.
      * @param version the optimistic-locking version to echo.
@@ -584,7 +556,7 @@ interface BankRequestSource {
      * @param note the corrected purpose, or `null` to clear it.
      * @param targetAccountId where a transfer goes, unchanged for the other two kinds.
      * @return the request as the server recorded it, or the classified failure — a 409 when
-     *   somebody approved or booked it while the sheet was open.
+     *   somebody approved or booked it meanwhile.
      */
     suspend fun updateRequest(
         id: String,
@@ -597,9 +569,7 @@ interface BankRequestSource {
     /**
      * Grants or revokes this member's approval on someone else's request.
      *
-     * **No version, unlike every other write here.** The server takes no body on either verb of
-     * `…/owner-approval`, so there is nothing to echo: the grant is idempotent and the state it
-     * sets does not depend on what the client last read.
+     * Carries no version: the call takes no body and is idempotent.
      *
      * @param id the request.
      * @param granted whether to grant.
@@ -626,16 +596,13 @@ enum class BankAccountStatus {
 }
 
 /**
- * One account as the staff dashboard lists it.
- *
- * Staff see **every** account of the unit, including ones they hold no view grant on and ones that
- * are closed — the delta to the member list, which shows only what the caller may see.
+ * One account as the staff dashboard lists it, including closed ones and ones the caller holds no view grant on.
  *
  * @property id the account.
  * @property accountNo the number a member quotes when asking about it.
  * @property name its display name.
- * @property type the account kind as the server names it; `CARTEL` is the one visible to everyone
- *   (REQ-BANK-037), which is what earns the row its visible-to-all chip.
+ * @property type the account kind as the server names it; `CARTEL` is visible to everyone
+ *   (REQ-BANK-037).
  * @property status active or closed.
  * @property balance the balance as the server rendered it, unformatted.
  * @property delta30d how it moved over thirty days, or `null`.
@@ -668,14 +635,11 @@ data class BankStaffTotals(
 /**
  * The staff dashboard.
  *
- * @property management whether the **server** grants this caller Bank-Management. It decides what
- *   the dashboard even contains (REQ-BANK-010): management sees every account plus the aggregate
- *   strip, a plain bank employee sees exactly the accounts they hold a grant for and no strip at
- *   all.
+ * @property management whether the server grants this caller Bank-Management, which decides what
+ *   the dashboard contains (REQ-BANK-010).
  * @property accounts the accounts this caller may see — every one for management, the granted ones
  *   for an employee.
- * @property totals the KPI band, or **`null` when the caller is not management**. Absent means
- *   "not for you", which is a different statement from zero and must not be rendered as one.
+ * @property totals the KPI band, or `null` when the caller is not management — which is not zero.
  */
 data class BankStaffDashboard(
     val management: Boolean,
@@ -691,16 +655,13 @@ data class BankStaffDashboard(
 typealias BankRequestPage = Page<BankBookingRequest>
 
 /**
- * One holder of the bank's money, as the confirmation picker offers them.
+ * One holder (Verwahrer) of the bank's money, as the confirmation picker offers them.
  *
- * A "Verwahrer" holds cash on the organisation's behalf; a booked deposit or withdrawal records
- * which one received or paid it out. Verwahrung is kept at unit level and is **not** mapped to
- * individual accounts.
+ * Custody is kept at unit level, not per account.
  *
  * @property id the holder.
  * @property handle their in-game name.
- * @property active whether they still hold; an inactive one is kept for the ledger's sake and is
- *   not offered.
+ * @property active whether they still hold; inactive holders are kept for the ledger and not offered.
  * @property totalHeld how much they hold altogether, unformatted.
  * @property version the optimistic-locking version an activation change echoes.
  */
@@ -717,12 +678,10 @@ data class BankHolder(
  *
  * @property requestId which request.
  * @property version the version it was read at.
- * @property holderId who received or paid out the money. **Required by the server**, which is why
- *   confirming is a sheet rather than a button.
+ * @property holderId who received or paid out the money; required by the server.
  * @property destinationHolderId the receiving holder of a transfer; `null` for the other kinds.
- * @property ownerApprovalConfirmed the employee's attestation that the responsible holder's
- *   approval was obtained. An over-limit request is refused with `BANK_OWNER_APPROVAL_REQUIRED`
- *   without it (REQ-BANK-041); for a request that needs none it carries no meaning.
+ * @property ownerApprovalConfirmed the employee's attestation that the responsible holder approved;
+ *   required for an over-limit request (REQ-BANK-041).
  * @property staffNote the employee's own note on the booking (REQ-BANK-054), or `null`.
  */
 data class BankConfirmation(
@@ -735,18 +694,14 @@ data class BankConfirmation(
 )
 
 /**
- * One account as the lifecycle tab lists it.
- *
- * Distinct from [BankStaffAccount], which the dashboard supplies: that one carries a balance line
- * and no `version`, and every write here echoes one.
+ * One account as the lifecycle tab lists it, carrying the `version` every lifecycle write echoes.
  *
  * @property id the account.
  * @property accountNo the number.
  * @property name its display name.
  * @property type the account kind as the server names it.
  * @property status active or closed.
- * @property balance the balance, unformatted. **Closing needs it to be zero** — the server refuses
- *   otherwise, and the row says so rather than letting the button answer for it.
+ * @property balance the balance, unformatted; closing requires it to be zero.
  * @property orgUnitName which unit owns it, or `null`.
  * @property version the optimistic-locking version every lifecycle write echoes.
  */
@@ -808,10 +763,7 @@ interface BankLifecycleSource {
     ): ApiResult<BankManagedAccount>
 
     /**
-     * Closes or reopens an account.
-     *
-     * Reversible on purpose, which is why it carries no type-to-confirm: a closed account simply
-     * takes no further bookings.
+     * Closes or reopens an account; reversible, so it needs no type-to-confirm.
      *
      * @param id the account.
      * @param open whether to reopen it; `false` closes it.
@@ -836,9 +788,8 @@ interface BankLifecycleSource {
     /**
      * Activates or deactivates a holder.
      *
-     * **Not a removal.** An inactive holder can have no *new* money assigned to them; what they
-     * already hold stays withdrawable. Nothing about their rights on an account changes — that is
-     * what a grant does, and it lives elsewhere.
+     * Deactivation is not a removal: an inactive holder receives no new money, and what they hold stays
+     * withdrawable.
      *
      * @param id the holder.
      * @param active whether they may take new money.
@@ -858,9 +809,7 @@ const val ACCOUNTS_PAGE_SIZE: Int = 100
 /**
  * One member's standing on one account.
  *
- * **The row's existence is the view grant** (REQ-BANK-009): a row with all three flags false lets
- * the member see the account and book nothing. Revoking sight means deleting the row, not clearing
- * a fourth flag.
+ * The row's existence is the view grant (REQ-BANK-009); revoking sight deletes the row.
  *
  * @property userId the member.
  * @property handle their in-game name.
@@ -869,10 +818,8 @@ const val ACCOUNTS_PAGE_SIZE: Int = 100
  * @property canWithdraw whether they may book money out.
  * @property canTransfer whether they may move money to another account, judged on the **source**.
  * @property version the optimistic-locking version a flag change echoes.
- * @property exists whether the server already holds this row, which decides whether a change is a
- *   creation or a patch. **Not derivable from [version]**: a freshly inserted row's `@Version` is
- *   zero, so treating zero as "new" sends every first edit of an untouched grant as a creation and
- *   earns a 409.
+ * @property exists whether the server already holds this row, deciding creation or patch; not
+ *   derivable from [version], which is zero on a new row too.
  */
 data class BankGrant(
     val userId: String,
@@ -886,12 +833,8 @@ data class BankGrant(
 )
 
 /**
- * One account as the **office** sees it — `BANK_EMPLOYEE`.
- *
- * Distinct from [BankSource]'s pair of the same shape, and not interchangeable with it: the member
- * paths answer with what this caller may see, so a bank manager holding no view grant gets 403 on
- * an account they are nevertheless responsible for. These paths answer for every account of the
- * organisation, including closed ones.
+ * Account reads as the office (`BANK_EMPLOYEE`) sees them: every account of the organisation, including closed ones,
+ * unlike the member paths of [BankSource].
  */
 interface BankStaffAccountSource {
     /**
@@ -954,11 +897,9 @@ interface BankReportSource {
  */
 interface BankReversalSource {
     /**
-     * Reverses one transaction.
+     * Reverses one transaction with a negated counter-booking, leaving the original unchanged.
      *
-     * Writes a **negated counter-booking**; the original stays in the ledger unchanged. The server
-     * refuses a second one on the same transaction with `BANK_ALREADY_REVERSED`, so the screen must
-     * not offer it on a row that already carries a reversal.
+     * A second reversal of the same transaction is refused with `BANK_ALREADY_REVERSED`.
      *
      * @param transactionId which transaction — not the posting id.
      * @param note what to record about it, or `null`.
@@ -979,8 +920,8 @@ interface BankReversalSource {
  * @property amount the signed amount, as the server wrote it.
  * @property note what was said about it, if anything.
  * @property createdAt when it was booked, in UTC.
- * @property counterAccount the account on the other side, or `null` for a holder-to-holder move —
- *   custody is kept at org-unit level and those transfers touch no account at all.
+ * @property counterAccount the account on the other side, or `null` for a holder-to-holder move,
+ *   which touches no account.
  * @property counterHolder the holder on the other side, or `null`.
  * @property reversed whether this posting is itself a counter-booking.
  */
@@ -1030,10 +971,7 @@ interface BankHolderSource {
     ): ApiResult<BankHolderBookingPage>
 
     /**
-     * Moves custody from one holder to another.
-     *
-     * Touches **no account**: custody is kept at org-unit level, so this only re-attributes who is
-     * holding it. The source may go negative, which is deliberate and which the screen says.
+     * Moves custody from one holder to another without touching any account; the source may go negative.
      *
      * @param sourceHolderId who gives.
      * @param destinationHolderId who receives.
@@ -1081,20 +1019,16 @@ interface BankGrantSource {
     suspend fun grants(accountId: String): ApiResult<List<BankGrant>>
 
     /**
-     * Gives a member a standing on an account, or changes the one they have.
+     * Gives a member a standing on an account, or changes the one they have; all three flags false means may see, may
+     * book nothing.
      *
-     * Creating with all three flags false is the deliberate "may see, may book nothing" case.
-     *
-     * @param grant what the matrix now says. A grant whose `exists` is false is created rather
-     *   than patched — the version cannot say, because a new row's version is zero too.
+     * @param grant what the matrix now says; created rather than patched when `exists` is false.
      * @return the grant as the server recorded it.
      */
     suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant>
 
     /**
-     * Takes a member's standing away entirely.
-     *
-     * This is what revokes **sight** — there is no view flag to clear.
+     * Takes a member's standing away entirely, which is what revokes sight.
      *
      * @param userId the member.
      * @param accountId the account.
@@ -1106,13 +1040,9 @@ interface BankGrantSource {
     ): ApiResult<Unit>
 
     /**
-     * Searches the members a grant can be given to.
+     * Searches the whole user base for members a grant can be given to.
      *
-     * Answers over the **whole** user base rather than only over bank employees, because the server
-     * does: the same search backs the holder register and the approval limits. A member without the
-     * Bank Employee role can therefore be picked, and the creation then fails with
-     * `BANK_GRANTEE_MISSING_ROLE` — the screen says so rather than pretending the pick was
-     * impossible.
+     * Picking one without the Bank Employee role makes the creation fail with `BANK_GRANTEE_MISSING_ROLE`.
      *
      * @param query what was typed; blank asks for the first page unfiltered.
      * @return one page of candidates and whether the roster holds more (ADR-0104), or the
@@ -1122,18 +1052,8 @@ interface BankGrantSource {
 }
 
 /**
- * What a direct booking actually did.
- *
- * Two answers, because the server has two. `POST /bank/withdrawals` and `/bank/transfers` answer
- * `201` with the booked transaction — **unless** the amount is over the KRT employee ceiling, and
- * then the attempt is not refused but **filed** as a band-routed approval request and answered
- * `202` with a `pendingRequest` instead (REQ-BANK-047, ADR-0109). A deposit has no ceiling and is
- * always booked.
- *
- * The distinction has to reach the screen. Both are 2xx, so a client that only asks "did it
- * succeed" closes the sheet on a withdrawal that has **not** moved the balance and tells nobody —
- * and the member's next look at the account shows the old figure with no explanation. The web
- * says so out loud; this is how the app can.
+ * What a direct booking did: booked (`201`), or, for a withdrawal or transfer over the KRT employee ceiling, filed as
+ * an approval request (`202`) without moving the balance (REQ-BANK-047).
  */
 enum class BankDirectOutcome {
     /** The ledger moved. */
@@ -1156,44 +1076,30 @@ enum class DirectBookingKind {
 }
 
 /**
- * A booking the Verwaltung makes **without a request** (design ch. 12 artboard 9).
+ * A booking the Verwaltung makes without a request (design ch. 12, artboard 9).
  *
- * It exists for the case nobody files a request for — cash handed over in-game, a correction of
- * somebody else's booking — and it lives only in the Verwaltung. There is **no second approval**:
- * a wrong direct booking is corrected with a reversal, not edited.
+ * There is no second approval; a wrong direct booking is corrected by a reversal.
  *
  * @property kind which of the three.
  * @property accountId the account it lands on; the **source** account for a transfer.
  * @property amount how much, as typed.
- * @property holderId who physically holds the money. Required in all three modes, and by the
- *   server — custody is kept per org unit, not per account, so a balance without a holder would
- *   be money nobody is accountable for.
+ * @property holderId who physically holds the money; required in all three modes.
  * @property note the Verwendungszweck.
  * @property destinationAccountId the receiving account, for a transfer.
  * @property destinationHolderId who holds it afterwards, for a transfer.
- * @property feeInclusive which side of the in-game transfer fee [amount] stands on.
- *
- *   `false` — the server's own default — means the typed figure is what the **recipient
- *   receives**, and the fee is added on top: the account is debited `amount + fee` (ADR-0052,
- *   REQ-BANK-033). `true` makes the typed figure the **debited gross**, and the recipient gets
- *   `amount - fee`. The app used to send neither the flag nor any word about the fee, so a member
- *   typing 100 000 watched more than 100 000 leave the account with nothing on screen having said
- *   so.
- *
- *   Only meaningful where a fee applies — a withdrawal, and a transfer that changes holder. A
- *   deposit and a same-holder transfer are fee-free, and the flag is not sent for them.
- * @property justification why the booking was made, where the member gave a reason. Shown in the
- *   web's booking detail beside the Verwendungszweck; a booking made without one simply has none.
+ * @property feeInclusive which side of the in-game transfer fee [amount] stands on: `false` (the
+ *   server default) debits `amount + fee`, `true` debits [amount] and the recipient gets
+ *   `amount - fee` (ADR-0052). Sent only where a fee applies.
+ * @property justification why the booking was made, where the member gave a reason.
  * @property counterpartyUserId the member who received the payout, distinct from the holder who
- *   paid it (REQ-BANK-044) — recorded on the transaction header, not on the holder posting.
+ *   paid it (REQ-BANK-044).
  * @property counterpartyOrgUnitId which unit that member acted for.
  * @property counterpartyExternalName who received it when they are not a member at all.
- * @property staffNote the bank's internal note, on all three kinds. Redacted from the org unit's
- *   own members (REQ-BANK-054), which is what makes it a second field rather than a longer [note].
+ * @property staffNote the bank's internal note, redacted from the org unit's own members
+ *   (REQ-BANK-054).
  * @property splitEnabled whether a deposit is spread across the squadron accounts; deposit only.
- * @property splitPercent the share that is spread, 1..100. Travels **with** [splitEnabled] and
- *   never without it: `BankDepositRequest` carries an `@AssertTrue` refusing either half alone,
- *   and it is `@Schema(hidden = true)`, so no generated client and no contract test can see it.
+ * @property splitPercent the share that is spread, 1..100; always sent together with
+ *   [splitEnabled], as the server refuses either half alone.
  */
 data class DirectBooking(
     val kind: DirectBookingKind,
@@ -1229,11 +1135,8 @@ data class DirectBooking(
 }
 
 /**
- * The bank-staff surface — design chapter 12, artboards 4 to 8.
- *
- * Everything here is `hasRole(BANK_EMPLOYEE)` or narrower, and everything here was out of the
- * app's reach until `REQ-APP-BANK-007` was amended. Everything under `/api/v1/bank/admin` stays
- * out permanently.
+ * The bank-staff surface (design chapter 12, artboards 4 to 8), `hasRole(BANK_EMPLOYEE)` or narrower; nothing under
+ * `/api/v1/bank/admin` is reached.
  */
 interface BankStaffSource {
     /**
@@ -1246,14 +1149,10 @@ interface BankStaffSource {
     suspend fun staffDashboard(): ApiResult<BankStaffDashboard>
 
     /**
-     * Reads the org-wide in-game transfer-fee rate, as a fraction.
+     * Reads the org-wide in-game transfer-fee rate as a fraction, for a preview only; the server computes the real fee
+     * at booking time.
      *
-     * Guidance only: the authoritative fee is computed server-side at booking time. It exists so a
-     * member can be told, **before** they confirm, what will actually leave the account — which
-     * with the default on-top mode is more than the figure they typed.
-     *
-     * @return the rate, or the classified failure. A failure is not a reason to block a booking:
-     *   the caller falls back to showing no preview, exactly as the web does.
+     * @return the rate, or the classified failure; a failure only suppresses the preview.
      */
     suspend fun transferFeeRate(): ApiResult<KrtDecimal>
 
@@ -1289,18 +1188,11 @@ interface BankStaffSource {
     suspend fun confirmRequest(confirmation: BankConfirmation): ApiResult<BankBookingRequest>
 
     /**
-     * Books directly, without a request (`REQ-APP-BANK-*`).
-     *
-     * Three endpoints behind one call: `POST /bank/deposits`, `/bank/withdrawals` and
-     * `/bank/transfers`. They agree on the fields that matter here and differ only in which
-     * account the amount leaves — which is the same distinction the sheet's segment draws.
+     * Books directly without a request through `POST /bank/deposits`, `/bank/withdrawals` or `/bank/transfers`.
      *
      * @param booking what to book.
-     * @return whether it was booked or only filed ([BankDirectOutcome]), or the classified
-     *   failure. `403` is ordinary and says nothing about Bank-Management: the endpoints ask for
-     *   `hasRole('BANK_EMPLOYEE')` plus a **per-account** grant (`canDeposit` / `canWithdraw` /
-     *   `canTransfer`), which is a fact about the account picked inside the sheet and cannot be
-     *   known before the write.
+     * @return whether it was booked or only filed ([BankDirectOutcome]), or the classified failure; a
+     *   `403` reflects the per-account grant, not Bank-Management.
      */
     suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome>
 
@@ -1323,15 +1215,9 @@ interface BankStaffSource {
 const val QUEUE_PAGE_SIZE: Int = 50
 
 /**
- * Reads the org bank from the backend.
+ * Reads the org bank's member surface: `/org-units/bank/…` answers with the accounts this caller may see.
  *
- * **The member surface only.** `/org-units/bank/…` answers with the accounts this caller may
- * actually see — the ones public to everyone plus those they hold a view grant for. The staff
- * paths under `/bank/…` list every account in the organisation behind a bank role and belong to
- * [BankStaffRepository]; the split follows the two surfaces rather than the one file.
- *
- * Everything under `/api/v1/bank/admin` is reached by neither and never will be — that is the
- * admin area, which is web-only by owner decision.
+ * Staff paths belong to [BankStaffRepository]; `/api/v1/bank/admin` is never reached.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -1393,8 +1279,6 @@ class BankRepository(
             reader.put(
                 "${accountPath(id)}/balance-target",
                 OrgUnitBalanceTargetRequest(
-                    // No target IS the clear. Sending zero would set a target of nothing, which is
-                    // a different instruction and one the screen never offers.
                     target = parseTypedDecimal(target)?.let(::KrtDecimal),
                     version = version ?: 0L,
                 ),
@@ -1454,10 +1338,7 @@ class BankRepository(
         )
 
     /**
-     * Maps a settings answer onto the model.
-     *
-     * Every one of these calls answers with the whole settings snapshot, and the screen redraws
-     * from it: the version moves with each write, and so does what the caller may do next.
+     * Maps a settings answer onto the model; every settings call answers with the whole snapshot.
      *
      * @param result what the call returned.
      * @return the settings, or the failure.
@@ -1519,8 +1400,6 @@ class BankRepository(
                         sourceAccountId = draft.accountId,
                         type = draft.kind.toWire(),
                         amount = KrtDecimal(parseTypedDecimal(draft.amount) ?: BigDecimal.ZERO),
-                        // Only a transfer names a second account; the server ignores it otherwise,
-                        // and sending it anyway would put a value on the wire describing nothing.
                         targetAccountId = draft.targetAccountId.takeIf { draft.kind == BankRequestKind.TRANSFER },
                         note = draft.note?.takeIf { it.isNotBlank() },
                     ),
@@ -1682,8 +1561,6 @@ private fun OrgUnitBankBalanceDto.toModel(): BankAccountSummary? {
         orgUnitName = orgUnitName,
         balance = balance?.toString(),
         delta30d = delta30d?.toString(),
-        // Kept as doubles on purpose: these are the polyline's coordinates, not money to state.
-        // Nothing is ever printed from them, so the precision a decimal buys has no reader.
         sparkline = sparkline.orEmpty().map { it.value.toDouble() },
     )
 }
@@ -1703,8 +1580,6 @@ private fun OrgUnitBankAccountDetailDto.toModel(requestedId: String): BankAccoun
         delta30d = detail?.delta30d?.toString(),
         bookingCount = detail?.bookingCount ?: 0L,
         canRequest = canRequest == true,
-        // The threshold the request form explains live under the amount. It is per caller and per
-        // account and comes from the server, which is why the form must not carry a constant.
         applicableLimit = applicableLimit?.toString(),
         approvalExempt = approvalExempt == true,
     )
@@ -1758,11 +1633,7 @@ internal fun BankBookingRequestDto.Status?.toModel(): BankRequestStatus? =
     }
 
 /**
- * Maps the approver class onto the model.
- *
- * The contract types this one as a bare string rather than an enum, so an unknown value has to
- * stay possible: it maps to `null`, which reads as "no approver named" and hides the chip rather
- * than crashing on a band this build predates.
+ * Maps the approver class onto the model; an unknown string maps to `null`, which hides the chip.
  *
  * @return the approver class, or `null`.
  */
@@ -1809,8 +1680,6 @@ private fun BankBookingDto.toModel(): BankBooking? {
     val id = postingId ?: return null
     return BankBooking(
         id = id,
-        // A Storno addresses the transaction, not the posting: one transaction can carry several
-        // postings and the reversal negates all of them together.
         transactionId = transactionId,
         type = type?.value.orEmpty(),
         amount = amount?.toString(),
@@ -1818,9 +1687,6 @@ private fun BankBookingDto.toModel(): BankBooking? {
         holder = holderHandle,
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
         reversesTransactionId = reversedTransactionId,
-        // The fee the transfer actually cost and who it went to. Both are on the wire and the app
-        // dropped both, so a member reading a past transfer saw an amount that did not match what
-        // left the account and no record of the recipient they had entered.
         transferFee = transferFee?.toString(),
         counterpartyHandle = counterpartyHandle?.trim()?.takeIf { it.isNotEmpty() },
     )

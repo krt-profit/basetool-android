@@ -30,20 +30,10 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The lock's two invariants: **when** it seals, and **what it takes to open**.
+ * Tests the app lock: when it seals, including the grace-period boundary from both sides, and that only a successful
+ * decrypt with the authenticated key opens it.
  *
- * The second is the one CodeQL caught the earlier revision on. Opening used to be a state
- * assignment the callback triggered; it is now a decrypt that only an authenticated key can perform,
- * so the tests assert that a "successful" authentication whose decrypt fails does **not** open the
- * app. A lock that can be opened by anything other than the decrypt is not a lock.
- *
- * The grace period is the other half. Its failure modes are opposite and both bad — too eager and
- * it fires on every task switch until the member turns it off, too lax and the phone sits unlocked
- * on a desk — so the boundary is asserted from both sides.
- *
- * Robolectric because the refusal paths log through the project facade, which calls
- * `android.util.Log` — unmocked in a plain JVM test, so those two cases would fail on the
- * diagnostic instead of the assertion.
+ * Uses Robolectric because the refusal paths log through `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -148,13 +138,7 @@ class AppLockViewModelTest {
         }
 
     /**
-     * A second `start()` does not re-lock an app the member already opened.
-     *
-     * `onCreate` runs again on every activity recreation — a rotation, a font-size change, an
-     * in-app language change — and none of those restarted the process. Re-reading the setting
-     * there would demand a fingerprint for changing the language, which is neither of the two
-     * triggers the rule names. The view model survives a recreate (it is held by the
-     * `ViewModelStore`), so the guard is what makes the second call a no-op.
+     * A second `start()`, as on an activity recreation, does not re-lock an app the member already opened.
      */
     @Test
     fun `a second start after an unlock does not lock again`() =
@@ -325,10 +309,7 @@ class AppLockViewModelTest {
         }
 
     /**
-     * Coming back without having gone away is a no-op.
-     *
-     * `onStart` fires on the very first launch too, before any `onStop`, and treating that as a
-     * five-minute absence would lock an app that had just been opened.
+     * Foregrounding without a prior backgrounding changes nothing, since `onStart` also fires on the first launch.
      */
     @Test
     fun `foregrounding without a prior backgrounding changes nothing`() =
@@ -380,13 +361,7 @@ class AppLockViewModelTest {
         }
 
     /**
-     * **Arming without an authenticated cipher arms nothing.**
-     *
-     * The regression this whole two-phase shape exists for. An earlier revision sealed the session
-     * key inline while creating the auth-per-use Keystore key, which Keystore refuses with "Key
-     * user not authenticated" — on every device, and invisibly to every unit test, because the
-     * Keystore is not exercised off a device. `setEnabled(true)` therefore does nothing at all now;
-     * the only route in is prepareArm + a prompt + completeArm.
+     * `setEnabled(true)` arms nothing; the only route in is `prepareArm`, an authentication prompt, then `completeArm`.
      */
     @Test
     fun `setEnabled cannot arm the lock on its own`() =

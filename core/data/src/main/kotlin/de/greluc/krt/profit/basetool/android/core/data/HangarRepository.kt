@@ -25,24 +25,20 @@ import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
 /**
- * One ship in the member's hangar.
- *
- * The nested `shipType`, `manufacturer` and `location` of the wire model are flattened to the names
- * the card shows. Their ids and descriptions are not carried: a read-only card cannot use them, and
- * a model that mirrors the wire hides what the screen actually needs.
+ * One ship in the member's hangar, with the wire model's nested type, maker and location flattened
+ * to the names the card shows.
  *
  * @property id the ship's id
  * @property name the member's own name for it, or `null` when they gave none
  * @property typeName the ship type, e.g. "Carrack"
  * @property manufacturerName the maker, e.g. "Anvil Aerospace", or `null` when the type carries none
- * @property manufacturerAbbreviation the maker's own short form, e.g. "MISC" — what the card's
- *   lettermark is built from, because initials of the legal name turn "Musashi Industrial and
- *   Starflight Concern" into "MIA"
+ * @property manufacturerAbbreviation the maker's own short form, e.g. "MISC", from which the card's
+ *   lettermark is built
  * @property insurance the insurance as the server words it, e.g. "LTI", or `null`
  * @property locationName where it is parked, or `null`
  * @property fitted whether it is equipped and ready for an Einsatz
- * @property typeId the ship type's id — carried since phase 3 because an edit has to send it back
- * @property locationId the place's id, or `null`; likewise
+ * @property typeId the ship type's id, sent back by an edit
+ * @property locationId the place's id, or `null`, sent back by an edit
  * @property version the optimistic lock, echoed on the next save
  */
 data class Ship(
@@ -60,17 +56,14 @@ data class Ship(
 )
 
 /**
- * A hull — the one the member picks when adding a ship, and the one whose hold the profit
- * calculation fills.
+ * A hull, as picked when adding a ship and as filled by the profit calculation.
  *
- * One type for both because it is one thing. The Hangar has no use for the capacity and the profit
- * calculation has none for the maker, so each carries what it needs and leaves the other `null`.
+ * Each use fills what it needs and leaves the other's field `null`.
  *
  * @property id what a write sends
  * @property name the hull
- * @property manufacturerName the maker, or `null` — what tells two similar hulls apart
- * @property scu how much it carries, or `null` where the read did not ask. A full load of nothing
- *   is not a calculation, which is why the profit screen only offers hulls with a positive hold
+ * @property manufacturerName the maker, or `null`
+ * @property scu the hold capacity, or `null` where the read did not ask for it
  */
 data class ShipTypeOption(
     val id: String,
@@ -95,7 +88,7 @@ data class HomeLocation(
  *
  * @property name the member's own name for it, or `null`
  * @property typeId the hull
- * @property insurance `LTI`, or a whole number of months as text — the server accepts nothing else
+ * @property insurance `LTI`, or a whole number of months as text; the server accepts nothing else
  * @property locationId where it is parked, or `null`
  * @property fitted whether it is ready
  */
@@ -218,9 +211,8 @@ interface HangarSource {
     /**
      * Imports ships from a CCU-Game Fleetview export.
      *
-     * @param fileName what the export was called, sent with the part so the server's log says
-     *   where the rows came from.
-     * @param bytes the export's content, whether picked as a file or pasted into the box.
+     * @param fileName the export's file name, sent with the part for the server's log.
+     * @param bytes the export's content, picked as a file or pasted.
      * @return what the server made of it, or the classified failure.
      */
     suspend fun importFleetview(
@@ -245,12 +237,10 @@ interface HangarSource {
 }
 
 /**
- * Reads the hangar from the backend.
+ * Reads and writes the member's own hangar through `/my-ships` (never `/ships`) plus the active org
+ * unit's aggregate.
  *
- * **`/my-ships`, never `/ships`.** The latter reads every member's ships and is gated on a
- * permission most members do not have; the app's screen is the member's own hangar plus the
- * aggregate their org unit already publishes. Which org unit that is follows from the
- * `X-Active-Org-Unit-Id` header the interceptor sets, not from anything sent here.
+ * The org unit follows from the `X-Active-Org-Unit-Id` header the interceptor sets.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -310,11 +300,10 @@ class HangarRepository(
     /**
      * Builds the query both reads take.
      *
-     * @param search a ship-type fragment; a blank one is left off the wire entirely rather than
-     *   sent as an empty filter.
+     * @param search a ship-type fragment; a blank one is omitted entirely.
      * @param page the zero-based page index.
      * @param pageSize how many rows to ask for.
-     * @return the parameters, raw and unencoded — `HttpUrl` encodes them exactly once.
+     * @return the parameters, raw and unencoded.
      */
     private fun params(
         search: String,
@@ -362,9 +351,6 @@ class HangarRepository(
         )
 
     override suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>> {
-        // The catalogue endpoint has no search parameter of its own — the app asks for one page and
-        // narrows it here. That is honest only because the page is the whole visible catalogue at
-        // this size; when it stops being, the screen has to say so rather than filter silently.
         val params =
             listOf(PAGE_PARAM to "0", SIZE_PARAM to SHIP_TYPE_PAGE_SIZE.toString(), SORT_PARAM to TYPE_SORT)
         return when (
@@ -414,8 +400,6 @@ class HangarRepository(
 
             is ApiResult.Success -> {
                 result.value.toModel()?.let { ApiResult.Success(it) }
-                    // A saved ship with no id is a server that answered something this client
-                    // cannot key a list by. Reported as a broken contract, not silently dropped.
                     ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK_STATUS, problem = null))
             }
         }
@@ -451,10 +435,10 @@ class HangarRepository(
 }
 
 /**
- * Maps a page of ships onto the model.
+ * Maps a page of ships onto the model, dropping rows without an id.
  *
- * @param page the page index that was requested, used because the envelope's own is optional.
- * @return the page, without rows the server sent without an id.
+ * @param page the requested page index, used because the envelope's own is optional.
+ * @return the page.
  */
 private fun PageResponseShipDto.toModel(page: Int): ShipPage =
     ShipPage(
@@ -547,10 +531,7 @@ private fun ShipTypeDto.toOption(): ShipTypeOption? {
 }
 
 /**
- * Whether a hull matches what the member typed.
- *
- * Matched on the hull and its maker together, because "Anvil" is how somebody looks for a Carrack
- * they cannot spell.
+ * Whether a hull's name or maker contains what the member typed, ignoring case.
  *
  * @param term what they typed.
  * @return whether to offer it.
@@ -569,13 +550,8 @@ private fun LocationDto.toModel(): HomeLocation? {
 }
 
 /**
- * What the server made of a Fleetview export.
- *
- * The three counts are reported separately rather than summed because they mean different things
- * to the member: imported rows are new ships, duplicates were already in the hangar and are not a
- * fault, and skipped rows are hulls the catalogue does not know — the only group that needs them
- * to do anything. The two lists name the rows behind the last two counts, which is what turns
- * "3 nicht erkannt" into something actionable.
+ * What the server made of a Fleetview export, with imported, duplicate and unrecognised rows
+ * counted separately.
  *
  * @property imported how many ships were created.
  * @property skipped how many rows the server could not match to a hull.

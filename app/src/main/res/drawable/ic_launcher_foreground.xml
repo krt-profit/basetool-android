@@ -1,19 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Adaptive-icon foreground: the Profit Basetool mark on the mandated 108x108 canvas.
-
-  The artwork is authored in the design system's 240-unit space (assets/basetool-logo.svg) and
-  placed here by ONE group transform rather than by re-tracing at another scale, so a revised
-  source can be re-traced by swapping the path data and leaving the placement alone.
-
-  Scale 0.292 is not cosmetic. Design spec chapter 14 draws the mark to the 66/108 dp safe zone
-  and leaves every corner to the launcher mask, so the artwork must fit a 33dp radius. The point
-  of the mark furthest from its own centre is the star's outer corner at radius 112.7 source
-  units, and 112.7 * 0.292 = 32.9dp clears it — nothing clips on a circle, squircle, rounded
-  square or square. translateX/Y then centre the artwork's bounding box (its centre sits at
-  110,129.17 in source space, NOT at 120,120 — the source viewBox is padded asymmetrically) on
-  the canvas centre: 54 - 110*0.292 and 54 - 129.17*0.292.
--->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

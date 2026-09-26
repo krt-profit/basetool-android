@@ -50,13 +50,9 @@ import java.io.IOException
 import java.time.Instant
 
 /**
- * The detail screen's own rules, and the one that matters most: the Einsatz and its money load on
- * **separate timelines**.
+ * Tests the detail screen's rules, chiefly that the Einsatz and its finances load on separate timelines.
  *
- * A member can be allowed to see an Einsatz and still be refused its books
- * (`isMemberOrAbove` + `canSeeMission` guard the Finanzen endpoints alone). Folding the two reads
- * together would either hide the Einsatz behind a permission it does not need, or claim the money
- * loaded when it did not.
+ * A member may see an Einsatz and still be refused its Finanzen endpoints.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -68,8 +64,6 @@ class MissionDetailViewModelTest {
     }
 
     private val dispatcher = StandardTestDispatcher()
-
-    // ------------------------------------------------------------ the badge's lifecycle (F2)
 
     /** A planned Einsatz offers the step to running, and a finished one offers nothing. */
     @Test
@@ -93,12 +87,8 @@ class MissionDetailViewModelTest {
         }
 
     /**
-     * Starting writes the **Kern** section carrying the status — not the Zeitplan carrying a
-     * timestamp, which is what it used to do from inside the form.
-     *
-     * Every other Kern field goes back as it stands, because that PATCH replaces the section rather
-     * than merging into it. The calendar link is in the assertion on purpose: the app did not map
-     * it at all, so every rename cleared it.
+     * Starting writes the Kern section with the new status and echoes every other Kern field, including the calendar
+     * link, because the PATCH replaces the section.
      */
     @Test
     fun `starting writes the core section with the status and echoes the rest`() =
@@ -270,8 +260,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `the money is not fetched until its tab is opened`() =
         runTest(dispatcher) {
-            // Six tabs come from one response. The seventh is two more calls most members never
-            // look at, and one a member without the permission cannot make succeed at all.
             source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
@@ -303,10 +291,8 @@ class MissionDetailViewModelTest {
         }
 
     /**
-     * The Verwaltung tab owns the form's whole life. Entering fills it from the Einsatz as last
-     * read; leaving clears it, so a second visit re-reads the three section counters rather than
-     * saving against the set it was opened with — which is the 409 the per-section locking exists
-     * to prevent.
+     * Entering the Verwaltung tab fills the form from the Einsatz as last read; leaving clears it, so a second visit
+     * re-reads the section counters.
      */
     @Test
     fun `the Verwaltung tab fills the form on arrival and clears it on departure`() =
@@ -340,8 +326,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refused Finanzen tab leaves the Einsatz intact`() =
         runTest(dispatcher) {
-            // The ordinary case for a member who may see the Einsatz but not its books. Turning
-            // that into a failed screen would hide an Einsatz behind a permission it does not need.
             source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Failure(ApiError.Forbidden()))
             val model = viewModel()
@@ -378,8 +362,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refused Einsatz is reported with its cause, so the screen can word it`() =
         runTest(dispatcher) {
-            // What an outsider gets for an internal or terminal Einsatz. Distinguishable from an
-            // outage, which is why the error is carried rather than flattened to a boolean.
             source.queueDetail(ApiResult.Failure(ApiError.Forbidden()))
             val model = viewModel()
 
@@ -411,8 +393,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refresh re-reads the money only when its tab was already opened`() =
         runTest(dispatcher) {
-            // Refreshing must not silently acquire a permission-dependent read the member never
-            // asked for -- nor skip one they are looking at.
             source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
@@ -443,9 +423,6 @@ class MissionDetailViewModelTest {
             model.onToggleSignUp()
             advanceUntilIdle()
 
-            // Two answers belong to the moment of signing up — where the share goes and which
-            // function is wanted — so the tap opens the sheet that collects them (design ch. 06,
-            // artboard 3) and nothing is written yet.
             assertNotNull(model.state.value.joinSheet)
             assertEquals(emptyList<String>(), source.joins)
         }
@@ -485,10 +462,7 @@ class MissionDetailViewModelTest {
         }
 
     /**
-     * „Wunsch" has to be retractable.
-     *
-     * A chip row with no way back makes an optional field compulsory in practice — whichever chip
-     * was touched first would be sent.
+     * Tapping the chosen Wunsch chip again clears it, so the field stays optional.
      */
     @Test
     fun `tapping the chosen function again clears it`() =
@@ -548,8 +522,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `withdrawing removes the caller's own row and re-reads the roster`() =
         runTest(dispatcher) {
-            // The withdrawal answers 204, so the counts above the roster would otherwise be the
-            // app's guess rather than the server's.
             source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
@@ -578,8 +550,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `checking in patches the caller's row and the count above it`() =
         runTest(dispatcher) {
-            // The slim endpoint answers with the row alone. Re-reading the whole Einsatz for one
-            // timestamp would make a check-in cost what opening the screen costs.
             source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()
@@ -644,8 +614,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `checking in is not offered before the Einsatz has started`() =
         runTest(dispatcher) {
-            // The server refuses it — "Cannot check in before mission actual start time is set",
-            // found on a device — so the control is absent rather than returning a 400.
             source.queueDetail(
                 ApiResult.Success(missionDetail("Vertikaler Abbau", started = false, roster = arrayOf(source.row()))),
             )
@@ -679,8 +647,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `booking needs a sign-up to book against`() =
         runTest(dispatcher) {
-            // The create names a participant, and the only one the app may name is the caller's
-            // own. Without a sign-up there is nothing to name.
             source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
@@ -747,7 +713,6 @@ class MissionDetailViewModelTest {
     @Test
     fun `the editor opens on a number the field can hold`() =
         runTest(dispatcher) {
-            // The wire carries `12000.0000` and the field takes digits alone.
             source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()

@@ -63,20 +63,19 @@ data class InventoryGroup(
 )
 
 /**
- * One stack inside a group — a member's holding at one place and quality.
+ * One stack inside a group: a member's holding at one place and quality.
  *
  * @property holder whose stack it is, or `null` for one the server did not attribute
  * @property location where it is, or `null`
  * @property personal whether it is the holder's private stock rather than the shared Lager
  * @property amount how much, as the server rendered it
- * @property quality the stack's quality — the **key** the server groups by, not the average it
- *   also reports; the entry read is looked up by it and the average matches only by coincidence
+ * @property quality the quality key the server groups by (not the average), used to look up the
+ *   entries
  * @property entryCount how many individual entries it sums up
- * @property holderId whose stack it is, by id — carried since phase 3 because the entry read is
- *   asked for by (material, holder, place, quality) and a name cannot key that
+ * @property holderId whose stack it is, by id; part of the entry read's key
  * @property locationId where it is, by id
- * @property owningOrgUnitId which org-unit pool it belongs to, or `null` for an unpooled holding —
- *   part of the entry read's key, and omitting it asks for the unpooled stack instead
+ * @property owningOrgUnitId which org-unit pool it belongs to, or `null` for an unpooled holding;
+ *   part of the entry read's key
  */
 data class InventoryStack(
     val holder: String?,
@@ -91,47 +90,37 @@ data class InventoryStack(
 )
 
 /**
- * One page of a material's entries, flat across every holder and place.
- *
- * The tree's own reads answer a *branch* — one material's stacks, one stack's entries. This answers
- * the whole material at once, which is what the tablet's detail pane shows and what the web's
- * `/inventory/material/{id}` page is.
+ * One page of a material's entries, flat across every holder and place, as the tablet's detail
+ * pane shows it.
  *
  * [Page.rows] holds the rows on this page.
  */
 typealias MaterialEntryPage = Page<InventoryEntry>
 
 /**
- * One entry inside a stack — the thing a booking actually moves.
+ * One entry inside a stack: the thing a booking actually moves.
  *
  * @property id the entry's id
  * @property materialName what it is
  * @property unit the unit the amount is expressed in, or `null`
  * @property locationName where it is, or `null`
  * @property locationId the same, by id
- * @property materialId which material it holds, or `null` when the server sent none — the
- *   terminals a sale can pick from are looked up by it
+ * @property materialId which material it holds, or `null`; used to look up the terminals a sale can
+ *   pick from
  * @property holder whose it is, or `null`
- * @property holderId whose it is, by id — a transfer has to change the holder or the place, and a
- *   name cannot be compared against the one the picker returns
+ * @property holderId whose it is, by id; compared against the transfer picker's choice
  * @property amount how much, as the server rendered it
  * @property quality the quality, or `null`
  * @property note the member's own note, or `null`
  * @property version optimistic-locking version
- * @property canEdit whether **this caller** may write to this row, as the server answered it. Not
- *   re-derived: the rule is per-row and hierarchy-aware, and every client-side approximation of it
- *   gets an admin wrong (REQ-SEC-047). `null` means an older server said nothing — read as unknown,
- *   which leaves the control enabled and lets the server decide, the same fallback the rest of the
- *   permission handling uses.
+ * @property canEdit whether this caller may write to this row, as the server answered it
+ *   (REQ-SEC-047); `null` means unknown and leaves the control enabled
  * @property jobOrderAllocations how much of this entry is promised to which Auftrag
- * @property jobOrderRest what the server says is left after the Auftrag split, as it rendered it
+ * @property jobOrderRest what is left after the Auftrag split, as the server rendered it
  * @property missionAllocations how much is promised to which Einsatz
- * @property missionRest what is left after the Einsatz split. Independent of [jobOrderRest]: the
- *   two splits are reconciled against the entry separately, so a unit can be promised to an Auftrag
- *   AND to an Einsatz
- * @property owningOrgUnitId which org-unit pool the entry sits in, or `null` for an unpooled row.
- *   A transfer's org-unit picker presets to it, so submitting without touching the picker leaves
- *   the stock in the unit it is already in
+ * @property missionRest what is left after the Einsatz split, independent of [jobOrderRest]
+ * @property owningOrgUnitId which org-unit pool the entry sits in, or `null` for an unpooled row;
+ *   the transfer's org-unit picker presets to it
  */
 data class InventoryEntry(
     val id: String,
@@ -156,16 +145,11 @@ data class InventoryEntry(
 )
 
 /**
- * An org unit a transfer may hand stock to.
- *
- * The picker's options are the **destination** member's memberships, not the caller's: the server
- * validates the choice against the receiving user, which is what makes a cross-org transfer legal
- * at all — a member of one Staffel may book into another member's Spezialkommando stock as long as
- * that member belongs to it.
+ * An org unit a transfer may hand stock to, drawn from the **destination** member's memberships.
  *
  * @property id what the booking sends
  * @property name the unit as it is called
- * @property shorthand its abbreviation, or `null` — shown beside the name where there is room
+ * @property shorthand its abbreviation, or `null`
  */
 data class OrgUnitOption(
     val id: String,
@@ -174,11 +158,8 @@ data class OrgUnitOption(
 )
 
 /**
- * Which of an entry's two independent splits an allocation belongs to.
- *
- * The server reconciles Auftrag amounts and Einsatz amounts against the entry **separately**, so
- * the same unit of Laranite can be promised to an Auftrag and to an Einsatz at once. Modelling them
- * as one list would make the arithmetic wrong in both directions.
+ * Which of an entry's two independent splits an allocation belongs to; the server reconciles
+ * Auftrag and Einsatz amounts against the entry separately.
  */
 enum class AllocationKind {
     /** Promised to an Auftrag. */
@@ -223,10 +204,8 @@ data class AllocationTarget(
     /**
      * Whether this target has any use for what is being booked in.
      *
-     * The server checks every earmark against the target's own requirement and refuses one that
-     * does not match, so offering an Auftrag that never asked for this material would be offering
-     * a rejection. A target that names **no** requirement is offered regardless: the lists are the
-     * order's material lines, and a mission carries none at all.
+     * A target that names no requirement is always offered; otherwise the server would reject an
+     * earmark that does not match.
      *
      * @param catalogId the material or item being booked in, or `null` before one is picked.
      * @param item whether that id names an item rather than a material.
@@ -242,13 +221,11 @@ data class AllocationTarget(
 }
 
 /**
- * One game item and where the org unit's copies of it sit (design ch. 09 artboard 21).
+ * One game item and where the org unit's copies of it sit.
  *
  * @property id the game item.
  * @property name what it is called.
- * @property kind the catalogue's own category string — free text on the wire, which is why the
- *   screen builds its filter chips from the values that actually turn up rather than from a list
- *   it made up.
+ * @property kind the catalogue's free-text category string.
  * @property manufacturer who makes it, or `null`.
  * @property amount how many pieces there are in total.
  * @property holders how many distinct members hold them.
@@ -294,31 +271,20 @@ private fun List<InventoryAllocation>.krtToInputs(): List<InventoryAllocationInp
 /**
  * What booking stock in carries.
  *
- * **`materialId` and `gameItemId` exclude each other and one of them is required** — the server's
- * own XOR (`InventoryItemCreateDto.isCatalogReferenceValid`, REQ-INV-029), mirrored by a DB check
- * constraint. The two kinds then differ in three more ways, each of them a `400` when got wrong:
- *
- *  * a material row **requires** a quality and an item row **forbids** one;
- *  * an item amount must be a **positive whole** number — items are counted, not measured;
- *  * `mergeStock` is ignored for an item, because a piece-counted row always merges into a
- *    matching stack server-side.
+ * Exactly one of `materialId` and `gameItemId` is set (REQ-INV-029). A material row requires a
+ * quality and an item row forbids one; an item amount must be a positive whole number; `mergeStock`
+ * is ignored for an item.
  *
  * @property materialId the material being booked in, or `null` for an item row
  * @property gameItemId the item being booked in, or `null` for a material row
  * @property locationId where it goes
  * @property amount how much
- * @property quality the quality, 0–1000; `null` for an item row, where the server refuses one
- * @property personal whether it is private stock rather than the shared Lager. Always `false` from
- *   the app: the Lager reads exclude private stock, so booking it in from here would put material
- *   somewhere no screen of this app can show it again
+ * @property quality the quality, 0–1000; `null` for an item row
+ * @property personal whether it is private stock; always `false` from the app
  * @property mergeStock whether the server may merge it into an identical entry
- * @property jobOrderAllocations how much of the new row is earmarked for which Auftrag, entered
- *   while booking in rather than afterwards (Variante C / split-at-check-in, REQ-INV-027 R4). The
- *   server checks the sum against [amount] and every target against its own requirement, **in the
- *   same transaction as the booking** — which is the whole point of sending them together.
- *   Empty falls back to the server's own default: the row lands unassigned.
- * @property missionAllocations the same for Einsätze. Always empty for an item row — the server
- *   refuses a mission earmark there (REQ-INV-031), item stock goes to ITEM orders only.
+ * @property jobOrderAllocations Auftrag earmarks for the new row, validated in the same
+ *   transaction as the booking (REQ-INV-027); empty leaves the row unassigned
+ * @property missionAllocations the same for Einsätze; always empty for an item row (REQ-INV-031)
  */
 data class BookInDraft(
     val materialId: String? = null,
@@ -341,17 +307,13 @@ data class BookInDraft(
  * @property targetLocationId where it goes, for a transfer
  * @property terminal the terminal it is sold at, for a sale
  * @property sellAmount what it fetched, for a sale
- * @property jobOrderReductions how much of the deducted amount comes from each Auftrag earmark.
- *   Empty means the server's default, "take it from the not-yet-assigned rest first"
- * @property missionReductions the same for the Einsatz earmarks. A **separate** list, because the
- *   two taggings are independent: the same unit can be promised to an Auftrag and to an Einsatz, so
- *   the deducted amount is sourced once per dimension rather than once in total
- * @property targetOwningOrgUnitId which org-unit pool the moved row lands in, for a transfer.
- *   `null` lets the server resolve it, which it can only do unambiguously when the receiving
- *   member belongs to exactly one unit
+ * @property jobOrderReductions how much of the deducted amount comes from each Auftrag earmark;
+ *   empty takes it from the unassigned rest first
+ * @property missionReductions the same for the Einsatz earmarks, sourced independently
+ * @property targetOwningOrgUnitId which org-unit pool the moved row lands in, for a transfer;
+ *   `null` lets the server resolve it
  * @property mergeStock whether the server may fold the moved amount into an identical entry at the
- *   target. Only meaningful for an `SCU` material — a `PIECE` transfer merges either way, so
- *   sending it there changes nothing
+ *   target; only meaningful for an `SCU` material
  */
 data class BookOutDraft(
     val amount: String,
@@ -369,8 +331,8 @@ data class BookOutDraft(
 /**
  * How much of a book-out comes out of one earmark.
  *
- * On a `TRANSFER` the reduced tags travel with the stock onto the new row; on a `SELL` the mission
- * reductions additionally decide who is credited what, so this is not a display detail.
+ * On a `TRANSFER` the reduced tags travel with the stock; on a `SELL` the mission reductions also
+ * decide who is credited what.
  *
  * @property targetId the Auftrag or Einsatz the amount is taken from.
  * @property amount how much comes from it.
@@ -394,10 +356,7 @@ data class MaterialOption(
 )
 
 /**
- * A game item the booking form can pick.
- *
- * Carries no unit: an item is always counted in whole pieces, which is what makes it a different
- * kind of row rather than a material with a different unit.
+ * A game item the booking form can pick; always counted in whole pieces.
  *
  * @property id what a booking sends as `gameItemId`
  * @property name what to show for it
@@ -450,12 +409,8 @@ data class TerminalOption(
 typealias InventoryPage = Page<InventoryGroup>
 
 /**
- * The material catalogue, as a seam of its own.
- *
- * Extracted from [InventorySource] rather than duplicated: the Materialbörse's „Gesuch erstellen"
- * sheet needs exactly this one method and nothing else the Lager offers, and a second repository
- * calling `/api/v1/materials/search` would be a second place for the page cap and the trimming to
- * drift.
+ * The material catalogue search as a seam of its own, shared by the Lager and the Materialbörse's
+ * „Gesuch erstellen" sheet.
  */
 fun interface MaterialLookup {
     /**
@@ -468,11 +423,7 @@ fun interface MaterialLookup {
 }
 
 /**
- * What a bulk rebook did.
- *
- * The two counts are reported apart because the server treats them apart: a row already at the
- * target location is **skipped**, not failed, and telling a member "12 moved" when three of them
- * were already there would be a number they cannot reconcile with the list in front of them.
+ * What a bulk rebook did; rows already at the target are skipped, not failed.
  *
  * @property rebooked how many rows moved.
  * @property skipped how many were already where they were being sent.
@@ -516,21 +467,13 @@ interface InventoryAllocationSource {
 }
 
 /**
- * Reading a material whole, which is what the Lager's tablet pane shows.
- *
- * A seam of its own rather than one more method on [InventorySource]. The tree's reads answer a
- * *branch* — a page of materials, one material's stacks, one stack's entries — and every one of
- * them is keyed by where in the tree the member is. This answers a material flat, across every
- * holder and place, and it is the only read the pane makes.
+ * Reads a material whole, across every holder and place, for the Lager's tablet pane.
  */
 interface MaterialDetailSource {
     /**
      * Reads one page of a material's entries, across every holder and place.
      *
-     * Paged rather than whole: a material the organisation holds a lot of has more entries than a
-     * pane can draw, and reading them all to show twenty is how a drilldown becomes the slowest
-     * screen in the app. ADR-0104's no-silent-caps rule then applies to what the pane *says* about
-     * the rest, which is why the page carries its totals.
+     * The page carries its totals so the pane can state what it does not show (ADR-0104).
      *
      * @param materialId which material.
      * @param page the zero-based page index.
@@ -559,11 +502,7 @@ interface BookInOptions {
     suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>>
 
     /**
-     * Searches the game items a booking can name.
-     *
-     * A different catalogue from the materials, not a filter on them: an item is a finished
-     * product, the two live in separate tables and the server takes them in mutually exclusive
-     * fields. The same search the order form's item picker uses.
+     * Searches the game-item catalogue, which is separate from the materials.
      *
      * @param query what the member typed.
      * @return one page of matches, and whether the catalogue holds more (ADR-0104).
@@ -573,13 +512,8 @@ interface BookInOptions {
     /**
      * Which of these entries are already offered on the Materialbörse.
      *
-     * The web's Lager tree draws a mark on every released row, and the app drew none — so a member
-     * could offer the same stack twice, or hunt for an offer they had already made. `POST` is not
-     * involved: this is a read that takes the ids it is asking about.
-     *
-     * @param entryIds the rows on screen; an empty list asks nothing and answers nothing.
-     * @return the subset that is released; empty on a failure, which shows as „no marks" rather
-     *   than as a banner — the Lager itself is unaffected.
+     * @param entryIds the rows on screen; an empty list asks nothing.
+     * @return the subset that is released; empty on a failure.
      */
     suspend fun releasedEntryIds(entryIds: List<String>): Set<String>
 
@@ -592,11 +526,8 @@ interface BookInOptions {
     suspend fun members(query: String): ApiResult<PickerPage<MemberOption>>
 
     /**
-     * Reads the org units stock may be booked into for one member.
-     *
-     * Asked for the **owning** member, not the caller: the server validates the picked unit against
-     * that member's own memberships, so offering the caller's would offer choices the write then
-     * refuses.
+     * Reads the org units stock may be booked into for the **owning** member, whose memberships the
+     * server validates the choice against.
      *
      * @param userId the member the stock would belong to.
      * @return their memberships across all four org-unit kinds.
@@ -627,17 +558,13 @@ interface InventorySource :
      * Reads the stacks of one material.
      *
      * @param materialId the material whose group was opened.
-     * @return its stacks, or a failure. An empty list is an ordinary answer for a group that has
-     *   just been emptied.
+     * @return its stacks, or a failure; an empty list is valid for a just-emptied group.
      */
     suspend fun stacks(materialId: String): ApiResult<List<InventoryStack>>
 
     /**
-     * Reads the entries inside one stack.
-     *
-     * The stack is passed whole rather than as four loose strings: the server addresses a stack by
-     * (material, holder, place, quality, owning org unit) and every one of them is part of the key.
-     * Dropping one does not widen the answer — it asks for a different stack.
+     * Reads the entries inside one stack, addressed by material, holder, place, quality and owning
+     * org unit.
      *
      * @param materialId which material's group the stack sits in.
      * @param stack the stack row that was opened.
@@ -659,8 +586,7 @@ interface InventorySource :
     /**
      * Moves several of the caller's rows to one location at once.
      *
-     * All or nothing on the server's terms: an unknown id, a row belonging to somebody else, or an
-     * earmarked row that blocks the move aborts the whole call rather than half-applying it. Rows
+     * All or nothing: an unknown id, a foreign row or a blocking earmark aborts the whole call. Rows
      * already at the target are skipped and counted.
      *
      * @param entryIds the rows to move.
@@ -673,13 +599,10 @@ interface InventorySource :
     ): ApiResult<BulkRebookResult>
 
     /**
-     * Books several of the caller's own rows out in one call (Sammel-Ausbuchen, design ch. 09
-     * artboard 20).
+     * Books several of the caller's own rows out in full in one call (Sammel-Ausbuchen).
      *
-     * **Whole rows, and all or nothing.** `POST /inventory/bulk-checkout` carries only the ids: it
-     * deletes each row in full, cascades its earmarks away, and writes one audit event. A row that
-     * is not the caller's, or an id it does not know, aborts the **whole** call — so there is no
-     * per-row outcome to report, unlike the bulk rebooking beside it.
+     * All or nothing: each row is deleted with its earmarks, and a foreign or unknown id aborts the
+     * whole call.
      *
      * @param entryIds which rows.
      * @return nothing on success, or the classified failure.
@@ -687,12 +610,7 @@ interface InventorySource :
     suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit>
 
     /**
-     * Reads the org unit's **game-item** stock, grouped per item.
-     *
-     * One call and no paging: `GET /inventory/all/grouped?catalog=ITEM` answers with every item and
-     * its stacks, and each stack carries its holder and its place — which is where „N Halter · M
-     * Orte" comes from. Because everything arrives at once, the screen's search and its category
-     * chips filter a **complete** list rather than a page, so neither has a cap to declare.
+     * Reads the org unit's complete **game-item** stock, grouped per item, in one unpaged call.
      *
      * @return the items, or the classified failure.
      */
@@ -737,15 +655,10 @@ interface InventorySource :
 }
 
 /**
- * Reads the Lager from the backend.
+ * Reads the Lager from the backend: the aggregate for the group rows and the grouped read for a
+ * group the member opens.
  *
- * **Two reads, one per level of the tree.** The aggregate draws the group rows; the grouped read
- * fills a group the member actually opened. The flat `/inventory/all` was the alternative and is
- * wrong for a tree: it would pull every entry in the warehouse to draw a dozen headings, and the
- * member would wait for rows they may never expand.
- *
- * Which org unit's Lager this is follows from the `X-Active-Org-Unit-Id` header the interceptor
- * already sets.
+ * The org unit follows from the `X-Active-Org-Unit-Id` header the interceptor sets.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -796,9 +709,6 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                // The endpoint answers with a group per material asked for. One was asked for, so
-                // the stacks of all of them are the stacks of that one — flattened rather than
-                // indexed, so a server that answered with none simply yields none.
                 ApiResult.Success(result.value.flatMap { it.stacks.orEmpty() }.map { it.toModel() })
             }
         }
@@ -813,12 +723,7 @@ class InventoryRepository(
                 add(MATERIAL_ID_PARAM to materialId)
                 stack.locationId?.let { add(LOCATION_ID_PARAM to it) }
                 stack.holderId?.let { add(USER_ID_PARAM to it) }
-                // An `Integer` parameter, so a quality the server happened to render with a
-                // decimal point comes back 400 TYPE_MISMATCH and the stack reads as "could not be
-                // loaded" (found on a device, 2026-08-23).
                 stack.quality?.wholeNumber()?.let { add(QUALITY_PARAM to it) }
-                // Omitting this does not mean "any pool" — the query reads a missing id as "the
-                // unpooled stack", so an org-owned stack answers with nothing at all.
                 stack.owningOrgUnitId?.let { add(OWNING_ORG_UNIT_PARAM to it) }
                 add(PAGE_PARAM to "0")
                 add(SIZE_PARAM to ENTRY_PAGE_SIZE.toString())
@@ -876,14 +781,9 @@ class InventoryRepository(
                 locationId = draft.locationId,
                 materialId = draft.materialId,
                 gameItemId = draft.gameItemId,
-                // Never sent for an item row: the server refuses a quality there outright
-                // (`isQualityConsistentWithCatalog`), so carrying one over from a mode the member
-                // switched away from would refuse the whole booking.
                 quality = draft.quality.takeIf { draft.gameItemId == null },
                 personal = draft.personal,
                 mergeStock = draft.mergeStock,
-                // Omitted rather than sent empty: an empty list and an absent one mean the same
-                // thing to the server, and `null` is what the other clients send.
                 jobOrderAllocations = draft.jobOrderAllocations.krtToInputs(),
                 missionAllocations = draft.missionAllocations.krtToInputs(),
             ),
@@ -1071,9 +971,6 @@ class InventoryRepository(
                 sellAmount = parseTypedDecimal(draft.sellAmount)?.let(::KrtDecimal),
                 targetOwningOrgUnitId = draft.targetOwningOrgUnitId,
                 mergeStock = draft.mergeStock,
-                // Null rather than an empty list: the server reads an absent plan as "take it from
-                // the rest first", and an empty array says the same thing in a shape a reader has
-                // to interpret.
                 jobOrderReductions = draft.jobOrderReductions.toWire(),
                 missionReductions = draft.missionReductions.toWire(),
             ),
@@ -1213,9 +1110,6 @@ class InventoryRepository(
 
     override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
         reader.get(
-            // `allKinds=true` spans Staffel, SK, Bereich and Organisationsleitung. The
-            // default returns Staffel and SK only, which would hide a Bereich or OL
-            // member's own pool from a picker the server would have accepted it in.
             path = "/api/v1/users/$userId/memberships",
             query = listOf(ALL_KINDS_PARAM to "true"),
             deserializer = ListSerializer(OrgUnitMembershipOptionDto.serializer()),
@@ -1230,11 +1124,7 @@ class InventoryRepository(
             .map { loaded -> loaded.mapNotNull { it.toOption() } }
 
     /**
-     * Sends a booking whose answer the screen does not read.
-     *
-     * Every booking answers with the saved entry, and none of the three needs it: the screen
-     * re-reads the tree afterwards, because a booking changes what a *stack* holds and not only
-     * the entry that moved.
+     * Sends a booking and discards the saved entry it answers with; the screen re-reads the tree.
      *
      * @param B the request type
      * @param path where to send it.
@@ -1262,12 +1152,7 @@ class InventoryRepository(
         /** One material's entries, flat and paged — the tablet pane's read. */
         private const val MATERIAL_PATH = "/api/v1/inventory/material"
 
-        /**
-         * How many entries the pane asks for at once.
-         *
-         * Larger than the tree's page because the pane is a table on a wide screen and a short page
-         * would make the pager the thing a member interacts with most.
-         */
+        /** How many entries the tablet pane asks for at once. */
         private const val MATERIAL_PAGE_SIZE = 50
         private const val BOOK_IN_PATH = "/api/v1/inventory"
         private const val ALLOCATION_PATH_PREFIX = "/api/v1/inventory"
@@ -1309,12 +1194,8 @@ class InventoryRepository(
         private const val PICKER_PAGE_SIZE = 50
 
         /**
-         * How many places one search offers.
-         *
-         * Two hundred, not [PICKER_PAGE_SIZE]. The location catalogue is small and bounded by the
-         * game universe, and a member booking stock expects to scroll it rather than guess a search
-         * term — which is why the web fetches the same. At `size=25` this very picker showed 25 of
-         * 53 places, with nothing on screen saying the list had been cut.
+         * How many places one location search offers; larger than [PICKER_PAGE_SIZE] because the location
+         * catalogue is small and bounded.
          */
         private const val LOCATION_PAGE_SIZE = 200
         private const val MATERIAL_PARAM = "materialIds"
@@ -1338,11 +1219,7 @@ private fun PageResponseAggregatedInventoryDto.toModel(page: Int): InventoryPage
     )
 
 /**
- * Maps one group row onto the model.
- *
- * A row with no material id is kept: it still states an amount the org unit holds, and dropping it
- * would quietly lower what the tree adds up to. It simply cannot be opened, which the screen
- * reflects by not offering the tap.
+ * Maps one group row onto the model; a row without a material id is kept but cannot be opened.
  *
  * @return the group.
  */
@@ -1425,9 +1302,6 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         quality = quality?.toString(),
         personal = personal == true,
         owningOrgUnitId = owningSquadron?.id,
-        // The server's own per-row answer (REQ-SEC-047). Null on a build talking to an older
-        // server, which the screen reads as „unknown" and leaves the control enabled rather than
-        // locking a member out of their own stock.
         canEdit = canEdit,
         note = note?.takeIf { it.isNotBlank() },
         version = version,
@@ -1538,9 +1412,6 @@ private fun MaterialSellingTerminalDto.toOption(): TerminalOption? {
 /**
  * One grouped row as the game-item screen holds it.
  *
- * A group without a game item is a **material** group and is dropped: `catalog=ITEM` should not
- * return one, and a row whose subject the screen cannot name is worse than a row that is missing.
- *
  * @receiver what the server sent.
  * @return the row, or `null` when it names no game item.
  */
@@ -1557,9 +1428,6 @@ private fun GroupedInventoryDto.toItemStock(): GameItemStock? {
         kind = item.kind?.takeIf { it.isNotBlank() },
         manufacturer = item.manufacturer?.takeIf { it.isNotBlank() },
         amount = totalAmount ?: 0.0,
-        // Counted from the stacks rather than asked for: the server groups by item and hands the
-        // stacks along, so both figures are already here and a second call would ask what is on
-        // screen.
         holders = stacks.mapNotNull { it.user?.id }.distinct().size,
         locations = stacks.mapNotNull { it.location?.name?.takeIf { name -> name.isNotBlank() } }.distinct(),
     )

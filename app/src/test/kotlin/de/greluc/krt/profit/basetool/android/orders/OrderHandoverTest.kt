@@ -133,8 +133,6 @@ class OrderHandoverTest {
             subject.open("o1", material(unit = "PIECE"), alreadyDone = DONE)
             advanceUntilIdle()
 
-            // Never a hardcoded SCU: this is the one screen that finishes an Auftrag, and it
-            // labelled pieces as SCU.
             assertEquals("PIECE", draft?.unit)
         }
 

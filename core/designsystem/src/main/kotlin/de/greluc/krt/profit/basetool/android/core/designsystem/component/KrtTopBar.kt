@@ -32,32 +32,21 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 private val TOP_BAR_HEIGHT = 64.dp
 
 /**
- * The app's top bar.
+ * The app's top bar: the title, the org badge that opens the switcher, and the notification bell,
+ * over a 2 dp orange under-rule.
  *
- * Carries three things and nothing else: where the user is (the orange uppercase title), which org
- * unit the screen is scoped to (the badge, which opens the switcher), and whether anything is
- * waiting (the bell with its count). The 2 dp orange under-rule is the same device the tables use —
- * it separates chrome from content without a shadow.
- *
- * The back arrow appears **only on pushed detail screens** and behaves exactly like system back.
- * There is deliberately no hamburger: the web app's drawer is replaced by the bottom bar and the
- * tablet rail.
+ * The back arrow appears only on pushed detail screens and behaves like system back.
  *
  * @param title screen title.
- * @param subject whether the title names a THING rather than a section. A section is shouted in
- *   orange caps ("EINSÄTZE"); a thing keeps its own spelling in white, because "EINSATZKASSE" is
- *   not what the account is called. Independent of [subtitle] — an account with no status line is
- *   still an account.
- * @param subtitle drawn under the title, small. The chapters put a subject's status directly under
- *   its name.
+ * @param subject whether the title names a thing rather than a section; a thing keeps its own
+ *   spelling in white, a section is orange caps.
+ * @param subtitle drawn small under the title, e.g. a subject's status.
  * @param modifier layout modifier.
  * @param onBack when non-null a back arrow is shown and this is invoked; pass `null` on roots.
  * @param orgBadge optional org-context chip, typically a [KrtOrgBadge].
  * @param notificationCount unread notifications; `null` hides the bell, `0` shows it without badge.
  * @param onNotificationsClick invoked when the bell is tapped.
- * @param actions trailing controls — the screen's own overflow, after the bell. A detail that owns
- *   destructive or rarely used actions puts them here rather than in the content, which is where
- *   design chapter 08 has the Hangar's `⋮`.
+ * @param actions trailing controls after the bell, e.g. the screen's own overflow.
  */
 @Composable
 fun KrtTopBar(
@@ -107,10 +96,6 @@ fun KrtTopBar(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    // Beside the name, not under it: what KIND of thing this is qualifies the name
-                    // and is read with it (design ch. 10 artboard 2 — „#1042  MATERIAL"). Put on
-                    // the second line it would compete with the status, which answers a different
-                    // question.
                     titleBadge?.invoke()
                 }
                 subtitle?.invoke()
@@ -148,19 +133,10 @@ fun KrtTopBar(
 }
 
 /**
- * The head a screen wears while a multi-selection is running.
+ * The 56 dp head that replaces [KrtTopBar] while a multi-selection is running: a close ✕ and the
+ * selection count, with no accent rule.
  *
- * It **replaces** the normal bar rather than decorating it (design ch. 09, artboard 5): the org chip
- * and the bell are for choosing what to look at, and a member picking rows has already chosen. What
- * is left is the way out and the count, which together are the whole answer to "what am I in, and
- * how do I leave".
- *
- * Shorter than [KrtTopBar] on purpose — the artboard measures 56 dp against the section bar's 64 —
- * and it carries no accent rule underneath, because the action bar at the foot is the surface that
- * frames this mode.
- *
- * @param label the selection rendered as words, e.g. „2 gewählt". The count itself stays with the
- *   caller: the plural is a string resource and this module deliberately holds none.
+ * @param label the selection rendered as words, e.g. „2 gewählt"; the caller supplies the plural.
  * @param onClear leaves selection mode.
  * @param closeLabel what the ✕ announces to TalkBack.
  * @param modifier usually the status-bar inset padding.

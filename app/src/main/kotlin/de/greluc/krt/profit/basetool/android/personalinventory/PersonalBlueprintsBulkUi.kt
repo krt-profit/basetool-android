@@ -49,14 +49,11 @@ const val BLUEPRINT_SELECTION_BAR_TAG: String = "blueprint-selection-bar"
 const val BLUEPRINT_IMPORT_SHEET_TAG: String = "blueprint-import-sheet"
 
 /**
- * The selection mode's bottom bar — design ch. 18 §3 (E3).
- *
- * „Alles wählen" is what makes „alle löschen" reachable, and it is deliberately not a menu entry:
- * deleting 41 rows is for somebody who has seen the 41 rows.
+ * The selection mode's bottom bar, including „Alles wählen", the only way to reach „alle löschen".
  *
  * @param selection what is ticked.
- * @param total how many blueprints the member owns in all, which is what „Alles wählen" means and
- *   what the modal has to name — the list is paged, so the loaded count would understate it.
+ * @param total how many blueprints the member owns in all, not merely the loaded page; the modal
+ *   names this number.
  * @param onSelectAll tick everything.
  * @param onCancel leave the mode.
  * @param onDelete open the confirmation.
@@ -107,10 +104,9 @@ internal fun BlueprintSelectionBar(
 }
 
 /**
- * The danger modal that names the number and the consequence.
+ * The danger modal that names the number of blueprints and the consequence of deleting them.
  *
- * No undo, because there is nothing to restore — which is why the second sentence says what the
- * unit's availability view will show afterwards rather than offering a way back.
+ * Offers no undo.
  *
  * @param selection what is ticked.
  * @param total how many the member owns in all.
@@ -146,15 +142,13 @@ internal fun BlueprintDeleteConfirm(
 }
 
 /**
- * The two-step file import — design ch. 18 §2 (E2).
+ * The two-step file import: a preview of what the file resolves to, then the write.
  *
- * Step one reads the file and answers three numbers; step two writes. The CTA names the number it
- * is about to write („9 übernehmen") rather than saying „Importieren", because that number is the
- * whole reason the preview exists.
+ * The CTA names the number it will write („9 übernehmen").
  *
  * @param step how far it has got.
- * @param onFile a file was picked and read off the device; the bytes are `null` when it could not
- *   be read there, which is not an HTTP state and gets plain German rather than the fiction canon.
+ * @param onFile a file was picked and read off the device; the bytes are `null` when the device could
+ *   not read it, which gets a plain German message.
  * @param onApply take over what the preview resolved.
  * @param onDismiss close the sheet; nothing is written by closing.
  */
@@ -171,8 +165,6 @@ internal fun BlueprintImportSheet(
     val context = LocalContext.current
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            // Read here rather than holding the Uri: the permission granted to it is scoped to this
-            // activity result, and an upload one tap later would find it revoked.
             uri?.let { onFile(displayName(context, it), readBytes(context, it)) }
         }
 
@@ -243,10 +235,9 @@ private fun ImportPrompt(onPick: () -> Unit) {
 }
 
 /**
- * Step two: three numbers, the names behind two of them, and one CTA.
+ * The import preview: three figures, the names behind two of them, and one CTA.
  *
- * „Vorhanden" is a number and never a list — an already-owned blueprint is not a result. The rows
- * that cannot be resolved **are** named, so nobody takes the file for broken.
+ * „Vorhanden" is only a number; the unresolved rows are named.
  *
  * @param step the preview.
  * @param onApply take it over.
@@ -271,8 +262,6 @@ private fun ImportPreview(
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
     )
-    // Four figures, not three (design ch. 18 §2, B2): „Zu klären" is not the same fact as
-    // „Unbekannt" — the server DID find candidates for those rows and simply cannot choose.
     Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
         CountBox(
             label = stringResource(R.string.blueprints_import_new),
@@ -304,8 +293,6 @@ private fun ImportPreview(
             label = stringResource(R.string.blueprints_import_unclear),
             names = preview.unclear.map { it.externalName },
         )
-        // Its own block, in the warning tint: these rows are importable in principle and are being
-        // left behind, which is a different thing from a name nothing matched.
         Text(
             text = stringResource(R.string.blueprints_import_unclear_note),
             style = MaterialTheme.typography.bodySmall,
@@ -337,7 +324,7 @@ private fun ImportPreview(
 }
 
 /**
- * The receipt.
+ * The import receipt.
  *
  * @param step what was written.
  * @param onDismiss close the sheet.
@@ -402,10 +389,7 @@ private fun CountBox(
 }
 
 /**
- * A capped list of names under one of the figures.
- *
- * The cap is **stated**, never silent (ADR-0104): a preview that quietly showed six of fourteen
- * names would read as a file that lost eight rows.
+ * A capped list of names under one of the figures; the cap is stated, never silent (ADR-0104).
  *
  * @param label which figure these belong to.
  * @param names what to list.

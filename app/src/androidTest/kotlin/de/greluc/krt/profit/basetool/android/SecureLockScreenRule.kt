@@ -15,22 +15,12 @@ import org.junit.runners.model.Statement
 import java.io.FileInputStream
 
 /**
- * Gives a device without a screen lock a throwaway PIN for the duration of one test, and takes it
- * away again afterwards.
+ * Gives a device without a screen lock a throwaway PIN for the duration of one test and removes it
+ * afterwards.
  *
- * The app lock's key is auth-bound (`setUserAuthenticationParameters(0, BIOMETRIC_STRONG or
- * DEVICE_CREDENTIAL)`), and Android refuses to create such a key at all on a device with no secure
- * lock screen. Every device the lock was walked on had one — a member who switches the lock on
- * has one by definition. A freshly booted CI emulator (`instrumented.yml`, Gradle Managed Devices)
- * has none, so without this rule [AppLockKeystoreContractTest] would fail there for a reason that
- * says nothing about the contract it pins.
- *
- * A device that already has a lock is left exactly as it was: the rule checks
- * [KeyguardManager.isDeviceSecure] first and touches nothing when it is `true`, so running the suite
- * on a developer's own emulator never changes or clears their PIN.
- *
- * The PIN is set through the instrumentation's shell (`locksettings`), which runs with the shell
- * uid and needs no permission from the app under test.
+ * Android refuses to create the app lock's auth-bound key without a secure lock screen, which a fresh
+ * CI emulator lacks. A device where [KeyguardManager.isDeviceSecure] is already `true` is left
+ * untouched. The PIN is set through the instrumentation shell's `locksettings`.
  */
 class SecureLockScreenRule : TestRule {
     /**
@@ -52,9 +42,6 @@ class SecureLockScreenRule : TestRule {
                 if (setHere) {
                     val output = shell("locksettings set-pin $THROWAWAY_PIN")
                     check(keyguard.isDeviceSecure) {
-                        // Everything needed to tell the causes apart, in the one line CI shows: the
-                        // command's own answer, and whether the image offers a secure lock screen
-                        // at all (an image without the feature refuses the command outright).
                         val feature =
                             instrumentation.targetContext.packageManager
                                 .hasSystemFeature(SECURE_LOCK_SCREEN_FEATURE)
@@ -73,8 +60,7 @@ class SecureLockScreenRule : TestRule {
     /**
      * Runs one shell command and waits for it to finish.
      *
-     * `executeShellCommand` returns as soon as the command is started; reading its output to the
-     * end is what waits for it, and closing the descriptor is what releases it.
+     * Reading the output to the end is what waits for the command; closing the descriptor releases it.
      *
      * @param command the command line.
      * @return what the command printed.

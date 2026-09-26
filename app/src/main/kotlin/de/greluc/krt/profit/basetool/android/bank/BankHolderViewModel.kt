@@ -36,7 +36,7 @@ data class BankCustodyDraft(
 )
 
 /**
- * One holder's custody — design chapter 12, artboard 8.
+ * One holder's custody, as the detail screen shows it.
  *
  * @property holder who is being shown, or `null` while the first read is running.
  * @property bookings the postings behind their custody.
@@ -65,12 +65,10 @@ data class BankHolderState(
 )
 
 /**
- * Drives one holder's custody detail.
+ * Drives one holder's custody detail and the custody transfer.
  *
- * **Custody is kept at org-unit level and is not allocated to accounts** (design handoff correction
- * of 27.08.2026). That is why this screen has no account column, why the transfer touches no
- * account at all, and why the source holder may go negative — the total across the unit is
- * unchanged either way, only the attribution moves.
+ * Custody is kept at org-unit level, so the transfer touches no account and the source holder may go
+ * negative; only the attribution moves.
  *
  * @property source the holder reads and the transfer.
  * @property staff the holder register, which supplies the transfer's counterparties.
@@ -120,7 +118,7 @@ class BankHolderViewModel(
         mutableState.update { it.copy(draft = BankCustodyDraft(), error = null) }
     }
 
-    /** Closes it, discarding what was typed. */
+    /** Closes the transfer sheet, discarding what was typed. */
     fun onDismissTransfer() {
         mutableState.update { it.copy(draft = null) }
     }

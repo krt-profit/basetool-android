@@ -27,7 +27,7 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * The „Neuer Raffinerieauftrag" form — design chapter 11, artboards 4 and 5.
+ * The state of the „Neuer Raffinerieauftrag" form.
  *
  * @property draft what has been entered.
  * @property refineries the locations a run can be placed at.
@@ -53,13 +53,10 @@ data class RefineryCreateState(
     val editing: Boolean = false,
 ) {
     /**
-     * Whether the run's core and its goods are locked.
+     * Whether the run's core and its goods are locked, because the yield is already booked into the
+     * Lager (REQ-APP-REF-011).
      *
-     * Once the yield has been booked into the Lager, the goods describe rows that already exist
-     * somewhere else, and moving them here would leave the two disagreeing. The **server does not
-     * enforce this** — `PUT /refinery-orders/{id}` rewrites a booked order's goods without
-     * complaint — so the rule is the app's, drawn as a lock rather than as an absence
-     * (`REQ-APP-REF-011`).
+     * The server does not enforce this; the app draws it as a lock.
      */
     val coreLocked: Boolean get() = editing && draft.stored
 
@@ -97,15 +94,11 @@ data class RefineryCreateState(
 }
 
 /**
- * Drives the „Neuer Raffinerieauftrag" form.
- *
- * **No extractor import.** The Extractor is a Windows desktop app whose handoff runs through the
- * ingest gateway and is consumed once in a browser; a phone cannot receive it (design chapter 11,
- * „Entscheidungen — Create"). The form is deliberately manual.
+ * Drives the „Neuer Raffinerieauftrag" form, for a create or an edit; there is no extractor import.
  *
  * @property source the pickers and the two writes.
- * @property orderId the order being rewritten, or `null` when raising one. The edit is the **same
- *   form pre-filled**, which design ch. 11 artboard 6 is explicit about: no second layout.
+ * @property orderId the order being rewritten, or `null` when raising one; an edit uses the same
+ *   form pre-filled.
  */
 class RefineryCreateViewModel(
     private val source: RefineryCreateSource,
@@ -133,8 +126,6 @@ class RefineryCreateViewModel(
                 state.copy(
                     draft =
                         (existing as? ApiResult.Success)?.value?.let { loaded ->
-                            // A run with no goods line would leave the editor with nothing to edit;
-                            // the create's own empty line is the right shape for that.
                             if (loaded.goods.isEmpty()) {
                                 loaded.copy(goods = listOf(RefineryGoodDraft()))
                             } else {
@@ -144,8 +135,6 @@ class RefineryCreateViewModel(
                     refineries = (refineries as? ApiResult.Success)?.value.orEmpty(),
                     methods = (methods as? ApiResult.Success)?.value.orEmpty(),
                     loading = false,
-                    // Either list failing leaves the form unusable, so the failure is shown rather
-                    // than an empty picker that looks like "there are none".
                     error =
                         (existing as? ApiResult.Failure)?.error
                             ?: (refineries as? ApiResult.Failure)?.error
@@ -156,10 +145,7 @@ class RefineryCreateViewModel(
     }
 
     /**
-     * Searches the ores a goods line can name.
-     *
-     * One shared list rather than one per line: every line asks the same question of the same
-     * catalogue, and a per-line list would answer it several times over.
+     * Searches the ores a goods line can name, into one list shared by all lines.
      *
      * @param query what was typed.
      */
@@ -185,10 +171,8 @@ class RefineryCreateViewModel(
     /**
      * Records the ore a goods line names, and derives what it refines into.
      *
-     * The output material is not a question the form asks. `RefineryOrderService.resolveGood` sets
-     * it from the input's `refinedMaterial`, falling back to the input itself for an ore the
-     * catalogue names no output for — so that is what the line carries and shows. Deriving it here,
-     * on the pick, is what keeps the shown value and the stored one the same thing.
+     * The output is the ore's `refinedMaterial`, or the ore itself when the catalogue names none, as
+     * `RefineryOrderService.resolveGood` does.
      *
      * @param index which line.
      * @param material the ore that was picked.
@@ -210,10 +194,7 @@ class RefineryCreateViewModel(
     }
 
     /**
-     * Clears a goods line's ore because its name was typed over.
-     *
-     * A typed name carries no id, and a stale id under a new label is the one thing a picker must
-     * never send. The derived output goes with it — it was never the member's answer to keep.
+     * Clears a goods line's ore and derived output because its name was typed over.
      *
      * @param index which line.
      * @param typed what now stands in the field.

@@ -11,25 +11,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The wait before a refused first load is retried (design chapter 14, `REQ-APP-UI-*`).
+ * The wait before a refused first load is retried (design chapter 14).
  *
- * Two rules, and they are not the same rule:
+ * - A `503` climbs the fixed 3, 6, 12, 30 s ladder, then holds.
+ * - A `429` uses the server's `Retry-After`, falling back to the ladder when it is absent or unusable.
  *
- * - a **`503`** climbs the fixed ladder the design names — 3 → 6 → 12 → 30 seconds, then holds;
- * - a **`429`** uses the server's own `Retry-After` when it sent one, because the server knows when
- *   its bucket refills and the client is guessing. Only when the header is missing or unusable does
- *   it fall back to the ladder.
- *
- * Honouring `Retry-After` is what keeps a rate-limited client from making the limit worse: a ladder
- * that retries sooner than the server said spends a token that was never going to be granted, and a
- * ladder that retries much later leaves the member waiting for no reason.
- *
- * **A manual retry resets the ladder.** The member pressing the button is new information — they are
- * still there and still want it — and inheriting a thirty-second wait from an automatic attempt they
- * did not make would punish them for waiting.
- *
- * Stateless and pure: the caller keeps the attempt count, which is what lets a screen reset it on a
- * manual retry without this class knowing anything about screens.
+ * Stateless: the caller keeps the attempt count and resets it on a manual retry.
  */
 object RetryBackoff {
     /** The ladder of design chapter 14, in order; the last step repeats. */
@@ -48,9 +35,8 @@ object RetryBackoff {
      * The wait before attempt number [attempt].
      *
      * @param attempt how many attempts have already failed; `0` for the first wait.
-     * @param retryAfterSeconds the server's `Retry-After`, in seconds, or `null` when it sent none
-     *   or sent something unparseable. A zero or negative value is treated as absent — a server
-     *   telling a rate-limited client to retry immediately is not an instruction worth following.
+     * @param retryAfterSeconds the server's `Retry-After` in seconds, or `null` when absent or
+     *   unparseable; zero or negative counts as absent.
      * @return the wait.
      */
     fun next(
@@ -66,11 +52,8 @@ object RetryBackoff {
     }
 
     /**
-     * Parses a `Retry-After` header value that carries a number of seconds.
-     *
-     * Only the delta-seconds form is read. The HTTP-date form is legal and this server does not
-     * send it; parsing it would mean trusting the device clock against the server's, and a clock
-     * skew would turn a three-second wait into a wait of hours or none at all.
+     * Parses a `Retry-After` header in delta-seconds form; the HTTP-date form is not read, so device clock skew cannot
+     * distort the wait.
      *
      * @param header the raw header value, or `null`.
      * @return the seconds, or `null` when there is nothing usable.

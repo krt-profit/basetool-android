@@ -22,14 +22,10 @@ import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The classification the whole error UI hangs off.
+ * The error classification, with each of the three 403 cases (pending registration, unaccepted
+ * terms, authorisation failure) asserted separately.
  *
- * The case that matters most is 403: the backend uses it for a pending registration, for unaccepted
- * terms and for a real authorisation failure, and a client branching on the status alone shows the
- * wrong screen for two of the three. Each is asserted separately for that reason.
- *
- * Robolectric because the mapper logs through the project facade, which calls `android.util.Log` —
- * unmocked in a plain JVM test that would then fail on the diagnostic rather than the assertion.
+ * Robolectric, because the mapper logs through `android.util.Log`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -127,10 +123,6 @@ class ApiErrorMapperTest {
 
     @Test
     fun `a business refusal is not dressed up as a concurrent edit`() {
-        // BUSINESS_CONFLICT and its relatives (BANK_ACCOUNT_NOT_EMPTY, BANK_NOT_REVERSIBLE,
-        // ENTITY_IN_USE, ...) are 409s that nobody raced for. Mapping them onto OptimisticLock told
-        // the member somebody else had changed the row and to reload — untrue, and the advice
-        // cannot succeed because reloading does not change the rule that fired.
         val error = mapper.map(response(status = 409, body = problemBody("BUSINESS_CONFLICT")))
 
         assertTrue(error is ApiError.Conflict)
@@ -140,14 +132,11 @@ class ApiErrorMapperTest {
     fun `a business refusal keeps the server's reason, which is the only text that explains it`() {
         val error = mapper.map(response(status = 409, body = problemBody("BANK_ACCOUNT_NOT_EMPTY")))
 
-        // The screen has no sentence of its own that would be true here.
         assertEquals("D", (error as ApiError.Conflict).problem?.detail)
     }
 
     @Test
     fun `an edge error page classifies by status instead of exploding`() {
-        // NPM answers HTML, not problem+json. Losing the status here would leave the UI with
-        // nothing to show; only the localised prose is unavailable.
         val error =
             mapper.map(
                 response(
@@ -177,8 +166,6 @@ class ApiErrorMapperTest {
 
     @Test
     fun `an unknown field in the body does not break parsing`() {
-        // REQ-API-009 permits additive change on the contract set; a client that rejects a new
-        // field would turn the permitted case into a break.
         val error =
             mapper.map(
                 response(
@@ -193,10 +180,6 @@ class ApiErrorMapperTest {
 
     @Test
     fun `a validation body keeps its field errors, in the shape the backend sends them`() {
-        // Verbatim from the backend's GlobalExceptionHandler: an ARRAY under `fieldErrors` and the
-        // same content again as a legacy map under `errors`. Declaring the array as a map made
-        // kotlinx reject the whole body, so every 400 arrived with no title, no detail and no
-        // correlation id — found on the device, where adding a frequency failed in silence.
         val error =
             mapper.map(
                 response(

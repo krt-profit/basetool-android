@@ -12,20 +12,10 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Tracks the offset between this device's clock and the server's, so time-sensitive values can be
- * computed against **server** time rather than the raw device clock.
+ * Tracks the offset between the device clock and the server's, learned from response `Date`
+ * headers, so DPoP proofs are timed against server time.
  *
- * This exists for DPoP. Keycloak accepts a proof lifetime of 10 s with 15 s of clock skew, which is
- * tighter than ordinary mobile clock drift — a phone whose clock is a minute off produces proofs
- * the token endpoint rejects, and the failure looks like "login broken" rather than "clock wrong".
- * The desktop extractor records clock drift as its primary DPoP failure mode (main repo
- * REQ-INGEST-012), so the app computes proof `iat` from here instead.
- *
- * The offset is learned from the `Date` header every response carries. Until a response has been
- * seen, [now] is the device clock — the honest fallback, since there is nothing better to use.
- *
- * Thread-safe: the offset is a single atomic reference, written from OkHttp's network threads and
- * read from wherever a proof is built.
+ * Until a response is seen, [now] is the device clock. Thread-safe.
  */
 class ServerClock {
     private val offset = AtomicReference(Duration.ZERO)
@@ -52,10 +42,8 @@ class ServerClock {
     fun now(): Instant = Instant.now().plus(offset.get())
 
     /**
-     * How far the device clock is from the server's, as last observed.
-     *
-     * Exposed for diagnostics and tests, not for callers doing their own arithmetic — a caller that
-     * needs server time calls [now].
+     * How far the device clock is from the server's, as last observed; for diagnostics and tests, while
+     * callers needing server time use [now].
      *
      * @return the offset; [Duration.ZERO] before the first response
      */

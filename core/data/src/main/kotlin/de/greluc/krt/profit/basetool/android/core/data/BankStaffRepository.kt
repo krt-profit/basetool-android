@@ -60,19 +60,11 @@ import java.math.BigDecimal
 import java.time.Instant
 
 /**
- * Reads the bank's staff surface from the backend.
+ * Reads and writes the bank's staff surface under `/api/v1/bank/…`, which lists every account in
+ * the organisation and is gated on a bank role.
  *
- * **The paths are what separate this from [BankRepository].** Everything here lives under
- * `/api/v1/bank/…`, which lists every account in the organisation and is gated on a bank role;
- * the member surface under `/api/v1/org-units/bank/…` answers only with what the caller may see
- * and stays there. The two were one class until it carried five interfaces at once.
- *
- * Reads are the employee's and writes are Bank-Management's, but **this class enforces neither** —
- * the server does, and the screens draw what it answers (ADR-0016). Nothing here derives a
- * permission from a role name.
- *
- * `/api/v1/bank/admin` is reached by neither class and never will be: that is the admin area,
- * which is web-only by owner decision.
+ * Permissions are enforced by the server, not here (ADR-0016); the admin area `/api/v1/bank/admin`
+ * is not reached.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -172,8 +164,6 @@ class BankStaffRepository(
         val figure = parseTypedDecimal(booking.amount)
         val target = booking.destinationAccountId
         val targetHolder = booking.destinationHolderId
-        // A transfer needs both halves of its target; refusing here keeps the message at the field
-        // rather than fetching a 400 to say the same thing.
         val transferReady =
             booking.kind != DirectBookingKind.TRANSFER || (target != null && targetHolder != null)
         if (figure == null || !transferReady) {
@@ -241,8 +231,6 @@ class BankStaffRepository(
                 body =
                     CreateBankAccountRequest(
                         name = name,
-                        // The app opens accounts for an org unit and nothing else. AREA, CARTEL,
-                        // CARTEL_BANK and SPECIAL exist on the wire and are the web's to create.
                         type = CreateBankAccountRequest.Type.ORG_UNIT,
                         orgUnitId = orgUnitId,
                     ),
@@ -421,9 +409,6 @@ class BankStaffRepository(
     override suspend fun threeMonthReport(zoneId: String): ApiResult<DownloadedFile> =
         reader.getBytes(
             THREE_MONTH_PATH,
-            // The endpoint declares the header, so it is sent here as well as by the client's own
-            // interceptor: a report whose month boundaries fall in the wrong zone is wrong by a day
-            // at each end and looks like a data problem.
             headers = listOf(USER_ZONE_HEADER to zoneId),
         )
 
@@ -617,8 +602,6 @@ private fun BankDashboardDto.toModel(): BankStaffDashboard =
     BankStaffDashboard(
         management = management == true,
         accounts = accounts.orEmpty().mapNotNull { it.toModel() },
-        // Null stays null. The server omits the strip for a non-management caller, and folding
-        // that into zeroes would have the screen assert an empty bank.
         totals =
             totals?.let {
                 BankStaffTotals(
@@ -641,8 +624,6 @@ private fun BankDashboardAccountDto.toModel(): BankStaffAccount? {
         accountNo = accountNo,
         name = name.orEmpty(),
         type = type?.value,
-        // An unknown status reads as active: a row that takes bookings is the one a staff member
-        // must not be talked out of acting on by a value this build predates.
         status =
             if (status == BankDashboardAccountDto.Status.CLOSED) {
                 BankAccountStatus.CLOSED
@@ -662,8 +643,6 @@ private fun BankDashboardAccountDto.toModel(): BankStaffAccount? {
  *   address.
  */
 private fun BankAccountDto.toModel(): BankManagedAccount? {
-    // An id with no version is as unusable as no id: every lifecycle write echoes one, so a row
-    // missing either could be listed and never acted on.
     val accountId = id ?: return null
     return version?.let { lock ->
         BankManagedAccount(
@@ -721,7 +700,7 @@ private fun BankAccountDetailDto.toDetail(): BankAccountDetail =
 /**
  * Maps a page of holder postings onto the model.
  *
- * @param page which page was asked for; the server does not always echo it.
+ * @param page the requested page index, used because the server does not always echo it.
  * @return the page.
  */
 private fun PageResponseBankHolderBookingDto.toModel(page: Int): BankHolderBookingPage =
@@ -761,7 +740,6 @@ private fun UserDto.toGrantee(): BankGrantee? =
     id?.let {
         BankGrantee(
             id = it,
-            // Never the e-mail or the rank the search also carries.
             handle = effectiveName ?: displayName ?: username.orEmpty(),
         )
     }
@@ -781,26 +759,16 @@ private fun BankGrantDto.toModel(): BankGrant? {
             canDeposit = canDeposit == true,
             canWithdraw = canWithdraw == true,
             canTransfer = canTransfer == true,
-            // Absent means zero here, which is what a freshly inserted row carries. That is exactly
-            // why `exists` is a field of its own rather than a test on this number.
             version = version ?: 0,
             exists = true,
         )
     }
 }
 
-/*
- * The three senders live outside the class: they are one paragraph each, they share
- * nothing but the reader, and inside they pushed it past the function cap for no gain in
- * cohesion.
- */
-
 /**
- * Reads which of the two answers came back.
+ * Reads whether a capped write was booked or filed as an approval request.
  *
- * Keyed on `pendingRequest` rather than on an absent `transaction`: the filed request is the
- * positive fact, so a field added to this object later cannot turn a booking into a filing by
- * accident.
+ * Keyed on the presence of `pendingRequest`, not on an absent `transaction`.
  *
  * @receiver the answer of a write that has a ceiling.
  * @return the outcome, or the failure unchanged.
@@ -835,10 +803,7 @@ private fun ApiResult<Unit>.krtBooked(): ApiResult<BankDirectOutcome> =
     }
 
 /**
- * Books money in.
- *
- * Fee-free by definition, so it carries no `feeInclusive`: a flag that decides nothing invites
- * the next reader to think it did.
+ * Books money in; a deposit is fee-free and carries no `feeInclusive`.
  *
  * @param booking the form.
  * @param amount the parsed figure.
@@ -850,9 +815,6 @@ private suspend fun ApiReader.krtDeposit(
     amount: KrtDecimal,
     note: String?,
 ): ApiResult<BankDirectOutcome> =
-    // A deposit has no ceiling -- `bookDeposit` answers 201 with the transaction and never files a
-    // request -- so its answer carries nothing the sheet needs and is discarded. The two below
-    // cannot do that.
     postAccepted(
         BankStaffRepository.DEPOSITS_PATH,
         BankDepositRequest(
@@ -860,16 +822,11 @@ private suspend fun ApiReader.krtDeposit(
             amount = amount,
             holderId = booking.holderId,
             note = note,
-            // A deposit takes no justification -- the server's schema has none. The
-            // counterparty is who handed the money over.
             counterpartyUserId = booking.counterpartyUserId,
             counterpartyOrgUnitId = booking.counterpartyOrgUnitId,
             counterpartyExternalName =
                 booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
             staffNote = booking.staffNote?.takeIf { it.isNotBlank() },
-            // The two halves of the split travel together or not at all: `BankDepositRequest`
-            // carries an @AssertTrue refusing either alone, and it is @Schema(hidden = true), so
-            // nothing generated from the document knows about it.
             splitEnabled = booking.splitEnabled,
             splitPercent =
                 booking.splitPercent
@@ -881,12 +838,10 @@ private suspend fun ApiReader.krtDeposit(
     ).krtBooked()
 
 /**
- * Books money out — or files it, which is not the same thing.
+ * Books money out, or files it as an approval request when it exceeds the KRT employee ceiling.
  *
- * Over the KRT employee ceiling the server does **not** refuse: it raises a band-routed approval
- * request and answers `202` with a `pendingRequest` where a booking would have carried a
- * `transaction` (REQ-BANK-047, ADR-0109). Both are 2xx, so the answer has to be read rather than
- * discarded — otherwise the sheet closes on a withdrawal that moved nothing and says so to nobody.
+ * Over the ceiling the server answers `202` with a `pendingRequest` instead of a `transaction`
+ * (REQ-BANK-047).
  *
  * @param booking the form.
  * @param amount the parsed figure.
@@ -918,15 +873,14 @@ private suspend fun ApiReader.krtWithdraw(
     ).krtOutcome()
 
 /**
- * Moves money between two accounts of the unit — or files it.
- *
- * Same ceiling as the withdrawal above, and the same reason for reading the answer.
+ * Moves money between two accounts of the unit, or files it as an approval request when it exceeds
+ * the KRT employee ceiling.
  *
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
  * @param target the receiving account, already checked for presence.
- * @param targetHolder who holds it there, likewise.
+ * @param targetHolder its holder, already checked for presence.
  * @return whether it was booked or filed, or the classified failure.
  */
 private suspend fun ApiReader.krtTransfer(

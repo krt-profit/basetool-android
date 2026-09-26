@@ -68,11 +68,7 @@ private val FOCUS_RING_OFFSET = 2.dp
 private val FOCUS_RING_WIDTH = 2.dp
 
 /**
- * The visual definition of one rung of the button ladder.
- *
- * States are expressed as separate colours rather than as alpha overlays because the design system
- * pins exact press colours (for example ghost buttons turn orange on press, they do not merely
- * darken).
+ * The visual definition of one rung of the button ladder, with explicit colours per state.
  *
  * @property container fill in the resting state.
  * @property containerPressed fill while pressed.
@@ -80,8 +76,7 @@ private val FOCUS_RING_WIDTH = 2.dp
  * @property contentPressed label and icon colour while pressed.
  * @property border border colour in the resting state, or `null` for borderless fills.
  * @property borderPressed border colour while pressed, or `null`.
- * @property focusRing colour of the focus ring — white on the orange CTA, orange everywhere else,
- *   because orange on orange is invisible.
+ * @property focusRing colour of the focus ring — white on the orange CTA, orange everywhere else.
  * @property bloom whether the button carries the orange bloom (reserved for the primary CTA).
  */
 @Immutable
@@ -99,10 +94,9 @@ data class KrtButtonStyle(
 /**
  * The button ladder, strongest to quietest.
  *
- * Picking a rung is a content decision, not a styling one: [cta] marks *the* one primary action of
- * a screen context and must never appear twice, [success] is reserved for state changes such as
- * Check-In, [outline] is an emphasised secondary action, [ghost] is the routine repeated action,
- * and [quietDanger] is destructive and only commits to red once pressed.
+ * [cta] is the one primary action of a screen context, [success] a state change such as Check-In,
+ * [outline] an emphasised secondary action, [ghost] the routine repeated action, and [quietDanger]
+ * a destructive one that turns red only when pressed.
  */
 object KrtButtonStyles {
     /** Filled orange with black label plus bloom — maximum one per screen context. */
@@ -191,12 +185,10 @@ object KrtButtonStyles {
 }
 
 /**
- * A KRT button.
+ * A KRT button: square, at least 48 dp high, label uppercased and tracked.
  *
- * Square by definition (radius 0), at least 48 dp high, label uppercased and tracked. Prefer the
- * named wrappers [KrtCtaButton], [KrtSuccessButton], [KrtOutlineButton], [KrtGhostButton] and
- * [KrtQuietDangerButton] — they encode which rung of the ladder is appropriate; this function
- * exists for the rare case where the rung is chosen dynamically.
+ * Prefer the named wrappers ([KrtCtaButton], [KrtSuccessButton], [KrtOutlineButton],
+ * [KrtGhostButton], [KrtQuietDangerButton]); use this only when the rung is chosen dynamically.
  *
  * @param text button label; uppercased for display.
  * @param onClick invoked on tap; not called while [enabled] is `false`.
@@ -280,10 +272,7 @@ fun KrtButton(
 }
 
 /**
- * The single primary action of a screen context (Anmelden, Speichern).
- *
- * Never render two of these in the same context — the filled orange fill is what tells the user
- * where the screen wants them to go.
+ * The single primary action of a screen context (Anmelden, Speichern); never two in one context.
  *
  * @param text button label; uppercased for display.
  * @param onClick invoked on tap.
@@ -301,10 +290,7 @@ fun KrtCtaButton(
 ) = KrtButton(text, onClick, KrtButtonStyles.cta, modifier, enabled, iconRes)
 
 /**
- * A state-changing action such as Check-In.
- *
- * Green is reserved for transitions that put something into an active state; it is not a second
- * primary button.
+ * A state-changing action such as Check-In; green, and not a second primary button.
  *
  * @param text button label; uppercased for display.
  * @param onClick invoked on tap.
@@ -358,11 +344,7 @@ fun KrtGhostButton(
 ) = KrtButton(text, onClick, KrtButtonStyles.ghost, modifier, enabled, iconRes)
 
 /**
- * A destructive action.
- *
- * Rests in quiet grey and only turns red under the finger, so deleting never looks like the
- * expected next step. Destructive flows additionally confirm through the danger modal, which names
- * the consequence.
+ * A destructive action that rests in quiet grey and turns red only under the finger.
  *
  * @param text button label; uppercased for display.
  * @param onClick invoked on tap.
@@ -382,9 +364,7 @@ fun KrtQuietDangerButton(
 /**
  * A square icon-only button for repeated universal row actions (edit, delete, check-in, book-out).
  *
- * Icon-only is deliberately restricted: a rare or ambiguous action always gets a label. Because the
- * glyph carries the whole meaning, [label] is mandatory and serves both as the TalkBack description
- * and as the long-press tooltip.
+ * [label] serves as both the TalkBack description and the long-press tooltip.
  *
  * @param iconRes the glyph to render.
  * @param label spoken description and tooltip text — never omit it.
@@ -392,8 +372,7 @@ fun KrtQuietDangerButton(
  * @param modifier layout modifier.
  * @param enabled whether the button reacts to input.
  * @param style ladder rung; ghost by default, quiet danger for destructive row actions.
- * @param width how wide it is. The default is square; the reorder pair of design ch. 18 §3 (E5/E8)
- *   is drawn narrower, at 40 × 44, so that a move pair plus an overflow still fits a 411 dp row.
+ * @param width how wide it is; square by default, narrower for a reorder pair.
  * @param height how tall it is; never below the 44 dp touch floor.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -462,20 +441,15 @@ private fun ButtonLadderPreview() {
 /**
  * The dashed „+ …" surface that opens a picker — the design system's `.assoc-add`.
  *
- * Not a button in the ladder and deliberately quieter than one: it marks a **place something can be
- * added to** rather than an action to take now, which is why the border is dashed and the label
- * muted until it is touched. The design uses it wherever a set is being filled from a list too long
- * to lay out — the Lager's allocation chips, and the Einsatz's crew (ch. 06 artboard 14).
- *
- * A chip field over the whole candidate list is the shape this replaces: it grows with the list and
- * is four rows high at fourteen names on a 412 dp phone.
+ * Marks a place a set can be filled from a long list (Lager allocations, Einsatz crew), quieter
+ * than a ladder button.
  *
  * @param text what will be added, e.g. „Person zuweisen". The „+" is drawn, not typed.
  * @param onClick opens the picker.
  * @param modifier layout modifier.
  * @param enabled whether it may be used right now.
- * @param locked whether the caller may not use it at all — draws the lock glyph in place of the
- *   plus, at full opacity beside the dimmed label, and stays tappable so the refusal can be said.
+ * @param locked whether the caller may not use it at all; draws the lock glyph in place of the plus
+ *   and stays tappable so the refusal can be shown.
  */
 @Composable
 fun KrtAssocAdd(

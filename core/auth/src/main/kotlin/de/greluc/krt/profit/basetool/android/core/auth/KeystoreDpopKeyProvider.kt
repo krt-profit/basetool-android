@@ -17,20 +17,11 @@ import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
 
 /**
- * The per-install DPoP signing key, generated once inside the Android Keystore.
+ * The per-install DPoP signing key, generated once inside the Android Keystore so it never leaves the device.
  *
- * The whole point of the refresh-only binding is that this key cannot leave the device: the realm
- * binds the refresh token to it, so a stolen token is worthless without the phone. Generating the
- * pair in memory — which the tests do, deliberately — would give that away, so production reaches
- * the key only through a Keystore handle that signs without ever exposing the private material.
- *
- * **Load or create, never create.** A regenerated key silently invalidates the refresh token bound
- * to the old one, and the symptom is not an error: the member is simply asked to log in again after
- * every app start, intermittently enough to look like something else. [keyPair] therefore returns
- * the existing entry whenever there is one.
- *
- * **Deleting it belongs to logout**, beside [SecretCipher.deleteKey]. The stored refresh token is
- * bound to this key; wiping the token while leaving the key alive leaves the binding alive with it.
+ * [keyPair] returns the existing entry whenever there is one, since a regenerated key invalidates
+ * the refresh token bound to the old one. Deleting it belongs to logout, beside
+ * [SecretCipher.deleteKey].
  *
  * @property alias Keystore entry name; separate from the token cipher's so each can be wiped alone
  */
@@ -78,12 +69,8 @@ class KeystoreDpopKeyProvider(
         }
 
     /**
-     * Generates the P-256 signing key.
-     *
-     * Deliberately **without** `setUnlockedDeviceRequired`: unlike the token cipher, this key signs
-     * the proof that renews a session, and the app refreshes in the foreground where the device is
-     * unlocked anyway — but a stricter constraint here would turn a locked-screen edge case into a
-     * failed login rather than a delayed one.
+     * Generates the P-256 signing key, without `setUnlockedDeviceRequired` so a locked screen delays a refresh rather
+     * than failing it.
      *
      * @param useStrongBox whether to request the secure element
      * @return the generated pair

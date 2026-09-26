@@ -144,11 +144,10 @@ class MaterialDetailViewModel(
     }
 
     /**
-     * Reads the material and its prices.
+     * Reads the material record, then its prices.
      *
-     * The record is read first because a 404 on it is the design's „Material nicht gefunden" and
-     * has to reach the screen as a failure rather than as an empty price table, which would read
-     * as „no price data" — a different and untrue statement.
+     * A 404 on the record reaches the screen as „Material nicht gefunden" rather than as an empty price
+     * table.
      *
      * @param refresh whether what is on screen stays while it runs.
      */

@@ -37,17 +37,12 @@ enum class BoardSide {
 }
 
 /**
- * One row of the board, offer or request.
- *
- * The two server DTOs differ in three fields and agree on everything the screen draws, so they map
- * onto one model. Keeping them apart would duplicate the row composable, the interest toggle and
- * the withdraw action for a difference the member never sees.
+ * One row of the board, offer or request, mapped from either server DTO.
  *
  * @property id the row's id.
  * @property side which half it belongs to.
  * @property materialName what is being offered or wanted.
- * @property unitIsPiece whether the amount counts pieces rather than SCU. **Never hardcode SCU** —
- *   an item counted in pieces and labelled „SCU" is a quantity a member would act on.
+ * @property unitIsPiece whether the amount counts pieces rather than SCU.
  * @property amount the offered or requested amount, as the server rendered it.
  * @property quality the offered quality, or the minimum wanted; `null` when none is stated.
  * @property ownerName who posted it.
@@ -55,8 +50,8 @@ enum class BoardSide {
  * @property postedAt when, as the server rendered it.
  * @property remark their note, or `null`.
  * @property interestCount how many members have said they can help.
- * @property interestedHandles who they are — **owner-only**, and `null` for everybody else. The
- *   server decides this (REQ-MARKET-006); the app never derives it.
+ * @property interestedHandles who they are; sent only to the owner, `null` for everybody else
+ *   (REQ-MARKET-006).
  * @property viewerInterested whether the caller is one of them.
  * @property mine whether the caller posted it.
  * @property version the optimistic lock, echoed on an edit.
@@ -102,8 +97,7 @@ typealias BoardPage = Page<BoardEntry>
  * @property unitIsPiece whether it counts pieces rather than SCU.
  * @property amount how much is in stock, as the server rendered it.
  * @property quality its quality, or `null`.
- * @property locationName where it is — shown so a member can tell two stacks apart, and **not**
- *   sent to the board: chapter 10 is explicit that place stays off-tool.
+ * @property locationName where it is; shown to tell stacks apart, never sent to the board.
  * @property alreadyReleased whether an offer for it already exists.
  */
 data class ReleasableStock(
@@ -135,13 +129,9 @@ interface MaterialBoardSource {
     /**
      * Says the caller can help, or takes it back.
      *
-     * Answers with the **updated row** rather than with nothing, so the screen can replace the one
-     * it has instead of re-reading the page: the count, the caller's own flag and the version all
-     * move together, and a re-read would also lose the member's scroll position.
-     *
      * @param entry the row.
      * @param interested whether the caller can help.
-     * @return the row as it now stands, or the classified failure.
+     * @return the updated row, so the screen can replace it in place, or the classified failure.
      */
     suspend fun setInterest(
         entry: BoardEntry,
@@ -194,15 +184,8 @@ interface MaterialBoardSource {
     ): ApiResult<Unit>
 
     /**
-     * Searches the craftable products the item half can name.
-     *
-     * The board addresses an item by its **product key** — the catalogue's own identifier, which
-     * `GET /blueprints/products/search` hands out and which the two item writes send. There is no
-     * inventory row behind it: an item offer is not bound to stock the way a material offer is.
-     *
-     * The model is [BlueprintProduct], the same one „Mein Inventar" fills its blueprint picker
-     * with. One endpoint, one model — a second would be two places to fix when the catalogue grows
-     * a field.
+     * Searches the craftable products the item half can name by product key; an item offer has no
+     * inventory row behind it.
      *
      * @param query what was typed; blank asks for the catalogue's own first page.
      * @return the candidates, or the classified failure.
@@ -210,12 +193,7 @@ interface MaterialBoardSource {
     suspend fun searchProducts(query: String): ApiResult<List<BlueprintProduct>>
 
     /**
-     * Offers an **item**.
-     *
-     * No inventory row is named: items live in the personal inventory and the endpoint binds none
-     * (`POST /material-exchange/item-offers` takes a product key, a quantity and a remark — and
-     * nothing else, which is why design ch. 17 artboard 1's „Zustand" and „Blueprint (Variante)"
-     * fields are absent).
+     * Offers an **item** by product key, bound to no inventory row.
      *
      * @param productKey which product.
      * @param quantity how many pieces.
@@ -233,8 +211,7 @@ interface MaterialBoardSource {
      *
      * @param productKey which product.
      * @param quantity how many pieces.
-     * @param minQuality the minimum quality, or `null`. The wire carries this and **not** the „Bis
-     *   wann" deadline artboard 2 draws.
+     * @param minQuality the minimum quality, or `null`.
      * @param remark an optional note.
      * @return success, or the classified failure.
      */
@@ -246,13 +223,8 @@ interface MaterialBoardSource {
     ): ApiResult<Unit>
 
     /**
-     * Rewrites one of the caller's own offers.
-     *
-     * **Both the amount and the remark**, against design ch. 17 artboard 3, which says only the
-     * remark may change and calls that the web rule. It is not: the web's own modal offers the
-     * amount with an „Alles" shortcut and a „darf den Lagerbestand nicht überschreiten" bound, and
-     * `MaterialExchangeOfferUpdateRequest` **requires** `offeredAmount`. Sending the stored amount
-     * unchanged would work but would leave the app unable to do what the web does.
+     * Rewrites the amount and the remark of one of the caller's own offers; the server requires the
+     * amount.
      *
      * @param entry the row, which carries the version to echo.
      * @param amount the offered amount; pieces for an item row, SCU for a material one.
@@ -283,17 +255,9 @@ interface MaterialBoardSource {
 }
 
 /**
- * The Materialbörse (REQ-APP-MARKET-001…008).
+ * The Materialbörse (REQ-APP-MARKET-001…008): a board that brokers interest only.
  *
- * **A board that vermittelt interest and nothing else.** Handover and place stay off-tool by
- * design (chapter 10 §3), so nothing here sends or shows a location for a board row — the only
- * place name in this file belongs to the caller's *own* stock, on the sheet where they pick which
- * stack to offer.
- *
- * **Item offers and item requests are read but not created.** `POST /item-offers` and
- * `/material-requests/item` address an item by a `productKey` from the P4K catalogue, which the app
- * has no picker for; both halves render item rows that the web created. Creating one is a phase-5
- * question together with the catalogue browse it needs.
+ * Handover and place stay off-tool, so no location is sent or shown for a board row.
  *
  * @property reader performs the calls and classifies their failures.
  */
@@ -474,8 +438,6 @@ class MaterialBoardRepository(
         amount: Double,
         remark: String?,
     ): ApiResult<BoardEntry> {
-        // The wire requires a version. A row that arrived without one cannot be written safely —
-        // sending 0 would either be refused or, worse, accepted against a stale row.
         val version = entry.version ?: return ApiResult.Failure(ApiError.OptimisticLock())
         return reader.put(
             path = "$OFFERS_PATH/${entry.id}/remark",
@@ -534,10 +496,7 @@ class MaterialBoardRepository(
         private const val SIZE_PARAM = "size"
 
         /**
-         * The interest path of one row.
-         *
-         * The two halves are different families, so this is where the side stops mattering to the
-         * rest of the file.
+         * The interest path of one row, which differs between the offer and request halves.
          *
          * @param entry the row.
          * @return the path.
@@ -563,10 +522,8 @@ class MaterialBoardRepository(
 }
 
 /**
- * Maps a write's answer back onto the row it was made on.
- *
- * The row's own id is the fallback, because a response that omits it is still an answer about the
- * row the caller addressed — losing it would drop a successful write on the floor.
+ * Maps a write's answer back onto the row it was made on, falling back to the row's own id when the
+ * response omits it.
  *
  * @param entry the row the write was made on.
  * @return the updated row, or the failure unchanged.
@@ -583,7 +540,7 @@ private fun ApiResult<MaterialExchangeOfferDto>.mapOffer(entry: BoardEntry): Api
     }
 
 /**
- * The same, for the request half.
+ * Maps a request write's answer back onto the row it was made on.
  *
  * @param entry the row the write was made on.
  * @return the updated row, or the failure unchanged.
@@ -642,7 +599,6 @@ private fun MaterialExchangeOfferDto.toModel(): BoardEntry? {
         id = entryId,
         side = BoardSide.OFFERS,
         materialName = displayName(item, itemName, material?.name),
-        // An item is counted in pieces by definition; a material says so itself.
         unitIsPiece = item || material?.quantityType?.value == "PIECE",
         amount = if (item) itemQuantity?.toString().orEmpty() else amount?.toString().orEmpty(),
         quality = quality,

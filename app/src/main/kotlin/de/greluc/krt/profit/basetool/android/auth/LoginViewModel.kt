@@ -25,10 +25,8 @@ import kotlinx.coroutines.launch
 /**
  * Drives one login attempt from the button tap to the session.
  *
- * The order in [startLogin] is the part that matters: the attempt is **saved before the browser is
- * launched**, because after the launch this process may not run again until the redirect arrives
- * (`REQ-APP-AUTH-008`). Saving afterwards would work on every device with memory to spare and fail
- * on the ones without.
+ * [startLogin] saves the attempt before launching the browser, because the process may die before
+ * the redirect arrives (REQ-APP-AUTH-008).
  *
  * @property container the auth graph
  */
@@ -43,12 +41,9 @@ class LoginViewModel(
     private val mutableOnline = MutableStateFlow(true)
 
     /**
-     * Whether the device has a network.
+     * Whether the device has a network connection, as opposed to whether the server is reachable.
      *
-     * A **network** state, not a server one — chapter 04 keeps the two apart (round 15 · R1). The
-     * app has asked the server nothing before the first tap, so it can say only this: without a
-     * connection the sign-in cannot start, and the screen says so up front instead of opening a
-     * browser that lands on nothing.
+     * Without one the screen says up front that sign-in cannot start.
      */
     val online: StateFlow<Boolean> = mutableOnline.asStateFlow()
 
@@ -72,18 +67,12 @@ class LoginViewModel(
                     container.pendingAuthorization.save(request)
                     true
                 } catch (unusable: SecretCipherException) {
-                    // The device cannot encrypt right now. Launching anyway would open a browser
-                    // whose redirect nothing could complete.
                     KrtLog.e(LOG_TAG, unusable) { "login attempt could not be stored" }
                     false
                 }
             mutableState.value =
                 when {
                     !saved -> {
-                        // Not the same failure as a refused token exchange: this one the member can
-                        // usually fix, because the commonest cause is a device with no screen lock,
-                        // which leaves Keystore unable to create the key the refresh token is
-                        // sealed with.
                         LoginUiState.Failed(R.string.login_error_device_key)
                     }
 
@@ -108,17 +97,10 @@ class LoginViewModel(
         viewModelScope.launch {
             val request = container.pendingAuthorization.peek()
             if (request == null) {
-                // No attempt is pending: a stale redirect, or the app was reinstalled while the
-                // browser was open. Nothing to complete, and nothing to report either.
                 KrtLog.d(LOG_TAG) { "redirect arrived with no pending attempt" }
                 mutableState.value = LoginUiState.Idle
                 return@launch
             }
-            // The attempt is consumed only once the redirect turns out to BE this attempt's.
-            // A state mismatch means somebody else's intent reached the exported activity, and
-            // discarding on that would let any installed app end a login in flight — the member's
-            // own redirect would then find nothing pending. Consuming on a real answer keeps the
-            // single-use property that matters: a code is redeemed at most once.
             val response = request.readRedirect(redirect)
             if (response !is AuthorizationResponse.StateMismatch) {
                 container.pendingAuthorization.clear()
@@ -159,11 +141,7 @@ class LoginViewModel(
     private fun messageFor(reason: TokenResult): Int =
         when (reason) {
             is TokenResult.Unreachable -> R.string.login_error_unreachable
-
             is TokenResult.SessionEnded -> R.string.login_error_expired
-
-            // AccessTokenBound, Rejected and Malformed all mean the same thing to a member: this
-            // is not their fault and trying again will not help.
             else -> R.string.login_error_config
         }
 

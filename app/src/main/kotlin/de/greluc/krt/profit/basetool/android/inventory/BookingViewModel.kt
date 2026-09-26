@@ -58,12 +58,10 @@ enum class BookingMode {
 }
 
 /**
- * Which catalogue a book-in names.
+ * Which catalogue a book-in names (REQ-INV-029).
  *
- * The server takes the two in **mutually exclusive** fields and treats them differently in three
- * further ways — a material row requires a grade and an item row forbids one, an item amount must
- * be a positive whole number, and an item always merges into a matching stack. So this is a kind of
- * row, not a filter on one list (REQ-INV-029).
+ * The server takes the two in mutually exclusive fields: a material row requires a grade, while an
+ * item row forbids one, needs a positive whole amount and always merges into a matching stack.
  */
 enum class BookingCatalogKind {
     /** Ore and refined goods — graded, and measured in SCU or in pieces. */
@@ -77,14 +75,11 @@ enum class BookingCatalogKind {
 private const val SCU_UNIT = "SCU"
 
 /**
- * What the booking form holds.
- *
- * One state for every mode rather than one each: the member switches between them with a segment
- * and must not lose the amount they already typed, which is the field the moving modes share.
+ * What the booking form holds, as one state for every mode so the typed amount survives a mode
+ * change.
  *
  * @property mode which mode is showing.
- * @property kind whether a book-in names a material or a game item. Only asked of a book-in: an
- *   entry already knows what it holds, and every way out is the same for both.
+ * @property kind whether a book-in names a material or a game item; only asked of a book-in.
  * @property entry the entry being booked out or rebooked; `null` in [BookingMode.IN].
  * @property amount how much, as typed.
  * @property material the material picked, for booking in.
@@ -96,11 +91,9 @@ private const val SCU_UNIT = "SCU"
  * @property moreGameItems whether the catalogue holds items this page does not carry.
  * @property orderTargets the Aufträge a book-in may earmark part of the new row for.
  * @property missionTargets the same for Einsätze.
- * @property jobOrderSplit what the member has earmarked for which Auftrag, entered while booking
- *   in (Variante C). Sent with the booking, in one request, so the server checks the sum and every
- *   target in the same transaction that creates the row.
- * @property missionSplit the same for Einsätze. Never filled in item mode — the server refuses a
- *   mission earmark on an item row.
+ * @property jobOrderSplit what the member has earmarked for which Auftrag while booking in; sent
+ *   with the booking in one request.
+ * @property missionSplit the same for Einsätze; never filled in item mode.
  * @property picking which "+ zuordnen" picker is open, or `null`.
  * @property moreMaterials whether the catalogue holds materials this page does not carry.
  * @property place the place picked.
@@ -116,8 +109,7 @@ private const val SCU_UNIT = "SCU"
  * @property terminal the terminal a sale happens at.
  * @property terminals the terminals that buy this material.
  * @property jobOrderPlan what the member typed into each Auftrag earmark, keyed by target id.
- * @property missionPlan the same for the Einsatz earmarks — a separate map, because the two
- *   taggings are independent and a shared one would make the arithmetic wrong in both.
+ * @property missionPlan the same for the Einsatz earmarks, kept separate from [jobOrderPlan].
  * @property orgUnit the org-unit pool a transfer's moved row lands in.
  * @property orgUnits the pools the receiving member belongs to.
  * @property mergeStock whether the server may merge the moved amount into an identical
@@ -170,30 +162,17 @@ data class BookingState(
     val error: ApiError? = null,
 ) {
     /**
-     * Whether the form holds something the server will accept.
-     *
-     * Each mode has its own minimum, and the transfer and the sale each need the thing that makes
-     * them what they are — a recipient and a terminal. Offering a save without them would send a
-     * booking the server refuses, which reads to the member as the app being unreliable rather
-     * than as a field they missed.
+     * Whether the form holds something the server will accept, by each mode's own minimum; a transfer
+     * also needs a recipient and a sale a terminal.
      */
     val submittable: Boolean
         get() =
             when (mode) {
-                // A note moves nothing, so it needs no amount — and an emptied note is a
-                // deliberate edit, not an incomplete form.
                 BookingMode.NOTE -> {
                     entry != null && note != entry.note.orEmpty()
                 }
 
-                // Both kinds need an amount and a place; what they need beyond that is where the
-                // server's two catalogues part company (REQ-INV-029). A material row needs a grade
-                // — the web form marks the field required and the server refuses without it. An
-                // item row needs none, refuses one, and needs its amount to be a whole number.
                 BookingMode.IN -> {
-                    // `!splitOverbooked` because the server refuses the WHOLE booking when a split
-                    // promises more than the amount (R5) — not just the earmark. Dimming the CTA
-                    // is what keeps a member from expecting a row that will never exist.
                     positiveAmount && place != null && !splitOverbooked &&
                         when (kind) {
                             BookingCatalogKind.MATERIAL -> material != null && qualityGiven
@@ -239,10 +218,8 @@ data class BookingState(
     /**
      * What one split's picker may still offer.
      *
-     * A target already earmarked is left out — two rows for the same Auftrag would be two promises
-     * the server merges into one — and so is one that has no use for what is being booked: the
-     * server checks every earmark against its target's own requirement, so offering the rest would
-     * be offering a rejection. Missions carry no requirement and are filtered only for duplicates.
+     * Already earmarked targets are left out, as are Aufträge with no requirement for what is being
+     * booked; Einsätze are filtered only for duplicates.
      *
      * @param dimension which split.
      * @return the targets left to pick.
@@ -297,11 +274,7 @@ data class BookingState(
         get() = amount.trim().replace(',', '.').toBigDecimalOrNull() ?: BigDecimal.ZERO
 
     /**
-     * Whether the amount is a whole number, which an item row may not go without.
-     *
-     * `ValidQuantityAmountValidator` refuses `amount % 1 != 0` for a game item outright: items are
-     * counted, not measured, and half a medical station is not a quantity. Checked here so the
-     * CTA does not invite the refusal.
+     * Whether the amount is a whole number, which the server requires for an item row.
      */
     private val wholeAmount: Boolean
         get() = amount.krtToDoubleOrNull()?.let { it % 1.0 == 0.0 } == true
@@ -376,11 +349,7 @@ data class BookingState(
 }
 
 /**
- * Drives the Lager's booking form.
- *
- * Its own view model rather than more state on the tree's: the form has four pickers and three
- * modes, and folding that into the screen that also pages a tree would make both harder to read
- * than either.
+ * Drives the Lager's booking form: its modes, pickers and earmarks.
  *
  * @property source the Lager.
  * @property connectivity whether there is a network at all.
@@ -455,12 +424,10 @@ class BookingViewModel(
     }
 
     /**
-     * Answers the conflict dialog's „Neu laden": closes the form and makes the tree re-read itself.
+     * Answers the conflict dialog's „Neu laden": closes the form and makes the tree re-read itself via
+     * the caller's `onSaved` hook.
      *
-     * It reuses the `onSaved` hook the caller already supplies for a landed booking, because the
-     * tree needs exactly the same thing after a refused one: the row it is showing is stale either
-     * way. Reloading does **not** retry the write -- see [ConflictModal] for why a retry against a
-     * newer version would defeat the lock it just ran into.
+     * It does not retry the write.
      */
     fun onConflictReload() {
         saved?.invoke()
@@ -580,9 +547,7 @@ class BookingViewModel(
     /**
      * Switches a book-in between the two catalogues.
      *
-     * The other kind's pick is dropped rather than kept: the server takes exactly one of the two,
-     * and a material still held in state while an item is showing is a booking nobody can see
-     * being assembled. The grade goes with it — an item row refuses one.
+     * The other kind's pick and the grade are dropped, since the server takes exactly one of the two.
      *
      * @param kind which catalogue the form now names.
      */
@@ -646,8 +611,6 @@ class BookingViewModel(
      */
     fun onMemberChosen(member: MemberOption) {
         update { it.copy(member = member, members = emptyList(), error = null) }
-        // The pool picker offers the RECEIVING member's memberships, so a new recipient means a
-        // new set of legal choices. Keeping the old ones would offer a unit the write refuses.
         loadOrgUnits()
     }
 
@@ -709,8 +672,6 @@ class BookingViewModel(
                     saved?.invoke()
                 }
 
-                // The form keeps every field: a conflict or a refusal is not a reason to make the
-                // member type an amount and re-pick a material.
                 is ApiResult.Failure -> {
                     update { it.copy(saving = false, error = result.error) }
                 }
@@ -730,18 +691,12 @@ class BookingViewModel(
                 val item = current.kind == BookingCatalogKind.ITEM
                 source.bookIn(
                     BookInDraft(
-                        // Exactly one of the two, which is the server's XOR and a DB check
-                        // constraint besides: sending both refuses the booking, sending neither
-                        // refuses it too.
                         materialId = current.material?.id.takeUnless { item },
                         gameItemId = current.gameItem?.id.takeIf { item },
                         locationId = current.place?.id.orEmpty(),
                         amount = current.amount,
                         quality = current.quality.toIntOrNull().takeUnless { item },
                         jobOrderAllocations = current.jobOrderSplit.krtToAllocations(),
-                        // Never on an item row: the server refuses a mission earmark there
-                        // (REQ-INV-031), and the form does not offer the split — this is the
-                        // second lock, for a split entered before the kind was switched.
                         missionAllocations =
                             if (item) emptyList() else current.missionSplit.krtToAllocations(),
                     ),
@@ -788,15 +743,10 @@ class BookingViewModel(
         }
 
     /**
-     * Reads the org units the transfer may hand stock to, and presets the pool.
+     * Reads the org units the transfer may hand stock to and presets the pool.
      *
-     * Asked for whoever will hold the stock — the picked recipient, or the entry's current holder
-     * when the member picker was left alone, because leaving it alone means „keep the holder".
-     *
-     * The preset matters more than it looks: a submit that never touches this picker has to leave
-     * the stock in the unit it is already in. Without it, every transfer that only changed the
-     * place would silently re-pool the row and drop it out of sight of everyone scoped to the old
-     * unit.
+     * Asked for the picked recipient, or the entry's current holder when none was picked. The preset
+     * keeps the stock in its current unit when the picker is left untouched.
      */
     private fun loadOrgUnits() {
         val current = mutableState.value ?: return
@@ -806,9 +756,6 @@ class BookingViewModel(
             update { state ->
                 state.copy(
                     orgUnits = options,
-                    // Keep an explicit choice that is still legal; otherwise fall back to the
-                    // entry's own pool. A membershipless receiver leaves both null, and the
-                    // server stamps the row ownerless — which is the correct outcome, not a gap.
                     orgUnit =
                         options.firstOrNull { it.id == state.orgUnit?.id }
                             ?: options.firstOrNull { it.id == state.entry?.owningOrgUnitId },
@@ -818,16 +765,10 @@ class BookingViewModel(
     }
 
     /**
-     * Runs a debounced picker search.
+     * Runs a debounced picker search, shared by all four pickers.
      *
-     * One function for all four pickers rather than four near-copies: they differ only in which
-     * catalogue they ask and which pair of state fields they write, and the four-fold repetition
-     * was where the item picker's overflow flag would have been forgotten. A query below
-     * [MIN_SEARCH] clears the list **and** the flag — leaving a stale „there are more" beside an
-     * empty list is the one wrong thing this can say.
-     *
-     * The single [searchJob] is deliberate: the sheet shows one picker at a time, so a new search
-     * cancelling the last one is what keeps a slow answer from landing after a faster one.
+     * A query shorter than [MIN_SEARCH] clears both the list and its overflow flag. The single
+     * [searchJob] is cancelled by each new search, so a slow answer never lands after a faster one.
      *
      * @param T what the picker offers.
      * @param query what the member typed.
@@ -858,8 +799,6 @@ class BookingViewModel(
         val current = mutableState.value
         val materialId = current?.material?.id ?: current?.entry?.materialId
         if (materialId == null) {
-            // Without a material id there is no terminal list to offer. The sheet says so rather
-            // than showing an empty list that looks like a failed read.
             return
         }
         viewModelScope.launch {

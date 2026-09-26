@@ -12,17 +12,14 @@ import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportResult
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 
 /**
- * The blueprint list's selection mode — design ch. 18 §3 (E3).
+ * The blueprint list's selection mode: long press, orange bar, ticks and a bottom bar.
  *
- * The same mode the Lager and „Mein Inventar" already have (ch. 02 §4): long press, orange bar,
- * ticks, bottom bar. It exists here for one reason: `DELETE /personal-blueprints` deletes
- * **everything** and takes neither ids nor a body, so „alle löschen" had no entry point at all —
- * and giving it a menu item would let somebody wipe 41 rows they never looked at.
+ * It is the only entry to „alle löschen", because `DELETE /personal-blueprints` deletes every row
+ * and takes no ids.
  *
- * @property ids which rows are ticked. Empty is a legal state: it is what „Aufheben" leaves behind
- *   for a moment before the mode closes, and what an „Alles wählen" on an empty list gives.
- * @property everything whether **every** row the member owns is ticked, not merely every row on
- *   screen. Only then may the one-call delete be used; anything less has to be deleted row by row.
+ * @property ids which rows are ticked; may be empty.
+ * @property everything whether every row the member owns is ticked, not merely every row on screen;
+ *   only then may the one-call delete be used.
  * @property deleting whether a delete is running.
  * @property asking whether the danger modal is open.
  */
@@ -85,7 +82,7 @@ sealed interface BlueprintImportStep {
     ) : BlueprintImportStep
 
     /**
-     * It did not work.
+     * The import failed.
      *
      * @property error what went wrong, or `null` when the file itself was unreadable on the device.
      */

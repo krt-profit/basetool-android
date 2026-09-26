@@ -55,15 +55,11 @@ private val MATERIAL_COLUMN = 104.dp
 private val TERMINAL_COLUMN = 92.dp
 
 /**
- * „Preis-Übersicht" — the Material × Terminal matrix (design spec ch. 16, artboard 3).
+ * „Preis-Übersicht": the Material × Terminal matrix.
  *
- * > **The one surface in this app that scrolls sideways**, and it does so by the design's own
- * > instruction: comparing a material across terminals *is* reading along a row. The material
- * > column stays put while the terminals scroll under it, which is what keeps a horizontal scroll
- * > from losing the reader.
- *
- * The matrix is drawn **as it arrives**, with the loading line at the foot — chapter 16 rules out a
- * full-screen spinner by name.
+ * The only sideways-scrolling surface in the app; the material column stays fixed while the
+ * terminals scroll. The matrix is drawn as pages arrive, with a loading line at the foot rather than
+ * a full-screen spinner.
  *
  * @param state what to draw.
  * @param actions what the filters report.
@@ -103,8 +99,6 @@ private fun MatrixFilters(
             modifier = Modifier.fillMaxWidth(),
             placeholder = stringResource(R.string.materials_search_placeholder),
         )
-        // One switch, not two figures per cell: a cell carrying both would need twice the width and
-        // stop being scannable, which is the artboard's own reasoning.
         KrtSegmentedControl(
             options =
                 listOf(
@@ -113,8 +107,6 @@ private fun MatrixFilters(
                 ),
             selectedIndex = if (state.mode == MatrixMode.SELL) 0 else 1,
             onSelect = { actions.onMode(if (it == 0) MatrixMode.SELL else MatrixMode.BUY) },
-            // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
-            // the control is one row high, so they wrapped or clipped instead of fitting.
             stretch = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -158,8 +150,6 @@ private fun MatrixBody(
         return
     }
     val columns = state.columns
-    // ONE scroll state for the header and every row, which is what makes the header stay over its
-    // own column while the body moves. Two would drift apart on the first fling.
     val horizontal = rememberScrollState()
     Column(modifier = Modifier.fillMaxSize()) {
         MatrixHeader(columns = columns, scroll = horizontal)
@@ -188,10 +178,7 @@ private fun MatrixBody(
 }
 
 /**
- * What to say when the matrix is empty — and it matters which emptiness it is.
- *
- * A failed read is not „nothing matches your filter", and telling somebody the second when the
- * first happened sends them to change a filter that was never the problem.
+ * The empty state, which distinguishes a failed read from a filter that matches nothing.
  *
  * @param state what to draw.
  * @param actions the retry.
@@ -282,9 +269,6 @@ private fun MatrixBodyRow(
                 Text(
                     text = price?.toPlainString() ?: stringResource(R.string.krt_empty_value),
                     style = MaterialTheme.typography.bodySmall,
-                    // The best value of the row is tinted, never bolded and never given a second
-                    // hue — the artboard is explicit about that, and a table where one cell shouts
-                    // stops being a table.
                     color =
                         when {
                             price == null -> KrtPalette.TextMuted

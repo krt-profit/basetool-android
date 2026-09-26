@@ -26,20 +26,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The guard for `REQ-APP-API-008`: a response is handled off the main thread, always.
+ * Verifies on a device that a response is handled off the main thread (REQ-APP-API-008).
  *
- * **This test exists on a device because the JVM suite cannot see the defect at all.** `StrictMode`
- * is an Android runtime facility; on a JVM there is no main-thread policy and no
- * `NetworkOnMainThreadException`, so every Robolectric and unit test in this repository passed
- * happily while the shipped app died closing a response.
- *
- * The mechanism, once, because it is not obvious: `Call.await()` resumes on the caller's
- * dispatcher, and closing an HTTP/2 response whose body was never read makes OkHttp write an
- * `RST_STREAM` to the socket. A socket write on the main thread is fatal. Reads escaped it only
- * because a body already buffered in memory needs no socket — which is luck, not a design.
- *
- * The policy here is deliberately stricter than the platform's default: `penaltyDeath()` on network
- * access turns a violation into a failed test rather than a log line nobody reads.
+ * `StrictMode` with `penaltyDeath()` on network access turns any main-thread socket write, such as
+ * the `RST_STREAM` OkHttp sends when an unread HTTP/2 response is closed, into a failed test.
  */
 @RunWith(AndroidJUnit4::class)
 class ApiReaderMainThreadTest {

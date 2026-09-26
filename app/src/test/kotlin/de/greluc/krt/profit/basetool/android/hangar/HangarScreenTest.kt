@@ -92,10 +92,6 @@ class HangarScreenTest {
 
         compose.onNodeWithText("Carrack", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Meridian", substring = true).assertIsDisplayed()
-        // The maker leads the row as a lettermark square now (design ch. 08), so the full name is
-        // no longer on screen as text — it is what a screen reader announces for the square. The
-        // assertion follows the fact rather than the pixels: an abbreviation may hide a name
-        // visually, never from assistive technology.
         compose.onNodeWithContentDescription("Anvil Aerospace").assertExists()
         compose.onNodeWithText("AA").assertIsDisplayed()
         compose.onNodeWithTag(HANGAR_LIST_TAG).assertIsDisplayed()
@@ -134,8 +130,6 @@ class HangarScreenTest {
             ),
         )
 
-        // A three-column aggregate stays a table on the phone (design ch. 08, artboard 11), so the
-        // counts are their own cells rather than a sentence under the name.
         compose.onNodeWithText("Carrack").assertIsDisplayed()
         compose.onNodeWithText("SCHIFFSTYP").assertIsDisplayed()
         compose.onAllNodesWithText(COUNT.toString()).onFirst().assertIsDisplayed()
@@ -144,8 +138,6 @@ class HangarScreenTest {
 
     @Test
     fun `an empty own hangar invites the first ship`() {
-        // It used to send the member to the web app. That stopped being true the moment the app
-        // could add a ship itself, and an empty state that lies is worse than none.
         show(HangarState(phase = HangarPhase.Ready))
 
         compose.onNodeWithText("Kein Schiff im Hangar").assertIsDisplayed()
@@ -200,8 +192,6 @@ class HangarScreenTest {
 
     @Test
     fun `the add action is absent on the org aggregate`() {
-        // It is a count per hull, and the ships behind it belong to other members. One setContent
-        // per test: the rule refuses a second.
         show(HangarState(segment = HangarSegment.ORG, phase = HangarPhase.Ready))
 
         compose.onAllNodesWithTag(HANGAR_ADD_TAG).assertCountEquals(0)
@@ -242,7 +232,6 @@ class HangarScreenTest {
 
     @Test
     fun `an insurance the server would refuse cannot be saved`() {
-        // LTI or 0..120 months, nothing else. The editor offers exactly those two shapes.
         compose.setContent {
             KrtTheme {
                 ShipEditorSheet(

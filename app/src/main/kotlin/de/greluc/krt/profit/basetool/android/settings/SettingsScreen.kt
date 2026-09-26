@@ -54,21 +54,11 @@ import de.greluc.krt.profit.basetool.android.core.network.API_VERSION
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * Einstellungen — the app's own settings, the legal texts and the way out (design ch. 13).
+ * Einstellungen: the app's own settings, the legal texts and sign-out.
  *
- * Of the chapter's own rows, three are built and read real values: the active org unit, the payout
- * preference and the blueprint-sharing switch. **The member's rank is not**, and stays out: no
- * endpoint the app consumes carries it, and a settings screen that shows a rank nobody set is worse
- * than one that does not show a rank at all. The same holds for the chapter's
- * "Lokale Daten löschen": there is no offline cache to delete, and a destructive-looking button
- * that does nothing teaches members to distrust the ones that do.
- *
- * "Screenshots erlauben" is the app's own row and no chapter draws it — the screen contents are
- * FLAG_SECURE by default, and without a switch there is no way to take a screenshot for a bug
- * report.
- *
- * Sign-out lives at the bottom of this screen, which is where the design puts it and where it stops
- * being reachable by mis-tapping a settings row. It asks before it acts: see [SignOutConfirmModal].
+ * Shows the active org unit, the payout preference, the blueprint-sharing switch and a
+ * „Screenshots erlauben" switch; no rank and no „Lokale Daten löschen". Sign-out sits at the bottom
+ * and asks first via [SignOutConfirmModal].
  *
  * @param accountName the signed-in member's username, from the ID token; `null` while unknown.
  * @param language the language currently on screen.
@@ -138,20 +128,9 @@ fun SettingsScreen(
 }
 
 /**
- * The column itself, capped so it does not stretch across a tablet.
+ * The settings column, width-capped so it does not stretch across a tablet (ADR-0009).
  *
- * Design chapter 13 lays the tablet out in two columns — Einstellungen beside Beförderung — and
- * this screen deliberately builds only the left one (ADR-0009).
- *
- * The reason is no longer the one this comment used to give. Beförderung's repository, view model
- * and screen all exist and are tested; what is missing is a **design chapter** for it, so its
- * destination renders a placeholder by the owner's decision (`krt-profit/basetool-android#66`).
- * Putting the second column in now would pair the settings with a placeholder on every tablet,
- * which is worse than the honest half.
- *
- * The half that is here still earns its cap: settings rows dragged to 1280 dp put a 44 dp toggle a
- * hand's width from its own label. Restoring the pairing is a one-place change once #66 lands —
- * this column keeps its width and gains a sibling.
+ * On a tablet it is the only column; the Beförderung column beside it is not built.
  *
  * @param accountName the signed-in member's username, or `null` while unknown.
  * @param language the language currently on screen.
@@ -217,7 +196,6 @@ private fun SettingsColumn(
                 title = stringResource(R.string.settings_language),
                 leadingIcon = DesignR.drawable.ic_krt_globe,
             ) {
-                // No row-level onClick: the row cannot know which segment was meant.
                 KrtSegmentedControl(
                     options = AppLanguage.entries.map { it.tag.uppercase() },
                     selectedIndex = AppLanguage.entries.indexOf(language),
@@ -225,8 +203,6 @@ private fun SettingsColumn(
                 )
             }
             KrtHairlineRule(color = KrtPalette.SurfaceInput)
-            // Disabled rather than hidden when the device has no screen lock: hiding it would read
-            // as a missing feature, and the subtitle names the one thing the member can do about it.
             KrtSettingRow(
                 title = stringResource(R.string.lock_setting),
                 subtitle =
@@ -244,9 +220,6 @@ private fun SettingsColumn(
                 KrtToggle(checked = appLockEnabled, enabled = appLockAvailable)
             }
             KrtHairlineRule(color = KrtPalette.SurfaceInput)
-            // Phrased as "allow", not "block": a switch a tester turns ON to get their screenshot
-            // reads the right way round, and the subtitle carries the cost rather than a warning
-            // icon nobody reads.
             KrtSettingRow(
                 title = stringResource(R.string.screencapture_setting),
                 subtitle =
@@ -282,11 +255,6 @@ private fun SettingsColumn(
 
         KrtFanKitBand()
 
-        // The button asks rather than acts: sign-out destroys the stored key, so the way back is the
-        // full browser flow, and this is the one control on the screen whose cost is not undoable by
-        // tapping it again. Confirmation is deliberately NOT added to the gates' sign-out
-        // (approval-pending, gate-unavailable, locked): there it is the only way forward, and a
-        // confirmation on an escape hatch is friction, not safety.
         var confirmingSignOut by rememberSaveable { mutableStateOf(false) }
 
         KrtQuietDangerButton(
@@ -306,11 +274,6 @@ private fun SettingsColumn(
             )
         }
 
-        // App version and API version. The design's footer also carries a server-status dot; that
-        // half stays undrawn because this build has no health signal to read it from, and an
-        // always-green dot would be decoration that looks like a diagnosis — the one element a
-        // member would trust during an outage. The API version needs no signal: it is what this
-        // build was compiled against.
         Text(
             text =
                 stringResource(R.string.settings_version, versionName, versionCode, API_VERSION),
@@ -323,20 +286,9 @@ private fun SettingsColumn(
 }
 
 /**
- * Why the two account rows above are shut, when they are.
+ * Explains why the two server-side account rows are disabled, when they are, and offers a retry.
  *
- * Both are drawn `enabled` only once their value has arrived, and that is deliberate: a write
- * echoes the optimistic-lock version the read returned, so acting without one would either be
- * refused by the server or — on a row that happens to still be at version `0` — succeed by
- * accident. Keeping them shut is right; keeping them shut **silently** was not.
- *
- * From the first release until 2026-09-05 the reads were refused at the API vhost, which admitted
- * neither path. The failure was logged and nowhere else: both rows sat greyed out, looking exactly
- * like a value nobody had set yet. This is the difference made visible, with the retry that the
- * state could always have driven.
- *
- * A refused **write** is shown here too, for the same reason — it had no place on the screen
- * either.
+ * Shows a failed read or a refused write; the rows stay disabled without a read version.
  *
  * @param preferences the two rows' state.
  * @param onRetry re-read both values.
@@ -379,16 +331,10 @@ private fun PreferencesNotice(
 }
 
 /**
- * The KONTO group — who the member is, which scope they are in, and their two server-side settings.
+ * The KONTO group: who the member is, their active scope, and their two server-side settings
+ * (ADR-0021).
  *
- * Its own composable because it outgrew its caller: `SettingsColumn` crossed detekt's cyclomatic
- * ceiling when this group gained its second condition, and the group is the one part of the screen
- * with real branching. Everything below it is a flat list of device rows.
- *
- * **Everything here belongs to the account rather than the device** — it is written to the server,
- * it is visible to the organisation or decided by it, and it follows the member to any device they
- * sign in on. That is the line between this group and APP, and it is why „Blueprints mit Org
- * teilen" moved here (ADR-0021).
+ * Everything here belongs to the account rather than the device.
  *
  * @param accountName the signed-in member's username, or `null` while unknown.
  * @param orgUnitName the active scope's name, or `null` while unknown.
@@ -409,11 +355,6 @@ private fun AccountGroup(
     onSharing: (Boolean) -> Unit,
     onRetryPreferences: () -> Unit,
 ) {
-    // The group appears when it has ANYTHING to show, not only when the name has resolved.
-    // It used to hinge on the name alone, which was harmless while it held one row — and stops
-    // being harmless now that it holds the two account settings and the notice explaining why
-    // they are shut: a member whose username has not arrived would lose the explanation in
-    // exactly the state it exists for. The name is one row in this group, not its precondition.
     if (accountName != null || preferences.readError != null || preferences.error != null) {
         SettingsGroup(stringResource(R.string.settings_section_account)) {
             if (accountName != null) {
@@ -424,9 +365,6 @@ private fun AccountGroup(
                 )
                 KrtHairlineRule(color = KrtPalette.SurfaceInput)
             }
-            // The same scope the top bar's chip names, in the place a member goes looking for a
-            // setting. It opens the very sheet the chip opens — one switcher, two doors, and no
-            // second copy of the state to disagree with the header (design ch. 13, artboard 2).
             KrtSettingRow(
                 title = stringResource(R.string.settings_active_org_unit),
                 leadingIcon = DesignR.drawable.ic_krt_users,
@@ -440,9 +378,6 @@ private fun AccountGroup(
                 )
             }
             KrtHairlineRule(color = KrtPalette.SurfaceInput)
-            // The standing answer a sign-up starts from. It is a server value with a version, not a
-            // device preference: the same member can change it in a browser, so an unread row shows
-            // nothing rather than guessing „Auszahlung an mich" — which is a decision, not a default.
             KrtSettingRow(
                 title = stringResource(R.string.settings_payout_preference),
                 subtitle =
@@ -472,15 +407,6 @@ private fun AccountGroup(
                 )
             }
             KrtHairlineRule(color = KrtPalette.SurfaceInput)
-            // Moved out of „App" on 2026-09-05, by owner decision. Design chapter 13 draws it
-            // there, and the drawing groups by where a value LIVES on the device — but this one
-            // does not live on the device at all: it is a column of the member's account, it
-            // shares an optimistic-lock version with the payout preference directly above, and
-            // the two are refused or accepted by the server together. „App" holds the settings
-            // that survive a logout; these two do not.
-            //
-            // Unread reads as NOT sharing: the safe reading of a flag that did not arrive is
-            // that nothing of the member's is being published.
             KrtSettingRow(
                 title = stringResource(R.string.settings_blueprint_sharing),
                 subtitle = stringResource(R.string.settings_blueprint_sharing_hint),
@@ -516,10 +442,7 @@ private fun SettingsGroup(
 }
 
 /**
- * A row that leaves the app for a web page.
- *
- * The trailing glyph is the external-link one, not a chevron: the two mean different things and a
- * member is entitled to know before tapping that the browser is about to open.
+ * A row that opens a web page in the browser, marked with the external-link glyph.
  *
  * @param label string resource of the row's label.
  * @param icon leading glyph.
@@ -556,13 +479,10 @@ private fun TrailingGlyph(iconRes: Int) {
 }
 
 /**
- * The confirmation in front of sign-out.
+ * The danger-tone confirmation in front of sign-out.
  *
- * Danger tone, because the action destroys something: the encrypted refresh token and the Keystore
- * key that decrypts it are both deleted (`REQ-APP-AUTH-005`), and no local step brings the session
- * back. The body says exactly that in the member's own terms — what ends, and that the way back is
- * the browser sign-in form rather than a tap — instead of asking "are you sure?", which is the rule
- * [KrtModalTone.Danger] carries.
+ * Signing out deletes the encrypted refresh token and its Keystore key (REQ-APP-AUTH-005); the body
+ * says so and that the way back is the browser sign-in.
  *
  * @param onConfirm the member confirmed; the caller signs out.
  * @param onDismiss cancel, back or a scrim tap; nothing happens.
@@ -640,10 +560,6 @@ private fun SettingsPreview() {
 
 /**
  * A setting's current value, in the trailing slot of its row.
- *
- * Artboard 13-2 puts „Bereich Profit" on the **right** of its own row, beside the chevron, which is
- * where a settings list is read for what a setting currently IS — a subtitle under the label reads
- * as an explanation of the setting rather than as its value.
  *
  * @param value the value, or `null`/blank when there is none to show.
  */

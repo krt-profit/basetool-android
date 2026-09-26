@@ -10,35 +10,27 @@ package de.greluc.krt.profit.basetool.android.core.data
 import java.time.Instant
 
 /**
- * One participant of an Einsatz — a member, or an external person recorded by the leadership.
+ * One participant of an Einsatz: a member, or an external person recorded by the leadership.
  *
  * @property id the participant row's id
- * @property userId which member this row belongs to, or `null` for an external row. It is the only
- *   thing that says whether a row is the caller's — a name cannot decide it, since the server sends
- *   `displayName` when a member set one and `username` otherwise
- * @property name what to show: the member's effective name, else the external person's name, else
- *   empty — the server redacts a peer's identity below Logistician (main repo REQ-SEC-007), so a
- *   legitimate read can yield neither
+ * @property userId which member this row belongs to, or `null` for an external row; the only way to
+ *   tell whether a row is the caller's
+ * @property name the member's effective name, else the external person's name, else empty when the
+ *   server redacted it (REQ-SEC-007)
  * @property role the planned job, falling back to the desired one when nothing is assigned yet
- * @property orgUnitNames which Staffeln or Spezialkommandos they belong to, shorthand first — the
- *   roster row's second line („Staffel 1", „SK Vanguard"). Empty for a read the server redacted
- * @property checkedIn whether they have checked in, which the design draws as the "davon N
- *   eingecheckt" count and a per-row mark
- * @property comment their free-text note; **absent for an outsider read** (ADR-0034 strips it)
+ * @property orgUnitNames which Staffeln or Spezialkommandos they belong to, shorthand first; empty
+ *   for a redacted read
+ * @property checkedIn whether they have checked in, derived from [startTime]
+ * @property comment their free-text note; absent for an outsider read (ADR-0034)
  * @property donating whether their share is donated rather than paid out, or `null` when the
  *   server stated no preference
- * @property desiredJobTypeId the job they asked for, which the design draws as „Wunsch: …" beside
- *   the assigned one. Kept as an **id** rather than only a name because a manager's write has to
- *   echo it back — see [MissionSource.setPlannedFunction]
+ * @property desiredJobTypeId the job they asked for, echoed by [MissionSource.setPlannedFunction]
  * @property desiredJobName the same job's display name, or `null`
  * @property plannedJobTypeId the job actually assigned, or `null` while nobody has assigned one
  * @property version the row's optimistic-lock version, required by every write against it
- * @property startTime when they checked in, **verbatim as the server sent it**. This is the
- *   check-in — there is no separate flag on the wire, and [checkedIn] is derived from it. Kept
- *   because a manager's write must echo it back: the server assigns `startTime` unconditionally on
- *   update, so omitting it checks the member out. Unparsed on purpose: it is only ever echoed, and
- *   a parse-then-format round trip is a chance to change the value for no gain.
- * @property endTime when they checked out, echoed back for the same reason
+ * @property startTime the check-in time, verbatim as the server sent it; echoed by a manager's
+ *   write, since omitting it checks the member out
+ * @property endTime when they checked out, echoed back the same way
  */
 data class MissionParticipant(
     val id: String,
@@ -63,8 +55,7 @@ data class MissionParticipant(
  * @property id the crew row's id
  * @property name the assigned participant's name
  * @property roles the jobs they hold in this unit, in server order
- * @property roleIds the same jobs as ids, because a role write sends the whole set and a name is
- *   not an id — the CREW catalogue shares its names with the MISSION one
+ * @property roleIds the same jobs as ids, sent in full by a role write
  * @property version the row's own optimistic lock, echoed by a role write
  */
 data class MissionCrewMember(
@@ -81,14 +72,10 @@ data class MissionCrewMember(
  * @property id the unit's id
  * @property name the unit's name
  * @property shipName the ship or ship type it flies, or `null`
- * @property highValue whether it is flagged HVU, which the design marks with its own chip
+ * @property highValue whether it is flagged HVU
  * @property responsibleName who leads it, or `null`
- * @property fields what it carries beyond its name and its mark, **by id**.
- *
- *   Read so a write can echo them. `PUT /units/{id}` is a **replace** and clears what it is not
- *   sent: the app used to send name and HVU alone, so renaming a unit wiped its ship type, its
- *   ship, its frequency, its responsible member and its note — every one of them set from the web,
- *   and gone as the side effect of an unrelated edit.
+ * @property fields what it carries beyond its name and its mark, by id; echoed by every write
+ *   because `PUT /units/{id}` replaces what it is not sent
  * @property crew who is aboard, in server order
  * @property version the unit's own optimistic lock, echoed by a rename or an HVU toggle
  */
@@ -106,13 +93,9 @@ data class MissionUnit(
 /**
  * What an Einsatz-Einheit carries beyond its name and its HVU mark.
  *
- * Its own type rather than five more parameters on two writes: both writes take exactly the same
- * set, and a positional list of five nullables is where a ship id ends up in the frequency.
- *
  * @property shipTypeId which class of ship, or `null`.
- * @property shipId which ship of it, or `null`. The server offers only ships a **registered
- *   participant** owns plus those already pinned to one of the mission's units — deliberately not
- *   org-unit-scoped, because a participant brings their own ship whichever unit they belong to.
+ * @property shipId which ship of it, or `null`; limited to ships a registered participant owns or
+ *   one already pinned to a unit of the mission.
  * @property frequency the comms frequency, or `null`.
  * @property responsibleUserId who answers for the unit, or `null`.
  * @property note the free line, or `null`.
@@ -145,8 +128,7 @@ data class MissionStep(
  *
  * @property id the objective's id
  * @property title what is to be achieved
- * @property kind the server's classification, verbatim — this build does not interpret it, and
- *   showing an unrecognised kind beats hiding a goal
+ * @property kind the server's classification, verbatim and uninterpreted
  */
 data class MissionObjective(
     val id: String,
@@ -179,12 +161,10 @@ data class MissionManager(
 )
 
 /**
- * An Einsatz in full — everything the seven detail tabs draw.
+ * An Einsatz in full: everything the seven detail tabs draw.
  *
- * **An outsider read is a smaller object, not a failed one.** The backend redacts for anonymous and
- * role-less callers (ADR-0034): no [description], no owner, participants without their comment. The
- * app must therefore treat every one of those as legitimately absent rather than as a parse
- * failure — which is why they are nullable here and why nothing downstream may assume otherwise.
+ * An outsider read is redacted (ADR-0034): no [description], no owner, no participant comments;
+ * those fields are legitimately absent.
  *
  * @property id the Einsatz's id
  * @property name its title
@@ -194,24 +174,20 @@ data class MissionManager(
  * @property meetingTime the Teamspeak gathering time, or `null`
  * @property plannedStartTime the scheduled server-join time, or `null`
  * @property actualStartTime when it actually began, or `null`
- * @property actualEndTime when it actually ended, or `null` while it runs. Read so the schedule
- *   write can echo it: that PATCH replaces the section, and an omitted end would reopen a closed
- *   Einsatz together with every participant end-time it closed.
+ * @property actualEndTime when it actually ended, or `null` while it runs; echoed by the schedule
+ *   write, which replaces the section
  * @property plannedEndTime the scheduled end, or `null`
  * @property isInternal squadron-internal; an outsider never receives one at all
  * @property meetingPoint the in-fiction gathering location, or `null`
- * @property operationId the umbrella Operation by id, or `null`. Carried because the Kern PATCH
- *   **replaces** the section: a write that left it out would detach the Einsatz from its Operation
- *   as a side effect of renaming it, the same trap `calendarLink` already carries a warning about.
+ * @property operationId the umbrella Operation by id, or `null`; echoed by the Kern write, which
+ *   replaces the section
  * @property operationName the umbrella Operation, or `null`
  * @property orgUnitName the owning unit's name, or `null`
  * @property orgUnitShorthand the owning unit's short form, which the badge draws
  * @property partyLeadName who leads it, member or guest, or `null`
- * @property managers who manages it besides the lead. The server sends them on the Einsatz itself;
- *   the app read past them until 2026-08-30, which is why a manager could be added and never seen
- *   — and therefore never removed.
- * @property canManageManagers whether the caller may add or remove one. A **narrower** right than
- *   managing the Einsatz, and the server's own answer rather than anything derived here.
+ * @property managers who manages it besides the lead
+ * @property canManageManagers whether the caller may add or remove a manager, as the server
+ *   answered it
  * @property registeredParticipants how many signed up, as the server counts them
  * @property checkedInParticipants how many of those have checked in
  * @property participants the roster, in server order
@@ -222,16 +198,10 @@ data class MissionManager(
  * @property coreVersion the Kern section's own optimistic-lock counter
  * @property scheduleVersion the Zeitplan section's counter
  * @property flagsVersion the flags section's counter
- * @property calendarLink the external calendar entry, or `null`. The app neither shows nor edits
- *   it — it is carried **only** so a Kern write can echo it back. That PATCH replaces the whole
- *   section, so a field the app does not hold is a field the app deletes; this one was being
- *   cleared on every rename until 2026-08-30.
- * @property canManage whether the caller may act on **other** members' rows — the server's own
- *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
- *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
- *   entitled to act (ADR-0011: the app knows its permissions and refuses in place). Defaults to
- *   `false`, so an older server that omits the field leaves the manager actions locked rather than
- *   offering writes that would be refused.
+ * @property calendarLink the external calendar entry, or `null`; neither shown nor edited, only
+ *   echoed by a Kern write
+ * @property canManage whether the caller may act on other members' rows, the server's own `canEdit`
+ *   (ADR-0011); `false` when the server omits it
  */
 data class MissionDetail(
     val id: String,
@@ -262,18 +232,10 @@ data class MissionDetail(
     val frequencies: List<MissionFrequency>,
     val calendarLink: String? = null,
     val canManage: Boolean = false,
-    // Three counters, not one. The Einsatz is edited in independent sections and each carries its
-    // own, so a manager fixing the briefing does not 409 a colleague moving the start time. They
-    // are plain business Longs on the server, bumped by a DB-enforced atomic conditional UPDATE —
-    // NOT the row's JPA @Version — which is what makes two concurrent section edits both commit.
     val coreVersion: Long = 0L,
     val scheduleVersion: Long = 0L,
     val flagsVersion: Long = 0L,
     val partyLeadVersion: Long = 0L,
-    // The Ablauf and the Ziele are two more of the same, and they carry a trap the other five do
-    // not: their endpoints answer with the LIST, never with the Einsatz, so the answer cannot
-    // supply the next counter. The server bumps by exactly one per accepted write
-    // (`bumpStepsVersionIfMatches`), so the client advances its own by one and splices the list.
     val stepsVersion: Long = 0L,
     val objectivesVersion: Long = 0L,
 )
@@ -282,13 +244,11 @@ data class MissionDetail(
  * One booked income or expense.
  *
  * @property id the entry's id
- * @property income `true` for an income, `false` for an expense. Stored as a flag rather than the
- *   server's string so the sign cannot be derived twice, in two places, from two spellings.
+ * @property income `true` for an income, `false` for an expense
  * @property amount the magnitude, always positive; the sign lives in [income]
  * @property note what it was for, or `null`
  * @property participantName who booked it, or `null`
- * @property participantId whose sign-up it hangs off, or `null` — the app may only edit its own,
- *   and a name cannot decide whose that is
+ * @property participantId whose sign-up it hangs off, or `null`; the app may only edit its own
  * @property version the entry's optimistic lock, echoed by an edit
  */
 data class MissionFinanceEntry(
@@ -304,9 +264,7 @@ data class MissionFinanceEntry(
 /**
  * The Finanzen tab: the totals band plus the entries behind it.
  *
- * Amounts are carried as **strings exactly as the server rendered them**. They are aUEC sums that
- * are only ever displayed, never recomputed on the device, and parsing a decimal into a `Double` to
- * print it again is how a total gains a rounding error it did not have on the server.
+ * Amounts are strings exactly as the server rendered them and are never recomputed.
  *
  * @property total the net, income minus expense
  * @property incomeSum everything booked as income
@@ -314,8 +272,7 @@ data class MissionFinanceEntry(
  * @property expenseSum everything booked as expense
  * @property expenseCount how many expense entries there are
  * @property entries the first page of entries, in server order
- * @property totalEntries how many entries exist in total, which the tab states so a partial view
- *   can never look complete
+ * @property totalEntries how many entries exist in total
  */
 data class MissionFinances(
     val total: String?,

@@ -30,23 +30,10 @@ import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
 
 /**
- * A session behind a closed app lock has not ended, and nothing may say that it has.
+ * A session behind a closed app lock has not ended.
  *
- * Reproduced on a device (Galaxy S25 Ultra, v0.1.2): with the lock armed, killing the app from the
- * recents list and starting it again showed the lock screen and then, after a successful unlock,
- * the **login** screen — every time, from a session that had been working seconds earlier, and
- * without a single line in the log.
- *
- * The chain was: `UpdateGate` sits above the lock gate by design and fires the version check
- * through the authenticated client; its interceptor asks [AuthSession.refreshIfNeeded]; on a cold
- * start there is no in-memory token so the store is read; the blob is sealed and the envelope is
- * still closed, so the read answered `null`; `null` meant "no session", so `SignedOut` was
- * published — before the member had even been offered the fingerprint prompt. By the time the gate
- * opened, `MainActivity`'s `restore()` was guarded on `Unknown` and skipped, and the login screen
- * is what `SignedOut` renders.
- *
- * Every link held its own contract. What was missing was a way for the store to say **which** of
- * two opposite things had happened, which is now [StoredRefreshToken.Locked].
+ * A cold-start read of a sealed token yields [StoredRefreshToken.Locked], and nothing publishes
+ * `SignedOut` before the member has unlocked.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -68,8 +55,6 @@ class LockedSessionIsNotSignedOutTest {
         val clock = ServerClock()
         val configuration =
             OidcConfiguration(
-                // Nothing here may be reached: every test below must decide before a request is
-                // made, and a socket to this address would hang rather than fail fast if one were.
                 issuer = "https://127.0.0.1:1/realms/iri",
                 clientId = "basetool-android",
                 redirectUri = "https://profit-base.online/app/callback",
@@ -100,8 +85,6 @@ class LockedSessionIsNotSignedOutTest {
     @Test
     fun `a request made before the unlock does not end the session`() =
         runTest {
-            // This is the exact call the version check makes through the API client's interceptor,
-            // on a cold start, above the lock gate.
             storeSealedTokenAndLock()
 
             val result = session.refreshIfNeeded()
@@ -118,7 +101,6 @@ class LockedSessionIsNotSignedOutTest {
     @Test
     fun `a rejected access token before the unlock does not end the session either`() =
         runTest {
-            // The interceptor's other entry point, reached when the backend refuses a token.
             storeSealedTokenAndLock()
 
             val token = session.refreshFor(refused = "stale-access-token")
@@ -150,15 +132,12 @@ class LockedSessionIsNotSignedOutTest {
             session.refreshIfNeeded()
             session.restore()
 
-            // Nothing above may have cleared it: the member authenticates and gets their session.
             assertEquals(StoredRefreshToken.Locked, store.read())
         }
 
     @Test
     fun `an empty store still means signed out`() =
         runTest {
-            // The other half of the contract. Making "locked" distinct must not make "nothing
-            // stored" ambiguous — that one really is a member who has to log in.
             val state = session.restore()
 
             assertEquals(SessionState.SignedOut, state)

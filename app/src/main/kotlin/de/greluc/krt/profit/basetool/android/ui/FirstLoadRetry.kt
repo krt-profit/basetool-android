@@ -18,29 +18,14 @@ import kotlinx.coroutines.launch
 private const val ONE_SECOND_MS = 1_000L
 
 /**
- * The automatic retry behind design chapter 14's full-screen countdown (REQ-APP-UI-003).
+ * The automatic retry behind the full-screen first-load countdown (REQ-APP-UI-003).
  *
- * Every screen that loads from the server needs the same three rules, and repeating them per
- * ViewModel is how they drift — the Bank had the only copy, and the next nine screens would each
- * have re-derived the conditions from the one before it.
- *
- * **The three conditions, each a case where retrying would be wrong:**
- *
- * - Only a **retryable** failure. A `403` or a `404` answers the same in three seconds, and a
- *   countdown in front of one promises the member something that will not happen.
- * - Only when the screen has **nothing on it**. With content loaded, chapter 14 wants the banner
- *   and the member keeps their place; replacing loaded data with a wall takes away what they were
- *   reading to tell them the server is busy.
- * - Only **one** timer at a time, so a pull-to-refresh landing on a failure does not stack a
- *   second countdown on the first.
- *
- * The attempt count lives here rather than in [RetryBackoff], which is what lets [onManualRetry]
- * reset it: a member pressing the button is new information, and inheriting a thirty-second wait
- * from an automatic attempt they did not make would punish them for having waited.
+ * Retries only a retryable failure, only while the screen has no content, and runs one timer at a
+ * time. The attempt count lives here so [onManualRetry] can reset it.
  *
  * @property scope the ViewModel's scope; the countdown dies with the screen.
  * @property onCountdown receives the seconds left, and `null` when nothing is counting.
- * @property onRetry runs the load again — the same call the first load made.
+ * @property onRetry runs the load again, the same call the first load made.
  */
 class FirstLoadRetry(
     private val scope: CoroutineScope,

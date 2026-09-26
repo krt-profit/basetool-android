@@ -55,11 +55,9 @@ const val FLEET_IMPORT_SUBMIT_TAG = "fleet-import-submit"
 private const val PASTE_MIN_LINES = 6
 
 /**
- * „Fleetview-Import" (design ch. 08 §3).
+ * „Fleetview-Import": imports a picked `.json` file or a pasted export.
  *
- * Two ways in, one endpoint: a `.json` picked through the system picker, or the export pasted into
- * the box. The server takes a file part either way, so the paste is turned into one here rather
- * than becoming a second API the backend would have to grow.
+ * A pasted export is sent as a file part, the same as a picked file.
  *
  * @param state what the screen holds.
  * @param onPaste the box changed.
@@ -80,8 +78,6 @@ fun FleetImportScreen(
     val context = LocalContext.current
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            // Read here rather than holding the Uri: the permission granted to it is scoped to this
-            // activity result, and an upload that happens a tap later would find it revoked.
             uri?.let {
                 val bytes = context.contentResolver.openInputStream(it)?.use { input -> input.readBytes() }
                 if (bytes != null) {
@@ -106,8 +102,6 @@ fun FleetImportScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
         )
-        // The chapter names Fleetview alone; the endpoint takes three formats and says so when it
-        // refuses one. Naming them here saves a member the refusal.
         Text(
             text = stringResource(R.string.fleet_import_formats),
             style = MaterialTheme.typography.bodySmall,
@@ -123,8 +117,6 @@ fun FleetImportScreen(
         state.fileName?.let { name ->
             PickedFile(name = name, enabled = !state.uploading, onClear = onFileCleared)
         }
-        // A rule with the label in it, as the artboard draws it: the two ways in are alternatives,
-        // and a left-aligned caption reads as a heading over the box rather than as an "or".
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -167,10 +159,7 @@ fun FleetImportScreen(
 }
 
 /**
- * The chosen file, with a way to drop it again.
- *
- * Named rather than acknowledged: "Datei gewählt" leaves a member who picked the wrong export with
- * no way to notice before they upload it.
+ * The chosen file, shown by name, with a way to drop it again.
  *
  * @param name the file's display name.
  * @param enabled whether it can still be dropped.
@@ -199,10 +188,7 @@ private fun PickedFile(
 /**
  * What the server made of the export.
  *
- * The three counts are shown even when they are zero: "0 Duplikate" is the answer to a question a
- * member importing a second time actually has, and leaving the row out reads as the check not
- * having run. The two name lists follow their counts, capped, because a hundred unrecognised hulls
- * are a fault to report rather than a list to read.
+ * The three counts are always shown, even at zero; the two name lists follow their counts, capped.
  *
  * @param result the tally.
  * @param onDismiss closes the modal.
@@ -284,9 +270,6 @@ private fun NameList(names: List<String>) {
  */
 @Composable
 private fun importError(error: ApiError): String {
-    // The server diagnoses the file — "Die Datei muss ein JSON-Array enthalten", "Unbekanntes
-    // Format" — and it is the only party that can. Its own sentence is shown when it sent one; the
-    // app's fallback covers a refusal that arrived without one.
     val named = error.fieldMessage()
     return named ?: stringResource(
         when (error) {

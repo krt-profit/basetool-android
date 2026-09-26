@@ -12,26 +12,10 @@ import org.junit.Test
 import java.io.File
 
 /**
- * A state change is written as `state.update { it.copy(…) }`, never as
- * `state.value = state.value.copy(…)` (project `CLAUDE.md`, Kotlin conventions).
+ * Checks that a state change is written as `state.update { it.copy(…) }`, never as `state.value = state.value.copy(…)`.
  *
- * **Why it is a rule and not a style.** The second form reads the value, builds a copy and writes it
- * back as three separate steps. On the main thread, where nearly every write in this app runs, the
- * three cannot interleave — so this is not the fix for a lost update anybody observed. It is correct
- * on one thread only: the first write from anywhere else (a collector moved to
- * `Dispatchers.Default`, a platform callback) could start from a value another write has already
- * replaced and silently drop that write's field. `MutableStateFlow.update` is a compare-and-set
- * loop that re-runs the lambda on the value that actually won, so it is correct on every thread,
- * and it names the flow once instead of twice. There were 563 of the read-copy-assign form across
- * 32 ViewModels until 2026-09-22 (improvement audit, SIB-MOD-01).
- *
- * The lambda may run more than once, which is the one discipline the rule asks for in return: it
- * builds a value and does nothing else. A request, a log line or a counter goes before the
- * `update`, and its result goes in — see `PersonalBlueprintsViewModel.Import.onFile`.
- *
- * Matched as text, like [ProcessStoreOwnershipTest]: "does a source file write a state flow the
- * racy way" is a syntactic fact, and detekt has no rule that says it. A multi-line assignment is
- * caught as well, because the pattern allows any whitespace around the `=`.
+ * `update` is a compare-and-set loop that is correct on every thread; its lambda may run more than
+ * once, so it must only build a value. Matched as text, including multi-line assignments.
  */
 class StateFlowUpdateConventionTest {
     @Test
@@ -56,8 +40,6 @@ class StateFlowUpdateConventionTest {
 
     @Test
     fun `the pattern finds the racy form, on one line and across two`() {
-        // The guard is only worth something if it matches what it forbids. Without this, a typo in
-        // the expression would leave the test above green forever.
         assertEquals(1, RACY_WRITE.findAll("mutableState.value = mutableState.value.copy(a = 1)").count())
         assertEquals(1, RACY_WRITE.findAll("_state.value =\n    _state.value.copy(\n  a = 1)").count())
         assertEquals(0, RACY_WRITE.findAll("mutableState.update { it.copy(a = 1) }").count())

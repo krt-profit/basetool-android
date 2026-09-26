@@ -46,25 +46,17 @@ private val CTA_BLOOM = KrtSpacing.glowOverlay
 private const val DISABLED_ALPHA = 0.45f
 
 /**
- * The square floating action button: the primary action of a **list** screen.
+ * The square floating action button: the primary action of a list screen.
  *
- * Square, because the design system is square-first and grants its rounded exceptions only to pill
- * badges and genuinely circular controls — a circular FAB would be the most visible contradiction
- * of that rule on the screen. 56 dp, orange fill, black glyph, and the overlay glow.
- *
- * **One per screen context.** It is the filled-orange action, and the ladder allows exactly one; a
- * screen that already spends its filled CTA elsewhere must not also carry a FAB.
- *
- * A list screen's *empty state* keeps its own single action instead (see [KrtEmptyState]) — that
- * action is part of the empty state's own anatomy and naming both would offer the same thing twice.
+ * 56 dp, orange fill, black glyph, overlay glow. One per screen context, and not on a screen whose
+ * empty state ([KrtEmptyState]) already offers the action.
  *
  * @param iconRes the glyph, usually a plus.
- * @param label spoken description and tooltip — mandatory, because the glyph carries the whole
- *   meaning.
+ * @param label spoken description and tooltip; mandatory, since the glyph carries the meaning.
  * @param onClick invoked on tap.
  * @param modifier layout modifier; the caller positions it, typically bottom-end with a 16 dp
  *   margin.
- * @param enabled whether it reacts to input; disabled renders at 45 % and nothing else changes.
+ * @param enabled whether it reacts to input; disabled renders at 45 %.
  */
 @Composable
 fun KrtFab(
@@ -99,18 +91,10 @@ fun KrtFab(
 }
 
 /**
- * The bottom-anchored action bar of a **form or detail** context.
+ * The bottom-anchored action bar of a form or detail context, the counterpart of [KrtFab].
  *
- * The counterpart of [KrtFab] in design ch. 00: a list screen floats its primary action, a form or
- * a detail pins it to the bottom edge at the full 48 dp button height. Mission detail is the
- * canonical case — "ONE filled CTA, bottom-anchored" (ch. 06).
- *
- * Renders the surface fill with a hairline top rule so it separates from the content scrolling
- * underneath, and carries the CTA bloom for the same reason a modal does: it is the thing the
- * member is meant to reach for.
- *
- * The caller supplies the buttons and is responsible for the one-filled-CTA rule — a ghost cancel
- * beside one filled action is the shape this was built for.
+ * Draws the surface fill with a hairline top rule and the CTA bloom; the caller supplies the
+ * buttons and keeps to one filled CTA.
  *
  * @param modifier layout modifier; the caller anchors it, typically to the bottom of a Box.
  * @param content the buttons, laid out end-aligned in a row.

@@ -44,15 +44,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The account lifecycle and the holder register.
+ * Tests the account lifecycle and the holder register: writes echo the read version, a creation without a single pinned
+ * org unit is refused, and deactivating a holder only flips its active flag.
  *
- * The rules with teeth: every write echoes the version it read, a creation without a single pinned
- * org unit is refused rather than guessed at, and deactivating a holder is **not** a removal —
- * it flips one flag and the wording says what that flag does.
- *
- * Robolectric for the reason the sibling tests are: `KrtLog` reaches `android.util.Log`, and an
- * unmocked one throws inside `viewModelScope`, whose supervisor swallows it and leaves the state
- * stuck mid-write.
+ * Uses Robolectric because `KrtLog` reaches `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -296,8 +291,6 @@ class BankLifecycleViewModelTest {
     fun `with all units pinned there is no single owner, so nothing is created`() =
         runTest(dispatcher) {
             val source = RecordingLifecycle()
-            // The store reports null when the caller pinned "all". Guessing a unit here would open
-            // an account against one the member never chose.
             val viewModel = model(source, orgUnit = null)
             viewModel.loadOnce()
             advanceUntilIdle()
@@ -373,8 +366,6 @@ class BankLifecycleViewModelTest {
             viewModel.onSetGrant(shown.copy(canDeposit = false))
             advanceUntilIdle()
 
-            // REQ-BANK-009: a row with all three flags false lets the member SEE the account and
-            // book nothing. Deleting it here would silently take their sight away too.
             val sent = grants.written.single()
             assertEquals(false, sent.canDeposit)
             assertTrue(grants.revoked.isEmpty())
@@ -389,8 +380,6 @@ class BankLifecycleViewModelTest {
             viewModel.onSelectGrantAccount("a1")
             advanceUntilIdle()
 
-            // A removal is destructive — the handoff asks for the danger modal, so nothing is sent
-            // until it is confirmed.
             viewModel.onPrompt(
                 BankLifecyclePrompt.RevokeGrant(
                     viewModel.state.value.grants.single(),
@@ -441,8 +430,6 @@ class BankLifecycleViewModelTest {
     fun `a row the server already holds is patched even when its version is zero`() =
         runTest(dispatcher) {
             val grants = RecordingGrants()
-            // A freshly inserted row carries version 0. Deciding create-vs-patch on that number
-            // sent every first edit of an untouched grant as a creation — 409 DUPLICATE_ENTITY.
             grants.matrix = ApiResult.Success(listOf(grant(version = 0)))
             val viewModel = model(RecordingLifecycle(), grants = grants)
             viewModel.onSelectGrantAccount("a1")
@@ -467,7 +454,6 @@ class BankLifecycleViewModelTest {
             viewModel.onSetGrant(viewModel.state.value.grants.single().copy(canDeposit = true))
             advanceUntilIdle()
 
-            // Without this the checkbox just snaps back, which reads as a broken app.
             assertTrue(viewModel.state.value.error is ApiError.Server)
         }
 
@@ -480,7 +466,6 @@ class BankLifecycleViewModelTest {
             viewModel.onAddGrant()
             advanceUntilIdle()
 
-            // An empty picker on open reads as "nobody to grant to", which is never true.
             assertEquals(listOf(""), grants.searched)
             assertEquals("Dorn", viewModel.state.value.granteeDraft?.options?.single()?.handle)
         }
@@ -496,8 +481,6 @@ class BankLifecycleViewModelTest {
             viewModel.onGranteeQuery("rh")
             advanceUntilIdle()
 
-            // Both calls run; only the one whose query still stands may write. Otherwise the list
-            // flickers back to the older answer and the member picks a name they did not search.
             val draft = viewModel.state.value.granteeDraft
             assertEquals("rh", draft?.query)
             assertEquals("Rhea", draft?.options?.single()?.handle)
@@ -523,8 +506,6 @@ class BankLifecycleViewModelTest {
             assertEquals("u2", sent.userId)
             assertEquals("a1", sent.accountId)
             assertEquals(true, sent.canWithdraw)
-            // `exists` false is what makes this a POST rather than a PATCH against a row that is
-            // not there.
             assertTrue(!sent.exists)
             assertNull(viewModel.state.value.granteeDraft)
         }
@@ -557,7 +538,6 @@ class BankLifecycleViewModelTest {
             viewModel.onCreateGrant()
             advanceUntilIdle()
 
-            // Closing the sheet on a refusal would throw away the pick and the flags with it.
             assertEquals("Dorn", viewModel.state.value.granteeDraft?.selected?.handle)
             assertTrue(viewModel.state.value.error is ApiError.Server)
         }

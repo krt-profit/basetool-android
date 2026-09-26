@@ -29,12 +29,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Handing finished items over — the write that closes an item Auftrag.
- *
- * The property that carries the class: the ceiling is **manufactured minus delivered**, never
- * ordered minus delivered. A unit nobody has built cannot be handed over, and the server answers
- * 400 for the attempt — so a form that offered the obvious subtraction would spend the member's
- * entry on a refusal they could not explain.
+ * Tests handing finished items over, which closes an item Auftrag; the ceiling is manufactured minus delivered, never
+ * ordered minus delivered.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -106,7 +102,9 @@ class OrderItemHandoverTest {
             assertFalse("one more than was built cannot be handed over", draft?.submittable == true)
         }
 
-    /** The projection counts against what was ordered, which is what closes the line. */
+    /**
+     * Reaching the ordered count reads as fulfilled, since the projection counts against what was ordered.
+     */
     @Test
     fun `reaching the ordered count reads as fulfilled`() =
         runTest(dispatcher) {

@@ -11,10 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 
 /**
- * What an item line on the Positionen tab needs.
- *
- * One value rather than four parameters: the tab already takes the order, the gate and the refusal
- * slot, and four more would put it past what the codebase allows for one signature.
+ * What an item line on the Positionen tab needs, bundled as one argument.
  *
  * @property onProduce open „Herstellung erfassen" for one line.
  * @property onHandOver open „Übergabe erfassen" for one line.

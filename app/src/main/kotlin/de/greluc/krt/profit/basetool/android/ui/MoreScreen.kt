@@ -26,15 +26,9 @@ import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 
 /**
- * The "Mehr" overflow list.
+ * The „Mehr" overflow list of destinations beyond the bottom bar.
  *
- * A phone bottom bar holds five destinations; everything else lives here as a plain list of dense
- * rows. The list is identical on tablets even though the rail already exposes three of these
- * entries, so a user who learned where something lives keeps finding it in the same place.
- *
- * It is a **list and nothing else**. The app lock and sign-out lived here while Einstellungen did
- * not exist yet; both have moved to that screen, where the design puts them and where sign-out is
- * no longer one mis-tap away from the row above it.
+ * Identical on phones and tablets.
  *
  * @param onOpen invoked with the chosen destination.
  * @param modifier layout modifier.
@@ -60,9 +54,6 @@ fun MoreScreen(
             modifier = Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
         )
         MORE_DESTINATIONS.forEach { destination ->
-            // Every entry is drawn; whether the caller may open it is the server's answer, and an
-            // entry that is simply absent teaches nobody what to ask for (app ADR-0011). The
-            // blueprint overview is the one entry here with a role behind it.
             val gate =
                 Gate(
                     allowed = destination != KrtDestination.BlueprintOverview || blueprintOverview,

@@ -32,12 +32,10 @@ import org.robolectric.annotation.Config
 import java.math.BigDecimal
 
 /**
- * Zusagen — a Staffel signing up to deliver part of a Spezialkommando order.
+ * Tests Zusagen, a Staffel pledging to deliver part of a Spezialkommando order.
  *
- * The properties worth a class: a claim belongs to a **unit**, so the picker offers exactly the
- * units the server would accept — profit-eligible squadrons the caller belongs to — and setting and
- * changing are one call, so an existing pledge opens filled in rather than making somebody retype
- * what they already promised.
+ * The picker offers only the profit-eligible squadrons the caller belongs to, and an existing pledge
+ * opens filled in.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -59,7 +57,9 @@ class OrderClaimsTest {
         /** What the „change the pledge" test raises it to. */
         const val RAISED = 150.0
 
-        /** And what the comma test types, once parsed. */
+        /**
+         * The amount the comma test types, once parsed.
+         */
         const val TWELVE_AND_A_HALF = 12.5
     }
 
@@ -72,9 +72,7 @@ class OrderClaimsTest {
     private var memberships: List<OrgUnit> =
         listOf(
             OrgUnit("s1", "Staffel 1", "S1", OrgUnitKind.SQUADRON, profitEligible = true),
-            // A Spezialkommando places orders and never claims against one; the server refuses it.
             OrgUnit("sk1", "SK Vanguard", "SKV", OrgUnitKind.SPECIAL_COMMAND, profitEligible = true),
-            // And a squadron nobody marked profit-eligible is outside the order workflow.
             OrgUnit("s2", "Staffel 2", "S2", OrgUnitKind.SQUADRON, profitEligible = false),
         )
 
@@ -201,10 +199,7 @@ class OrderClaimsTest {
         }
 
     /**
-     * Overclaim is the server's own refusal, and the sheet keeps what was typed.
-     *
-     * Design ch. 10 artboard 13 says overclaim is allowed; `MaterialClaimService` answers 400 for
-     * it (REQ-ORDERS-024). The artboard is on the design gap list.
+     * An overclaim is refused by the server (REQ-ORDERS-024), and the sheet keeps what was typed.
      */
     @Test
     fun `a refused pledge keeps the sheet and its amount`() =

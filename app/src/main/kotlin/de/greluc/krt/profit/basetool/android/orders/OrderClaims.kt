@@ -35,8 +35,8 @@ private const val LOG_TAG = "OrderClaims"
  * @property open what is still unpledged, as the server computed it.
  * @property orgUnitId the pledging Staffel.
  * @property orgUnitName how it reads.
- * @property claimId the existing pledge this replaces, or `null` for a first one — which is what
- *   decides whether „Zurückziehen" is offered at all.
+ * @property claimId the existing pledge this replaces, or `null` for a first one; decides whether
+ *   „Zurückziehen" is offered.
  * @property amount how much, as typed.
  * @property saving whether a write is in flight.
  * @property error the last refusal.
@@ -68,8 +68,7 @@ data class ClaimDraft(
  * Everything the Zusagen tab draws.
  *
  * @property buckets the order's material demands with their pledges.
- * @property units the Staffeln the caller may pledge for — their own memberships, filtered to the
- *   profit-eligible squadrons, which is exactly the server's own guard.
+ * @property units the Staffeln the caller may pledge for: their own profit-eligible memberships.
  * @property loading whether the first read is still running.
  * @property error what stopped it, or `null`.
  * @property draft the sheet, or `null` when it is shut.
@@ -93,14 +92,10 @@ data class ClaimsState(
 }
 
 /**
- * Zusagen — a Staffel signing up to deliver part of a Spezialkommando order.
+ * Zusagen — a Staffel pledging to deliver part of a Spezialkommando order.
  *
- * > **A claim is an intention, not a booking.** Nothing moves in the Lager; delivery is the
- * > Übergabe. That is also why withdrawing one needs no confirmation.
- *
- * > **Overclaim is refused by the server** (REQ-ORDERS-024), which design ch. 10 artboard 13 states
- * > the opposite of. The sheet says what is still open and the refusal is rendered plainly; the
- * > artboard's claim is on the design gap list rather than coded around.
+ * A pledge moves nothing in the Lager, so withdrawing needs no confirmation. The server refuses an
+ * overclaim (REQ-ORDERS-024).
  *
  * @property source where the buckets and the two writes go.
  * @property orgUnits where the caller's own Staffeln come from.
@@ -137,9 +132,6 @@ class OrderClaims(
         scope.launch {
             val result = orgUnits.memberships()
             if (result is ApiResult.Success) {
-                // Exactly the server's guard: a Spezialkommando places orders and never claims
-                // against one, and a squadron an admin has not marked profit-eligible is outside
-                // the order workflow. Offering either would turn a filled sheet into a 400.
                 write(
                     read().copy(
                         units = result.value.filter { it.kind == OrgUnitKind.SQUADRON && it.profitEligible },
@@ -173,8 +165,6 @@ class OrderClaims(
                         orgUnitId = unit.id,
                         orgUnitName = unit.shorthand.takeIf { it.isNotBlank() } ?: unit.name,
                         claimId = existing?.id,
-                        // Setting and changing are the same sheet, so an existing pledge arrives
-                        // filled in rather than making somebody retype what they already promised.
                         amount = existing?.amount?.toPlainString().orEmpty(),
                     ),
             ),
@@ -232,10 +222,7 @@ class OrderClaims(
     }
 
     /**
-     * Closes the sheet on success and re-reads the buckets, or keeps it with the refusal.
-     *
-     * The buckets are re-read rather than patched: a pledge moves the bucket's claimed and open
-     * figures, and both are the server's own arithmetic.
+     * Closes the sheet and re-reads the buckets on success, or keeps the sheet with the refusal.
      *
      * @param orderId the Auftrag.
      * @param result what the write returned.

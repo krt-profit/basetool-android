@@ -18,16 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * The one read of who the caller is, for the whole app.
+ * The single app-wide read of who the caller is (ADR-0011).
  *
- * Held here rather than in each screen's ViewModel: the point of ADR-0011 is that every surface
- * decides from the same record, and a per-screen read is how the Lager ended up deciding from none
- * at all.
- *
- * A failed read leaves the record `null`, which every consumer must treat as *unknown* rather than
- * as *forbidden* — see [LocalCaller]. There is no retry ladder for the same reason: the record is
- * an improvement on the screens, not a precondition for them, and a screen that waited for it would
- * be worse off than one that simply lets the server answer.
+ * A failed read leaves the record `null`, which consumers treat as unknown (see [LocalCaller]);
+ * there is no automatic retry.
  *
  * @property source where the record comes from.
  */
@@ -46,9 +40,8 @@ class CallerViewModel(
     /**
      * Re-reads the record, dropping whatever was cached.
      *
-     * Called when the app returns to the foreground. A role granted while it sat in the background
-     * would otherwise only take effect after a sign-out, and telling a member to sign out and back
-     * in to receive a permission somebody just gave them is not an instruction worth giving.
+     * Called when the app returns to the foreground, so a newly granted role takes effect without a
+     * sign-out.
      */
     fun refresh() {
         source.forget()

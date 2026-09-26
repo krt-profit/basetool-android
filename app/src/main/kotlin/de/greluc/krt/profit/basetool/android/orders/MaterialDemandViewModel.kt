@@ -112,10 +112,7 @@ private fun List<MaterialDemandRow>.filtered(filter: MaterialDemandFilter): List
 /**
  * Drives „Materialbedarf" — what every open Auftrag together still needs (design ch. 18 §1).
  *
- * The planning surface, read before an Einsatz rather than daily, which is why it is reached from
- * the Auftragsliste's overflow and not from the navigation. It is **read-only for everyone**: the
- * rows are the same rows the order list already shows, so a member without Logistiker sees the
- * screen rather than a lock.
+ * Read-only for everyone.
  *
  * @property source the one read behind it.
  */
@@ -159,10 +156,7 @@ class MaterialDemandViewModel(
     }
 
     /**
-     * A row was tapped: it opens **in place** and lists the orders that ask for this material.
-     *
-     * In place rather than as a jump, because the orders are already in the row's own answer — a
-     * navigation would re-read what is on screen.
+     * Expands or collapses a row in place, listing the orders that ask for this material.
      *
      * @param row the material.
      */

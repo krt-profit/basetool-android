@@ -23,24 +23,15 @@ private const val MINUS = "−"
 private const val MAX_FRACTION_DIGITS = 2
 
 /**
- * Renders a server amount the way a member reads it.
- *
- * **Exact, and not via `Double`.** The wire carries `86400.0000` — the column is `numeric(_,4)` —
- * and the string is parsed as a `BigDecimal`, stripped of the zeros that carry no information, and
- * grouped for [locale]. No arithmetic happens: `stripTrailingZeros` and grouping are lossless, while
- * a `Double` round trip is exactly how a total gains a rounding error the server never had
+ * Renders a server amount grouped for the member's locale, exactly and without `Double`
  * (REQ-APP-MIS-011).
  *
- * Shared by every area that shows money — the Einsatz Finanzen tab, an Operation's roll-up and the
- * bank ledger — because a member reading the same figure on two screens must read the same figure.
- *
- * Displaying the raw string instead was the first attempt and is what a device run rejected:
- * `86400.0000` is faithful and unreadable, and the design's own figures are grouped (`86.400`).
+ * The string is parsed as a `BigDecimal`, stripped of trailing zeros and grouped. Shared by every
+ * area that shows money.
  *
  * @param raw the amount as the server rendered it; may be blank.
  * @param locale the member's locale, which decides the grouping separator.
- * @return the grouped amount, or the input unchanged when it is not a number — a value this build
- *   cannot parse is shown as it came rather than replaced by a placeholder that hides it.
+ * @return the grouped amount, or the input unchanged when it is not a number.
  */
 fun formatAmount(
     raw: String,
@@ -48,17 +39,11 @@ fun formatAmount(
 ): String {
     val value = raw.takeIf { it.isNotBlank() }?.toBigDecimalOrNull()
     return when (value) {
-        // Blank stays blank -- the server omits a sum it has none of, and "0" would claim a
-        // booking of nothing. Unparseable is shown as it came: a server change worth seeing.
         null -> {
             raw.trim()
         }
 
         else -> {
-            // The typographic minus, not the hyphen the platform formatter reaches for: the
-            // signed variant below already uses it, and the same figure printed two ways in one
-            // band — "−2.500" beside "-2.500" — reads as two different kinds of number. Found on a
-            // device, in the Finanzen band, where the expense sum and the net sat one line apart.
             NumberFormat.getNumberInstance(locale)
                 .apply {
                     isGroupingUsed = true
@@ -73,9 +58,7 @@ fun formatAmount(
 /**
  * Renders an amount with the sign its bookkeeping gives it.
  *
- * The sign comes from **what kind of entry this is**, never from the digits: the server stores both
- * incomes and expenses as positive magnitudes, so deriving it from the value would show every
- * expense as an income.
+ * The sign comes from [income], never from the digits, since the server stores positive magnitudes.
  *
  * @param raw the amount as the server rendered it.
  * @param income whether this is an income.

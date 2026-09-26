@@ -14,14 +14,10 @@ import org.json.JSONArray
 import org.json.JSONException
 
 /**
- * A licence the app is allowed to redistribute under, with the wording and address to show for it.
+ * A licence the app may redistribute under, with the name and address to show for it.
  *
- * This list and the `licensee { allow(…) }` list in `app/build.gradle.kts` are **two halves of one
- * decision** and must stay equal: the build refuses to package an artifact whose licence is not
- * allowed, and this screen has no name or address to print for an allowed licence that is missing
- * here. `OssLicensesTest` fails when the bundled report contains an identifier this enum does not
- * know, which is the moment a new transitive dependency would otherwise appear on the screen as a
- * bare SPDX string.
+ * Must match the `licensee { allow(…) }` list in `app/build.gradle.kts`; `OssLicensesTest` fails on
+ * an identifier missing here.
  *
  * @property spdxId the SPDX identifier as it appears in the dependency's POM.
  * @property displayName the licence's own name, shown as the group heading.
@@ -69,13 +65,8 @@ data class OssArtifact(
 )
 
 /**
- * Reads the open-source notice that the build generated from the app's own dependency graph.
- *
- * The list is **not** maintained by hand. `app/build.gradle.kts` runs Licensee against the exact
- * variant being built and copies its report into `res/raw/oss_licenses.json`, so a new dependency
- * appears in the notice by existing rather than by somebody remembering. A hand-written attribution
- * list is wrong the first time a transitive dependency changes and stays wrong silently, which for
- * a legal notice is the whole of the problem.
+ * Reads the open-source notice the build generated into `res/raw/oss_licenses.json` from the app's
+ * own dependency graph.
  */
 object OssLicenses {
     /** Log subsystem. */
@@ -84,10 +75,7 @@ object OssLicenses {
     /**
      * Parses the bundled report.
      *
-     * A malformed or missing report yields an empty list rather than an exception: the settings
-     * screen has an empty state for it, and crashing the app over an attribution page would be a
-     * worse outcome than showing one that is visibly empty. The build gate is what keeps this from
-     * happening quietly — `OssLicensesTest` reads the same resource and fails when it is empty.
+     * A malformed or missing report yields [OssReport] `Unreadable` rather than an exception.
      *
      * @param resources the app's resources, holding `raw/oss_licenses.json`.
      * @return every bundled artifact, sorted by name, case-insensitively.
@@ -96,9 +84,6 @@ object OssLicenses {
         try {
             val json = resources.openRawResource(R.raw.oss_licenses).use { it.readBytes() }
             val artifacts = parse(String(json, Charsets.UTF_8))
-            // A report with no artifacts is not an empty list to render — the dependency graph is
-            // never empty, so zero means the generator did not run or wrote nothing. The chapter
-            // routes it to the error state (artboard 5) rather than to a page that looks complete.
             if (artifacts.isEmpty()) OssReport.Unreadable else OssReport.Loaded(artifacts)
         } catch (unreadable: Resources.NotFoundException) {
             KrtLog.e(LOG_TAG, unreadable) { "the generated open-source notice is missing" }
@@ -111,10 +96,7 @@ object OssLicenses {
     /**
      * The artifacts of a readable report, or an empty list.
      *
-     * A convenience for callers that only care about the contents — chiefly `OssLicensesTest`,
-     * which asserts properties of the bundled report and has its own assertion for the report
-     * being readable at all. The screen deliberately does **not** use this: collapsing the two
-     * outcomes is what made a missing resource look like a build with no dependencies.
+     * Intended for tests; the screen distinguishes the two outcomes through [read].
      *
      * @param resources the app's resources.
      * @return the artifacts, or empty when the report could not be read.
@@ -140,7 +122,6 @@ object OssLicenses {
                 val licenses = entry.optJSONArray("spdxLicenses")
                 OssArtifact(
                     coordinates = coordinates,
-                    // Not every POM states a name; the coordinates always identify the artifact.
                     name = entry.optString("name").ifBlank { coordinates },
                     version = entry.getString("version"),
                     spdxIds =
@@ -154,14 +135,8 @@ object OssLicenses {
     /**
      * Groups artifacts under the licences they are offered under.
      *
-     * An artifact offered under two licences appears under both, because the recipient may rely on
-     * either — listing it once under an arbitrary one would misstate the terms. A licence with no
-     * artifacts is dropped.
-     *
-     * The order is **alphabetical by licence name, then by coordinate** — not the declaration order
-     * of [OssLicense] and not the report's order. Both of those move when a dependency or an enum
-     * constant is added, and a legal notice whose rows shuffle between builds cannot be diffed
-     * against the previous one (design ch. 15: "Reihenfolge deterministisch").
+     * An artifact with two licences appears under both; a licence without artifacts is dropped. The
+     * order is alphabetical by licence name, then by coordinate, so it is stable across builds.
      *
      * @param artifacts the parsed report.
      * @return one entry per licence in use, alphabetically, each with its artifacts alphabetically.
@@ -178,13 +153,7 @@ object OssLicenses {
 }
 
 /**
- * The outcome of reading the bundled report.
- *
- * Two outcomes rather than a possibly-empty list, because design chapter 15 draws them as two
- * different screens: a report that cannot be read offers "Erneut versuchen", and one that is merely
- * slow shows a spinner. Collapsing them into an empty list forced one screen to stand for both, and
- * the one it stood for was the wrong one — a missing resource looked like a build with no
- * dependencies.
+ * The outcome of reading the bundled report: loaded, or unreadable.
  */
 sealed interface OssReport {
     /**

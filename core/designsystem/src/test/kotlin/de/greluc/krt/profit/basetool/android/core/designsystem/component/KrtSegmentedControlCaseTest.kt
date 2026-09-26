@@ -19,12 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Segment labels are drawn uppercase, whatever case the caller passes.
- *
- * Every artboard renders them through `text-transform: uppercase`, and the copy rules ask for
- * uppercase labels — but the string resources are written in sentence case, so the transform has to
- * happen in the component. Doing it at each call site is what let the bank's scope switch drift to
- * „Mitglied / Verwaltung" while the sheet beside it shouted.
+ * Segment labels are drawn uppercase whatever case the caller passes.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")

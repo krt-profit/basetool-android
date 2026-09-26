@@ -71,10 +71,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 const val BOOKING_SHEET_TAG: String = "booking-sheet"
 
 /**
- * The cSCU/µSCU hint beside the amount.
- *
- * Tagged because [KrtHint] renders its sentence inside a tooltip, which is not in the tree until
- * somebody long-presses it — so its presence cannot be asserted by text.
+ * Test tag of the cSCU/µSCU hint beside the amount, whose text lives in a tooltip that is not in the
+ * tree until long-pressed.
  */
 const val BOOKING_SCU_HINT_TAG: String = "booking-scu-hint"
 
@@ -94,14 +92,10 @@ const val BOOKING_SAVE_TAG: String = "booking-save"
 const val BOOKING_MERGE_TAG: String = "booking-merge"
 
 /**
- * The Lager's booking form: Ein, Aus, Notiz (design ch. 09, Frame 2).
+ * The Lager's booking form with the modes Ein, Aus and Notiz on one segment.
  *
- * One sheet with a segment rather than three sheets, because that is what the design draws and
- * because the amount — the field the moving modes share — then survives a change of mind.
- *
- * **A mode is only offered when it can be used.** `Aus` and `Notiz` act on an entry, so opening the
- * form from the "Einbuchen" action shows `Ein` alone; opening it from an entry shows the two that
- * apply to it. A segment whose other half cannot work is a control that lies.
+ * The amount survives a mode change. Only usable modes are offered: `Ein` from the "Einbuchen"
+ * action, `Aus` and `Notiz` from an entry.
  *
  * @param state what the form holds.
  * @param callbacks what it reports.
@@ -115,8 +109,6 @@ fun BookingSheet(
         onDismiss = callbacks.onDismiss,
         modifier = Modifier.testTag(BOOKING_SHEET_TAG),
         title = stringResource(state.actionRes()),
-        // Design ch. 18 §3 (E9): the Lager's own sheet is what a tablet has room beside, so there
-        // it is a 560 dp centred dialog rather than a band across the bottom of a 1280 dp screen.
         centred = isWideWindow(),
     ) {
         Column(
@@ -164,9 +156,6 @@ fun BookingSheet(
 
             if (state.mode == BookingMode.OUT) {
                 OutKindField(state = state, callbacks = callbacks)
-                // Below the out-kind, because a sale's proceeds split depends on the mission
-                // shares and a transfer carries the reduced tags with it — the plan is about the
-                // amount, so it follows everything that decides what happens to the amount.
                 HerkunftSection(
                     state = state,
                     onJobOrderShare = callbacks.onJobOrderShare,
@@ -194,10 +183,6 @@ fun BookingSheet(
                     enabled = !state.saving,
                 )
                 KrtCtaButton(
-                    // The CTA names the move it makes — "Einbuchen", "Ausbuchen" — rather than the
-                    // generic "Buchen" (artboard 09.2). On a form with three modes, a button that
-                    // reads the same in all three is the one control that does not say which one
-                    // is armed.
                     text = stringResource(state.actionRes()),
                     onClick = callbacks.onSave,
                     iconRes = state.actionIconRes(),
@@ -213,10 +198,7 @@ fun BookingSheet(
 }
 
 /**
- * Everything the sheet reports back.
- *
- * A parameter object because the sheet has eleven of them, and eleven positional lambdas is a
- * signature nobody can call correctly twice.
+ * Everything the booking sheet reports back.
  *
  * @property onMode the segment changed.
  * @property onKind a book-in switched between the material and the item catalogue.
@@ -303,18 +285,12 @@ private fun AmountField(
                 enabled = !state.saving,
             )
             if (state.materialIsScu) {
-                // cSCU and µSCU are SCU words. Over a field counting pieces the hint offered
-                // fractions of a thing that has none — the same rule the merge opt-in already
-                // follows, and the one the web applies by hiding its own hint for PIECE.
                 KrtHint(
                     explanation = stringResource(R.string.booking_amount_hint),
                     modifier = Modifier.testTag(BOOKING_SCU_HINT_TAG),
                 )
             }
         }
-        // A stepper, not a bare field: the artboard's `− 120 +` is what a member uses when the
-        // amount is one or two off, which on a booking form it usually is. Typing still works —
-        // the steps are an addition, not a replacement.
         KrtStepperField(
             value = state.amount,
             onValueChange = onAmount,
@@ -331,11 +307,6 @@ private fun AmountField(
 /**
  * Everything a book-in asks for: which catalogue, what from it, how much, and where.
  *
- * Its own composable because the sheet serves three modes and this is the one that branches:
- * two catalogues with different fields under each. Inlined it pushed the sheet's own
- * complexity past what the gate allows, which is the gate saying the sheet had grown a second
- * screen inside it.
- *
  * @param state the form.
  * @param callbacks what it reports.
  */
@@ -345,9 +316,6 @@ private fun BookInFields(
     callbacks: BookingCallbacks,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
-        // Two catalogues, not one list with a filter: the server takes them in mutually
-        // exclusive fields and asks different things of each (REQ-INV-029), so the form
-        // says which one it is naming before it asks for anything else.
         KrtSegmentedControl(
             options =
                 listOf(
@@ -392,13 +360,7 @@ private fun BookInFields(
             PickerOverflowNote(more = state.moreGameItems)
         }
 
-        // Design ch. 09 artboard 2 puts the amount and the quality on ONE row: they are
-        // two readings of the same stack, and stacked full-width they read as two separate
-        // decisions. Quality is the narrow one — it is three digits.
         if (state.kind == BookingCatalogKind.ITEM) {
-            // No grade beside it: the server **refuses** a quality on an item row, so a
-            // field here would be one whose every value is a rejection. The amount then
-            // has the row to itself rather than a gap where the grade used to sit.
             AmountField(state = state, onAmount = callbacks.onAmount)
         } else {
             Row(
@@ -426,15 +388,10 @@ private fun BookInFields(
 }
 
 /**
- * „Herkunft" in reverse: where the amount being booked in is promised to go.
+ * Where the amount being booked in is promised to go, entered with the booking.
  *
- * The web has carried this since Variante C landed — earmarks entered **with** the booking rather
- * than afterwards on the created row, so the server checks the sum and every target in the same
- * transaction that creates it. The app booked first and assigned second, which left the stock
- * unassigned in between and turned one refusal into several.
- *
- * The Einsatz split is absent in item mode: the server refuses a mission earmark on an item row
- * (REQ-INV-031), and an offer nobody may accept is worse than no offer.
+ * The earmarks are sent in the same request, so the server checks them in the transaction that
+ * creates the row. The Einsatz split is absent in item mode (REQ-INV-031).
  *
  * @param state the form.
  * @param callbacks what it reports.
@@ -499,14 +456,11 @@ private fun PlaceField(
 }
 
 /**
- * Which org-unit pool a transfer's moved row lands in.
+ * Which org-unit pool a transfer's moved row lands in, as a plain list of the recipient's
+ * memberships.
  *
- * A plain list rather than a search field: the options are one member's memberships, which is a
- * handful, and a search box over four rows asks the member to type what they can already see.
- *
- * It is **not** shown when there is nothing to choose. A receiving member with no membership at
- * all leaves the row unpooled, which is the server's own outcome and not a field the form can fix;
- * a member with exactly one has no decision to make and the server resolves it.
+ * Not shown when there is nothing to choose: with no membership the row stays unpooled and with
+ * exactly one the server resolves it.
  *
  * @param state the form.
  * @param onOrgUnit a pool was picked.
@@ -516,9 +470,6 @@ private fun OrgUnitField(
     state: BookingState,
     onOrgUnit: (OrgUnitOption) -> Unit,
 ) {
-    // Hidden only for a membershipless target: that row is unpooled and there is nothing to
-    // choose. A single membership is still shown — preset and read-only in effect — because the
-    // member is entitled to see which pool their stock is about to land in.
     if (state.orgUnits.isEmpty()) {
         return
     }
@@ -595,9 +546,7 @@ private fun TransferRefusal() {
 /**
  * Whether the server may fold the moved amount into an identical entry at the target.
  *
- * The whole row is the target, not the 24 dp control: `KrtToggle` deliberately carries no label
- * and no gesture of its own, because a bare toggle cannot reach the 48 dp minimum without being
- * inflated out of its drawn size.
+ * The whole row is the tap target, since `KrtToggle` carries no label or gesture of its own.
  *
  * @param state the form.
  * @param onMergeStock the opt-in changed.
@@ -664,9 +613,6 @@ private fun OutKindField(
                 Picker(
                     label = stringResource(R.string.booking_field_member),
                     query = state.memberQuery,
-                    // Both targets show the row's own value with „— unverändert" rather than
-                    // sitting empty (artboard 15/16). Empty is what the app sent for „keep it",
-                    // but on screen it read as a field nobody had filled in.
                     chosen = state.member?.name ?: state.entry?.holder?.let { unchanged(it) },
                     options = state.members.map { it.id to it.name },
                     enabled = !state.saving,
@@ -684,22 +630,13 @@ private fun OutKindField(
                     onChosen = { id -> state.places.firstOrNull { it.id == id }?.let(callbacks.onPlace) },
                 )
                 PickerOverflowNote(more = state.morePlaces)
-                // The refusal speaks about the two pickers directly above, so it stays with them.
-                // The pool and the merge option are a separate decision about where the moved row
-                // lands, and a rule about the targets read underneath them looks like a rule about
-                // the checkbox.
                 if (!state.transferMoves) {
                     TransferRefusal()
                 }
                 OrgUnitField(state = state, onOrgUnit = callbacks.onOrgUnit)
                 if (state.materialIsScu) {
-                    // Offered only for an SCU material: the server merges a PIECE transfer into an
-                    // identical target stack regardless, so a toggle there would be a control that
-                    // does nothing — and the member could not tell that from one that does.
                     MergeStockField(state = state, onMergeStock = callbacks.onMergeStock)
                 } else {
-                    // Not silence: an absent control reads as a missing feature, where the frame
-                    // draws a line saying the server already does it (artboard 16).
                     Muted(stringResource(R.string.booking_merge_piece))
                 }
             }
@@ -810,12 +747,8 @@ private fun BookingMode.titleRes(): Int =
     }
 
 /**
- * What the save action is called, which is not always what the mode is called.
- *
- * A transfer is „Umbuchen" and a sale is „Verkaufen" — both reached through the Ausbuchen mode,
- * both different events in the ledger from a discard. The button is the last thing a member reads
- * before committing one, so it names the move the form will actually make rather than the segment
- * they used to get here.
+ * The save action's label, naming the actual move: „Umbuchen" for a transfer, „Verkaufen" for a
+ * sale.
  *
  * @return the string resource for the call to action.
  */
@@ -846,22 +779,14 @@ private fun BookingState.actionIconRes(): Int =
     }
 
 /**
- * The modes this entry can be booked in.
- *
- * Booking out and editing the note, in that order. Rebooking private stock is deliberately absent:
- * the Lager reads exclude private stock entirely, so no entry that could be rebooked ever reaches
- * this sheet, and a segment half that can only refuse is a control that lies.
+ * The modes an entry can be booked in: booking out and editing the note, in that order.
  *
  * @return the modes, in the order the segment draws them.
  */
 private fun InventoryEntry.modes(): List<BookingMode> = listOf(BookingMode.OUT, BookingMode.NOTE)
 
 /**
- * The unit the amount is counted in.
- *
- * An item needs no lookup: a game item is **always** whole pieces, which is what makes it a
- * separate kind of row rather than a material with another unit — the server refuses a fractional
- * amount on one outright.
+ * The wire unit the amount is counted in; a game item is always whole pieces.
  *
  * @return the entry's unit when booking out, the picked material's or the item's fixed one when
  *   booking in, or `null` when nothing is picked yet.
@@ -870,12 +795,7 @@ internal fun BookingState.unit(): String? =
     if (kind == BookingCatalogKind.ITEM) PIECE_UNIT else entry?.unit ?: material?.unit
 
 /**
- * The unit as a member reads it.
- *
- * [unit] answers the **wire's** word, which is what the amount is compared against — and putting
- * it on screen printed „Menge (PIECE)" over a German form for every piece-counted material. The
- * mapping lives here rather than in the state, because it is a rendering and the comparison above
- * still needs the raw value.
+ * The localized label of [unit], for display only.
  *
  * @return the localized word, or `null` when nothing is picked yet.
  */
@@ -914,11 +834,8 @@ private fun TerminalOption.label(): String =
         .joinToString(" · ")
 
 /**
- * One step up or down from the amount currently typed.
- *
- * Whole units, because the sub-unit precision the Lager allows (cSCU, µSCU) is something a member
- * types rather than steps to. A value that is not a number at all steps from zero rather than
- * refusing — the field is mid-edit, and a dead button in that moment reads as broken.
+ * One whole-unit step up or down from the amount currently typed; a non-numeric value steps from
+ * zero.
  *
  * @param by `+1` or `-1`.
  * @return the new value, never below zero.

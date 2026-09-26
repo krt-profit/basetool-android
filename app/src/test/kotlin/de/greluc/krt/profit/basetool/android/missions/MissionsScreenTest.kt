@@ -27,14 +27,9 @@ import java.io.IOException
 import java.time.Instant
 
 /**
- * What the Einsatz list actually renders, for the states a member can land in.
+ * Tests what the Einsatz list renders in each of its four states: loading, failed, empty and populated.
  *
- * The list has four of them — loading, failed, empty, populated — and three are the ones nobody
- * looks at while developing, because the happy path is what a dev stack produces. They are also the
- * three a member hits first on a bad connection.
- *
- * German is pinned, because German is the primary bundle and the copy rules ("Einsätze", never
- * "Missionen") are asserted against it.
+ * German is pinned as the primary bundle the copy rules are asserted against.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de")
@@ -138,8 +133,6 @@ class MissionsScreenTest {
 
     @Test
     fun `a filtered empty list says so instead, and offers the reset`() {
-        // Telling a member "no Einsätze" when their own filter is what hid them reads as the
-        // squadron being idle. The two states are different facts and get different copy.
         show(
             MissionsState(
                 query = MissionQuery(text = "Lyria"),
@@ -159,11 +152,6 @@ class MissionsScreenTest {
 
     @Test
     fun `a status option reports the whole resulting set, not just the tapped one`() {
-        // The view model replaces the set rather than merging, so an option that reported only
-        // itself would silently clear every other selection.
-        //
-        // The four toggle chips became one chip and a sheet (artboard 06-1), so the tap is two
-        // steps now: open the chip, then pick inside it.
         val statuses = mutableListOf<Set<MissionStatus>>()
         show(
             MissionsState(
@@ -183,7 +171,6 @@ class MissionsScreenTest {
 
     @Test
     fun `the status chip names what it carries`() {
-        // A chip that always said „Status" would say nothing about what the list below it shows.
         show(
             MissionsState(
                 query = MissionQuery(statuses = setOf(MissionStatus.PLANNED)),

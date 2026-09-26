@@ -98,8 +98,6 @@ class ApiReaderOptionalTest {
     @Test
     fun `a 200 with an empty body is treated the same way`() =
         runTest {
-            // A server answering "nothing" with a zero-length body rather than a status is being
-            // sloppy, not broken, and the difference is invisible to the member either way.
             respond(HTTP_OK)
 
             val result = reader.getOptional("/announcement", Payload.serializer())
@@ -120,7 +118,6 @@ class ApiReaderOptionalTest {
     @Test
     fun `a refusal is still a failure`() =
         runTest {
-            // The optional read is about an absent body, not about tolerating errors.
             respond(HTTP_FORBIDDEN, """{"title": "Forbidden"}""")
 
             val result = reader.getOptional("/announcement", Payload.serializer())

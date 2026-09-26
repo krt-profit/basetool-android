@@ -62,15 +62,12 @@ sealed interface MissionsPhase {
 /**
  * Everything the Einsatz list draws.
  *
- * @property query what the member has narrowed to; its `text` is the **debounced** term, i.e.
- *   the one actually sent to the server
- * @property searchText what is in the search field **right now**, updated on every keystroke
- *   ahead of the debounce. Separate from `query.text` because the field is a controlled component:
- *   binding it to the debounced value discards every character until the debounce elapses, which
- *   makes the field look broken rather than slow
+ * @property query what the member has narrowed to; its `text` is the debounced term actually sent
+ *   to the server
+ * @property searchText what is in the search field right now, updated on every keystroke ahead of
+ *   the debounce
  * @property missions every row loaded so far, across pages, in server order
- * @property total how many Einsätze the filter matches on the server — stated even when fewer are
- *   loaded, because a paginated list that cannot say what it is not showing is a silent truncation
+ * @property total how many Einsätze the filter matches on the server, even when fewer are loaded
  * @property phase how far the first page has got
  * @property page the zero-based index of the last page that arrived
  * @property hasMore whether the server has another page
@@ -105,12 +102,8 @@ data class MissionsState(
 /**
  * Drives the Einsatz list.
  *
- * **Typing is debounced, everything else is not.** A search term arrives one keystroke at a time
- * and each one would otherwise be a round trip; a tapped status chip is one deliberate act and
- * should feel immediate. The two therefore take different paths into the same reload.
- *
- * **Every reload starts from page 0 and replaces the rows.** Appending would leave the previous
- * filter's results underneath the new filter's, which reads as the filter not having worked.
+ * Search input is debounced; every other filter change reloads immediately. Every reload starts at
+ * page 0 and replaces the rows.
  *
  * @property source where the Einsätze come from
  */
@@ -160,17 +153,12 @@ class MissionsViewModel(
 
     init {
         observeLiveSync(liveSync, setOf(LiveSyncTopic.MISSIONS)) { sections ->
-            // Rows stay on screen while the answer is in flight: a member who did not ask for
-            // anything must not watch the list they are reading empty itself because somebody
-            // created an Einsatz.
             if (LiveSyncSections.MISSIONS_LIST in sections) {
                 reload(keepRows = true)
             }
         }
         viewModelScope.launch {
             typedText
-                // The current value is the empty field the screen starts with; reacting to it would
-                // fire a second identical first-page load on every launch.
                 .drop(1)
                 .debounce(SEARCH_DEBOUNCE_MS)
                 .distinctUntilChanged()
@@ -191,12 +179,8 @@ class MissionsViewModel(
     }
 
     /**
-     * Records a keystroke.
-     *
-     * The state is updated **synchronously** and the request is deferred by
-     * [SEARCH_DEBOUNCE_MS]. Both halves matter: the field is a controlled component, so a state
-     * that lagged the debounce would feed the old value straight back and every character would
-     * vanish as it was typed — measured on a device, the field accepted nothing at all.
+     * Records a keystroke: updates the field state synchronously and defers the request by
+     * [SEARCH_DEBOUNCE_MS].
      *
      * @param text what the member has typed so far.
      */
@@ -276,9 +260,6 @@ class MissionsViewModel(
             when (val result = source.search(current.query, page = next)) {
                 is ApiResult.Success -> {
                     val loaded = result.value
-                    // Read from the state again rather than from `current`: a refresh may have
-                    // replaced the rows while this page was in flight, and appending to the stale
-                    // snapshot would resurrect the ones it removed.
                     val latest = mutableState.value
                     mutableState.value =
                         latest.copy(
@@ -291,8 +272,6 @@ class MissionsViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The rows already on screen stay. A failed *next* page is not a reason to
-                    // replace a working list with an error, and the member can simply try again.
                     KrtLog.w(LOG_TAG) { "next page of Einsätze failed: ${result.error}" }
                     mutableState.update { it.copy(loadingMore = false) }
                 }

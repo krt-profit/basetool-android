@@ -11,16 +11,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The two Fan Kit notices must exist in the default bundle and in **no** localized one.
- *
- * [KrtFanKitBandTest] asserts what the notices say once Android has resolved them. This one asserts
- * the shape of the resource files themselves, which is a different failure: an override added to
- * `values-en/` would resolve correctly for a German device and silently ship a translated legal
- * notice to an English one, and a per-locale test that happens to run under the wrong qualifier
- * would not see it.
- *
- * The a11y description of the artwork (`krt_fankit_logo_description`) is deliberately **not**
- * covered — that one is UI copy about a picture and is translated on purpose.
+ * The two Fan Kit notices exist in the default resource bundle and in no localized one; the
+ * artwork's a11y description is translated and not covered.
  */
 class FanKitNoticeParityTest {
     private companion object {

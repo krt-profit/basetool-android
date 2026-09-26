@@ -51,13 +51,9 @@ import java.io.IOException
 import java.time.Instant
 
 /**
- * What the seven tabs actually render, and how the screen words the answers it did not want.
+ * Tests what the seven tabs render and how the screen words a refused, a gone and a broken load differently.
  *
- * The failure states carry most of the weight. "Refused", "gone" and "broken" are three different
- * facts, and the one generic message that covers all three tells a member to try again on an
- * Einsatz they will never be allowed to see.
- *
- * German is pinned: it is the primary bundle and the copy rules are asserted against it.
+ * German is pinned as the primary bundle the copy rules are asserted against.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -68,12 +64,7 @@ class MissionDetailScreenTest {
     private val robot by lazy { MissionScreenRobot(compose) }
 
     /**
-     * The Verwaltung tab is **drawn for everybody** and locked for a non-manager.
-     *
-     * This asserted the opposite until 2026-08-29. The app hid the tab, on the argument that a
-     * member who does not run this Einsatz is not one grant away from running it; the designer
-     * rejected that (ch. 06 artboard 6) and the rule stands as it always did — this organisation
-     * grants roles by hand, and **a function nobody sees is never requested**.
+     * The Verwaltung tab is drawn for everybody and locked for a non-manager (design ch. 06, artboard 6).
      */
     @Test
     fun `the Verwaltung tab is drawn for a manager`() {
@@ -140,15 +131,9 @@ class MissionDetailScreenTest {
     fun `the head names the Einsatz and states its sign-ups`() {
         robot.show(robot.ready())
 
-        // The name, its status and the org badge live in the TOP BAR now (design ch. 06
-        // artboard 2), which this harness does not render — the screen publishes them through
-        // ProvideScreenTopBar. What the screen itself draws is the facts bar, the attendance
-        // block and the tabs, and those are what this asserts.
         compose.onNodeWithText("14").assertIsDisplayed()
         compose.onNodeWithText("ANGEMELDET").assertIsDisplayed()
         compose.onNodeWithText("davon 9 eingecheckt").assertIsDisplayed()
-        // "ARC-L1" is in the facts bar AND in the briefing card, which is the point of both —
-        // take the first rather than asserting a uniqueness the design does not have.
         compose.onAllNodesWithText("ARC-L1", substring = true).onFirst().assertIsDisplayed()
         compose.onNodeWithTag(MISSION_DETAIL_TABS_TAG).assertIsDisplayed()
     }
@@ -158,8 +143,6 @@ class MissionDetailScreenTest {
         val tabs = mutableListOf<MissionTab>()
         robot.show(robot.ready(), tabs = tabs)
 
-        // The tab now carries its count (design ch. 06), so the label is a prefix rather than the
-        // whole node text.
         compose.onNodeWithText("TEILNEHMER", substring = true).performClick()
 
         assertEquals(listOf(MissionTab.PARTICIPANTS), tabs)
@@ -167,15 +150,8 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a redacted Einsatz says the description is members-only rather than showing a blank`() {
-        // An outsider read carries no description (main repo ADR-0034). A blank section reads as
-        // an Einsatz nobody bothered to describe, which is a different and wrong statement.
         robot.show(robot.ready(detail = robot.detail(description = null)))
 
-        // Below the attendance block and the briefing card now, so it may sit off-screen in the
-        // test's viewport: assert it EXISTS rather than that it happens to be visible.
-        // The Übersicht is a LazyColumn and the description now sits under the attendance block
-        // and the briefing card, so it is not composed until it is scrolled to. Scrolling is what
-        // a member does; asserting without it would only be testing the viewport height.
         compose
             .onNodeWithTag(MISSION_DETAIL_CONTENT_TAG)
             .performScrollToNode(hasText("Die Beschreibung ist nur für Mitglieder sichtbar."))
@@ -190,9 +166,6 @@ class MissionDetailScreenTest {
                     robot.detail(
                         participants =
                             listOf(
-                                // Deliberately not "Rhea": she is the party lead in the head, so
-                                // the name would match two nodes and the assertion would say
-                                // nothing about the roster.
                                 MissionParticipant(
                                     "p1",
                                     "u1",
@@ -218,8 +191,6 @@ class MissionDetailScreenTest {
         )
 
         compose.onNodeWithText("Kestrel").assertIsDisplayed()
-        // The state is an 8 dp dot now, not a two-word chip (artboard 06-2), so it is asserted
-        // where a member using a screen reader actually meets it.
         compose.onNodeWithContentDescription("Eingecheckt").assertIsDisplayed()
         compose.onNodeWithContentDescription("Nicht eingecheckt").assertIsDisplayed()
     }
@@ -254,18 +225,9 @@ class MissionDetailScreenTest {
             ),
         )
 
-        // The header band uppercases the name — artboard 06-14 draws it that way, the same as
-        // every other section title in the app.
         compose.onNodeWithText("EINHEIT ALPHA").assertIsDisplayed()
         compose.onNodeWithText("Carrack Meridian").assertIsDisplayed()
         compose.onNodeWithText("HVU").assertIsDisplayed()
-        // The sign-up band above the tabs costs a row of height, so the crew line can sit below
-        // the fold on a compact screen. That it is drawn is the assertion.
-        //
-        // The name and the roles are two nodes, not one joined string. The row states what this
-        // slot HOLDS, as read chips; the catalogue it was chosen from is behind the row's menu
-        // (owner decision, 2026-09-07), so the empty-catalogue sentence is one the sheet says now
-        // and the row does not.
         compose.onNodeWithText("Dorn").assertExists()
         compose.onNodeWithText("Turret", ignoreCase = true).assertExists()
         compose.onAllNodesWithText("Keine CREW-Funktionen hinterlegt.").assertCountEquals(0)
@@ -273,7 +235,6 @@ class MissionDetailScreenTest {
 
     @Test
     fun `an empty tab says so instead of showing nothing at all`() {
-        // A blank tab is indistinguishable from a rendering fault; a sentence is not.
         robot.show(robot.ready(tab = MissionTab.STEPS))
 
         compose.onNodeWithText("Kein Ablauf hinterlegt.").assertIsDisplayed()
@@ -311,8 +272,6 @@ class MissionDetailScreenTest {
             ),
         )
 
-        // Grouped and signed, not the raw `86400.0000` the wire carries. The first version showed
-        // exactly that, and a device run is what caught it.
         compose.onNodeWithText("+86.400").assertIsDisplayed()
         compose.onNodeWithText("−11.700").assertIsDisplayed()
         compose.onNodeWithText("74.700").assertIsDisplayed()
@@ -320,7 +279,6 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a refused Finanzen tab says so in its own words, and offers no retry`() {
-        // Retrying a permission the member does not have is advice that cannot help.
         robot.show(robot.ready(tab = MissionTab.FINANCES, finances = MissionFinancesPhase.Failed(ApiError.Forbidden())))
 
         compose.onNodeWithText("Die Finanzen dieses Einsatzes sind für dich nicht einsehbar.").assertIsDisplayed()
@@ -364,8 +322,6 @@ class MissionDetailScreenTest {
 
     @Test
     fun `an Einsatz the caller is not on offers to sign up, and nothing else`() {
-        // Check-in and the payout preference act on a row. Offering them before there is one
-        // would be offering a 404.
         val signed = mutableListOf<Unit>()
         robot.show(readyForMe(), signUps = signed)
 
@@ -381,8 +337,6 @@ class MissionDetailScreenTest {
         val checked = mutableListOf<Unit>()
         robot.show(readyForMe(mine()), checkIns = checked)
 
-        // Two actions in the bar, and only two: the payout preference left it on 2026-09-07 and is
-        // asserted on the Teilnehmer tab, where it now lives.
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
 
@@ -398,22 +352,15 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a donating caller changes their payout in the sheet behind their row's menu`() {
-        // Not under every tab and no longer inline on the row either: Anteil, Wunsch and Funktion
-        // are one subject and share one sheet, one tap from the row (owner decision, 2026-09-07).
         val paid = mutableListOf<Unit>()
         robot.show(readyForMe(mine(donating = true)).copy(tab = MissionTab.PARTICIPANTS), payouts = paid)
 
-        // Closed, the row states the choice and offers no control for it.
         compose.onAllNodesWithTag(MISSION_PAYOUT_TAG).assertCountEquals(0)
         compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
 
-        // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
-        // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
-        // Scoped to the sheet: the row's read chip behind it carries the same two words.
         compose.onNodeWithTag(MISSION_PAYOUT_TAG).assertIsDisplayed()
         compose.onNode(inPayoutSheet("Org-Kasse")).assertIsDisplayed()
-        // And it still reports: choosing the state the caller is NOT in is what a radio pair is for.
         compose.onNode(inPayoutSheet("Auszahlung")).performClick()
 
         assertEquals(1, paid.size)
@@ -444,9 +391,6 @@ class MissionDetailScreenTest {
      */
     @Test
     fun `a roster row shows the Funktion that was chosen, not the catalogue it came from`() {
-        // The complaint this answers: every row drew every Funktion the organisation has defined,
-        // so on a roster of fourteen the four that were actually assigned were four filled chips
-        // among seventy (owner decision, 2026-09-07).
         robot.show(
             readyForMe(assigned()).copy(tab = MissionTab.PARTICIPANTS),
             canManage = true,
@@ -457,7 +401,6 @@ class MissionDetailScreenTest {
         compose.onAllNodesWithText("Pilot", ignoreCase = true).assertCountEquals(0)
         compose.onAllNodesWithText("Cargo", ignoreCase = true).assertCountEquals(0)
 
-        // And the catalogue is one tap away, not gone: the row's menu is where it went.
         compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
 
@@ -467,8 +410,6 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the caller changes the Funktion they wish for from their own row's sheet`() {
-        // It could only be set at sign-up before: a member who changed their mind had to withdraw
-        // and sign up again. The sheet offers the same catalogue afterwards.
         val taps = mutableListOf<String>()
         robot.show(
             readyForMe(mine()).copy(tab = MissionTab.PARTICIPANTS),
@@ -478,8 +419,6 @@ class MissionDetailScreenTest {
 
         compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
-        // On the caller's own row the sheet draws the catalogue twice — the Wunsch section first,
-        // the Einsatzleitung's assignment below it — so the section, not the word, picks the chip.
         compose.onAllNodesWithText("Pilot", ignoreCase = true)[0].performClick()
 
         assertEquals(listOf("wish:j1"), taps)
@@ -504,17 +443,7 @@ class MissionDetailScreenTest {
     }
 
     /**
-     * The sheet's last section has to be reachable.
-     *
-     * **Found on a device, 2026-09-08.** `KrtBottomSheet` deliberately does not scroll its content
-     * — it leaves that to each sheet, and the long ones bring their own. This one had none, and it
-     * is the longest sheet in the app on the caller's own row: the catalogue is drawn twice, once
-     * as the wish and once as the assignment, so „Funktion an Bord" fell off the bottom edge with
-     * no way to reach it.
-     *
-     * The assertion is `performScrollTo`, which needs a **scrollable ancestor** and fails without
-     * one. That is the defect itself, and it holds whatever viewport the test runs at — an
-     * assertion about what is visible would only reproduce it at some screen sizes.
+     * The roster sheet's last section can be scrolled to; `performScrollTo` fails without a scrollable ancestor.
      */
     @Test
     fun `the roster sheet's last section can be scrolled to`() {
@@ -527,12 +456,12 @@ class MissionDetailScreenTest {
         compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onNodeWithText("Funktion und Anteil", ignoreCase = true).performClick()
 
-        // Two nodes carry that name: the Wunsch section first, the assignment below it. The second
-        // is the one that used to be unreachable.
         compose.onAllNodesWithText("Marine 4", ignoreCase = true)[1].performScrollTo().assertIsDisplayed()
     }
 
-    /** The crew row's sheet has the same shape and had the same defect. */
+    /**
+     * The crew row's sheet can likewise be scrolled to its catalogue.
+     */
     @Test
     fun `the crew sheet's catalogue can be scrolled to`() {
         robot.show(
@@ -723,8 +652,6 @@ class MissionDetailScreenTest {
             ),
         )
 
-        // The rows sit below the fold of a lazy list, so they are not composed until it is
-        // scrolled to them.
         compose.onNodeWithTag(MISSION_DETAIL_CONTENT_TAG)
             .performScrollToNode(hasTestTag(MISSION_FINANCE_EDIT_TAG))
         compose.onNodeWithTag(MISSION_FINANCE_EDIT_TAG).assertIsEnabled()
@@ -733,8 +660,6 @@ class MissionDetailScreenTest {
 
     @Test
     fun `somebody else's booking offers neither`() {
-        // The server refuses an edit by anyone but the owner or an admin. Offering it anyway is
-        // offering a refusal.
         robot.show(
             readyForMe(mine()).copy(
                 tab = MissionTab.FINANCES,

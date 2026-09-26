@@ -10,10 +10,8 @@ package de.greluc.krt.profit.basetool.android.core.data
 /**
  * Where an Operation stands in its lifecycle.
  *
- * The same four states an Einsatz has, and **not** the same spelling: the backend writes
- * `CANCELED` here and `CANCELLED` on a mission. That is a server-side inconsistency this client
- * mirrors rather than tidies — matching on the wire value is what keeps a badge from silently
- * falling to [UNKNOWN], and "fixing" it here would break exactly the case the mapping exists for.
+ * Mirrors the server's spelling `CANCELED` here (a mission uses `CANCELLED`), so the wire value
+ * maps instead of falling to [UNKNOWN].
  */
 enum class OperationStatus {
     /** Scheduled, no Einsatz running yet. */
@@ -50,20 +48,13 @@ enum class OperationStatus {
 }
 
 /**
- * One Operation as the list needs it.
+ * One Operation as the list needs it; carries only what `OperationDto` sends, with counts left to
+ * the detail.
  *
- * **Deliberately thin.** The design's list row shows "2 Einsätze · 18 Teilnehmer" and a payout
- * chip; the backend's `OperationDto` carries none of it, and its own documentation says why — the
- * bulk endpoints "have no reason to spend the extra count query". Widening them was put to the
- * repository owner and declined (2026-08-22), so the counts live on the detail, where they are
- * loaded anyway. This type carries what the server actually sends rather than nullable fields that
- * would be empty on every row.
- *
- * @property id the Operation's UUID, the one thing a row needs to be openable
+ * @property id the Operation's UUID, required for a row to be openable
  * @property name the Operation's title
  * @property status where it stands
- * @property rawStatus the untranslated server value, kept only so [OperationStatus.UNKNOWN] has
- *   something to show instead of an empty badge
+ * @property rawStatus the untranslated server value, shown for [OperationStatus.UNKNOWN]
  * @property description the free-text description, or `null`
  */
 data class Operation(
@@ -75,10 +66,6 @@ data class Operation(
 ) {
     /**
      * Whether this Operation is still running, which is what the list groups by.
-     *
-     * The design splits the list into "Laufend" and "Abgeschlossen" rather than by date: an
-     * Operation has no start time of its own — that lives on its Einsätze — so a date grouping
-     * would have to invent one.
      *
      * @return `true` for a planned or active Operation.
      */

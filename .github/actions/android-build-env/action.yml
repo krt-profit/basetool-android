@@ -4,28 +4,6 @@ description: >-
   licences and paths (and no SDK packages), a validated Gradle wrapper, and setup-gradle with the
   cache mode the caller names. One place for these pins instead of six.
 
-# Why a composite action, and why it stops where it does
-#
-# The same four steps stood in six jobs (ci.yml x2, codeql.yml, release.yml, release-dry-run.yml,
-# instrumented.yml), each with its own copy of four SHA pins and one comment about the emulator
-# download. Six copies are six places for a Dependabot bump to land in pieces — exactly what split
-# the codeql-action pin in September (.github/dependabot.yml) — and six places for somebody to drop
-# `packages: ''` or a cache setting without noticing.
-#
-# Callers reference it as `uses: $/.github/actions/android-build-env` - GitHub's self-repository
-# form (July 2026), which GitHub treats as pinned to the workflow's own commit and which cannot
-# load an action a previous step wrote into the workspace. The `./` workspace-relative form it
-# replaced could, and zizmor 1.30's `self-repository` audit fails on it (changed 2026-09-22).
-#
-# The checkout is NOT in here: every caller builds from the workspace anyway, so each keeps its own
-# `actions/checkout` step with `persist-credentials: false`, which zizmor's `artipacked` audit
-# checks per workflow.
-#
-# The cache mode is REQUIRED on purpose. A default would be a security decision made by omission:
-# the release job must restore nothing (a poisoned cache entry becomes a signed artifact), a PR job
-# must never write (zizmor's `cache-poisoning`), and the CodeQL job must not reuse task outputs.
-# Naming it at every call site keeps that decision visible where it matters.
-
 inputs:
   cache-mode:
     description: >-
@@ -52,37 +30,23 @@ runs:
             ;;
         esac
 
-    # gradle/gradle-daemon-jvm.properties pins the daemon to Java 25. Installing it here means Gradle
-    # finds a local JDK instead of downloading one from foojay on every run.
     - name: Set up JDK 25 (Temurin)
-      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
       with:
         distribution: temurin
         java-version: '25'
 
-    # `packages` defaults to `tools platform-tools`, and the deprecated `tools` meta-package drags
-    # in the ~500 MB Android Emulator — a download that has already died mid-stream ("Premature
-    # EOF") and reddened an otherwise green run (PR #106). The runner image already ships
-    # platform-tools, the android-37 platform and build-tools 37.0.0, so an empty list installs
-    # nothing while the action still accepts the SDK licences and exports ANDROID_HOME /
-    # ANDROID_SDK_ROOT. The one job that does need an emulator image, instrumented.yml, gets it
-    # from Gradle Managed Devices rather than from here.
     - name: Set up the Android SDK
-      uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
       with:
         packages: ''
 
-    # Verifies gradle-wrapper.jar against the known-good checksums for the declared distribution. A
-    # tampered wrapper jar is the classic way to run arbitrary code in a build that otherwise looks
-    # untouched.
     - name: Validate the Gradle wrapper
-      uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb
 
     - name: Set up Gradle
       if: inputs.cache-mode != 'skip'
-      uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
       with:
         cache-disabled: ${{ inputs.cache-mode == 'disabled' }}
-        # write-on-main: a cache entry written by a PR run is one an attacker's PR could have
-        # poisoned (zizmor's `cache-poisoning`), so only a push to main writes.
         cache-read-only: ${{ inputs.cache-mode == 'read-only' || (inputs.cache-mode == 'write-on-main' && github.ref != 'refs/heads/main') }}

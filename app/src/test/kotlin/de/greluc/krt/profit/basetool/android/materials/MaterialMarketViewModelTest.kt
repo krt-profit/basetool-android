@@ -154,8 +154,6 @@ class MaterialMarketViewModelTest {
             val row = vm.state.value.rows.first { it.name == "Quantainium" }
 
             assertEquals(ARC_SELL, row.best(MatrixMode.SELL))
-            // Nothing in the fixture has a buy price, so the buy side has no best at all rather
-            // than falling back to the sell figure.
             assertNull(vm.state.value.copy(mode = MatrixMode.BUY).rows.first().best(MatrixMode.BUY))
         }
 
@@ -218,10 +216,7 @@ class MaterialMarketViewModelTest {
         }
 
     /**
-     * Switching a system off restricts the calculation to the rest.
-     *
-     * An empty list means „every system" on the wire, so the restriction only travels once
-     * something is actually excluded.
+     * Switching a system off sends the remaining systems; an empty list on the wire means every system.
      */
     @Test
     fun `excluding a system sends the remaining ones`() =

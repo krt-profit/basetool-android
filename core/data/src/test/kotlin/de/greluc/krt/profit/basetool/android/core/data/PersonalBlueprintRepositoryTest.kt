@@ -131,8 +131,6 @@ class PersonalBlueprintRepositoryTest {
     @Test
     fun `a row the server did not call removable is not offered a delete`() =
         runTest {
-            // Guessing the other way offers an action the server then refuses with a 409, which
-            // reads as a broken button rather than as a rule.
             respond(PAGE)
 
             val page = (repository.page() as ApiResult.Success).value
@@ -154,9 +152,6 @@ class PersonalBlueprintRepositoryTest {
     @Test
     fun `craftability is asked for once, with refining included`() =
         runTest {
-            // One call for the whole list: asking per row would be one request per card on a
-            // screen that scrolls. Refining is included so the screen can offer both answers
-            // without a second round trip.
             respond(CRAFTABILITY)
 
             val byId = (repository.craftability() as ApiResult.Success).value
@@ -183,8 +178,6 @@ class PersonalBlueprintRepositoryTest {
     @Test
     fun `a craftability entry naming no blueprint is dropped`() =
         runTest {
-            // It cannot be shown against a row, and keying it by an empty id would attach it to
-            // the wrong one.
             respond(CRAFTABILITY)
 
             val byId = (repository.craftability() as ApiResult.Success).value
@@ -208,8 +201,6 @@ class PersonalBlueprintRepositoryTest {
     @Test
     fun `a note change echoes the version and sends nothing else`() =
         runTest {
-            // The contract requires `version` and nothing more: acquiredAt is left untouched
-            // rather than re-sent, so an app that never offers that field cannot clear it.
             respond("""{"id": "b1", "productName": "F7A Hornet", "note": "neu", "version": 4}""")
 
             repository.updateNote(id = "b1", version = VERSION, note = "neu")
@@ -225,7 +216,6 @@ class PersonalBlueprintRepositoryTest {
     @Test
     fun `the picker asks for a bounded number of products and drops the keyless`() =
         runTest {
-            // A row without a key cannot be added, so offering it would be a tap that fails.
             respond(PRODUCTS)
 
             val products = (repository.products("hornet") as ApiResult.Success).value

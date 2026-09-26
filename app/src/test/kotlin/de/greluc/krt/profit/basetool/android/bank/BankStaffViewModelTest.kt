@@ -45,16 +45,10 @@ import org.robolectric.annotation.Config
 import java.math.BigDecimal
 
 /**
- * The Verwaltung scope's Übersicht tab.
+ * Tests the Verwaltung scope's Übersicht tab: the client-side per-account request counter across pages, and marking
+ * accounts reached only through the caller's office.
  *
- * Two things carry the weight. The per-account request counter is aggregated **client-side** from
- * the queue, which is what artboard 4's handoff asks for — so it has to survive paging and has to
- * admit when it gave up. And an account the caller reaches only through their office is marked as
- * such, which is derived by subtracting the member-visible list from the staff one.
- *
- * Robolectric rather than plain JUnit for the same reason `BankRequestsViewModelTest` is: the view
- * model logs refusals through `KrtLog`, and an unmocked `android.util.Log` throws inside
- * `viewModelScope`, whose supervisor swallows it and leaves the state stuck mid-read.
+ * Uses Robolectric because `KrtLog` reaches `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -81,17 +75,12 @@ class BankStaffViewModelTest {
             assertEquals("acc-1", sent.accountId)
             assertEquals("h1", sent.holderId)
             assertEquals("5000", sent.amount)
-            // The sheet closes on success; the dashboard is re-read rather than patched.
             assertNull(model.state.value.direct)
         }
 
     /**
-     * A `202` closes the sheet like a booking and must not read like one.
-     *
-     * Over the KRT employee ceiling the server files the attempt as an approval request instead of
-     * booking it (REQ-BANK-047, ADR-0109). The balance does not move, so a member who is told
-     * nothing finds the old figure and reads it as a fault — the one outcome on this screen that
-     * looks like success and is not.
+     * A `202` closes the sheet and raises the notice that the withdrawal was filed as an approval request, not booked
+     * (REQ-BANK-047).
      */
     @Test
     fun `a filed withdrawal raises the notice that nothing was booked`() =
@@ -148,9 +137,6 @@ class BankStaffViewModelTest {
                 it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "100000", holderId = "h1")
             }
 
-            // The default is on-top (ADR-0052): the typed figure is what the recipient RECEIVES
-            // and the account is debited the gross. The app used to show none of this and to
-            // preview the balance as if the fee did not exist.
             val open = requireNotNull(model.state.value.direct)
             assertEquals(BigDecimal("5000"), open.fee)
             assertEquals(BigDecimal("105000"), open.debited)
@@ -192,9 +178,6 @@ class BankStaffViewModelTest {
                 it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "100000", holderId = "h1")
             }
 
-            // 100 000 typed is within a 102 000 balance, but 105 000 leaves the account and the
-            // server's overdraft guard runs against that. Checking the typed figure would invite
-            // a booking the server refuses.
             assertEquals(false, model.state.value.direct?.submittable(BigDecimal("102000")))
             assertEquals(true, model.state.value.direct?.submittable(BigDecimal("110000")))
         }
@@ -239,8 +222,6 @@ class BankStaffViewModelTest {
             model.directBooking.confirm(null)
             advanceUntilIdle()
 
-            // The draft may carry the flag; what matters is that a deposit takes no fee, so the
-            // repository leaves it off the wire (asserted in BankRepositoryTest).
             assertEquals(DirectBookingKind.DEPOSIT, source.directBookings.single().kind)
             assertEquals(false, source.directBookings.single().feeApplies)
         }
@@ -261,7 +242,6 @@ class BankStaffViewModelTest {
                     holderId = "h1",
                 )
             }
-            // Validation, not a lock: the figure is simply larger than the account holds.
             assertFalse(model.state.value.direct!!.submittable(BigDecimal("100")))
             model.directBooking.confirm(BigDecimal("100"))
             advanceUntilIdle()
@@ -281,8 +261,6 @@ class BankStaffViewModelTest {
             model.directBooking.open("acc-1")
             model.directBooking.edit { it.copy(amount = "5000") }
 
-            // The server requires it too: custody is kept per org unit, so a balance without a
-            // holder is money nobody is accountable for.
             assertFalse(model.state.value.direct!!.submittable(null))
             model.directBooking.confirm(null)
             advanceUntilIdle()
@@ -406,8 +384,6 @@ class BankStaffViewModelTest {
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            // The dashboard still rendered — a decoration that could not be read must not take the
-            // screen down with it.
             assertTrue(viewModel.state.value.phase is BankPhase.Ready)
             assertTrue(viewModel.state.value.countsPartial)
         }
@@ -440,8 +416,6 @@ class BankStaffViewModelTest {
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            // Marking every row as reached-by-office would be a louder claim than the app can
-            // support from a failed read.
             assertTrue(viewModel.state.value.rows.single().viewable)
         }
 
@@ -481,8 +455,6 @@ class BankStaffViewModelTest {
             val request = bankRequest("a1")
             val state = BankConfirmState(request)
 
-            // Artboard 5 draws a bare CTA. ConfirmBankBookingRequest.holderId is @NotNull, so a
-            // bare CTA would post a body the server rejects.
             assertFalse(state.submittable)
             assertTrue(state.copy(holderId = "h1").submittable)
         }
@@ -493,7 +465,6 @@ class BankStaffViewModelTest {
             val flagged = bankRequest("a1").copy(requiresOwnerApproval = true)
             val state = BankConfirmState(flagged, holderId = "h1")
 
-            // Without it the server answers BANK_OWNER_APPROVAL_REQUIRED (REQ-BANK-041).
             assertFalse(state.submittable)
             assertTrue(state.copy(approvalAttested = true).submittable)
         }
@@ -555,8 +526,6 @@ class BankStaffViewModelTest {
             viewModel.onRejectSubmit()
             advanceUntilIdle()
 
-            // The server requires one and the requester is shown it; an empty reason would be a
-            // rejection nobody can act on.
             assertTrue(source.rejections.isEmpty())
         }
 
@@ -587,7 +556,6 @@ class BankStaffViewModelTest {
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            // An inactive holder is kept for the ledger's sake, not for a new booking.
             assertEquals(listOf("h1"), viewModel.state.value.holders.map { it.id })
         }
 

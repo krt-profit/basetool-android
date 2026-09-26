@@ -163,7 +163,6 @@ class OrdersViewModelTest {
     @Test
     fun `a status chip narrows on the server`() =
         runTest(dispatcher) {
-            // Filtering a page the server already truncated would make the stated count wrong.
             val model = OrdersViewModel(source)
             model.loadOnce()
             advanceUntilIdle()
@@ -239,12 +238,8 @@ class OrdersViewModelTest {
         }
 
     /**
-     * The queue hears the network, and hears it from the first frame.
-     *
-     * `Connectivity.online` replays its current value the moment it is collected, so a collector
-     * started before `mutableState` exists dereferences null and the app dies on its first frame.
-     * That is exactly what happened on a device, and the other tests could not see it because they
-     * leave the connectivity source out.
+     * The queue collects connectivity from the first frame without touching state that does not exist yet, since
+     * `Connectivity.online` replays its current value immediately.
      */
     @Test
     fun `the queue follows the network from the first frame`() =

@@ -130,12 +130,8 @@ data class MissionStructureActions(
 )
 
 /**
- * „+ Einheit" — the dashed action at the foot of the Einheiten list.
- *
- * Artboard 06-14 draws composing as **an action, not a form**: the tab used to open on a name
- * field, an HVU checkbox and a button, so the first thing a member met on a reading surface was
- * three controls for a write most of them may not make. The sheet it opens carries the same two
- * fields; it is simply not standing there when nobody asked for it.
+ * „+ Einheit" — the dashed action at the foot of the Einheiten list that opens the compose sheet
+ * (artboard 06-14).
  *
  * @param structure the actions, for the gate and the refusal slot.
  */
@@ -149,8 +145,6 @@ fun UnitAdd(structure: MissionStructureActions) {
             structure.denials,
         )
     KrtAssocAdd(
-        // „+ EINHEIT", not „+ EINHEIT HINZUFÜGEN": the plus already says „hinzufügen", and the
-        // artboard writes the noun alone beside it.
         text = stringResource(R.string.mission_struct_add_unit_short),
         onClick = click,
         modifier = dim.fillMaxWidth().testTag(MISSION_UNIT_ADD_TAG),
@@ -163,11 +157,7 @@ fun UnitAdd(structure: MissionStructureActions) {
 const val MISSION_UNIT_COMPOSE_TAG: String = "mission-unit-compose"
 
 /**
- * Composing an Einheit: name it, mark it, add it — in a sheet.
- *
- * The same two fields the tab used to carry permanently. E7's reasoning for the rename applies
- * unchanged to the creation: an editor standing open under a list competes with that list for the
- * same surface, and has nothing to cancel.
+ * Composing an Einheit in a sheet: name it, mark it HVU, add it.
  *
  * @param structure the actions and what is typed.
  */
@@ -192,9 +182,6 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
                 label = stringResource(R.string.mission_struct_unit_name),
                 enabled = structure.enabled,
             )
-            // A yes/no is not one-of-N, so it is a square checkbox. The round radio is the design
-            // system's only circular element and stays reserved for a real choice — the payout
-            // preference (ch. 06 artboards 3 and 10).
             KrtCheckboxRow(
                 checked = structure.draft.unitHighValue,
                 onCheckedChange = { v -> structure.onChange { it.copy(unitHighValue = v) } },
@@ -215,13 +202,8 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
 /**
  * What an Einheit carries beyond its name and its mark: ship, frequency, responsible member, note.
  *
- * All four were writable in the web and in neither half of the app — and worse than absent: the
- * unit write is a **replace**, so a rename sent without them cleared every one. They are echoed
- * now whether or not the member touches them, and these are the controls that touch them.
- *
- * The ship list is the mission's own (`/unit-ship-options`): the ships a **registered participant**
- * owns plus those already pinned to a unit. A hangar-wide list would offer ships nobody on the
- * roster can bring.
+ * The ship list is the mission's own (`/unit-ship-options`): ships owned by registered participants
+ * plus those already pinned to a unit.
  *
  * @param structure the tab's state and actions.
  */
@@ -305,12 +287,8 @@ private fun krtPlainFrequency(value: Double): String =
     java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
 
 /**
- * One Einheit's header band — artboard 06-14's `card--flush` head.
- *
- * The unit's glyph, its name, what it flies, how many are aboard, and its two manager actions as
- * icon buttons above a 2 dp orange rule. The actions used to be two full-width labelled buttons
- * under the crew, which put „EINHEIT ENTFERNEN" — the destructive one — at the bottom of a list
- * of people and about 100 dp from the unit it belonged to.
+ * One Einheit's header band (artboard 06-14): glyph, name, ship, crew count, and the two manager
+ * actions as icon buttons above a 2 dp orange rule.
  *
  * @param unit the Einheit.
  * @param structure the actions, for the gate and the refusal slot.
@@ -381,17 +359,12 @@ fun UnitHeader(
 private val UNIT_GLYPH = 18.dp
 
 /**
- * One crew slot of an Einheit — artboard 06-14's inner row.
- *
- * Its own frame inside the unit's card, because a crew slot is a record: who, whether they are
- * there, and which Funktionen they hold. Taking somebody off the Einheit is the `[→` icon button
- * at the trailing edge, not a labelled button under the chips — the row repeats, and so did the
- * word.
+ * One crew slot of an Einheit (artboard 06-14), framed inside the unit's card, with a trailing
+ * icon button that takes the member off the Einheit.
  *
  * @param unit the Einheit the slot belongs to.
  * @param member the slot.
- * @param roster the Einsatz's roster, which is where the check-in mark and the Staffel come from:
- *   the crew row carries neither, and both are facts about the **person**.
+ * @param roster the Einsatz's roster, the source of the person's check-in mark and Staffel.
  * @param structure the actions, for the gate and the refusal slot.
  */
 @Composable
@@ -404,10 +377,6 @@ fun CrewRow(
     val gate = missionManagerGate(structure.canManage)
     val (dim, click) =
         rememberGated(gate, { structure.onRemoveCrew(unit.id, member.id) }, structure.denials)
-    // Matched by name, which is what the wire gives: `MissionCrewMemberDto` carries the assigned
-    // person's display name and no participant id. `CrewAdd` already excludes candidates the same
-    // way, so the two agree — and a duplicate name would at worst borrow the wrong check-in mark,
-    // never write anything.
     val person = roster.firstOrNull { it.name == member.name }
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -450,16 +419,12 @@ fun CrewRow(
                 }
             }
             KrtIconButton(
-                // „Off board", not „delete": the person stays on the Einsatz, they just leave this
-                // Einheit. The artboard's glyph says exactly that.
                 iconRes = if (gate.allowed) DesignR.drawable.ic_krt_logout else DesignR.drawable.ic_krt_lock,
                 label = stringResource(R.string.mission_struct_remove_crew),
                 onClick = click,
                 modifier = dim,
                 enabled = structure.enabled,
             )
-            // Opening the picker is not a write, so this ⋮ is neither gated nor locked — the gate
-            // is inside, on the chips themselves, where a refusal can name the role it wants.
             KrtOverflowMenu(
                 contentDescription = stringResource(R.string.mission_detail_participant_actions),
                 expanded = menuOpen,
@@ -484,8 +449,6 @@ fun CrewRow(
             title = stringResource(R.string.mission_crew_roles),
             modifier = Modifier.testTag(MISSION_CREW_ROLE_SHEET_TAG),
         ) {
-            // Same reason as [MissionRoleSheet]: the sheet does not scroll on its own, and a
-            // CREW catalogue longer than a screen would be cut off at the bottom.
             Column(
                 modifier =
                     Modifier
@@ -513,15 +476,9 @@ fun CrewRow(
 const val MISSION_CREW_ROLE_SHEET_TAG: String = "mission-crew-role-sheet"
 
 /**
- * What this crew slot actually holds — read chips, and nothing they are not.
+ * The Funktionen this crew slot holds, as read chips; nothing when it holds none.
  *
- * **The row used to draw the whole CREW catalogue** as toggling chips, on every slot of every
- * Einheit: five Funktionen times six slots times three Einheiten, in which the ones somebody
- * actually held were four filled chips among ninety (owner decision, 2026-09-07). Assigning is one
- * tap further away now, in the row's ⋮; reading the Einheit is what the tab is for.
- *
- * Nothing is drawn for a slot with no Funktion yet. A row of nothing says it, and the ⋮ that sets
- * one is on the slot regardless.
+ * Assigning happens in the row's ⋮.
  *
  * @param member the crew slot.
  */
@@ -545,14 +502,9 @@ private const val CREW_DOT = " · "
 const val MISSION_UNIT_RENAME_TAG: String = "mission-unit-rename"
 
 /**
- * Renaming an Einheit — design ch. 18 §3 (E7).
+ * Renaming an Einheit in a one-field sheet (design ch. 18 §3, E7).
  *
- * **A sheet with one field**, the current name filled in, and „Speichern" dimmed until it actually
- * differs. Not an inline field in the row's header: a header that turns into an input has no way to
- * be cancelled, and the member is left editing something they only meant to read.
- *
- * The HVU mark is **not** in here even though the same call carries it. One field is the point, so
- * the write echoes the mark back as it stands; changing it stays where it is set.
+ * „Speichern" stays dimmed until the name differs; the HVU mark is echoed unchanged.
  *
  * @param structure the actions and what is typed.
  */
@@ -581,8 +533,6 @@ fun UnitRenameSheet(structure: MissionStructureActions) {
                 text = stringResource(R.string.mission_unit_rename_save),
                 onClick = { structure.onSaveUnit(editing, structure.draft.editingUnitVersion) },
                 modifier = Modifier.fillMaxWidth(),
-                // Dimmed until the name differs: a save that writes the value it already holds
-                // costs a round trip and a version bump for nothing, and reads as if it failed.
                 enabled = structure.enabled && !unchanged && typed.isNotBlank(),
             )
         }
@@ -590,14 +540,9 @@ fun UnitRenameSheet(structure: MissionStructureActions) {
 }
 
 /**
- * Putting somebody aboard an Einheit — „+ Person zuweisen", which artboard 2 annotates.
+ * „+ Person zuweisen" — putting somebody aboard an Einheit by tap.
  *
- * The candidates come from the **roster**, not from a server search: crew is drawn from the people
- * already signed up to this Einsatz, and they are already in hand. Anyone aboard this unit is
- * dropped from the row, so the list is what can still be done rather than what exists.
- *
- * > Artboard 2 annotates „+ Person zuweisen — antippen oder halten & ziehen" on a unit it does not
- * > draw. The tap half is built; the drag half is a gesture and round 11 asks for it.
+ * Candidates come from the Einsatz roster, minus anyone already aboard this unit.
  *
  * @param unit the Einheit.
  * @param roster everybody signed up to the Einsatz.
@@ -626,11 +571,8 @@ fun CrewAdd(
 }
 
 /**
- * The roster picker „+ Person zuweisen" opens.
- *
- * Candidates come from the **roster**, not from a server search: crew is drawn from the people
- * already signed up to this Einsatz, and they are already in hand. Anyone aboard this unit is
- * dropped, so the list is what can still be done rather than what exists.
+ * The roster picker „+ Person zuweisen" opens, listing signed-up members not already aboard this
+ * unit.
  *
  * @param unit which Einheit the picker is filling.
  * @param roster everybody signed up to the Einsatz.
@@ -662,23 +604,12 @@ fun CrewPickerSheet(
 }
 
 /**
- * One crew slot's Funktionen an Bord: the CREW catalogue as toggling chips.
+ * One crew slot's Funktionen an Bord: the `CREW` catalogue as toggling chips, drawn in the row's
+ * sheet.
  *
- * **Drawn in the row's sheet, not in the row.** It was inline until 2026-09-07, which put the whole
- * catalogue on every slot of every Einheit; the row shows what is held ([CrewRolesRead]) and the
- * catalogue is behind the ⋮, where a picker belongs.
- *
- * > **The second catalogue.** These are `CREW` job types — Pilot, Turret, Cargo, Scan, Medic — and
- * > they share their names with the `MISSION` ones a participant's Funktion comes from. Assigning
- * > from the wrong list produces a `400` that only appears on save.
- *
- * The write is a **replace**: tapping a chip sends the whole set with that one added or removed.
- *
- * Three states, ratified by design ch. 18 §3 (E7): chosen is filled orange with black text,
- * available is a hairline, and one already held by somebody else in the same Einheit is dimmed
- * **with their name behind it** — which is what turns „dim" into a reason. It is not locked: two
- * people may legitimately share a role, and the name is there so the second one is a decision
- * rather than an accident.
+ * Each tap sends the whole set (a replace). Chosen chips are filled orange, available ones a
+ * hairline, and one held by somebody else in the same Einheit is dimmed with that holder's name
+ * but stays selectable (design ch. 18 §3, E7).
  *
  * @param unitId which Einheit.
  * @param member the crew slot.
@@ -694,9 +625,6 @@ fun CrewRoleSelect(
 ) {
     val gate = missionManagerGate(structure.canManage)
     if (structure.crewJobTypes.isEmpty()) {
-        // An organisation that has defined no CREW types gets a sentence rather than an empty row.
-        // The Funktionen are admin-maintained Stammdaten with no seed, so this is an ordinary state
-        // and not a failure.
         Text(
             text = stringResource(R.string.mission_crew_roles_empty),
             style = MaterialTheme.typography.bodySmall,
@@ -765,11 +693,7 @@ fun FrequencyAdd(structure: MissionStructureActions) {
 const val MISSION_FREQ_COMPOSE_TAG: String = "mission-freq-compose"
 
 /**
- * Composing a frequency — two fields, in a sheet.
- *
- * The Frequenzen tab is a **reading** surface: on the evening of an Einsatz it is opened to copy a
- * number, and it used to open on two empty inputs above the numbers. Same move as the Einheit's
- * composer, and the same reason (design ch. 18 §3, E7).
+ * Composing a frequency in a sheet with two fields (design ch. 18 §3, E7).
  *
  * @param structure the actions and what is typed.
  */
@@ -794,10 +718,6 @@ fun FrequencyComposeSheet(structure: MissionStructureActions) {
                 label = stringResource(R.string.mission_struct_freq_name),
                 enabled = structure.enabled,
             )
-            // Three digits before the point and two after — the server validates `@Digits(3, 2)`
-            // and refused every value the chapter drew (round 14 · S5; G15 asks for the column to
-            // be widened). Saying the shape in a helper and holding the CTA is the honest half the
-            // app can do: a refusal that arrives after the tap teaches nobody the rule.
             KrtTextField(
                 value = structure.draft.freqValue,
                 onValueChange = { v -> structure.onChange { it.copy(freqValue = v) } },
@@ -817,12 +737,7 @@ fun FrequencyComposeSheet(structure: MissionStructureActions) {
 }
 
 /**
- * Where a structure write's refusal is said out loud.
- *
- * `MissionStructureDraft.error` was set on every failed Einheit, crew and frequency write and
- * **rendered nowhere**: a 403, a 409 or a dropped connection left the sheet standing open with the
- * button still lit, which reads as a tap that did not register. Found on the device — adding a
- * frequency did nothing, twice, with nothing on screen and nothing in the log.
+ * Shows the refusal of a failed Einheit, crew or frequency write.
  *
  * @param structure the actions, for the draft that carries the refusal.
  */
@@ -870,13 +785,9 @@ internal fun missionManagerGate(canManage: Boolean): Gate =
     )
 
 /**
- * Whether this is a frequency the server will take.
+ * Whether this is a frequency the server accepts: at most three integer digits and two decimals.
  *
- * `MissionFrequencyDto.value` is validated `@Digits(integer = 3, fraction = 2)`, so „148.500" —
- * the value the chapter draws — is refused: three integer digits and two decimals is the whole
- * range. Checked here so the CTA stays dark rather than the refusal arriving after the tap.
- *
- * @receiver what was typed; a comma counts as a decimal point, as it does everywhere else.
+ * @receiver what was typed; a comma counts as a decimal point.
  * @return whether the server would accept it.
  */
 private fun String.krtIsFrequency(): Boolean {

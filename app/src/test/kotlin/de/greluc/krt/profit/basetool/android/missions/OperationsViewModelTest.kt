@@ -35,11 +35,8 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * The Operationen list's rules.
- *
- * The two that carry a scar: the list must not load until the segment is actually opened, and the
- * search field must hold what was typed rather than what was last sent — the second is the defect
- * that shipped on the Einsatz list and was only found on a device.
+ * Tests the Operationen list: it does not load until the segment is opened, and the search field holds what was typed
+ * rather than what was last sent.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -119,8 +116,6 @@ class OperationsViewModelTest {
     @Test
     fun `nothing is read until the segment is opened`() =
         runTest(dispatcher) {
-            // The list lives behind a segment. A member who never taps "Operationen" must not pay
-            // a request for it on every app start.
             source.queue(ApiResult.Success(page(operation("o1"))))
             viewModel()
 
@@ -147,9 +142,6 @@ class OperationsViewModelTest {
     @Test
     fun `the search field holds what was typed, before the debounce elapses`() =
         runTest(dispatcher) {
-            // The field is a controlled component. Binding it to the debounced term feeds the old
-            // value back and every character vanishes as it is typed -- measured on a device on
-            // the Einsatz list, and the reason this assertion exists here from the start.
             source.queue(ApiResult.Success(page(operation("o1"))))
             val model = viewModel()
             model.loadOnce()
@@ -183,7 +175,6 @@ class OperationsViewModelTest {
     @Test
     fun `a status chip narrows immediately`() =
         runTest(dispatcher) {
-            // A tapped chip is one deliberate act and should feel instant; only typing is debounced.
             source.queue(ApiResult.Success(page(operation("o1"))))
             val model = viewModel()
             model.loadOnce()
@@ -234,8 +225,6 @@ class OperationsViewModelTest {
     @Test
     fun `a failed first page is reported as a failure and not as an empty list`() =
         runTest(dispatcher) {
-            // "Nothing is planned" and "the app could not ask" are different facts, and the second
-            // must never be shown as the first.
             source.queue(ApiResult.Failure(ApiError.Network(IOException("offline"))))
             val model = viewModel()
 
@@ -248,8 +237,6 @@ class OperationsViewModelTest {
     @Test
     fun `reset clears the field as well as the filter`() =
         runTest(dispatcher) {
-            // Clearing only the query would leave the old term visible and restore it on the next
-            // keystroke, from a value the member can no longer see.
             source.queue(ApiResult.Success(page(operation("o1"))))
             val model = viewModel()
             model.loadOnce()

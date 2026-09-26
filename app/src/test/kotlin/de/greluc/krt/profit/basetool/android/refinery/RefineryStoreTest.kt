@@ -13,12 +13,8 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
- * The two rules of the Einlagern form that a wrong reading breaks silently.
- *
- * A run can yield the same material at two grades, and keying a line on the material alone made
- * them one — Compose rejected the duplicate list key outright, and before it did, editing one line
- * edited both. And `personal` excludes a job order on the server (400), so the pair must never be
- * assembled in the first place.
+ * Tests the Einlagern form: two grades of one material stay separate lines, and `personal` is never combined with a job
+ * order.
  */
 class RefineryStoreTest {
     private fun line(
@@ -35,8 +31,6 @@ class RefineryStoreTest {
 
     @Test
     fun `the same material at two grades is two lines`() {
-        // Agricium at 733 and Agricium at 874 come out of one run. Keyed on the material alone they
-        // collide, which Compose treats as a fatal duplicate key.
         assertNotEquals(line(quality = 733).key, line(quality = 874).key)
     }
 
@@ -48,8 +42,6 @@ class RefineryStoreTest {
 
     @Test
     fun `a personal line carries no job order`() {
-        // The server answers 400 for the pair. Clearing the order when personal is ticked means the
-        // combination cannot be sent, so the rule never arrives as an unexplained refusal.
         val personal = line().copy(jobOrderId = "job-1").copy(personal = true, jobOrderId = null)
         assertEquals(null, personal.jobOrderId)
     }

@@ -147,12 +147,9 @@ class MaterialBoardRepositoryTest {
 
             val item = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows[1]
 
-            // An item names itself in itemName/itemQuantity, not in material/amount. Reading only
-            // the material fields would render every item row blank with an empty amount.
             assertEquals("Size 3 Shield", item.materialName)
             assertEquals("6", item.amount)
             assertTrue(item.unitIsPiece)
-            // The caller's own row: no „Ich kann liefern", because the server refuses it.
             assertFalse(item.canSignal)
             assertEquals(listOf("Vex"), item.interestedHandles)
         }
@@ -164,8 +161,6 @@ class MaterialBoardRepositoryTest {
 
             val other = (repository.board(BoardSide.OFFERS) as ApiResult.Success).value.rows[0]
 
-            // REQ-MARKET-006: the server sends the handles only to the owner. Rendering an empty
-            // list instead of nothing would imply nobody had answered.
             assertNull(other.interestedHandles)
         }
 
@@ -192,8 +187,6 @@ class MaterialBoardRepositoryTest {
 
             val updated = (repository.setInterest(entry, interested = true) as ApiResult.Success).value
 
-            // In place, not by re-reading: the count, the caller's flag and the version move
-            // together, and a page re-read would scroll the member back to the top.
             assertTrue(updated.viewerInterested)
             assertEquals(PLEDGES_AFTER, updated.interestCount)
             assertEquals(VERSION_AFTER, updated.version)
@@ -225,8 +218,6 @@ class MaterialBoardRepositoryTest {
 
             repository.withdraw(entry)
 
-            // The two halves are different families. One shared path builder is exactly where a
-            // request would end up deactivating an offer with the same id.
             assertTrue(server.takeRequest().target.endsWith("/api/v1/material-requests/q1/deactivate"))
         }
 
@@ -240,8 +231,6 @@ class MaterialBoardRepositoryTest {
             val body = server.takeRequest().body?.utf8().orEmpty()
             assertTrue(body.contains("\"inventoryItemId\":\"i1\""))
             assertTrue(body.contains("\"offeredAmount\":12.5"))
-            // A blank remark is dropped rather than sent as an empty string, which the server
-            // would store and every reader would render as a note that says nothing.
             assertFalse(body.contains("\"remark\""))
         }
 

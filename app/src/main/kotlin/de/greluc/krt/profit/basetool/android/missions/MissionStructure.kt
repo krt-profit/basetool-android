@@ -28,27 +28,18 @@ private const val LOG_TAG = "MissionStructure"
  *   [editingUnitId] names a unit.
  * @property unitHighValue whether it is to be flagged HVU.
  * @property unitFields what a new Einheit carries beyond its name and its mark.
- * @property composingUnit whether the „Einheit hinzufügen" sheet is open. Design ch. 18 §3 (E7)
- *   keeps composing out of the list itself, and artboard 06-14 replaced the permanent form above
- *   the Einheiten with a dashed „+ Einheit" at their foot.
- * @property editingUnitId the Einheit being renamed, or `null` while composing a new one. One set
- *   of fields serves both, because only one Einheit can be edited at a time and a second pair would
- *   only be a second thing to keep in sync.
+ * @property composingUnit whether the „Einheit hinzufügen" sheet is open.
+ * @property editingUnitId the Einheit being renamed, or `null` while composing a new one.
  * @property editingUnitVersion that Einheit's optimistic lock as last read, echoed by the rename.
- * @property editingUnitOriginalName the name the rename sheet opened on, so „Speichern" can stay
- *   dimmed until the typed value actually differs from it (design ch. 18 §3, E7).
- * @property editingUnitHighValue that Einheit's HVU mark as it stands, echoed by the rename — the
- *   sheet carries one field, and the call carries both.
+ * @property editingUnitOriginalName the name the rename sheet opened on; „Speichern" stays dimmed
+ *   until the typed value differs.
+ * @property editingUnitHighValue that Einheit's HVU mark as it stands, echoed by the rename.
  * @property crewRolesFor the crew slot whose Funktionen are open for editing, as
  *   `unitId to crewId`, or `null`.
- * @property crewPickerUnitId the Einheit whose roster picker is open, or `null`. „+ Person
- *   zuweisen" is one surface that opens a picker (design ch. 06 artboard 14), not a chip
- *   field over the whole roster — that grows with the roster and is four rows high at
- *   fourteen names on a 412 dp phone.
+ * @property crewPickerUnitId the Einheit whose „+ Person zuweisen" picker is open, or `null`.
  * @property freqName the new frequency's label, as typed.
  * @property freqValue the frequency itself, as typed.
- * @property composingFrequency whether the „Frequenz hinzufügen" sheet is open — same move as
- *   [composingUnit], and for the same reason: the tab is read to copy a number.
+ * @property composingFrequency whether the „Frequenz hinzufügen" sheet is open.
  * @property busy whether a write is running.
  * @property error the last refusal.
  */
@@ -74,22 +65,13 @@ data class MissionStructureDraft(
 /**
  * The Einsatz's structure: its Einheiten, who is aboard them, its radio plan, its leadership.
  *
- * > **These surfaces have no artboard.** Chapter 06 draws the Einheiten and Frequenzen tabs as
- * > *reading* surfaces — „+ Person zuweisen" is annotated on artboard 2 but the Einheit that holds
- * > it is not drawn, and nothing draws adding a frequency, a manager or a party lead. This is
- * > composed from the design system's own drawn parts and its **composition is unratified**; round
- * > 10 asks for the drawing.
- *
  * @property missionId the Einsatz.
  * @property structure where the Einheit, crew and frequency writes go.
- * @property admin where the leadership writes go — a different seam, because they edit the
- *   Einsatz's own record rather than what it is made of.
+ * @property admin where the leadership writes go, which edit the Einsatz's own record.
  * @property scope the view model's scope.
  * @property read what is typed, and the Einsatz as last read.
- * @property write reports the draft back, together with the Einsatz a successful write answers
- *   with. **Every** structure write answers with the whole Einsatz — the `/slim` variants answer
- *   with the narrow object instead, which is why these use the plain endpoints: the screen swaps one
- *   object rather than writing and then re-reading.
+ * @property write reports the draft back, together with the whole Einsatz each structure write
+ *   answers with.
  */
 class MissionStructure(
     private val missionId: String,
@@ -122,14 +104,8 @@ class MissionStructure(
     /**
      * Renames an Einheit, flips its HVU mark, or sets what it carries.
      *
-     * **The endpoint is a replace, and it replaces everything.** `UpdateUnitRequest` carries the
-     * ship type, the ship, the frequency, the responsible member and the note beside the name and
-     * the flag, and the server writes each of them unconditionally — an omitted one is set to
-     * `null`. So the app's rename, which sent name and flag alone, **wiped all five** every time
-     * somebody corrected a typo, and every one of them had been set from the web.
-     *
-     * Whatever the form does not edit is therefore echoed from [fields], the same way the mission's
-     * Kern section echoes its calendar link.
+     * The endpoint replaces every field and nulls an omitted one, so whatever the form does not edit
+     * must be echoed from [fields].
      *
      * @param unitId which one.
      * @param name what it is now called.
@@ -210,11 +186,6 @@ class MissionStructure(
         participantId: String,
     ) {
         val (draft, _) = read()
-        // No roles at assignment: the CREW catalogue is a second, differently-archetyped list, and
-        // the drawn flow puts somebody aboard first and gives them their Funktionen from the crew
-        // row's own toggle chips afterwards (ch. 06 artboard 14). The server accepts an empty set.
-        //
-        // The picker closes with the write: it is a pick, not a multi-select.
         run(draft.copy(crewPickerUnitId = null)) {
             structure.addCrew(missionId, unitId, participantId, emptySet())
         }
@@ -340,8 +311,6 @@ class MissionStructure(
         scope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    // The fields clear on success and only on success: a refusal that emptied them
-                    // would make the member type it all again to find out what was wrong.
                     write(MissionStructureDraft(), result.value)
                 }
 

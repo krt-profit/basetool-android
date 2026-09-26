@@ -107,31 +107,12 @@ import kotlinx.coroutines.launch
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * The single activity of the app.
+ * The single activity of the app; the navigation graph owns every screen.
  *
- * Single-activity by design: the navigation graph owns every screen, which is what lets the back
- * rules of the design specification hold — per-destination back stacks, back from a root returning
- * to Übersicht, and back on Übersicht simply finishing the activity.
- *
- * It also owns the auth gate, and the four session states are kept apart deliberately.
- * [SessionState.Unknown] is the moment before `restore()` has answered — showing a login screen
- * there would flash it in front of a member who is signed in. [SessionState.Stale] means a stored
- * session that could not be proven right now, a tunnel rather than a logout, so it must never ask
- * for a password (ADR-0004); today it falls to the login screen with its own message, and gets its
- * proper retry surface with the chapter-14 system states.
- *
- * A session is **not** admission, so [SessionState.SignedIn] hands off to [AccountGate] rather than
- * straight to the app: the backend refuses every gated endpoint while a registration is unapproved,
- * and a dashboard composed on top of that would fire a screenful of requests only to paint their
- * failures. The gate composes the app only once the member is cleared.
- *
- * Edge-to-edge is enabled before `super.onCreate` so the very first frame already draws behind the
- * system bars; at targetSdk 36 and above the platform enforces it anyway and there is no opt-out.
- *
- * It is an `AppCompatActivity` — a `FragmentActivity` (which `BiometricPrompt` needs) with
- * AppCompat's delegate around it. The delegate is what applies a per-app language below API 33,
- * where the platform has no `LocaleManager`; without it the Sprache setting would take effect on
- * Android 13+ and silently do nothing on the two versions above the minSdk floor (ADR-0007).
+ * It hosts the auth gate: [SessionState.Unknown] shows no login screen, [SessionState.Stale] never
+ * asks for a password (ADR-0004), and [SessionState.SignedIn] hands off to [AccountGate]. Edge-to-edge
+ * is enabled before `super.onCreate`. An `AppCompatActivity` so `BiometricPrompt` works and the
+ * per-app language applies below API 33 (ADR-0007).
  */
 class MainActivity : AppCompatActivity() {
     /**
@@ -144,13 +125,7 @@ class MainActivity : AppCompatActivity() {
         get() = (application as BasetoolApplication).auth
 
     /**
-     * The four view models, held by the **ViewModelStore** rather than by the activity instance.
-     *
-     * A configuration change recreates the activity but not its view-model store, so the lock stays
-     * open, a login in flight stays in flight and the approval poll keeps its state. With plain
-     * `by lazy` fields all four were rebuilt from scratch on every recreate — which nothing
-     * exercised while the single activity was never recreated, and which the language switch turned
-     * into an everyday event.
+     * The four view models, held by the ViewModelStore so they survive an activity recreate.
      */
     private val loginViewModel: LoginViewModel by viewModels { authViewModels(container) }
     private val gateViewModel: AccountGateViewModel by viewModels { authViewModels(container) }
@@ -230,9 +205,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         followScreenCapturePreference()
         lockViewModel.start()
-        // The redirect routinely arrives on a COLD start: the process is killed behind the Custom
-        // Tab often enough that handling it only in onNewIntent would lose every login on a device
-        // under memory pressure.
         loginViewModel.completeLogin(CustomTabLauncher.redirectOf(intent)?.toString())
         setContent {
             KrtTheme {
@@ -242,12 +214,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Everything the activity renders, extracted so `onCreate` stays a lifecycle method.
+     * Everything the activity renders, as the gate chain lock, session, approval, terms, app.
      *
-     * The gate order is the shape of the app and is easiest to read in one place: **lock → session
-     * → approval → terms → app**. Each gate takes the next as a lambda rather than drawing it
-     * underneath, so a blocked stage never composes the one behind it and starts loads against
-     * endpoints that are about to refuse them.
+     * Each gate composes the next as a lambda, so a blocked stage never composes the one behind it.
      */
     @Composable
     private fun Content() {
@@ -259,34 +228,18 @@ class MainActivity : AppCompatActivity() {
         val scope = rememberCoroutineScope()
         val signOut: () -> Unit = {
             scope.launch {
-                // The local wipe happens inside logout() and does not depend on the
-                // browser; the URL only ends the realm's SSO cookie, without which the
-                // next login silently reuses the browser session.
                 container.logout()?.let { endSession ->
                     CustomTabLauncher.launch(this@MainActivity, endSession)
                 }
             }
         }
 
-        // Held in state so the segmented control moves on tap rather than a frame later: the
-        // platform recreates the activity right after, and the recreated one reads the store.
         var language by remember { mutableStateOf(LanguageSetting.current()) }
 
         val lockArmed by container.appLockArmed.collectAsState(initial = false)
-        // Initial `true` so the switch never renders as "allowed" for the frames before the store
-        // answers — the same fail-closed ordering the window flag itself uses.
         val captureBlocked by screenCapturePreference.blocked.collectAsState(initial = true)
-        // Queried once per composition rather than per frame: enrolling a fingerprint
-        // takes the member out of the app, so the answer cannot change under them.
         val lockAvailable = remember { BiometricGate.isAvailable(this@MainActivity) }
 
-        // Outermost gate: the lock protects what is already on the device, so it runs
-        // ahead of the session and the account gate rather than waiting on either.
-        // The version wall stands outside every other gate, and the endpoint behind it is
-        // anonymous for the same reason (server REQ-API-010): when the breaking change is in the
-        // auth flow itself, the old build cannot sign in, so a wall placed behind the session
-        // would never appear for the one case it exists for. Nothing is wiped -- chapter 14 keeps
-        // cached data through an update wall.
         UpdateGate(
             viewModel = updateGateViewModel,
             onOpenReleases = { CustomTabLauncher.launch(this@MainActivity, it) },
@@ -297,15 +250,6 @@ class MainActivity : AppCompatActivity() {
                 activity = this@MainActivity,
                 onSignOut = signOut,
             ) {
-                // Inside the gate, not above it: the stored refresh token is sealed by the lock, so a
-                // restore attempted while locked reads nothing and settles the session on "signed out"
-                // — leaving a member with a perfectly good session staring at the login screen after
-                // every unlock. Composed here it runs once the lock is open, and with no lock armed
-                // this content composes immediately, so nothing changes for anyone who has not enabled
-                // it.
-                //
-                // Guarded on Unknown so a background re-lock does not spend a refresh round trip (and
-                // a rotation of the realm's refresh token) every time the member comes back.
                 LaunchedEffect(Unit) {
                     if (container.session.state.value is SessionState.Unknown) {
                         container.session.restore()
@@ -319,18 +263,8 @@ class MainActivity : AppCompatActivity() {
                             accountName = current.claims?.preferredUsername,
                             onLogout = signOut,
                         ) {
-                            // After the approval gate, before the app: the backend enforces the
-                            // same order, and a member still awaiting approval has nothing to consent
-                            // to yet.
                             TermsGate(viewModel = termsViewModel, onDecline = signOut) {
-                                // Behind the terms gate on purpose: the memberships read needs a
-                                // cleared account, and asking earlier would spend a refused request
-                                // on every start for a member who is still waiting for approval.
                                 LaunchedEffect(Unit) { orgUnitViewModel.load() }
-                                // Behind the same two gates, and for a related reason: a
-                                // system permission dialog in front of somebody who may not
-                                // have an account yet is a question they cannot answer
-                                // usefully.
                                 RequestNotificationPermissionOnce()
                                 val orgUnit by orgUnitViewModel.state.collectAsState()
                                 val memberPreferences by
@@ -341,9 +275,6 @@ class MainActivity : AppCompatActivity() {
                                     missions = missionsViewModel,
                                     missionDetail = {
                                         MissionDetailViewModel(
-                                            // The read and admin seams are the same repository
-                                            // object; they differ in what a caller has to depend
-                                            // on, not in what serves them.
                                             MissionSeams(
                                                 read = container.missions,
                                                 admin = container.missions,
@@ -373,18 +304,12 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
-                                            // Only bank staff may reverse, read through the
-                                            // office or pull a report, and the server says whether
-                                            // this caller is; the screen just draws it.
                                             staff =
                                                 BankStaffSeams(
                                                     reversals = container.bankStaff,
                                                     account = container.bankStaff,
                                                     reports = container.bankStaff,
                                                 ),
-                                            // A bank employee reads the account through the office:
-                                            // the member path answers 403 for an account they hold
-                                            // no view grant on but are responsible for.
                                             throughTheOffice = {
                                                 container.identity.known?.bankEmployee == true
                                             },
@@ -438,10 +363,6 @@ class MainActivity : AppCompatActivity() {
                                     materialDemand = { MaterialDemandViewModel(container.materialDemand) },
                                     blueprints =
                                         BlueprintOverviewBindings(
-                                            // `null` before the first /me lands reads as "not
-                                            // allowed", which locks the row rather than opening a
-                                            // screen the server would refuse. It unlocks on the
-                                            // next composition once the identity is known.
                                             allowed =
                                                 container.identity.known?.blueprintOverview == true,
                                             build = {
@@ -477,9 +398,6 @@ class MainActivity : AppCompatActivity() {
                                             container.liveSync,
                                             RefineryDetailSeams(
                                                 store = container.refinery,
-                                                // The roster behind the receiver picker. Shares
-                                                // /users/search with the Lager's own member
-                                                // picker: one question, one list.
                                                 roster = container.inventory,
                                                 delete = container.refinery,
                                                 identity = container.identity,
@@ -519,11 +437,6 @@ class MainActivity : AppCompatActivity() {
                                             },
                                             onAppLockChange = { wanted ->
                                                 if (wanted) {
-                                                    // Arming raises the same prompt as unlocking: the
-                                                    // key is auth-per-use, so Keystore will not encrypt
-                                                    // with it unattended. It also means a lock is only
-                                                    // ever armed by somebody who just proved they can
-                                                    // open it.
                                                     scope.launch {
                                                         lockViewModel.prepareArm()?.let { cipher ->
                                                             BiometricGate.prompt(
@@ -562,19 +475,6 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     is SessionState.Stale -> {
-                        // NOT the login screen. A stale session is a stored one that could not be
-                        // proven right now — a tunnel, not a logout (ADR-0004) — and the token is
-                        // still on disk. Asking for a password here throws away a working session
-                        // over a dropped connection, and the member has no way to tell that is what
-                        // happened: the login screen carries no explanation at all.
-                        //
-                        // The screen promises „sobald wieder Netz da ist, geht es ohne Passwort
-                        // weiter", and this is what makes that true rather than decoration: until
-                        // now the only way out was the button, so a member who put the phone down
-                        // came back to the same error over a connection that had long since
-                        // returned. The flow emits its current value on collection, so the first
-                        // emission is itself a retry; the session's mutex keeps this from racing a
-                        // refresh some other caller already has in flight.
                         LaunchedEffect(Unit) {
                             container.connectivity.online.collect { online ->
                                 if (online) {
@@ -600,10 +500,6 @@ class MainActivity : AppCompatActivity() {
                         LoginScreen(
                             state = login,
                             onSignIn = { loginViewModel.startLogin(this@MainActivity) },
-                            // Both were empty stubs until the settings chapter gave the app a
-                            // place to put the same documents. They matter MORE here than there: the
-                            // privacy notice has to be reachable before any processing starts, and
-                            // processing starts with the sign-in tap.
                             onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
                             onOpenImprint = { openWebPage(IMPRINT_PATH) },
                             versionName = version.versionName.orEmpty(),
@@ -617,12 +513,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Opens one of the web app's public pages in a Custom Tab.
-     *
-     * These three documents are served by the web frontend without a session and are the SAME
-     * texts the web app shows, which is the point: a member reading the privacy notice in the app
-     * and one reading it in a browser must not be reading two different documents that drift apart.
-     * A Custom Tab rather than a WebView, for the reasons in [CustomTabLauncher].
+     * Opens one of the web app's public pages in a Custom Tab, so the app shows the same documents as
+     * the web.
      *
      * @param path the page's path, including the leading slash
      */
@@ -631,15 +523,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Applies the member's screen-capture choice to this window.
+     * Applies the member's screen-capture choice to this window, app-wide.
      *
-     * App-wide, not only on authenticated screens: the design chapter fixes it that way and the
-     * security concept repeats it, because the capture that matters is the one nobody takes
-     * deliberately — the recents thumbnail the system grabs when the app leaves the foreground,
-     * which then sits in the launcher.
-     *
-     * Google's own figures put its effectiveness near 70 % at API 30 and below, so this is
-     * hardening rather than a guarantee, and nothing else may be justified by its presence.
+     * It also covers the recents thumbnail. This is hardening, not a guarantee.
      *
      * @param blocked `true` to set `FLAG_SECURE`, `false` to clear it.
      */
@@ -652,15 +538,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Sets `FLAG_SECURE` immediately, then relaxes it only if the member has asked for that.
+     * Sets `FLAG_SECURE` immediately and relaxes it only once the stored choice allows it.
      *
-     * **The order is the safety property.** Reading the preference is asynchronous, so waiting for
-     * it would leave the first frames — and any recents thumbnail taken in that window —
-     * unprotected. Starting blocked and relaxing afterwards means the worst case of a slow or
-     * failed read is a screenshot that does not work, never one that silently does.
-     *
-     * The collection keeps running for the activity's life, so a change made in Einstellungen
-     * takes effect on the spot rather than at the next start.
+     * A slow or failed read therefore leaves capture blocked. The preference is collected for the
+     * activity's lifetime, so a change applies at once.
      */
     private fun followScreenCapturePreference() {
         applyScreenCapture(blocked = true)
@@ -703,11 +584,7 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         /**
-         * Registers the bank's three view models.
-         *
-         * Split out because the bank alone now carries a member list, a request surface and a
-         * staff surface, and three initializers with the comment that explains the third were
-         * enough to push the factory past its length budget.
+         * Registers the bank's three view models: member list, requests and staff surface.
          *
          * @param container the auth object graph.
          */
@@ -718,23 +595,14 @@ class MainActivity : AppCompatActivity() {
                     container.bankStaff,
                     container.bankStaff,
                     container.bankStaff,
-                    // „Einheit (vorbelegt)" is the caller's pinned context. A caller who has
-                    // pinned ALL units has no single answer, and the store reports null there
-                    // rather than picking one — so the creation is refused instead of guessed.
                     container.activeOrgUnit::current,
                 )
             }
             initializer {
                 BankStaffViewModel(
                     container.bankStaff,
-                    // The member-visible list is what makes "ohne eigenen View-Grant"
-                    // answerable: an account on the staff list but not on this one is one the
-                    // caller reaches only through their office.
                     container.bank::balances,
                     container.liveSync,
-                    // The same repository as the first argument: it implements BankGrantSource
-                    // too, and the counterparty picker reads the same /users/search-bank the
-                    // Grants tab does.
                     container.bankStaff,
                     container.orgUnits,
                 )
@@ -742,9 +610,6 @@ class MainActivity : AppCompatActivity() {
             initializer {
                 BankRequestsViewModel(
                     container.bank,
-                    // The sheet's account picker is the Konten list; reading it through
-                    // the same call keeps the two from ever disagreeing about which
-                    // accounts exist or what a member may raise a request against.
                     container.bank::balances,
                     container.connectivity,
                     container.liveSync,

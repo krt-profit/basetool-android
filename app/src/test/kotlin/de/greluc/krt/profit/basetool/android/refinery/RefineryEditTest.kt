@@ -35,13 +35,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * „Raffinerieauftrag bearbeiten" — design ch. 11 artboard 6 (`REQ-APP-REF-011`).
+ * Tests „Raffinerieauftrag bearbeiten" (design ch. 11, artboard 6, REQ-APP-REF-011): the pre-filling read, the
+ * `version` echo, and the lock a booked run puts on its core.
  *
- * The edit is the create form pre-filled, so what is worth pinning is the part that is *not* the
- * create: the read that fills it, the `version` echo, and the lock a booked run puts on its core.
- *
- * Robolectric because the failure paths log, and an unmocked `android.util.Log` throws inside
- * `viewModelScope` where nothing reports it — the write then looks as though it had succeeded.
+ * Uses Robolectric because the failure paths log through `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -130,13 +127,7 @@ class RefineryEditTest {
         }
 
     /**
-     * A goods line keeps its identity through an edit and through the removal of the line above it.
-     *
-     * The form's list is keyed by [RefineryGoodDraft.key]. Keyed by position — which it was until
-     * 2026-09-22 — removing the first of two lines gave the surviving line the first line's slot and
-     * whatever that slot remembered. The key only helps if the ViewModel's edits carry it along, so
-     * that is what is pinned: a fresh line gets a key of its own, `copy` keeps it, and removing a
-     * neighbour leaves it untouched.
+     * A goods line keeps its [RefineryGoodDraft.key] through an edit and through the removal of the line above it.
      */
     @Test
     fun aGoodsLineKeepsItsKeyThroughAnEditAndARemovalAboveIt() =
@@ -185,9 +176,6 @@ class RefineryEditTest {
 
             model.onInputMaterialPicked(0, RefineryInputMaterial("raw-ine", "Inert Materials"))
 
-            // `RefineryOrderService.resolveGood` falls back to the input material itself. Drawing
-            // an em dash here would be the web form's answer and a different one from the server's,
-            // so the screen would name nothing for a good that will be stored under a real name.
             val line = model.state.value.draft.goods.first()
             assertEquals("raw-ine", line.outputMaterialId)
             assertEquals("Inert Materials", line.outputMaterialName)
@@ -207,9 +195,6 @@ class RefineryEditTest {
 
             model.onInputMaterialTyped(0, "Agri")
 
-            // A stale id under a new label is the one thing a picker must never send, and an
-            // output still naming the old ore's product would say the run yields something it
-            // no longer takes in.
             val line = model.state.value.draft.goods.first()
             assertNull(line.inputMaterialId)
             assertNull(line.outputMaterialId)
@@ -307,8 +292,6 @@ class RefineryEditTest {
     private fun detailState(status: RefineryServerStatus): RefineryDetailState =
         RefineryDetailState(
             orderId = "r1",
-            // The fixture run belongs to the caller: ownership is what `deletable` now also asks,
-            // and the cases that do NOT own it say so explicitly above.
             myUserId = "u1",
             order =
                 RefineryOrder(

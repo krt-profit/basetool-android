@@ -1,29 +1,5 @@
 name: CI
 
-# The gate every pull request has to pass: the app has to build, its tests have
-# to be green, and every static-analysis tool the project runs has to be clean.
-#
-# `./gradlew build` is deliberately the whole of it rather than a hand-picked
-# task list. It is `assemble` + `check`, so it covers the three shipped-or-run
-# variants (devDebug, prodDebug, prodRelease with its R8 pass — devRelease is
-# disabled in app/build.gradle.kts because nothing ships it), the unit and
-# Robolectric suites, Android Lint with `warningsAsErrors`, detekt and
-# Spotless/ktlint — and it is the exact command a contributor runs locally.
-# A CI-only task list is how CI and the working copy drift apart.
-#
-# `--continue` so a failing test still produces the lint reports and vice
-# versa: one run should report every problem, not the first one.
-#
-# Android Lint results are uploaded as SARIF into GitHub code scanning, which
-# is what makes a lint regression visible in the PR's "Files changed" tab
-# instead of only in a log nobody opens. Fork PRs get a read-only token by
-# design, so that upload is skipped for them rather than failing.
-#
-# Blocking is enforced via branch protection in repository settings: the check
-# names ("CI / Build, Test & Lint" and "CI / Workflow lint") must be marked as
-# required status checks against `main` AFTER this workflow has run at least
-# once on main, so the names are known to GitHub.
-
 on:
   push:
     branches: [main]
@@ -46,23 +22,14 @@ jobs:
 
     permissions:
       contents: read
-      # Only for the Android Lint SARIF upload below; the step is skipped on
-      # fork PRs, where GitHub issues a read-only token regardless.
       security-events: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          # Nothing here pushes, and a checkout that leaves the token in
-          # .git/config hands it to every later step and to any build script
-          # that reads it (zizmor's `artipacked`).
           persist-credentials: false
 
-      # JDK 25, the SDK licences with no packages, wrapper validation and setup-gradle — one
-      # composite so the pins live in one place (.github/actions/android-build-env). Branch builds
-      # read the Gradle cache but never write it: a cache entry written by a PR run is one an
-      # attacker's PR could have poisoned (zizmor's `cache-poisoning`).
       - name: Set up the Android build environment
         uses: $/.github/actions/android-build-env
         with:
@@ -71,13 +38,6 @@ jobs:
       - name: Build, test and lint
         run: ./gradlew build --continue --stacktrace
 
-      # Only the app module's report is uploaded, and that is not a narrowing:
-      # `:app` runs lint with `checkDependencies = true`, so its run already
-      # covers every library module's sources. The per-module reports exist too,
-      # but code scanning rejects several SARIF runs under one category
-      # (changelog 2025-07-21) and giving each module its own category would
-      # duplicate the module list into this workflow, where it would drift.
-      # Every module's own lint task still runs and still fails the build.
       - name: Collect the Android Lint SARIF report
         id: lint_sarif
         if: always()
@@ -93,24 +53,19 @@ jobs:
           echo "count=$found" >> "$GITHUB_OUTPUT"
 
       - name: Upload Android Lint results to code scanning
-        # Fork PRs cannot write security events; skipping beats a red step that
-        # says nothing about the code.
-        # Skipped when the build died before lint ran — uploading an empty
-        # directory fails the step and reports the same root cause twice.
-        # Skipped on fork PRs too, where the token cannot write security events.
         if: >-
           always() &&
           steps.lint_sarif.outputs.count != '0' &&
           (github.event_name != 'pull_request' ||
            github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd
         with:
           sarif_file: build/sarif
           category: android-lint
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-reports
           path: |
@@ -119,11 +74,9 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      # Only on failure: the HTML reports are large and, when the run is green,
-      # nobody reads them.
       - name: Upload static-analysis reports
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: analysis-reports
           path: |
@@ -132,9 +85,6 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-  # Keeps GitHub's dependency graph current, which is what the release job exports its SBOM from
-  # (DEV_CI § 4). Main only: a submission from a pull request would write a fork's graph into this
-  # repository's, and a graph nobody can trust is worse than none.
   dependency-graph:
     name: Submit the dependency graph
     runs-on: ubuntu-latest
@@ -146,18 +96,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      # `skip`: dependency-submission sets Gradle up itself.
       - name: Set up the Android build environment
         uses: $/.github/actions/android-build-env
         with:
           cache-mode: skip
 
       - name: Submit the resolved dependencies
-        uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb
 
   workflows:
     name: Workflow lint
@@ -169,13 +118,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      # Downloaded rather than run as an action, and verified against a pinned
-      # digest: a workflow linter that is itself an unpinned third-party action
-      # would be arguing with itself.
       - name: Install actionlint
         env:
           ACTIONLINT_VERSION: 1.7.12
@@ -190,25 +136,14 @@ jobs:
           sudo install -m 0755 /tmp/actionlint /usr/local/bin/actionlint
           actionlint -version
 
-      # One message is ignored, and only that one: actionlint (up to v1.7.12, the newest release on
-      # 2026-09-22) does not know GitHub's self-repository form `uses: $/…` and reports it as a
-      # malformed remote reference. The runner accepts it — every job that sets up its build
-      # environment through `$/.github/actions/android-build-env` ran green on #180 — and zizmor
-      # 1.30 requires it (`self-repository`). Remove the `-ignore` once an actionlint release
-      # parses `$/`; until then it matches nothing but that form.
       - name: Run actionlint
         run: actionlint -color -ignore 'specifying action "\$/[^"]+" in invalid format because ref is missing'
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.13'
 
-      # Hash-pinned rather than version-pinned. A version is not a content hash, so Scorecard's
-      # Pinned-Dependencies check reported the previous `pip install zizmor==1.29.0` as unpinned;
-      # `--require-hashes` satisfies it and, more to the point, makes pip actually verify what it
-      # installs. zizmor has no transitive dependencies, so the file is one entry — the reasoning
-      # and the by-hand bump rule live in .github/requirements/zizmor.txt.
       - name: Install zizmor
         run: |
           set -euo pipefail
@@ -216,17 +151,7 @@ jobs:
             --require-hashes -r .github/requirements/zizmor.txt
           zizmor --version
 
-      # The audits that matter for a public repo: unpinned actions, template
-      # injection into run blocks, credential persistence, excessive
-      # permissions, cache poisoning.
-      #
-      # GH_TOKEN switches zizmor out of offline mode, which is what enables the
-      # `known-vulnerable-actions` audit — the one that would have caught
-      # tj-actions/changed-files (CVE-2025-30066), the case study this repo's
-      # pinning policy exists for.
       - name: Run zizmor
         env:
           GH_TOKEN: ${{ github.token }}
-        # `.github/actions` as well: the shared build-environment composite carries the setup
-        # pins of six jobs, and a workflow-only scan would never look at them.
         run: zizmor --persona=regular --format=plain .github/workflows .github/actions

@@ -50,11 +50,7 @@ import java.io.IOException
 import java.time.Instant
 
 /**
- * The Einsatz detail screen's test harness, shared by its two test classes.
- *
- * A file of its own rather than a base class: `MissionDetailScreenTest` covers the reading half and
- * the caller's own sign-up, `MissionManagerScreenTest` covers the manager half, and both drive the
- * same screen with the same fixtures. Two copies would drift the moment one of them gained a field.
+ * The Einsatz detail screen's test harness, shared by `MissionDetailScreenTest` and `MissionManagerScreenTest`.
  *
  * @property compose the rule that owns the composition.
  */
@@ -100,9 +96,6 @@ internal class MissionScreenRobot(
 
     /**
      * The structure actions, recording every tap by name.
-     *
-     * Its own function so [show] stays under the length the gate allows — eleven fields inline made
-     * the harness longer than the tests it serves.
      *
      * @param canManage whether the controls are unlocked.
      * @param taps where a tap is recorded.
@@ -193,9 +186,6 @@ internal class MissionScreenRobot(
 
     /**
      * The caller's own sign-up actions, recording every tap.
-     *
-     * Extracted from [show] so the harness stays under the length the gate allows — the same
-     * reason `structureActions` was extracted before it.
      *
      * @param signUps receives the sign-up action.
      * @param checkIns receives the check-in action.

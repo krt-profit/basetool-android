@@ -15,16 +15,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Which of a problem body's three carriers of prose the app shows, and when it shows none.
- *
- * The rule this pins is a precedence, not a lookup: the backend sends the same content twice — as
- * the `fieldErrors` array and again as the legacy `errors` map — so a reader that took both would
- * print every sentence twice. It also sends `detail` on refusals that name no field at all, which
- * is the only case where the generic body text is better than the screen's own copy.
- *
- * The `null` cases are the load-bearing ones: `null` is what hands the sentence back to the screen,
- * and a screen that mapped a 403 to „Du darfst das nicht" must not have that replaced by whatever
- * the server wrote about the request.
+ * Tests which of a problem body's prose carriers the app shows: `fieldErrors` over the duplicate `errors` map, `detail`
+ * only when no field is named, and `null` to hand the sentence back to the screen.
  */
 class FieldMessageTest {
     /**
@@ -66,8 +58,6 @@ class FieldMessageTest {
 
     @Test
     fun `the array wins over the legacy map, so the same sentence is not printed twice`() {
-        // The backend sends both shapes for the same refusal. Reading them in sequence rather than
-        // as alternatives would put „muss positiv sein · muss positiv sein" under the field.
         val error =
             validation(
                 ProblemDetail(
@@ -88,8 +78,6 @@ class FieldMessageTest {
 
     @Test
     fun `an entry with no message of its own does not become an empty line`() {
-        // `message` is nullable on the wire, and a blank one rendered as an error box with nothing
-        // in it — visually a refusal that refuses to say what it refused.
         val error =
             validation(
                 ProblemDetail(
@@ -121,8 +109,6 @@ class FieldMessageTest {
 
     @Test
     fun `only a validation refusal speaks for itself`() {
-        // Every variant carries a problem body, and on these the server's prose is about the
-        // request rather than about what the member should do next — which is the screen's to say.
         val body = ProblemDetail(detail = "Access Denied")
 
         assertNull(ApiError.Forbidden(body).fieldMessage())

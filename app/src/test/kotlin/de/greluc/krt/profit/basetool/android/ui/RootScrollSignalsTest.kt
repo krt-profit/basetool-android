@@ -11,13 +11,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The counter behind design chapter 03's „re-tap scrolls to top".
- *
- * The scrolling itself is Compose's and is verified on a device. What this pins is the property
- * that makes the rule safe: **counters are per route**. One shared counter is the obvious
- * implementation and is wrong — every screen watching it would jump to the top the next time it
- * was composed, so a member returning to a list they had scrolled would silently lose their place
- * because they had once re-tapped a different tab.
+ * Tests the counter behind design chapter 03's „re-tap scrolls to top": counters are per route, so a re-tap never
+ * scrolls another tab's list.
  */
 class RootScrollSignalsTest {
     private companion object {

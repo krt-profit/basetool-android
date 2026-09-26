@@ -11,23 +11,12 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import kotlin.math.abs
 
 /**
- * Where a deducted quantity comes from, per earmark dimension (design ch. 09 artboards 18–19).
+ * The shape of one earmark dimension's sourcing for a deducted quantity.
  *
- * An entry's stock is tagged **twice and independently** — once by Auftrag, once by Einsatz — so the
- * same unit of Laranite can be promised to both. When a quantity leaves the entry it therefore has
- * to be sourced **once per dimension**, not once in total. Modelling the two as one list makes the
- * arithmetic wrong in both directions, which is why this type exists per dimension rather than per
- * booking.
- *
- * The server's rules, mirrored here so the member learns of a violation before the write rather
- * than from a status code:
- *
- * | Rule | The server answers |
- * | --- | --- |
- * | Per dimension, the assigned sum must not exceed the deducted amount | 400 |
- * | Each assignment must fit the slice it is taken from | 400 |
- * | The rest absorbs whatever the tags did not cover | 422 |
- * | An omitted or all-zero plan means "take it from the rest first" | the default |
+ * Stock is tagged independently by Auftrag and by Einsatz, so a deduction is sourced once per
+ * dimension. The client mirrors the server's rules: per dimension the assigned sum must not exceed
+ * the deducted amount and each assignment must fit its slice (both 400), the rest absorbs what the
+ * tags do not cover (422 otherwise), and an empty plan means "take it from the rest first".
  */
 enum class HerkunftStatus {
     /** The tags cover the whole deduction; nothing comes from the rest. */
@@ -108,10 +97,6 @@ fun herkunftDimension(
 ): HerkunftDimension {
     val free = (rest?.toDoubleOrNull() ?: 0.0).scu()
 
-    // No earmarks in this dimension means nothing to reconcile: the whole deduction comes out of
-    // unearmarked stock and the server applies no rule here at all. Without this guard a `rest` the
-    // server never sent reads as a rest of zero, and an ordinary entry — most of them — would be
-    // refused as "the rest cannot carry it".
     if (tags.isEmpty()) {
         return HerkunftDimension(
             tags = emptyList(),
@@ -125,7 +110,6 @@ fun herkunftDimension(
 
     val automatic = tags.size == 1 && free <= EPSILON
 
-    // The automatic shape does not read the member's typing at all: the field follows the amount.
     val assigned =
         if (automatic) {
             deducted.scu()
@@ -156,9 +140,8 @@ fun herkunftDimension(
 /**
  * What this dimension contributes to the write.
  *
- * A tag the member left at zero is **omitted rather than sent as zero**: an empty list is the
- * server's documented "take it from the rest first", and a list of zeroes says the same thing in a
- * way that has to be parsed to mean nothing.
+ * Tags left at zero are omitted, so an all-zero plan becomes the empty list the server reads as
+ * "take it from the rest first".
  *
  * @param deducted how much is leaving the entry, for the locked single-tag shape.
  * @param typed what the member put in each field.

@@ -134,18 +134,10 @@ fun String.krtToLocalTime(): LocalTime? =
     }
 
 /**
- * One point in time as a **date and a time**, picked — never typed.
+ * One point in time as a date and a time, each picked through a modal rather than typed.
  *
- * Design ch. 02 §11. Both halves are targets, not inputs: the date opens a month grid, the time
- * opens two steppers. The member never types a timestamp, which is what made the Einsatz's
- * schedule read as paperwork, and never sees an ISO string — display is German throughout while
- * the wire value stays ISO-8601 at the repository seam.
- *
- * The date takes 1.35 fr with a calendar glyph and sits left; the time takes 1 fr with a clock
- * glyph and sits centred. Empty means empty: the placeholders say what is wanted rather than
- * pre-filling today, because a pre-filled today is saved by accident.
- *
- * A moment in the past is **named, not blocked** — the server decides whether it is legal.
+ * Display is German while the wire value stays ISO-8601 at the repository seam. Empty halves show
+ * placeholders rather than today, and a past moment is flagged, not blocked.
  *
  * @param label what the pair means, drawn once above both halves.
  * @param date the date half in display form, `TT.MM.JJJJ`, or blank.
@@ -154,11 +146,8 @@ fun String.krtToLocalTime(): LocalTime? =
  * @param onTime the member picked a time; the value is already formatted.
  * @param modifier layout modifier.
  * @param enabled whether either half opens its picker.
- * @param warnPast whether a moment already gone is called out; off for fields that record
- *   something that happened, where the past is the point.
- * @param now the one clock the whole pair reads: what „past" is measured against, which day the
- *   grid marks, and what „Jetzt" means. Injectable so a test does not depend on the wall clock —
- *   and shared, so the two modals can never disagree about what today is.
+ * @param warnPast whether a moment already gone is called out; off for fields that record the past.
+ * @param now the one clock for past checks, the grid's today and „Jetzt"; injectable for tests.
  */
 @Composable
 fun KrtDateTimeField(
@@ -203,8 +192,6 @@ fun KrtDateTimeField(
                 onClick = { picking = Picking.TIME },
             )
         }
-        // The error would displace it, but this pair raises none of its own: it cannot be typed
-        // into, so there is nothing here to be invalid (design ch. 02 §1 — never both lines).
         if (warnPast && isPast(pickedDate, pickedTime, now)) {
             KrtFieldWarning(text = stringResource(R.string.krt_in_the_past))
         }
@@ -240,10 +227,7 @@ fun KrtDateTimeField(
 }
 
 /**
- * Whether a half-set pair already lies behind [now].
- *
- * A pair missing either half is not a moment yet, so it is not judged — warning while somebody is
- * still filling the second field would fire on every schedule that gets a date before a time.
+ * Whether a pair already lies behind [now]; a pair missing either half is not judged.
  *
  * @param date the date half, or `null`.
  * @param time the time half, or `null`.
@@ -263,9 +247,6 @@ private fun isPast(
 
 /**
  * A date on its own — a due date, a deadline, a cut-off.
- *
- * The same target as the pair's left half, without a time beside it. Used where the domain has a
- * day but no hour: an Auftrag is due *on* a day.
  *
  * @param label what the date means.
  * @param date the value in display form, `TT.MM.JJJJ`, or blank.
@@ -317,15 +298,10 @@ fun KrtDateField(
 }
 
 /**
- * Pick a day out of a month grid.
+ * Picks a day out of a month grid: seven columns, 44 dp cells, weeks starting Monday.
  *
- * Seven columns, 44 dp cells, the week starts Monday. The selection is a filled orange cell with
- * **black** text — the system's rule that filled orange carries black. Today is marked with a
- * hairline and no fill, so two oranges never compete. Neighbouring months are dimmed but tappable
- * and page the grid on.
- *
- * Deliberately **not** a Material3 `DatePicker`: its rounding, tonal surfaces and elevation break
- * three system rules at once.
+ * The selection is filled orange with black text, today carries a hairline only, and neighbouring
+ * months are dimmed but tappable.
  *
  * @param initial the day to open on and pre-select, or `null` to open on [today].
  * @param onPick the member confirmed a day.
@@ -371,14 +347,10 @@ fun KrtDatePickerModal(
 }
 
 /**
- * Pick a period — the Einsatz list's date-range filter (design ch. 02 §11 d, spec §C7).
+ * Picks a period — the Einsatz list's date-range filter.
  *
- * Two head fields carry the ends; the active one wears the orange frame, a tap in the grid fills
- * it and hands the turn to the other. The days between the ends are tinted, the ends themselves
- * filled. One end alone is a legal, open range: `MissionQuery` has carried `from`/`until` and the
- * repository has sent them all along — only the picker was missing.
- *
- * Resetting is the filter chip's own ✕, not a fourth button in here.
+ * A grid tap fills the active end and hands the turn to the other; one end alone is a valid open
+ * range. Resetting is the filter chip's own ✕.
  *
  * @param from the start of the period, or `null`.
  * @param until the end of the period, or `null`.
@@ -431,12 +403,8 @@ fun KrtDateRangePickerModal(
 }
 
 /**
- * Pick a time with two steppers.
- *
- * A scroll wheel has no hairline frame, no fixed height and no safe target, so the HUD vocabulary
- * has no shape for one. Arrows are full 44 dp targets, the value carries the orange frame and can
- * also be typed — the stepper is the fast way in, not the only one. Minutes move in fives and a
- * held arrow accelerates.
+ * Picks a time with two steppers whose values can also be typed; minutes move in fives and a held
+ * arrow accelerates.
  *
  * @param initial the time to open on, or `null` to open on [now] rounded down to the step.
  * @param onPick the member confirmed a time.
@@ -551,10 +519,7 @@ private data class DateRange(
     val until: LocalDate?,
 ) {
     /**
-     * Puts a day into one end, keeping the pair in order.
-     *
-     * A member who picks the end before the start has expressed a period, not a mistake, so the
-     * ends are swapped rather than refused.
+     * Puts a day into one end, swapping the ends if needed to keep the pair in order.
      *
      * @param day the day tapped.
      * @param end whether the tap fills the second end.
@@ -588,10 +553,7 @@ private data class DateRange(
 }
 
 /**
- * Rounds a time down onto the minute step.
- *
- * „Jetzt" on a five-minute stepper must land on a value the stepper can reach; 19:23 cannot be
- * stepped away from without first hitting 19:25.
+ * Rounds a time down onto the minute step, so „Jetzt" lands on a value the stepper can reach.
  *
  * @receiver the time to round.
  * @return the same hour, minutes floored to the step.
@@ -614,8 +576,7 @@ private fun Int.floorMod(bound: Int): Int = ((this % bound) + bound) % bound
  * @param icon the leading glyph — calendar or clock.
  * @param value the formatted value, or blank.
  * @param placeholder what to say while it is blank.
- * @param description what a screen reader announces; the visible label names the pair, not the
- *   half, so each half has to say which picker it opens.
+ * @param description what a screen reader announces, naming which picker this half opens.
  * @param align which edge the value sits against.
  * @param enabled whether the target opens its picker.
  * @param tag the test handle.
@@ -669,10 +630,7 @@ private fun RowScope.ValueBox(
 private val ICON_IN_FIELD = 16.dp
 
 /**
- * The month being shown, with a chevron on either side.
- *
- * No month or year dropdown and no year carousel: the chevrons plus the three shortcut chips
- * covered nearly everything in practice, and a dropdown inside a modal is a second overlay.
+ * The month being shown, with a paging chevron on either side.
  *
  * @param month what is on screen.
  * @param onPrevious page back.
@@ -693,8 +651,6 @@ private fun MonthHeader(
             label = stringResource(R.string.krt_previous_month),
             onClick = onPrevious,
         )
-        // LocalLocale, not Locale.getDefault(): the latter is not observable state, so the month
-        // name would keep the locale the modal first composed under.
         val locale = LocalLocale.current.platformLocale
         Text(
             text =
@@ -733,10 +689,7 @@ private fun WeekdayHeader() {
 }
 
 /**
- * Six weeks of day cells.
- *
- * The grid is a fixed 6×7 so it never changes height between months — a modal that grows by a row
- * when the member pages moves the buttons under their thumb.
+ * Six weeks of day cells, a fixed 6×7 so the modal never changes height between months.
  *
  * @param month the month in the middle of the grid.
  * @param today which day carries the hairline marker.
@@ -1016,11 +969,10 @@ private fun StepperColumn(
 }
 
 /**
- * An arrow that repeats while it is held, accelerating as it goes.
+ * An arrow that repeats while held, accelerating as it goes.
  *
- * A tap steps once through the ordinary click path, so TalkBack activation works; a hold takes
- * over after [HOLD_DELAY_MS] and then suppresses the click that would otherwise land on release
- * and add one step too many.
+ * A tap steps once through the click path, so TalkBack activation works; a hold takes over after
+ * [HOLD_DELAY_MS] and suppresses the release click.
  *
  * @param icon the chevron.
  * @param label what a screen reader announces.

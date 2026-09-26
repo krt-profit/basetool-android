@@ -61,14 +61,7 @@ data class ProfitState(
     val ship: ShipTypeOption?
         get() = ships.firstOrNull { it.id == shipId }
 
-    /**
-     * Whether the Hull-C note belongs on screen.
-     *
-     * Design ch. 16 artboard 4 makes it conditional („nur bei Hull C"), where the web shows both
-     * hints unconditionally. The artboard wins — the design spec outranks behavioural parity — and
-     * it is also the more truthful of the two: the Loading-Dock rule only changes the arithmetic
-     * for that one hull.
-     */
+    /** Whether the Hull-C Loading-Dock note is shown; only when the chosen ship is a Hull C. */
     val hullCRule: Boolean
         get() = ship?.name?.contains(HULL_C, ignoreCase = true) == true
 
@@ -78,11 +71,7 @@ data class ProfitState(
 }
 
 /**
- * Drives the Profitberechnung (REQ-APP-MAT-004).
- *
- * > **Every figure on this screen is the server's.** The app renders margins and profits and
- * > computes none: a margin is money advice, and one derived on the device could not be reconciled
- * > with the web's own answer.
+ * Drives the Profitberechnung (REQ-APP-MAT-004); every figure shown is the server's.
  *
  * @property source where the ships, the systems and the calculation come from.
  */
@@ -101,10 +90,7 @@ class ProfitViewModel(
     }
 
     /**
-     * A hull was picked.
-     *
-     * The calculation runs immediately: the screen exists to answer one question, and a member who
-     * picked a ship has asked it.
+     * Selects a hull and runs the calculation immediately.
      *
      * @param id the hull.
      */
@@ -151,8 +137,6 @@ class ProfitViewModel(
                 state.copy(
                     ships = hulls,
                     systems = systems,
-                    // The web preselects the C2; with no C2 in the catalogue nothing is chosen and
-                    // the screen says so rather than picking a hull on the member's behalf.
                     shipId = hulls.firstOrNull { it.name.contains(DEFAULT_SHIP, ignoreCase = true) }?.id,
                     loadingOptions = false,
                 )
@@ -181,8 +165,6 @@ class ProfitViewModel(
                             state.copy(
                                 calculating = false,
                                 error = result.error,
-                                // The previous answer is dropped: leaving it under a new ship's
-                                // name would be a figure about the wrong hull.
                                 rows = emptyList(),
                             )
                         }

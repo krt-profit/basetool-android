@@ -66,14 +66,13 @@ private const val MIN_BRIEFING_LINES = 3
 /**
  * What the Verwaltung tab can do.
  *
- * Opening and closing are absent on purpose: the form's lifecycle belongs to the tab, so
- * `MissionDetailViewModel.onTabSelected` fills it on arrival and clears it on departure.
+ * Opening and closing the form are not here: `MissionDetailViewModel.onTabSelected` fills it on
+ * arrival and clears it on departure.
  *
  * @property onChange a field changed, naming the section so its head can say „Geändert".
  * @property onToggle a section was folded open or shut.
  * @property onSave one section is to be saved.
- * @property onAskLifecycle the tab's lifecycle action was pressed — opens the confirmation. It sat
- *   on the status badge until 2026-09-07; the confirmation and the write behind it are unchanged.
+ * @property onAskLifecycle the tab's lifecycle action was pressed; opens the confirmation.
  * @property onConfirmLifecycle the confirmation was accepted.
  * @property onDismissLifecycle the confirmation was declined.
  * @property onCorrectStart the started time is to be corrected.
@@ -99,11 +98,7 @@ data class MissionAdminActions(
 )
 
 /**
- * What the lifecycle action needs, as one argument.
- *
- * Three separate parameters pushed `adminTab` over detekt's five, and the three are never useful
- * apart: the step on offer is derived from the Einsatz, and the denial sink exists only to explain
- * a refusal of the action the step names.
+ * What the lifecycle action needs, bundled as one argument.
  *
  * @property detail the Einsatz.
  * @property next the status it may advance to, or `null` when it is at rest.
@@ -116,16 +111,11 @@ internal data class MissionLifecycleUi(
 )
 
 /**
- * Verwaltung: the Einsatz itself, as four folded sections.
+ * Verwaltung: the Einsatz itself, as four folded sections, each with its own save and a head state
+ * chip (design ch. 06 artboards 7–12).
  *
- * **Composition ratified 2026-08-29** (design ch. 06 artboards 7–12). It shipped first as a flat
- * stack — four sections and three saves inside one item, with a single error slot at the foot. The
- * drawing that came back makes each section a panel header (Kern open, the rest closed, no
- * accordion), puts its save **inside** it, and gives its head a state chip, so a folded section
- * still says whether it is started, changed, saving, saved or in conflict.
- *
- * The tab is reachable only for a caller the server says may manage; `MissionTabRow` draws it
- * **locked rather than hidden** for everyone else.
+ * Reachable only for a caller the server says may manage; `MissionTabRow` draws it locked for
+ * everyone else.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now — online, and nothing already in flight.
@@ -147,13 +137,8 @@ internal fun LazyListScope.adminTab(
                     .fillMaxWidth()
                     .padding(horizontal = KrtSpacing.s16)
                     .testTag(MISSION_ADMIN_SHEET_TAG),
-            // 10 dp between the cards and a 16 dp screen margin — design ch. 18 §3 (E4).
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
         ) {
-            // First, above the folded sections: starting and finishing the Einsatz moved here from
-            // the status band on 2026-09-07 (owner decision). It is not a section — it saves no
-            // form, it advances the status in one call — so it is not folded into one, and it sits
-            // ahead of them because it is the most consequential thing this tab can do.
             MissionLifecycleAction(
                 lifecycle = lifecycle,
                 enabled = writable,
@@ -169,24 +154,19 @@ internal fun LazyListScope.adminTab(
                 Hint(text = stringResource(R.string.mission_member_hint))
                 MemberSection(members = members)
             }
-            // Only a refusal that belongs to no section lands here; a section's own is drawn in
-            // that section, where the member who caused it is looking.
             form.error?.takeIf { form.errorSection == null }?.let { SignUpError(error = it) }
         }
     }
 }
 
 /**
- * One folded section: a **card** with a panel header, its state chip, and its body when open.
- *
- * A card rather than a HUD box or a bare stack (design ch. 18 §3, E4). The HUD box stays reserved
- * for emphasis blocks — four of them side by side emphasise nothing.
+ * One folded section as a card: a panel header, its state chip, and its body when open (design
+ * ch. 18 §3, E4).
  *
  * @param section which one.
  * @param form the form, for the fold and the state.
  * @param actions what the tab can do.
- * @param body what the section holds; it is handed **this** section, so it can lock its own fields
- *   without waiting on a write somewhere else in the tab.
+ * @param body what the section holds; it is handed this section so it can lock its own fields.
  */
 @Composable
 private fun AdminSection(
@@ -268,9 +248,6 @@ private fun StandingChip(
     section: MissionSection,
     form: MissionAdminForm,
 ) {
-    // Three of the four have a standing value; Kern has none worth a chip. Written as guards
-    // rather than an exhaustive `when` with an empty branch, which is an unused expression the
-    // compiler rejects under -Werror.
     if (section == MissionSection.SCHEDULE) {
         KrtChip(
             text =
@@ -283,9 +260,6 @@ private fun StandingChip(
         )
     }
     if (section == MissionSection.PEOPLE) {
-        // „Ein Kopf, der nur ein Wort zeigt, macht das Aufklappen zur Pflicht — dann ist die
-        // Faltung falsch" (ch. 02 §10). Artboard 7 draws Leitung · Manager · Teilnehmer as one
-        // count; this head was the only one folding over nothing.
         KrtChip(
             text =
                 stringResource(
@@ -360,15 +334,9 @@ private fun CoreFields(
 }
 
 /**
- * Which Operation the Einsatz belongs to.
+ * Which Operation the Einsatz belongs to — the only place this can be set.
  *
- * **The only place this can be set.** An Einsatz joins an Operation through its own Kern section
- * (`PATCH /missions/{id}/core` with `operationId`); the Operation's own form has no such field
- * because the wire has none. The app used to offer it in neither, so its Operation form told the
- * member to do it „from the Einsatz" and the Einsatz had no control — a dead end that read like a
- * missing permission.
- *
- * „Keiner" is a real choice and stands first: an Einsatz standing alone is the ordinary case.
+ * „Keiner" stands first as a real choice.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
@@ -442,21 +410,14 @@ private fun ScheduleFields(
 }
 
 /**
- * „Dauer 4 Std. — berechnet aus Start und Ende, wie im Briefing."
+ * The planned duration line under the schedule pairs, e.g. „Dauer 4 Std.".
  *
- * The same span the Briefing card carries, said again where it is being edited: a manager typing an
- * end time has no other way to see what they have just made the Einsatz last, and the artboard puts
- * the sentence directly under the three pairs for that reason.
- *
- * Silent when either end is missing or the span is not positive — a duration invented from one
- * timestamp would be a guess printed as a plan.
+ * Draws nothing when either end is missing or the span is not positive.
  *
  * @param form what is typed.
  */
 @Composable
 private fun ScheduleDuration(form: MissionAdminForm) {
-    // Parsed through the picker's own readers, because the fields hold what the member SEES
-    // („29.08.2026", „21:00") and not an ISO instant.
     val start = form.plannedStartDate.krtToLocalDate()?.atTime(form.plannedStartClock.krtToLocalTime())
     val end = form.plannedEndDate.krtToLocalDate()?.atTime(form.plannedEndClock.krtToLocalTime())
     val minutes =
@@ -509,12 +470,10 @@ private fun ScheduleTime(
 }
 
 /**
- * „Tatsächlicher Start" — a state line and an action, never a text field.
+ * „Tatsächlicher Start" — a state line and an action, never a text field (design ch. 06 artboard 8).
  *
- * Design ch. 06 artboard 8 names the reason: a free field for the start timestamp is what made the
- * one action the whole screen exists for look like bookkeeping. Before the start, the line says
- * check-in is locked for everyone and the filled CTA offers to start; after it, the line says since
- * when, and a ghost offers to correct it.
+ * Before the start it offers to start the Einsatz; after it, it shows since when and offers to
+ * correct it.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
@@ -526,8 +485,6 @@ private fun ActualStart(
     writable: Boolean,
     actions: MissionAdminActions,
 ) {
-    // A framed readout, not a loose line: artboard 06-8 boxes it under its own uppercase label so
-    // it reads as the fourth **value** of the section rather than as a footnote to the third.
     Column(
         modifier =
             Modifier
@@ -561,8 +518,6 @@ private fun ActualStart(
                 onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartDate = v) } },
                 onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartClock = v) } },
                 enabled = writable,
-                // A corrected actual start records something that already happened, so „liegt in
-                // der Vergangenheit" would fire on every legitimate correction.
                 warnPast = false,
             )
             KrtGhostButton(
@@ -581,12 +536,6 @@ private fun ActualStart(
                 enabled = writable,
             )
         }
-
-        // No branch for the unstarted Einsatz: starting it is not this SECTION's action. It is
-        // this tab's, drawn once at the top rather than inside the schedule form — F2's „kein
-        // Formular, kein Overflow-Eintrag, keine zweite Stelle" still holds, the one place just
-        // moved off the status badge on 2026-09-07. The line above still says check-in is locked,
-        // which is the fact this section is responsible for.
     }
     EndState(form = form, writable = writable, actions = actions)
 }
@@ -594,12 +543,8 @@ private fun ActualStart(
 /**
  * When the Einsatz actually ended — a state line and, while it runs, the action that ends it.
  *
- * **Ending it is not a status.** Activation auto-stamps `actualStartTime` server-side and nothing
- * does the same for the end: `actualEndTime` on the schedule PATCH is the only thing that sets it,
- * and setting it also closes every participant's open end-time — which is what the payout figures
- * rest on. The app sent it never, so an Einsatz begun on a phone stayed open for everyone on it.
- *
- * Shaped like the start above: the fact first, then the action, never a bare field.
+ * Ending writes `actualEndTime` through the schedule PATCH, which also closes every participant's
+ * open end time; it does not change the status.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
@@ -640,8 +585,6 @@ private fun EndState(
                 onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endDate = v) } },
                 onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endClock = v) } },
                 enabled = writable,
-                // An end records something that has happened, so „liegt in der Vergangenheit"
-                // would fire on every legitimate entry.
                 warnPast = false,
             )
             KrtGhostButton(
@@ -652,8 +595,6 @@ private fun EndState(
             )
         }
 
-        // Only a running Einsatz can be ended: ending one that never began would stamp a close
-        // over an open start, and the server would take it.
         form.started && !form.ended -> {
             KrtGhostButton(
                 text = stringResource(R.string.mission_admin_end_mission),
@@ -666,11 +607,7 @@ private fun EndState(
 }
 
 /**
- * Sichtbarkeit: one checkbox, naming both of its sides.
- *
- * A yes/no is **not** one-of-N, so it is a square checkbox — the round radio is the design system's
- * only circular element and stays reserved for a real choice, such as the payout preference
- * (ch. 06 artboard 10).
+ * Sichtbarkeit: one square checkbox, naming both of its sides.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
@@ -688,7 +625,6 @@ private fun FlagsFields(
         label = stringResource(R.string.mission_admin_internal),
         enabled = writable,
     )
-    // A flag whose off-state is not named gets guessed at.
     Hint(text = stringResource(R.string.mission_admin_internal_hint))
     SectionSave(R.string.mission_admin_save_flags, MissionSection.FLAGS, form, writable, actions.onSave)
 }
@@ -715,10 +651,6 @@ private fun SectionSave(
         onClick = { onSave(section) },
         iconRes = DesignR.drawable.ic_krt_check,
         modifier = Modifier.fillMaxWidth(),
-        // Every save is disabled while ANY of them is in flight: they share one form, and a second
-        // write launched against a counter the first is about to bump is a 409 the member caused by
-        // being quick. That is a WAITING lock, not a permission one — hence no lock glyph, which
-        // the design system reserves for a missing right (artboard 10).
         enabled = writable && form.saving == null,
     )
 }
@@ -737,18 +669,13 @@ private fun MissionSection.titleRes(): Int =
     }
 
 /**
- * A muted line of explanation between the controls it is about.
- *
- * `TextMuted`, never `Gray2`: #646464 is the hairline value and fails AA as small text on the
- * section ground — the same helper in `MissionStructureUi` had it right, and this one did not
- * (design README correction 16).
+ * A muted line of explanation between the controls it is about, drawn in `TextMuted` for AA
+ * contrast.
  *
  * @param text what it says.
  */
 @Composable
 private fun Hint(text: String) {
-    // With the info glyph the artboards draw beside it: a paragraph of muted text at the top of a
-    // form otherwise reads as part of the form rather than as a note about it.
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),

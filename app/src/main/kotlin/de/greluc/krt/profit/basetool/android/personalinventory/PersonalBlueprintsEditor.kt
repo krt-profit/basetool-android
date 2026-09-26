@@ -52,9 +52,7 @@ private const val MIN_PRODUCT_QUERY = 2
 /**
  * The add sheet: search the catalogue, pick a product, optionally note why.
  *
- * A product the member already owns is listed but **not selectable** — the create would be refused
- * by the server, and a picker that offers it is one that sets up a failure. Saying "hast du schon"
- * beside it answers the question the member actually has, which is whether they own it.
+ * A product the member already owns is listed as „hast du schon" and cannot be picked.
  *
  * @param editor what the sheet holds.
  * @param onQuery the product search changed.
@@ -84,8 +82,6 @@ fun BlueprintAddSheet(
             KrtTextField(
                 value = editor.query,
                 onValueChange = onQuery,
-                // Inside the box, as the chapters draw every search field: it says what it
-                // searches while it is empty and gives the room back once it is not.
                 placeholder = stringResource(R.string.blueprints_product_search),
                 enabled = !editor.saving,
             )
@@ -122,8 +118,6 @@ fun BlueprintAddSheet(
                 dismissEnabled = !editor.saving,
                 onSave = onSave,
                 onDismiss = onDismiss,
-                // The CTA names the count, as the artboard draws it; with one picked it stays the
-                // sheet's ordinary „Speichern".
                 saveText =
                     if (editor.count > 1) {
                         pluralStringResource(
@@ -140,10 +134,7 @@ fun BlueprintAddSheet(
 }
 
 /**
- * The catalogue half of the add sheet: the hint, the hits, the cap and the notice line.
- *
- * Its own composable because the sheet grew past detekt's complexity ceiling once the rows became
- * checkboxes — and because these four are one thought: what the search found, and what it did not.
+ * The catalogue part of the add sheet: the hint, the hits, the cap and the notice line.
  *
  * @param editor what the sheet holds.
  * @param onChosen a row was ticked or unticked.
@@ -180,8 +171,6 @@ private fun ProductResults(
             }
         }
     }
-    // Why a hit can be missing: the web does not offer what the member already owns, and design
-    // ch. 17 artboard 5 wants that said rather than left to be read as a broken search.
     Muted(stringResource(R.string.blueprints_product_owned_hidden))
 }
 
@@ -191,7 +180,7 @@ private fun ProductResults(
  * @param product the row.
  * @param enabled whether the sheet accepts input.
  * @param onChosen picks it.
- * @param picked whether it is already ticked — a second tap takes it back off.
+ * @param picked whether it is already ticked; a second tap unticks it.
  */
 @Composable
 private fun ProductRow(
@@ -209,8 +198,6 @@ private fun ProductRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // A box, not a radio: artboard 5 makes the row a checkbox, because picking several is the
-        // normal case as soon as more than one hit fits.
         KrtSelectionCheckbox(checked = picked)
         Text(
             text = product.label(),
@@ -226,9 +213,7 @@ private fun ProductRow(
 /**
  * The note sheet of an entry the member already owns.
  *
- * Only the note is editable. `PUT` also accepts `acquiredAt`, and the app deliberately does not
- * send it: the field is not offered, and re-sending a value the member cannot see would let a save
- * silently rewrite something they never looked at.
+ * Only the note is editable; `acquiredAt` is never sent.
  *
  * @param editor what the sheet holds.
  * @param onNote the note changed.
@@ -307,8 +292,8 @@ private fun SheetActions(
 /**
  * What a failed save says.
  *
- * A validation refusal is shown in the server's own words, because it names the field that was
- * rejected and the sheet cannot. A conflict and everything else keep the sheet's own sentence.
+ * A validation refusal is shown in the server's words; a conflict and everything else keep the
+ * sheet's own sentence.
  *
  * @param error what came back.
  */

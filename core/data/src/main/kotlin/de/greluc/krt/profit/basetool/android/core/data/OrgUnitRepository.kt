@@ -39,12 +39,8 @@ interface OrgUnitSource {
     suspend fun serverDefault(): ApiResult<String?>
 
     /**
-     * Reads every active org unit, of all four kinds.
-     *
-     * Wider than [memberships] on purpose. The order form's customer picker is the web's, and the
-     * web lets a member raise an order *for* a unit they do not belong to — a Staffel ordering
-     * through another Staffel is the ordinary case, not an edge one. Narrowing this to memberships
-     * would silently make the app's form the smaller of the two.
+     * Reads every active org unit of all four kinds, for the order form's customer picker, which is
+     * not limited to memberships.
      *
      * @return the units, or the classified failure.
      */
@@ -52,21 +48,10 @@ interface OrgUnitSource {
 }
 
 /**
- * Reads the org units the member may work in.
+ * Reads the org units the member may work in through the me-scoped `/me/org-units`, which answers
+ * what may be pinned, including for an admin (REQ-SEC-048).
  *
- * **`/me/org-units`, which answers what may be *pinned* rather than what is *joined*.** For most
- * members those are the same list. For an admin they are not: an admin holds no Staffel membership
- * by design, so a membership read returned nothing and the switcher offered only „Alle
- * Org-Einheiten" — no way to narrow the app to one unit at all. The web app had the branch
- * (`isAdmin()` → the active catalogue) and this one did not, which is what a rule duplicated across
- * two clients eventually costs. It lives on the server now (REQ-SEC-048, ADR-0151).
- *
- * Still me-scoped and still one round trip. The id-taking path would have had to be reachable from
- * the public API vhost, which is a default-deny allow-list precisely so that a path able to name
- * *another* member never has to be on it.
- *
- * Nothing here is cached. The list changes when an administrator changes it, which the app cannot
- * observe, and it is two small reads on a screen the member opened deliberately.
+ * Nothing is cached.
  *
  * @property reader performs the calls and classifies their failures
  */
@@ -84,11 +69,7 @@ class OrgUnitRepository(
     )
 
     /**
-     * Reads the member's direct memberships.
-     *
-     * An entry without an id is dropped, because a unit that cannot be pinned cannot be offered —
-     * and the count is logged rather than swallowed, so a server change that starts omitting ids
-     * shows up as a diagnosis instead of a switcher that has quietly gone short.
+     * Reads the units the member may pin, dropping and logging the count of entries without an id.
      *
      * @return the member's units, in the order the server returned them.
      */
@@ -111,11 +92,8 @@ class OrgUnitRepository(
         }
 
     /**
-     * Reads every active org unit, of all four kinds.
-     *
-     * Drops id-less entries and logs the shortfall for the same reason [memberships] does: a unit
-     * with no id cannot be sent as `requestingOrgUnitId`, and a picker that has quietly gone short
-     * is worse than one that says so in the log.
+     * Reads every active org unit, of all four kinds, dropping and logging the count of entries without
+     * an id.
      *
      * @return the units, in the order the server returned them.
      */
@@ -141,13 +119,10 @@ class OrgUnitRepository(
         }
 
     /**
-     * Reads the org unit the server considers active.
+     * Reads the org unit the server considers active, the starting point when none was chosen on this
+     * device.
      *
-     * Used as the starting point when the member has never chosen one on this device. A response
-     * naming no unit is a success carrying `null`, not a failure: a member with a single unit, or
-     * none, is an ordinary case rather than a broken one.
-     *
-     * @return the unit id or `null`.
+     * @return the unit id, or `null` when the server names none.
      */
     override suspend fun serverDefault(): ApiResult<String?> =
         reader.get(ACTIVE_ORG_UNIT_PATH, ActiveOrgUnitResponse.serializer())
@@ -158,13 +133,7 @@ class OrgUnitRepository(
         const val LOG_TAG = "orgunit"
 
         /**
-         * The org units the caller may pin — **not** their memberships.
-         *
-         * `/users/me/memberships` answers a different question, and for an admin it answers it with
-         * nothing: an admin holds no Staffel membership by design, so the picker offered „Alle
-         * Org-Einheiten" and no unit to narrow to. The web app had branched on `isAdmin()` and read
-         * two catalogues instead; the app had no such branch. The rule now lives once on the server
-         * (REQ-SEC-048), so neither client carries the fork.
+         * The org units the caller may pin, not their memberships (REQ-SEC-048).
          */
         const val MEMBERSHIPS_PATH = "/api/v1/me/org-units"
 
@@ -189,22 +158,15 @@ private fun OrgUnitMembershipOptionDto.toModel(): OrgUnit? {
     val id = orgUnitId ?: return null
     return OrgUnit(
         id = id,
-        // A unit the server named with neither a name nor a shorthand would render as an empty
-        // row; the id is meaningless to a member but is at least something to point at.
         name = orgUnitName ?: orgUnitShorthand ?: id,
         shorthand = orgUnitShorthand.orEmpty(),
         profitEligible = isProfitEligible == true,
         kind =
             when (kind) {
                 OrgUnitMembershipOptionDto.Kind.SQUADRON -> OrgUnitKind.SQUADRON
-
                 OrgUnitMembershipOptionDto.Kind.SPECIAL_COMMAND -> OrgUnitKind.SPECIAL_COMMAND
-
                 OrgUnitMembershipOptionDto.Kind.BEREICH -> OrgUnitKind.BEREICH
-
                 OrgUnitMembershipOptionDto.Kind.ORGANISATIONSLEITUNG -> OrgUnitKind.ORGANISATIONSLEITUNG
-
-                // Absent, or a constant the reader coerced away because this build predates it.
                 null -> OrgUnitKind.UNKNOWN
             },
     )

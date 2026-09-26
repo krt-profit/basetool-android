@@ -8,12 +8,10 @@
 package de.greluc.krt.profit.basetool.android.ui
 
 /**
- * Which rung of the ladder an instant falls on.
+ * Which rung of the relative-time ladder an instant falls on.
  *
- * Exists for one question a caller genuinely has to ask: **does the rendered timestamp already
- * contain a clock reading?** Design ch. 06 pairs an Einsatz row as „TS 20:30 · in 2 Std." — an
- * absolute time and a distance — and the lower rungs are compounds that carry their own time, so a
- * row that prints both ends up saying „TS 20:44 · gestern, 20:44".
+ * Lets a caller tell whether the rendered timestamp already contains a clock time, so it does not
+ * print the time twice.
  */
 enum class KrtTimeRung {
     /** „vor 4 Min.", „in 2 Std.", „morgen" — a distance, with no clock in it. */

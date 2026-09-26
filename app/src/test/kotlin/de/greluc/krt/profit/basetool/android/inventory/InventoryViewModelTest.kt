@@ -269,8 +269,6 @@ class InventoryViewModelTest {
     @Test
     fun `a booking re-reads the open path and leaves it open`() =
         runTest(dispatcher) {
-            // Collapsing the tree after every booking would make the member re-open the group and
-            // the stack to see what their own booking just did (found on a device, 2026-08-23).
             val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
@@ -316,8 +314,6 @@ class InventoryViewModelTest {
     @Test
     fun `closing and re-opening does not fetch twice`() =
         runTest(dispatcher) {
-            // The Lager changes slowly enough that a member re-opening a group within one visit
-            // expects what they just saw; pull-to-refresh is how they ask for more.
             val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
@@ -348,7 +344,6 @@ class InventoryViewModelTest {
     @Test
     fun `a failed group stays open and says so`() =
         runTest(dispatcher) {
-            // Closing it would look like the tap did not register, and the member would try again.
             val failing =
                 RecordingSource(
                     mutableListOf(ApiResult.Success(page(group("m1")))),
@@ -382,8 +377,6 @@ class InventoryViewModelTest {
     @Test
     fun `the stock filter hides rows from the page, and says nothing about the rest`() =
         runTest(dispatcher) {
-            // The endpoint has no such parameter. What makes the chip honest is that the count
-            // below the list keeps stating the server's total.
             val mixed =
                 RecordingSource(
                     mutableListOf(ApiResult.Success(page(group("m1"), group("m2", amount = "0")))),
@@ -464,11 +457,7 @@ class InventoryViewModelTest {
         }
 
     /**
-     * „Einklappen ist Ansicht, nicht Auswahl" (design ch. 09, artboard 5).
-     *
-     * The chip on a collapsed group still counts its picked rows, so the group's entries have to
-     * survive the collapse — and with them the count that tells a member what is still in play
-     * behind a row they can no longer see.
+     * Collapsing a group keeps its selected entries and its chip count (design ch. 09, artboard 5).
      */
     @Test
     fun `collapsing a group keeps its selection and its count`() =
@@ -508,10 +497,8 @@ class InventoryViewModelTest {
     }
 
     /**
-     * The result is a step in the sheet, not a toast on the way out.
-     *
-     * Closing on success would drop the one figure a member cannot reconstruct from the tree — how
-     * many rows were skipped because they already stood at the target (design ch. 09, artboard 9).
+     * A finished batch keeps the sheet open on its result, including how many rows were skipped (design ch. 09,
+     * artboard 9).
      */
     @Test
     fun `a finished batch keeps the sheet open on its result`() =
@@ -541,16 +528,11 @@ class InventoryViewModelTest {
 
             assertNull(model.state.value.bulk)
             assertTrue(model.state.value.selection.isEmpty())
-            // The cached entries carry the OLD place until something re-reads them, so a batch that
-            // left them behind would show a member their own move as not having happened.
             assertTrue(model.state.value.openedStacks.isEmpty())
         }
 
     /**
-     * „Die Auswahl bleibt bestehen — nichts wurde geändert" (design ch. 09, artboard 10).
-     *
-     * Nothing was written, so making the member pick twelve rows again to retry punishes them for
-     * the server's answer.
+     * A refused batch keeps both the sheet and the selection, since nothing was written (design ch. 09, artboard 10).
      */
     @Test
     fun `a refused batch keeps both the sheet and the selection`() =
@@ -583,8 +565,6 @@ class InventoryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf(picked.toList()), source.checkedOut)
-            // The result is a step in the sheet, not a toast on the way out — the same shape the
-            // bulk rebooking has.
             assertEquals(true, model.state.value.checkout?.done)
 
             model.checkoutActions.close()
@@ -606,7 +586,6 @@ class InventoryViewModelTest {
             model.checkoutActions.confirm()
             advanceUntilIdle()
 
-            // All or nothing: nothing was booked out, so nothing may look as though it had been.
             assertEquals(false, model.state.value.checkout?.done)
             assertTrue(model.state.value.checkout?.error is ApiError.Forbidden)
             assertEquals(picked, model.state.value.selection)
@@ -614,8 +593,6 @@ class InventoryViewModelTest {
 
     /** Opens the tree, picks its entries and points the sheet at a target. */
     private suspend fun TestScope.pickedAndTargeted(): InventoryViewModel {
-        // Without a target the confirm is a no-op by design, and the test would assert against a
-        // write that never left.
         source.locationAnswer = listOf(LocationOption(id = "l2", name = "Everus Harbor"))
         val model = openedStackModel()
         model.onToggleBranch("m1", null)

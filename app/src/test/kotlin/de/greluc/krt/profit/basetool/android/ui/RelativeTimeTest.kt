@@ -23,12 +23,8 @@ import java.time.ZoneId
 import java.util.TimeZone
 
 /**
- * The four rungs of chapter 07's timestamp ladder, in German.
- *
- * The chapter writes them out — `vor 4 Min.`, `vor 2 Std.`, `gestern, 21:14`, `15.08., 09:30` —
- * and the platform only supplies the first two. This pins all four, including the lower-case
- * opening the platform does not give and the calendar-day boundary that makes an evening
- * timestamp read as „gestern" rather than as a count of hours.
+ * Tests the four rungs of chapter 07's timestamp ladder in German, including the lower-case opening and the
+ * calendar-day boundary.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "de-rDE")
@@ -36,13 +32,7 @@ class RelativeTimeTest {
     private val zone: ZoneId = ZoneId.of("Europe/Berlin")
 
     /**
-     * The device's own zone, deliberately **not** the one under test.
-     *
-     * The formatter takes a zone for the day boundary; it must print the clock in that zone too.
-     * While it used `DateUtils.formatDateTime`, which silently uses the system default, the two
-     * agreed on any German machine and disagreed on a CI runner set to UTC — where „09:30" came out
-     * as „07:30". Pinning a different default here makes the mismatch a local failure instead of a
-     * remote one.
+     * Sets a device default zone different from the one under test, so a clock printed in the wrong zone fails locally.
      */
     @Before
     fun useAForeignDefaultZone() {
@@ -116,12 +106,7 @@ class RelativeTimeTest {
     }
 
     /**
-     * A countdown stays relative however far out it sits, and keeps the platform's word for it.
-     *
-     * German has „übermorgen" and Android uses it; the count „in 2 Tagen" is the fallback of a
-     * language that lacks the word. Both are the same rung of the ladder and both are relative,
-     * which is the property that matters — an absolute date would be a factually correct answer
-     * to a question nobody asked about something that has not happened yet.
+     * A countdown stays relative however far out it sits, using the platform's wording such as „übermorgen".
      */
     @Test
     fun `the future stays a countdown past the day boundary`() {
@@ -133,8 +118,6 @@ class RelativeTimeTest {
     @Test
     fun `a timestamp a hair ahead of this device reads as past, not as a countdown`() {
         val now = Instant.parse("2026-08-27T21:00:00Z")
-        // The server's clock is not this device's. Before the clamp, a booking written a moment
-        // ago rendered „in 0 Min." — a thing that has already happened, described as pending.
         val justWritten = now.plusMillis(400)
 
         val text = justWritten.relativeTo(now, context, ZoneId.of("Europe/Berlin"))

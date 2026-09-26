@@ -48,40 +48,17 @@ private const val TRADEMARK_LINE_HEIGHT = 1.45f
 private const val AGREEMENT_LINE_HEIGHT = 1.5f
 
 /**
- * The Star Citizen Fan Kit compliance band — a legally coupled unit of **three** elements.
+ * The Star Citizen Fan Kit compliance band: the "Made By The Community" artwork, the Fan Kit
+ * Guidelines trademark line and the Fankit Agreement clause 2(g) notice, as one legal unit.
  *
- * **Two CIG documents bind this band and they apply cumulatively.** The Fan Kit Guidelines
- * (sections 2, 2b and 3) require the unmodified "Made By The Community" artwork together with the
- * CIG trademark line. The Fankit **Agreement**, clause 2(g), separately requires a longer notice —
- * the non-affiliation sentence, the copyright line, "Squadron 42®" in the mark list and a closing
- * "All rights reserved." Neither notice substitutes for the other.
+ * - Both notices are verbatim English in every locale; their differing punctuation is intended and
+ *   asserted by `KrtFanKitBandTest`.
+ * - The 2(g) notice is never folded behind a disclosure, the whole band uses one type size, and the
+ *   artwork is never modified.
+ * - The band is static, carries no KRT styling, and appears only on the login and settings
+ *   screens; TalkBack reads it as one node.
  *
- * None of the three may be rendered, moved or removed on its own, which is why they live in this
- * single composable and why neither notice is a parameter. Consequences that are easy to break by
- * accident and must not be:
- *
- * - Both notices are prescribed legal wording. They stay verbatim English in every locale — never
- *   translated, rephrased or typographically "corrected".
- * - **The two differ in details that look like mistakes, and both are right.** The §2b line carries
- *   a space before its third ®, because CIG's §2b prose writes it that way; clause 2(g) carries
- *   none before any of its four, writes `Ltd..` with two full stops and takes an Oxford comma
- *   before "and Cloud Imperium®". Harmonising them yields a tidier band that satisfies neither
- *   document, so `KrtFanKitBandTest` asserts the difference itself.
- * - **The 2(g) paragraph is never folded behind a disclosure.** A notice behind a tap is not
- *   "reasonably prominent" in the sense the clause asks for (design decision, 27.08.2026); the
- *   login page scrolls instead.
- * - **One type size across the whole band.** The Guidelines' ~10 pt floor is ≈ 13.3 sp, which
- *   leaves no honest step down from the 14 sp the line above already uses.
- * - The artwork ships unmodified: no recolour, tint, flip, distortion, outline, shadow or effect.
- * - The band is static and non-interactive. KRT brackets, glows and orange are deliberately absent:
- *   this is third-party attribution and must not read as a button or as a KRT badge, nor compete
- *   with the screen's single orange call to action.
- * - Placement is fixed to the login screen (above the version footer) and the settings screen.
- *   Nowhere else.
- *
- * TalkBack reads artwork and notice as one node, matching the legal unit.
- *
- * @param modifier layout modifier. Leave the colours alone; only layout may be adjusted.
+ * @param modifier layout modifier; only layout may be adjusted.
  */
 @Composable
 fun KrtFanKitBand(modifier: Modifier = Modifier) {
@@ -107,8 +84,6 @@ fun KrtFanKitBand(modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s12),
             horizontalArrangement = Arrangement.spacedBy(LOGO_GAP),
-            // Top-aligned, not centred: with the 2(g) paragraph the text column runs several
-            // lines, and a vertically centred logo would float in the middle of it.
             verticalAlignment = Alignment.Top,
         ) {
             Image(

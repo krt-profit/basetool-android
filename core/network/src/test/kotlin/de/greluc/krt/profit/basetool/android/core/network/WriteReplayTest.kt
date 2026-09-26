@@ -25,15 +25,8 @@ import java.io.IOException
  * A write that may already have reached the server is never sent a second time by the transport
  * (REQ-APP-API-009, ADR-0023).
  *
- * Each test drives the client exactly as the app builds it, through [KrtHttpClient], because the
- * property is a combination of two settings — `retryOnConnectionFailure` and the one-shot body —
- * and either of them alone proves nothing.
- *
- * The failure is staged the way it happens in the field: a **pooled** connection the server drops
- * after it has read the whole request. The warm-up call is not decoration. OkHttp retries on a new
- * connection only when the failed one had already carried a successful exchange; on a fresh
- * connection it gives up for every verb, and the GET control below would then pass for the wrong
- * reason.
+ * Tests drive the client through [KrtHttpClient] and stage a warmed-up pooled connection the server
+ * drops after reading the request.
  */
 class WriteReplayTest {
     private lateinit var server: MockWebServer
@@ -86,9 +79,6 @@ class WriteReplayTest {
 
     @Test
     fun `a GET dropped the same way is still retried`() {
-        // The control. Without it the two tests above would also pass if the client had simply
-        // stopped retrying anything, which would turn every stale pooled connection into an error
-        // banner on a list screen.
         warmUpPooledConnection()
         server.enqueue(droppedAfterRequest())
         server.enqueue(ok())
@@ -135,8 +125,6 @@ class WriteReplayTest {
 
     @Test
     fun `the token client does not replay a token request either`() {
-        // Every token call is a POST, and a refresh rotates the refresh token: a replay of one that
-        // landed can only be refused, and the member is signed out for a network blip.
         val tokenClient = KrtHttpClient.createTokenClient(client, ServerClock())
         warmUpPooledConnection(tokenClient)
         server.enqueue(droppedAfterRequest())
@@ -149,9 +137,6 @@ class WriteReplayTest {
 
     @Test
     fun `the app's own 401 retry still re-sends the whole body`() {
-        // One-shot is a flag OkHttp's recovery reads, not a property of the bytes. The token
-        // interceptor re-sends a request the server REFUSED before doing anything, which is a
-        // deliberate replay and has to keep working — with the same payload, not an empty one.
         var token = "expired"
         val refreshing =
             KrtHttpClient.create(
@@ -215,7 +200,6 @@ class WriteReplayTest {
             through.newCall(request).execute().close()
             fail("a write dropped after it was sent must surface as a failure, not be replayed")
         } catch (expected: IOException) {
-            // What ApiReader turns into ApiError.Network: the member sees it and can decide.
         }
     }
 

@@ -27,19 +27,10 @@ import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.*
 
-/* ═════════════════════════════ 7 · TABS & SEGMENTS ═════════════════════════════
- * Tab      = white label + 3 dp orange underline when active; horizontally scrollable; the row
- *            scrolls to the active tab on open; deep-linkable via ?tab=.
- * Segment  = a scope switch (Mitglied | Verwaltung, Meine Schiffe | Org-Einheit): UPPERCASE,
- *            filled orange with BLACK text when active, hairline box, 44 dp.
- * A scope switch is NOT a tab: the tab changes what part of one thing you see, the segment
- * changes WHICH thing.
- */
-
 @Composable
 fun KrtTabRow(titles: List<String>, counts: List<Int?> , selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, lockedIndices: Set<Int> = emptySet(), onLocked: (Int) -> Unit = {}) {
     val scroll = rememberScrollState()
-    LaunchedEffect(selected) { /* scroll the active tab into view on open */ }
+    LaunchedEffect(selected) {  }
     Row(modifier.fillMaxWidth().horizontalScroll(scroll).padding(horizontal = 8.dp)) {
         titles.forEachIndexed { i, title ->
             val locked = i in lockedIndices
@@ -98,21 +89,6 @@ fun KrtSegment(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
     }
 }
 
-/* ═════════════════════════════ 8 · PERMISSIONS — THE GATE ═════════════════════════════
- * /api/v1/users/me returns roles + permissions (the access token carries realm_access.roles).
- * The app READS them. An action the caller demonstrably may not perform is:
- *
- *   NOT hidden        — this org hands out roles by hand; a function nobody sees is never asked for
- *   drawn disabled    — alpha .45 PLUS a lock glyph (alpha alone is indistinguishable from loading)
- *   still TAPPABLE    — never enabled = false: what cannot be tapped cannot explain itself
- *   answered in words — the toast names the MISSING ROLE, never "403", never "Keine Berechtigung"
- *
- * Copy: "Dafür brauchst du die Rolle Logistiker." Role names come from ROLES_AND_PERMISSIONS.md
- * so the text and the role someone has to request carry the same name.
- *
- * Two kinds of lock, ONE picture (deliberately): a ROLE lock (known up front) and a ROW lock
- * (own row, or edit rights on this org unit). Both look identical; only the sentence differs.
- */
 data class KrtGate(
     val allowed: Boolean,
     /** "Dafür brauchst du die Rolle Logistiker." — names the role, not the error. */
@@ -150,12 +126,6 @@ fun KrtLockGlyph(modifier: Modifier = Modifier, size: androidx.compose.ui.unit.D
     Icon(painterResource(R.drawable.ic_krt_lock), contentDescription = null, tint = KrtPalette.TextMuted, modifier = modifier.size(size))
 }
 
-/* ═════════════════════════════ 9 · STATUS ═════════════════════════════
- * Two loudnesses, and they are not interchangeable:
- *   KrtStatusBadge  page-level lifecycle marker (an Einsatz IS planned) — loud, full-width capable
- *   KrtStatusPill   row-level marker in a list — quiet
- * Status enums shout: GEPLANT, AKTIV, ABGESCHLOSSEN, ABGELEHNT.
- */
 enum class KrtStatusTone { PLANNED, ACTIVE, BRIEFING, COMPLETED, CANCELLED, OPEN, IN_PROGRESS, REJECTED }
 
 private fun KrtStatusTone.colors(): Pair<Color, Color> = when (this) {
@@ -175,15 +145,10 @@ fun KrtStatusPill(text: String, tone: KrtStatusTone, modifier: Modifier = Modifi
 }
 
 /**
- * The page-level lifecycle marker — FOUR parts, all of them load-bearing (ch. 02 §3, settled in
- * round 14 · S24 against the stylesheet, which draws all four):
- *   1  a faint tint fill in the state's hue (10 %)
- *   2  a hairline border
- *   3  a 3 dp LEADING EDGE in the state's text tint
- *   4  a 10 dp square dot in that same tint, then the label in WHITE
- * The label is white, not tinted: the hue is carried by the edge and the dot, so the word stays
- * as legible as any other title. Do not drop the border or the dot — an earlier version of this
- * file had only fill + edge and read as a different component.
+ * The page-level lifecycle marker.
+ *
+ * Draws a 10 % tint fill, a hairline border, a 3 dp leading edge and a 10 dp square dot in the
+ * state's text tint, with the label in white.
  */
 @Composable
 fun KrtStatusBadge(text: String, tone: KrtStatusTone, modifier: Modifier = Modifier) {
@@ -204,11 +169,6 @@ fun KrtStatusBadge(text: String, tone: KrtStatusTone, modifier: Modifier = Modif
     }
 }
 
-/* ═════════════════════════════ 10 · NUMBERS & MONEY ═════════════════════════════
- * Integers with thousands separators. A buy price renders RED with a minus, a sell price GREEN
- * with a plus — the sign comes from the KIND, never from what somebody typed. A missing value is
- * an em dash in TextMuted, never 0 and never an empty cell.
- */
 @Composable
 /** @param big the card rung of [KrtFigure]; a screen's ONE hero number uses KrtFigure.total directly. */
 fun KrtAmount(value: Long?, modifier: Modifier = Modifier, unit: String? = null, signed: Boolean = false, positive: Boolean = true, big: Boolean = false) {
@@ -232,16 +192,6 @@ fun KrtAmount(value: Long?, modifier: Modifier = Modifier, unit: String? = null,
 /** 1284 -> "1.284" (German grouping, as the web renders it). */
 fun krtFormat(value: Long): String = java.text.NumberFormat.getIntegerInstance(java.util.Locale.GERMAN).format(value)
 
-/* ═════════════════════════════ 11 · EMPTY · LOADING · ERROR ═════════════════════════════
- * A list has FOUR states and all four are drawn in the spec. Rules:
- *   loading   skeleton rows in the list shape — never a full-screen spinner over content that
- *             is already there; a spinner appears only after 300 ms
- *   empty     one sentence, in the words the web uses; NO empty frame, no illustration
- *   filtered  a different sentence PLUS a reset action — never the same copy as empty
- *   error     Kap. 14: in-fiction EN canon for HTTP states (403/404/500), plain German for a
- *             local failure, and always ONE way on ("Erneut versuchen" / "Zurück zur Basis")
- * Offline: write actions render disabled with a line saying why — never a queue.
- */
 @Composable
 fun KrtEmptyState(text: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(KrtSpacing.md), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
@@ -255,18 +205,6 @@ fun KrtSkeletonRow(modifier: Modifier = Modifier, height: androidx.compose.ui.un
     Box(modifier.fillMaxWidth().height(height).background(KrtPalette.Gray4).border(KrtDimens.hairline, KrtPalette.Gray3))
 }
 
-/* ═════════════════════════════ 12 · FAN KIT BAND ═════════════════════════════
- * LEGALLY REQUIRED and INSEPARABLE: three elements that never render, move or disappear
- * separately — the unmodified white "Made By The Community" artwork (36 dp), the Guidelines §2b
- * trademark line, and the Fankit Agreement clause 2(g) notice. Both notices 14 sp #D2D2D2,
- * verbatim ENGLISH in every locale, never folded behind a tap, never shrunk below 14 sp.
- *
- * The two strings differ on purpose (a space before the third ® in §2b, none before 2(g)'s four;
- * "Ltd.." keeps both stops). NEVER harmonise them. Pin both byte-exact in a test, plus an
- * assertion that they still differ.
- *
- * Placement: login screen and Einstellungen, above the version footer. Both screens SCROLL.
- */
 @Composable
 fun KrtFanKitBand(modifier: Modifier = Modifier) {
     Row(

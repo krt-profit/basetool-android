@@ -53,12 +53,9 @@ const val BANK_STAFF_COUNTS_TAG: String = "bank-staff-counts"
 private const val CLOSED_ROW_ALPHA = 0.55f
 
 /**
- * The Verwaltung scope's Übersicht tab — design chapter 12, artboard 4.
+ * The Verwaltung scope's Übersicht tab: every account of the unit.
  *
- * **The delta to the member list is the point of this screen.** It carries every account of the
- * unit, including ones the caller holds no view grant on and ones that are closed. Both are marked,
- * because "I can see this because I run the bank" and "I can see this because someone showed me"
- * are different facts about the same balance.
+ * Accounts the caller holds no view grant on and closed accounts are included and marked.
  *
  * @param state what the tab holds.
  * @param onRefresh a pull-to-refresh.
@@ -78,10 +75,6 @@ fun BankStaffOverview(
         modifier = modifier.fillMaxSize(),
     ) {
         if (state.rows.isEmpty()) {
-            // Two different emptinesses. Management sees every account there is, so an empty list
-            // means the organisation runs none. An employee sees only what they hold a grant for,
-            // so an empty list usually means they hold none — and telling them the bank has no
-            // accounts would be false, in the one place they cannot check.
             KrtEmptyState(
                 iconRes = DesignR.drawable.ic_krt_bank,
                 title = stringResource(R.string.bank_staff_empty_title),
@@ -102,8 +95,6 @@ fun BankStaffOverview(
             contentPadding = PaddingValues(KrtSpacing.s12),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
-            // The aggregate strip is management's alone (REQ-BANK-010); the server sends none
-            // to anyone else, and inventing zeroes for it would assert an empty bank.
             state.totals?.let { totals ->
                 item(key = "kpi") { StaffKpiBand(state = state, totals = totals) }
             }
@@ -130,9 +121,6 @@ private fun StaffKpiBand(
     totals: BankStaffTotals,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-        // The same tile the member list uses, which is the component the design intends for "this
-        // figure is the sum of the screen" — orange leading bar, muted uppercase label, tabular
-        // value.
         KrtTotalTile(
             label = stringResource(R.string.bank_staff_kpi_label_plain),
             value = formatAmount(totals.totalBalance.orEmpty()),
@@ -151,8 +139,7 @@ private fun StaffKpiBand(
 /**
  * The sentence under the KPI: how many accounts, how many closed, how many requests are open.
  *
- * When the queue was too long to walk to the end, the request count is prefixed rather than shown
- * bare — a floor stated as a floor, not a total that happens to be wrong (ADR-0104).
+ * When the queue could not be read to the end, the request count is stated as a floor (ADR-0104).
  *
  * @param totals the strip's figures.
  * @return the assembled line.
@@ -250,10 +237,8 @@ private fun StaffAccountRow(
 }
 
 /**
- * What is worth saying about an account beyond its name.
- *
- * At most three chips, and each answers a different question: is everyone allowed to see it, does
- * it have work waiting, and am I seeing it only because of my office.
+ * Up to three chips for an account: visible to everyone, work waiting, and reached only through the
+ * caller's office.
  *
  * @param row the account plus its annotations.
  * @param closed whether it is closed, which is stated instead of the rest.
@@ -284,9 +269,6 @@ private fun StaffAccountChips(
                 tone = KrtChipTone.Warning,
             )
         }
-        // Only management sees accounts beyond their own grants, so only there can a row be
-        // one the caller reaches purely through their office. An employee's list is already
-        // grant-shaped, and marking every row would say nothing.
         if (management && !row.viewable) {
             KrtChip(
                 text = stringResource(R.string.bank_staff_chip_no_grant),

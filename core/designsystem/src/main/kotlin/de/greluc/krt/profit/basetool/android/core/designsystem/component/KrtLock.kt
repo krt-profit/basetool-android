@@ -82,17 +82,12 @@ private val DETAIL_LINE = 16.sp
 /**
  * Draws a control as locked: dimmed, and announced as locked to TalkBack.
  *
- * Alpha alone is deliberately **not** enough — at 45 % a control is indistinguishable from one
- * that is merely loading, so every locked control also carries [KrtLockBadge] or an inline
- * [KrtInlineLock] (design ch. 09, artboard 14: „Alpha allein ist von einem Ladezustand nicht zu
- * unterscheiden"). This modifier covers the half that is not a glyph.
- *
- * It does not touch the click handler. A locked control keeps its tap target so it can explain
- * itself; `enabled = false` is the thing this pattern exists to avoid.
+ * Pair it with [KrtLockBadge] or [KrtInlineLock], since alpha alone reads as loading. The click
+ * handler is left intact so the control can explain the refusal.
  *
  * @param locked whether the caller may act — `false` leaves the control untouched.
- * @param stateLabel what TalkBack should announce instead of the plain label, typically the same
- *   sentence the refusal toast shows.
+ * @param stateLabel what TalkBack announces instead of the plain label, typically the refusal
+ *   toast's sentence.
  */
 fun Modifier.krtLocked(
     locked: Boolean,
@@ -105,11 +100,8 @@ fun Modifier.krtLocked(
     }
 
 /**
- * The lock that marks an icon button as locked — a 14 dp badge for the button's corner.
- *
- * Drawn **fully opaque on an opaque fill**, never dimmed along with the icon it sits on: the badge
- * is what separates "you may not" from "this is still loading", so fading it would erase the one
- * signal that carries the meaning (design ch. 09, artboard 14).
+ * The 14 dp lock badge for an icon button's corner, drawn fully opaque and never dimmed with the
+ * icon.
  *
  * Place it with [Alignment.BottomEnd] in the [Box] that holds the icon button.
  *
@@ -150,18 +142,13 @@ fun KrtInlineLock(modifier: Modifier = Modifier) {
 }
 
 /**
- * The one carrier for "you may not do that" — a bracket-framed bar at the foot of the screen.
+ * The bracket-framed bar at the foot of the screen that says "you may not do that", in the warning
+ * tint because no error occurred.
  *
- * Warning-tinted rather than danger-tinted on purpose: no error has occurred, the caller simply
- * lacks a grant (design ch. 09, artboard 14: „Warnton #FFD23F mit Schloss — kein Danger, es ist
- * kein Fehler passiert").
- *
- * The design fixes this as a **singleton**: one refusal is visible at a time and a second tap
- * restarts its clock instead of stacking a second bar. That behaviour belongs to the caller's
- * state holder, not to this composable — see the app's `rememberDenial`.
+ * One refusal shows at a time; the caller's state holder (`rememberDenial`) enforces that.
  *
  * @param title the missing grant, named as a sentence — „Dafür brauchst du die Rolle Logistiker."
- *   Never a status code and never „Keine Berechtigung": the point is to name what to ask for.
+ *   Never a status code and never „Keine Berechtigung".
  * @param detail who hands that grant out, or the rule behind a row lock.
  * @param modifier placement, typically bottom-centre above the navigation bar.
  */
@@ -189,14 +176,11 @@ fun KrtLockToast(
             tint = KrtTheme.colors.warning,
         )
         Column(modifier = Modifier.padding(start = TOAST_GAP)) {
-            // Sentence case, so the tracking `labelLarge` carries for uppercase labels is dropped —
-            // the artboard measures this line at `letter-spacing: normal` (design ch. 09, 12).
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge.copy(letterSpacing = TextUnit.Unspecified),
                 color = KrtPalette.White,
             )
-            // `--fs-2xs` Light: one rung below `bodySmall`, which the scale only carries in Bold.
             Text(
                 text = detail,
                 modifier = Modifier.padding(top = TOAST_DETAIL_GAP),

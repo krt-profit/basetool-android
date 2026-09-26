@@ -101,8 +101,6 @@ class DashboardScreenTest {
     fun `the greeting names the member and their org unit, uppercase`() {
         show(DashboardState(phase = DashboardPhase.Ready))
 
-        // Uppercase, because artboard 1 draws it that way and the assertion is the only thing
-        // standing between the design and a sentence-case greeting that nobody would call a bug.
         compose.onNodeWithText("WILLKOMMEN, GRAFROTZ").assertIsDisplayed()
         compose.onNodeWithText("Bereich Profit", substring = true).assertIsDisplayed()
     }
@@ -121,8 +119,6 @@ class DashboardScreenTest {
 
     @Test
     fun `no announcement means no band at all, not an empty one`() {
-        // A 204 is an ordinary answer. An "Information" heading over nothing would read as a
-        // notice that failed to load.
         show(DashboardState(phase = DashboardPhase.Ready))
 
         compose.onAllNodesWithText("Information", ignoreCase = true).assertCountEquals(0)
@@ -154,20 +150,13 @@ class DashboardScreenTest {
 
     @Test
     fun `a failed band says so instead of claiming the week is empty`() {
-        // "Nothing is scheduled" and "the app could not ask" are different facts, and the second
-        // told as the first would have a member skip an Einsatz.
         show(DashboardState(phase = DashboardPhase.Failed))
 
         compose.onNodeWithText("Die Einsätze konnten nicht geladen werden.").assertIsDisplayed()
     }
 
     /**
-     * The dashboard says nothing about unread notifications — withdrawn 2026-08-31.
-     *
-     * It previewed the three newest and stated „Nichts Ungelesenes." when there were none. The bell
-     * in the top bar carries the same count on every screen, so this was a second place saying what
-     * one place already says. Pinned as an absence, because a preview is exactly the kind of band
-     * that gets added back by someone reading the artboard rather than this note.
+     * The dashboard shows no unread-notification preview, since the top bar's bell already carries the count.
      */
     @Test
     fun `the dashboard no longer previews unread notifications`() {

@@ -13,13 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Reading the server's `notification` event.
- *
- * The tests that matter here are the ones about **not** reading it. The server degrades to the bare
- * `new` on several paths — an unserialisable signal, a peer replica on an older build, a
- * notification type it does not know — and a client that treated an unreadable payload as an error
- * would drop a push it was meant to act on. Every one of those cases has to come out as "something
- * changed", which is what this app did before the payload existed.
+ * Reading the server's `notification` event, including every degraded payload that must still
+ * read as "something changed" rather than an error.
  */
 class NotificationSignalTest {
     @Test

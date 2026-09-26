@@ -56,14 +56,11 @@ const val BANK_REQUEST_LIMIT_TAG: String = "bank-request-limit"
 /** The amount field: 56 dp tall and 22 sp, a step above every other field on the sheet. */
 private val AMOUNT_FIELD_HEIGHT = 56.dp
 
-/** The amount's own type size, measured off artboard 3. */
+/** The amount's type size in the request sheet. */
 private val AMOUNT_TEXT_SIZE = 22.sp
 
 /**
- * How the footer splits, measured off artboard 3 (154 dp beside 200 dp).
- *
- * An even split wrapped „ANTRAG EINREICHEN" onto two lines on a 411 dp phone — found on a
- * device, not in a preview.
+ * The cancel button's share of the footer width, so „ANTRAG EINREICHEN" fits on one line.
  */
 private const val CANCEL_WEIGHT = 0.44f
 
@@ -94,9 +91,7 @@ data class BankRequestSheetActions(
 /**
  * The colour an amount is stated in, by what the movement does to the account.
  *
- * A transfer stays neutral on purpose: at the level the requester is looking at, the money leaves
- * one org-unit account and lands in another, so painting it red would claim a loss the
- * organisation does not make.
+ * A transfer stays neutral, since the money stays within the organisation.
  *
  * @param kind the movement.
  * @return the tint for that reading.
@@ -111,19 +106,9 @@ private fun amountTone(kind: BankRequestKind): Color =
 /**
  * The approval line under the amount, or `null` when there is nothing true to say.
  *
- * Three rules decide this, and all three come from the server rather than from a constant:
- *
- * - **A deposit is never approval-limited** (REQ-BANK-042), so it gets no line at all. The web
- *   frontend says the same in its own words: „Einzahlungen sind für jedes aktive Konto möglich –
- *   ohne Freigabe-Limit."
- * - **A caller the account exempts** (`approvalExempt`) gets no line either — a threshold that
- *   will never apply to them is noise.
- * - Otherwise the line states the account's own `applicableLimit`, and flips from *what will
- *   happen* to *what is now the case* as the typed amount crosses it.
- *
- * There is **no approval count** in any of this. The API models one approval, granted by one
- * class of approver (`requiredApprover`); for the KRT account that class escalates with the
- * amount (REQ-BANK-047), but the number of approvals never does.
+ * A deposit is never approval-limited (REQ-BANK-042) and an `approvalExempt` caller gets no line;
+ * otherwise the line states the account's `applicableLimit` and changes wording once the typed amount
+ * crosses it. There is always exactly one approval, never a count.
  *
  * @param kind the movement being requested.
  * @param amount the amount as typed.
@@ -150,11 +135,10 @@ private fun approvalLine(
 }
 
 /**
- * Raises or corrects a booking request — design chapter 12, artboard 3.
+ * Raises or corrects a booking request.
  *
- * The account picker's **label** changes with the movement, because the same control means
- * different things: for a deposit the account is where the money lands („Zielkonto"), for the
- * other two it is where the money comes from („Konto"), and a transfer needs both.
+ * The account picker is labelled „Zielkonto" for a deposit and „Konto" otherwise; a transfer shows a
+ * second picker for its destination.
  *
  * @param state what the sheet holds.
  * @param accounts the accounts that may be picked.
@@ -199,10 +183,8 @@ fun BankRequestSheet(
 }
 
 /**
- * The movement picker.
- *
- * Locked while an existing request is being corrected: the server refuses a change of kind, so an
- * enabled control here would offer an edit that always comes back as a 400.
+ * The movement picker, locked while an existing request is corrected because the server refuses a
+ * change of kind.
  *
  * @param kind the current movement.
  * @param enabled whether it may be changed.
@@ -261,9 +243,6 @@ private fun AccountFields(
                 R.string.bank_request_field_account
             },
         )
-    // A deposit lands on any active account (REQ-BANK-042); the other two need the request
-    // grant the server reports per account, so offering them all would build a form the server
-    // refuses on submit.
     val eligible =
         if (state.kind == BankRequestKind.DEPOSIT) accounts else accounts.filter { it.canRequest }
     val options =
@@ -422,10 +401,10 @@ private fun SubmitBar(
 }
 
 /**
- * What a refused write reads as.
+ * The sentence shown under the form for a refused write.
  *
- * A 409 is its own sentence rather than a generic failure: somebody approved or booked the
- * request while the sheet was open, and the member has to re-read it rather than try again.
+ * A 409 means the request was approved or booked meanwhile and gets its own sentence asking the
+ * member to re-read it.
  *
  * @param error what the server refused with.
  * @return the sentence to show under the form.
@@ -456,10 +435,8 @@ internal fun BankRequestKind.labelRes(): Int =
     }
 
 /**
- * Where a transfer may go, as the sheet needs it.
- *
- * A thin mirror of the data layer's own type so the composable does not have to import it, which
- * keeps this file previewable without the network module on the classpath.
+ * A transfer destination as the sheet needs it; a UI-side mirror of the data layer's type that keeps
+ * this file previewable without the network module.
  *
  * @property id the account.
  * @property label how it reads in the picker.

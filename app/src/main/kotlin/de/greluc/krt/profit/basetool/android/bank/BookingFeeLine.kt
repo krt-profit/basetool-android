@@ -14,19 +14,9 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 
 /**
- * „Gebühr 2.250" — what a transfer itself cost, when it cost anything.
+ * „Gebühr 2.250": the transfer fee a ledger row was charged, from its `transferFee`.
  *
- * The server sends `transferFee` on the ledger row and the app was dropping it, which left the
- * amount shown on the row and the amount that actually left the account differing by an
- * unexplained gap. The write side already states the fee before a transfer is sent; this is the
- * same fact afterwards.
- *
- * A zero fee draws nothing: most bookings carry none, and „Gebühr 0" on every one of them would be
- * noise that buries the rows where a fee was really charged.
- *
- * It lives in its own file rather than beside the ledger row because `BankScreen.kt` sits on
- * detekt's 30-functions-per-file ceiling, and pushing it over would have been a lint failure
- * rather than a design decision.
+ * A zero fee draws nothing.
  *
  * @receiver the ledger row.
  * @return the line, or `null` when no fee was charged.

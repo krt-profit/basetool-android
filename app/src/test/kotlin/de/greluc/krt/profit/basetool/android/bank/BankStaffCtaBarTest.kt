@@ -19,12 +19,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * The Konten tab's two calls to action, and the asymmetry between them.
- *
- * The whole point of testing them together: they look alike and are gated differently, and the one
- * that was gated wrongly was gated by **copying** its neighbour. „Konto anlegen" is a management
- * act and its endpoint says so; the direct booking asks for `hasRole('BANK_EMPLOYEE')` and a
- * per-account grant, neither of which Bank-Management is.
+ * Tests the Konten tab's two calls to action, which look alike but are gated differently: „Konto anlegen" needs
+ * Bank-Management, the direct booking `BANK_EMPLOYEE` plus a per-account grant.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -50,11 +46,7 @@ class BankStaffCtaBarTest {
     }
 
     /**
-     * The regression this file exists for.
-     *
-     * Until 2026-09-03 the direct booking was locked behind Bank-Management — the client inventing
-     * a stricter rule than the endpoint it calls, so a plain Bankmitarbeiter with a per-account
-     * grant could book in the web and was refused in the app.
+     * A bank employee with a per-account grant but without Bank-Management may open the direct booking.
      */
     @Test
     fun `a bank employee without management may open the direct booking`() {

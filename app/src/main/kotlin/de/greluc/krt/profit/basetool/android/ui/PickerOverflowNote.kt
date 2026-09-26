@@ -16,17 +16,9 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 
 /**
- * The line a server-side picker shows when its page is not the whole catalogue.
+ * The line a server-side picker shows when its page is not the whole catalogue (ADR-0104).
  *
- * Every picker search answers a **page**. A picker that renders it and says nothing is
- * indistinguishable from one that has shown everything, so a member whose entry is missing
- * concludes it does not exist rather than that they should keep typing — which is how 28 of 53
- * locations went missing from the web's booking form, with nothing on screen indicating a cut.
- * ADR-0104 is the rule that came out of it, and this is its one rendering: same words, same tone,
- * everywhere, so the member learns it once.
- *
- * Draws nothing when there is nothing more, rather than an empty row — the absence is the signal
- * that the list is complete.
+ * Draws nothing when there is nothing more.
  *
  * @param more whether the catalogue holds candidates this page does not carry.
  * @param modifier layout modifier.

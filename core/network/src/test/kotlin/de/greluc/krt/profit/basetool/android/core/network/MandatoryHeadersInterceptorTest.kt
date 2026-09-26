@@ -18,12 +18,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Contract of the headers every Basetool API call must carry.
- *
- * Three of the four fail silently when missing — a dropped org-unit pin shows another squadron's
- * data, a dropped correlation id makes a member's report untraceable, a dropped `Accept-Language`
- * shows German errors to an English user — so each is asserted individually rather than through one
- * "happy path" request.
+ * Contract of the headers every Basetool API call must carry, each asserted individually.
  */
 class MandatoryHeadersInterceptorTest {
     private lateinit var server: MockWebServer
@@ -77,8 +72,6 @@ class MandatoryHeadersInterceptorTest {
 
     @Test
     fun `omits the authorization header entirely when there is no session`() {
-        // Not an empty bearer: the anonymous endpoints treat a malformed Authorization as a failed
-        // authentication attempt, which would turn a guest read into a 401.
         server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
         val client = clientWith(token = null, orgUnit = "org-42")
 
@@ -99,8 +92,6 @@ class MandatoryHeadersInterceptorTest {
 
     @Test
     fun `a header set by the caller wins`() {
-        // The token exchange carries its own Authorization, and a retry reuses the correlation id
-        // of the attempt it repeats. Overwriting either would break both.
         server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
         val client = clientWith(token = "session-token", orgUnit = "org-42")
 

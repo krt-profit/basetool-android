@@ -83,8 +83,6 @@ class ServerClockTest {
 
         client.newCall(Request.Builder().url(server.url("/api/v1/terms/status")).build()).execute().use { }
 
-        // The device clock is "now", the server said 2026-08-18T10:00:00Z, so the offset is the gap
-        // between the two — whatever the machine running this test believes the date is.
         val expected = Duration.between(Instant.now(), Instant.parse("2026-08-18T10:00:00Z"))
         assertTrue(abs(expected.minus(clock.observedOffset()).toMillis()) < TOLERANCE_MILLIS)
     }

@@ -12,20 +12,10 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 
 /**
- * The pages of an Auftrag, following design chapter 10 artboard 2.
+ * The tabs of an Auftrag detail.
  *
- * Pages rather than one long screen: an order carries its positions, who is on it and what has
- * changed hands, and on a phone those stacked into a column a member had to scroll past to reach
- * the part they came for.
- *
- * **Two of the chapter's four tabs are missing, and both omissions are ratified** — design ch. 18
- * §C1 and §C2, confirmed rather than outstanding. *Materialbedarf* stays struck because the
- * cross-order surface (`MaterialDemandScreen`, ch. 18 §1) answers the same question better than a
- * tab inside one order, and `JobOrderDto.aggregatedMaterials` stays unmapped with it. *Verlauf*
- * stays struck because the API exposes no per-order activity trail: `/api/v1/audit/{domain}` is
- * admin-only and filters by domain and actor, never by one order. That is a backend ask, not a
- * drawing. A tab that can only ever be empty is worse than no tab — it promises content and then
- * blames the member's filter for its absence.
+ * There is no Materialbedarf tab (the cross-order `MaterialDemandScreen` covers it) and no Verlauf
+ * tab (the API has no per-order activity trail).
  *
  * @property labelRes the tab's name.
  */
@@ -59,16 +49,9 @@ enum class OrderTab(
      */
     fun countIn(order: JobOrder): Int =
         when (this) {
-            // An order is one kind or the other, so the sum is the count of whichever it
-            // carries. An item order used to read "0" here while its items sat unread.
             POSITIONS -> order.materials.size + order.items.size
-
             ASSIGNEES -> order.assignees.size
-
             HANDOVERS -> order.handovers.size + order.itemHandovers.size
-
-            // The pledges are their own read, not part of the order aggregate, so this tab carries
-            // no count rather than a stale one.
             CLAIMS -> 0
         }
 }

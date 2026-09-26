@@ -32,15 +32,10 @@ import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 const val ORDER_PRODUCTION_LOCATION_TAG: String = "order-production-location"
 
 /**
- * „Einlagerung" — where and for whom the produced units are booked into the Lager.
+ * „Einlagerung": where and for whom the produced units are booked into the Lager.
  *
- * > **Not drawn by the artboard, and not optional.** Design ch. 10 artboard 15 stops at the
- * > ingredients; the endpoint's `bookIn.locationId` is `@NotNull`, so a run booked without a place
- * > would be refused. The section is on the design gap list.
- *
- * The org-unit picker only appears when the owner actually has a choice: with one membership the
- * server resolves the pool itself, and with more it answers 400 unless one is named — which is why
- * this preselects rather than offering an empty option (REQ-ORG-004).
+ * Required because the endpoint's `bookIn.locationId` is mandatory. The org-unit picker appears
+ * only when the owner has more than one membership, and preselects one (REQ-ORG-004).
  *
  * @param draft what is filled in.
  * @param actions what the section reports.
@@ -73,8 +68,6 @@ fun ProductionBookInSection(
             onChosen = actions.onOwner,
         )
         PickerOverflowNote(more = bookIn.moreMembers)
-        // Left blank the units run on the acting member — the server's own default. Saying so
-        // beats a field that looks unfilled.
         KrtHint(explanation = stringResource(R.string.order_production_owner_hint))
         if (bookIn.orgUnits.size > 1) {
             OrgUnitField(draft = draft, actions = actions)
@@ -89,8 +82,6 @@ fun ProductionBookInSection(
             checked = bookIn.allocate,
             onCheckedChange = { actions.onAllocate() },
             label = stringResource(R.string.order_production_allocate),
-            // Personal stock never carries earmarks, and the combination is a 400 rather than a
-            // silently dropped flag — so the row goes dead while „persönlich" is ticked.
             enabled = !draft.saving && !bookIn.personal,
         )
         KrtHint(explanation = stringResource(R.string.order_production_allocate_hint))

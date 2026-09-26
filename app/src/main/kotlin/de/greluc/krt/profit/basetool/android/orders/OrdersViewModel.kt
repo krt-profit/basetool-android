@@ -93,13 +93,8 @@ data class OrdersState(
 /**
  * Drives the Auftrag queue.
  *
- * **The status filter is server-side**, like every other list in this app: filtering a page the
- * server already truncated would make the stated count wrong.
- *
- * The material list of a row collapses by default, mirroring the web app. The open/closed set lives
- * in this state rather than in each row's composable so it survives a scroll — a `LazyColumn`
- * disposes what leaves the viewport, and a member who opened three rows would find them shut on the
- * way back.
+ * The status filter is applied server-side. Which rows have their material list open is held here,
+ * so it survives the rows scrolling out of the `LazyColumn`.
  *
  * @property source where the orders come from
  */
@@ -110,9 +105,6 @@ class OrdersViewModel(
 ) : ViewModel() {
     init {
         observeLiveSync(liveSync, setOf(LiveSyncTopic.ORDERS)) { sections ->
-            // The queue room is refused outright to a requester who only sees their own Aufträge,
-            // so a screen that never hears from it is correct rather than broken — the server said
-            // so in the subscribed list.
             if (LiveSyncSections.ORDERS_QUEUE in sections) {
                 reload(keepRows = true)
             }
@@ -124,13 +116,7 @@ class OrdersViewModel(
     /** What the screen draws. */
     val state: StateFlow<OrdersState> = mutableState.asStateFlow()
 
-    // AFTER `mutableState`, not in the init block above it: a property is initialised in source
-    // order, and `Connectivity.online` replays its current value the moment it is collected — so
-    // collecting from an earlier init block read `mutableState` while it was still null and the
-    // app died on its first frame.
     init {
-        // The queue offers one write — its „+" — and offline it led to a form that could only
-        // refuse. Every other list in the app says so up front (ch. 14); this one did not.
         connectivity?.let { network ->
             viewModelScope.launch {
                 network.online.collect { online ->
@@ -173,10 +159,7 @@ class OrdersViewModel(
     /**
      * Narrows the queue to one or more units, or widens it again.
      *
-     * **Not the org pin.** The pin decides what the whole app is showing; this decides what this
-     * list shows within it, which is the difference that lets a member on „Alle Org-Einheiten" look
-     * at one squadron's orders without changing everything else. The web has offered both
-     * throughout; the app had only the pin.
+     * Filters only this list, within whatever the org pin shows; it does not change the pin.
      *
      * @param squadronIds which units, or empty for all of them.
      */
@@ -274,9 +257,6 @@ class OrdersViewModel(
         }
         loadJob =
             viewModelScope.launch {
-                // Asked for alongside the page rather than in an init block: the source caches
-                // them after the first read, and a colour that arrives one frame after the rows
-                // would repaint the list in front of the member.
                 val thresholds = source.ageThresholds()
                 when (val result = source.queue(statuses, page = 0, squadronIds = squadronIds)) {
                     is ApiResult.Success -> {
@@ -360,10 +340,6 @@ data class OrderDetailState(
     val noteDraft: String? = null,
     /**
      * The note the server refused in an optimistic-lock race, kept so the member can re-apply it.
-     *
-     * Design ch. 10 artboard 7: a 409 does not discard what somebody typed. The field is reset to
-     * what the server now holds and the refused text is offered beside it — losing a paragraph
-     * because a colleague saved first is the failure this whole mechanism exists to prevent.
      */
     val rejectedNote: String? = null,
     val handover: OrderHandoverDraft? = null,
@@ -404,19 +380,13 @@ data class OrderDetailState(
     /**
      * Whether this order's responsible unit is a Spezialkommando.
      *
-     * Resolved by id against the active org units, because `SquadronReferenceDto` carries no kind.
-     * `null` while that read is still out — which is not the same as „no", and is why the Zusagen
-     * tab appears once the answer arrives rather than being guessed from the unit's name.
+     * Resolved by id against the active org units; `null` while that read is out, which keeps the
+     * Zusagen tab hidden.
      */
     val responsibleIsSpecialCommand: Boolean? = null,
     val statusPickerOpen: Boolean = false,
     /**
-     * The status the member has picked but not yet applied.
-     *
-     * Design ch. 10 artboard 8 separates choosing from applying: the sheet carries a „Status
-     * übernehmen" action rather than moving the order the instant a row is tapped. A status change
-     * is visible to everyone on the order and two of the four cannot be taken back, so a mistap
-     * must not be able to make one.
+     * The status the member has picked but not yet applied with „Status übernehmen".
      */
     val statusChoice: JobOrderStatus? = null,
     /** Whether the terminal-status confirmation is up (artboard 9). */
@@ -441,13 +411,8 @@ data class OrderDetailState(
     /**
      * Which edit form this caller may open, or `null` when they may open none.
      *
-     * The two gates are the server's own. A Logistician rewrites the whole order
-     * (`canEditJobOrder`). A member of the **requesting** unit gets the narrower form
-     * (`canEditJobOrderAsRequester`) — and only while **nothing at all** has been delivered: the
-     * freeze is on the whole order, not per line, so one handover anywhere closes that path.
-     *
-     * Nothing else is inferred: the app is told which form it opened rather than the form working
-     * out what it is allowed to write.
+     * A Logistician gets the full rewrite (`canEditJobOrder`); a member of the requesting unit gets the
+     * narrower form (`canEditJobOrderAsRequester`) only while nothing at all has been delivered.
      */
     val editMode: OrderFormMode?
         get() =
@@ -468,10 +433,8 @@ data class OrderDetailState(
     /**
      * Whether editing is offered at all on this order.
      *
-     * An **item** order is editable too since 2026-08-29 (`PUT /orders/{id}/items`) — but only by a
-     * Logistician: the requester's own item path (`/{id}/items/requested`) is not built. And the
-     * server refuses the write once anything has been handed over, because the lines are what the
-     * delivery was measured against, so the control is drawn with that reason rather than hidden.
+     * An item order is editable only by a Logistician, and not once anything has been handed over; the
+     * control is then drawn with its reason rather than hidden.
      */
     val editableKind: Boolean
         get() {
@@ -481,12 +444,9 @@ data class OrderDetailState(
         }
 
     /**
-     * The order's item lines as a two-level tree.
+     * The order's item lines as a two-level tree, grouped by `parentItemId`.
      *
-     * The server models a sub-assembly as a **real ordered line with a parent**, so the tree is the
-     * order's own lines grouped by `parentItemId` rather than a recipe read. Design ch. 10 artboard
-     * 12 limits it to two levels on purpose — deeper does not fit a phone — and the app follows
-     * that: a line whose own child has children is drawn with the depth note rather than nested
+     * A line whose child has children of its own is marked with the depth note rather than nested
      * further.
      */
     val itemTree: List<ItemBranch>
@@ -520,15 +480,9 @@ data class OrderDetailState(
         get() = mayEditOrder
 
     /**
-     * Whether the caller may book a production run.
+     * Whether the caller may book a production run: the Logistician role and edit scope on the Auftrag.
      *
-     * The endpoint gates on `hasRole('LOGISTICIAN')` **and** edit scope on the Auftrag. The app used
-     * to hold only the first half — and held it as a membership flag, which read `false` for an
-     * admin. [mayEditOrder] carries both halves now, computed server-side per order.
-     *
-     * Deliberately **not** folded together with [writable]. Being offline is not a missing grant,
-     * and the refusal this flag drives names one — „Dafür brauchst du die Rolle Logistiker." would
-     * be a false statement about a member who simply has no signal.
+     * Kept separate from [writable], so being offline is never reported as a missing grant.
      */
     val productionAllowed: Boolean
         get() = mayEditOrder
@@ -544,12 +498,10 @@ data class OrderDetailState(
         get() = mayEditOrder && order?.priority != null
 
     /**
-     * Whether the server says this caller may edit **this** order.
+     * Whether the server says this caller may edit this order.
      *
-     * `JobOrderDto.canEdit` is the endpoint's own rule — role reached through the hierarchy *and*
-     * edit scope on the responsible org unit — so it is right for an admin, for an officer, and for
-     * a Logistician standing in front of another Staffel's order alike. `null` means a server that
-     * does not send it yet: fall back to the role half, which is now itself hierarchy-resolved.
+     * Uses `JobOrderDto.canEdit`; when the server does not send it, falls back to the caller's
+     * Logistician role.
      */
     private val mayEditOrder: Boolean
         get() = order?.canEdit ?: (me?.logistician == true)
@@ -559,9 +511,8 @@ data class OrderDetailState(
  * One top-level ordered item and the sub-assemblies under it.
  *
  * @property line the item that was ordered.
- * @property children its sub-assemblies — ordered lines of their own, with this one as parent.
- * @property deeper whether the recipe goes further than the two levels this screen draws, which the
- *   card says out loud rather than silently truncating.
+ * @property children its sub-assemblies: ordered lines of their own, with this one as parent.
+ * @property deeper whether the tree goes further than the two levels this screen draws.
  */
 data class ItemBranch(
     val line: JobOrderItem,
@@ -572,18 +523,14 @@ data class ItemBranch(
 /**
  * Everything one order's screen reads and writes through.
  *
- * A parameter object rather than five constructor arguments: the screen genuinely needs all of
- * them, and a constructor that wide is both hard to read at the call site and past what the
- * codebase's own static analysis allows.
- *
  * @property orders where the order comes from.
- * @property work the two writes that record work on it — the Übergabe and the Herstellung.
+ * @property work the two writes that record work on it: the Übergabe and the Herstellung.
  * @property bookIn where produced stock may land.
  * @property claims the Zusagen on this order.
- * @property orgUnits the caller's own Staffeln, and every active unit — the first says who may
- *   pledge, the second says whether this order's responsible unit is a Spezialkommando.
- * @property identity who the caller is — which decides whose row on this order is theirs, and
- *   whether the status control is offered at all.
+ * @property orgUnits the caller's own Staffeln, and every active unit; the first says who may
+ *   pledge, the second whether this order's responsible unit is a Spezialkommando.
+ * @property identity who the caller is: whose row on this order is theirs, and whether the status
+ *   control is offered.
  * @property liveSync a peer's change on the same order, or `null` where none is wired.
  */
 data class OrderDetailSources(
@@ -597,10 +544,7 @@ data class OrderDetailSources(
 )
 
 /**
- * Whether nothing at all has been handed over on this order.
- *
- * The requester's edit is frozen by the **whole order**, not per line: one handover anywhere —
- * material or item — closes the path, and the server answers 400 for the attempt.
+ * Whether nothing at all, material or item, has been handed over on this order.
  *
  * @receiver the order.
  * @return whether the requester may still edit it.
@@ -641,9 +585,6 @@ class OrderDetailViewModel(
             scope = viewModelScope,
             read = { mutableState.value.handover },
             write = { draft -> mutableState.update { it.copy(handover = draft) } },
-            // The Auftrag is re-read rather than patched: a handover moves the line's open amount,
-            // the order's status and possibly the whole order into „completed", and none of that is
-            // in the answer.
             onRecorded = { reload(keepContent = true) },
         )
 
@@ -694,9 +635,6 @@ class OrderDetailViewModel(
                     read = { mutableState.value.production },
                     write = { draft -> mutableState.update { it.copy(production = draft) } },
                 ),
-            // Re-read rather than patched: a run moves the line's manufactured count, the order's
-            // derived material demand, the linked stock it consumed and possibly the whole order
-            // into „completed" — none of which is in the answer.
             onBooked = { reload(keepContent = true) },
         )
 
@@ -720,8 +658,6 @@ class OrderDetailViewModel(
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.order(orderId))) { sections ->
-            // Both regions the app can move ride the one detail read, so either one re-reads the
-            // order — in place, because the member may be part-way through typing a note.
             if (sections.any { it in WATCHED_SECTIONS }) {
                 reload(keepContent = true)
             }
@@ -755,10 +691,7 @@ class OrderDetailViewModel(
     }
 
     /**
-     * Reads which units the caller belongs to, once.
-     *
-     * Only the ids are kept: the question is membership, and a name would answer it less exactly
-     * while carrying more than the screen needs.
+     * Reads which units the caller belongs to, once, keeping only their ids.
      */
     private fun readMyUnits() {
         if (mutableState.value.myUnitIds.isNotEmpty()) {
@@ -773,14 +706,10 @@ class OrderDetailViewModel(
     }
 
     /**
-     * Works out whether this order's responsible unit is a Spezialkommando.
+     * Works out whether this order's responsible unit is a Spezialkommando, by matching its id
+     * against the active org units.
      *
-     * `SquadronReferenceDto` carries no kind, so the id is matched against the active org units —
-     * the same list the order form's customer picker is built from. Guessing from the unit's name
-     * („SK …") was the alternative and is a naming convention, not a fact.
-     *
-     * A failure leaves the answer `null`, which keeps the Zusagen tab hidden rather than offering a
-     * surface whose every action would be a 400.
+     * A failure leaves the answer `null`, which keeps the Zusagen tab hidden.
      */
     private fun resolveResponsibleKind() {
         if (mutableState.value.responsibleIsSpecialCommand != null) {
@@ -804,9 +733,8 @@ class OrderDetailViewModel(
     /**
      * Reads who the caller is, once.
      *
-     * A failure is not fatal to the screen: the order still reads, and what is lost is the ability
-     * to tell which assignee row is the caller's — so no write is offered rather than one offered
-     * against a guess.
+     * A failure leaves the order readable but offers no write, since the caller's own assignee row
+     * cannot be identified.
      */
     private fun readIdentity() {
         if (mutableState.value.me != null) {
@@ -879,14 +807,8 @@ class OrderDetailViewModel(
     /**
      * Moves the order one place towards the front of the queue, or to the front outright.
      *
-     * **Not a drag.** The web reorders by dragging a row, which needs a list on screen and a
-     * pointer that can hold a row while the rest of it scrolls; the design has drawn no phone
-     * equivalent (design round 8 §4 asks for one). What a Logistician actually wants is „this one
-     * sooner", so that is what the control offers, expressed in the absolute position the endpoint
-     * takes.
-     *
-     * A no-op when the order has no priority — a completed or rejected order is out of the queue,
-     * and giving it a position would put it back in.
+     * Sends the resulting absolute position. A no-op when the order has no priority, i.e. is out of the
+     * queue.
      *
      * @param toFront `true` for position 1, `false` for one place up.
      */
@@ -924,10 +846,7 @@ class OrderDetailViewModel(
     }
 
     /**
-     * Puts the refused note back into the editor.
-     *
-     * The member has seen what the server now holds and decided their own text should win. Saving
-     * is a separate act; this only re-fills the field, so they can still edit or abandon it.
+     * Puts the refused note back into the editor without saving it.
      */
     fun onReapplyRejectedNote() {
         val current = mutableState.value
@@ -1008,10 +927,8 @@ class OrderDetailViewModel(
     /**
      * Recovers from a lost optimistic-lock race on the note.
      *
-     * Re-reads the order so the field shows what the server holds and the next save carries the
-     * current version, and keeps the refused text beside it. A failed re-read leaves the refusal on
-     * screen as an ordinary error — there is nothing better to offer, and pretending the reload
-     * worked would hand the member a stale version to save against.
+     * Re-reads the order so the field and version are current and keeps the refused text beside it. A
+     * failed re-read leaves the refusal on screen as an ordinary error.
      */
     private suspend fun onConflict() {
         val refused = mutableState.value.noteDraft
@@ -1033,9 +950,6 @@ class OrderDetailViewModel(
                 }
             }
 
-            // The reload failed too. Keep the typed text exactly where it is and say only what is
-            // known — that the save lost the race. Resetting the field here would throw the
-            // member's paragraph away at the moment the network is least able to give it back.
             is ApiResult.Failure -> {
                 mutableState.update { it.copy(saving = false, error = ApiError.OptimisticLock()) }
             }
@@ -1067,8 +981,6 @@ class OrderDetailViewModel(
                             error = null,
                         )
                     }
-                    // Both write paths land here, and both move what another viewer of this order
-                    // is looking at: the assignee list and the status in the header.
                     publishLiveSync(
                         liveSync,
                         LiveSyncTopic.order(orderId),
@@ -1077,24 +989,15 @@ class OrderDetailViewModel(
                     )
                 }
 
-                // The editor stays open with what was typed: a conflict or a refusal is not a
-                // reason to make the member write their note again.
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the order could not be changed: ${result.error}" }
                     if (result.error is ApiError.OptimisticLock) {
-                        // A lost race is the one failure with a second step: the member has to see
-                        // what the order says NOW before deciding whether their text still applies.
-                        // Reloading also brings the version their next save needs, so re-applying
-                        // and saving cannot lose the race a second time for the same reason.
                         onConflict()
                         return@launch
                     }
                     mutableState.update { state ->
                         state.copy(
                             saving = false,
-                            // A refused write leaves the sheet closed but the choice discarded:
-                            // re-opening it must show where the order actually is, not what the
-                            // member wanted it to be.
                             statusPickerOpen = false,
                             statusChoice = null,
                             statusConfirmOpen = false,
@@ -1133,8 +1036,6 @@ class OrderDetailViewModel(
                     }
                     retry.onSuccess()
                     readItemStock()
-                    // Only now: the responsible unit's id arrives with the order, so the kind
-                    // lookup has nothing to match against before this point.
                     resolveResponsibleKind()
                 }
 

@@ -94,15 +94,8 @@ const val DASHBOARD_TAG: String = "dashboard"
 private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
 
 /**
- * The dashboard (design spec ch. 05), read-only.
- *
- * The design's order is kept — greeting, announcement, Einsätze of the next seven days, then the
- * unread preview — because it is a one-handed reading order and not a layout preference.
- *
- * All four bands are built: greeting, announcement, the Einsatz band, the four shortcuts and the
- * unread preview. The shortcuts each open the **surface** the action lives on rather than the
- * action itself — there is no global „Check-In", only a check-in on one Einsatz, and sending a
- * member to a guessed one would be worse than sending them to the list they can pick from.
+ * The dashboard, read-only: greeting, announcement, the Einsätze of the next seven days, four
+ * shortcuts and the unread preview.
  *
  * @param state the fetched parts.
  * @param memberName the signed-in member's name, or `null` while unknown.
@@ -112,7 +105,7 @@ private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
  * @param onQuickAction opens the destination behind a shortcut tile.
- * @param onOpenInbox opens the inbox — the unread band's header action and its rows.
+ * @param onOpenInbox opens the inbox, from the unread band's header action and its rows.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,17 +128,7 @@ fun DashboardScreen(
         modifier = modifier.fillMaxSize(),
     ) {
         if (isWideWindow()) {
-            // Design ch. 05 asks for a two-column grid on the tablet. The greeting and the
-            // announcement stay full width — they address the member and the whole org, not one
-            // of the two columns — and the two sections sit side by side below them.
-            //
-            // Two independent LazyColumns rather than one grid: the sections are different
-            // lengths and scroll at their own pace, and a grid would tie the last Einsatz to
-            // whatever notification happens to sit beside it.
             Column(
-                // The gutter sits on the column rather than on the two lists, so the greeting and
-                // the announcement line up with the cards under them instead of running out to the
-                // rail on one side and the screen edge on the other.
                 modifier = Modifier.fillMaxSize().padding(horizontal = KrtSpacing.s12).testTag(DASHBOARD_TAG),
             ) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
@@ -185,9 +168,6 @@ fun DashboardScreen(
             LazyColumn(
                 state = rememberRootListState(),
                 modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG),
-                // Zero on a phone, where chapter 05 draws the band full-bleed with its padding
-                // inside the card. A medium window reaches this branch too - it has no room for
-                // two columns but plenty to spare sideways - and there the gutter does apply.
                 contentPadding = PaddingValues(horizontal = contentGutter()),
             ) {
                 item(key = "greeting") {
@@ -215,16 +195,9 @@ fun DashboardScreen(
 }
 
 /**
- * The four shortcuts design chapter 05 puts between the Einsätze band and the inbox.
+ * The dashboard's fixed set of four shortcuts between the Einsätze band and the inbox.
  *
- * The set is fixed rather than derived: the chapter names these four, and a dashboard whose
- * shortcuts move with the data is one a member cannot build muscle memory on. Each opens the
- * surface the action lives on rather than the action itself — there is no global "check in", only
- * a check-in on one Einsatz, and sending a member to a guessed Einsatz would be worse than sending
- * them to the list they can pick from.
- *
- * The chapter notes "(user pick)" for a later revision. Nothing in the handoff draws that picker,
- * so it is not invented here.
+ * Each opens the surface its action lives on rather than the action itself.
  *
  * @param onQuickAction opens the destination behind a tile.
  */
@@ -236,19 +209,11 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
         )
     }
     item(key = "quick-tiles") {
-        // Two by two, not four across. The artboard's tiles are 194 dp on a 412 dp frame, which is
-        // half the width, and that is what buys the labels their own words: "Einbuchen (Lager)"
-        // says which Lager, "Boerse: Angebot" says an offer on what. Four across leaves about
-        // 90 dp per tile, which is why they had been cut to "Einbuchen" and "Angebot" - a shortcut
-        // whose label needs its icon to disambiguate it is not much of a shortcut.
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             QuickAction.entries.chunked(2).forEach { pair ->
-                // IntrinsicSize.Min so the pair share the taller tile's height. Without it the
-                // shorter label's tile keeps its own smaller box and the row reads as two
-                // different components.
                 Row(
                     modifier = Modifier.height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -267,12 +232,7 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
 }
 
 /**
- * One shortcut tile: the glyph **beside** its label, square, outlined.
- *
- * The artboard draws a flex row - a 22 dp orange glyph, then the label - on `Gray4` behind a
- * hairline `Gray3` outline, rather than a filled square with the glyph stacked over centred text.
- * The difference is not decoration: a row lets a long label wrap under itself and stay readable,
- * which is what makes the full wording fit at all.
+ * One square, outlined shortcut tile with the glyph beside its label, so a long label can wrap.
  *
  * @param action which shortcut this is.
  * @param onClick opens it.
@@ -306,19 +266,15 @@ private fun QuickActionTile(
             text = stringResource(action.labelRes).krtUppercase(),
             style = MaterialTheme.typography.labelLarge,
             color = KrtPalette.Gray1,
-            // No line cap. Foundations ch. 01: "Must survive font scale 1.3x without truncation —
-            // never fix label widths (German compounds)." A cap of two lines held at 1.0x and cut
-            // „CHECK-IN NÄCHSTER EI…" at 1.3x, which leaves a shortcut whose label no longer says
-            // what it does. The tile grows instead; that is what heightIn(min=) means.
         )
     }
 }
 
 /**
- * The "Einsätze" half of the dashboard.
+ * The "Einsätze" band of the dashboard.
  *
- * A `LazyListScope` extension rather than a composable so the same rows can be the top half of one
- * list on a phone and the whole of the left list on a tablet, without either layout owning a copy.
+ * A `LazyListScope` extension so the same rows serve the phone's single list and the tablet's left
+ * list.
  *
  * @param state what to draw.
  * @param onOpenMission opens one Einsatz.
@@ -330,10 +286,6 @@ private fun LazyListScope.missionsSection(
     onOpenMissions: () -> Unit,
 ) {
     item(key = "missions-title") {
-        // The see-all action rides in the title's trailing slot, which is what that slot is for
-        // („optional content pinned after the rule, e.g. a count or an action"). It hung under the
-        // last card as a free-floating orange line, which reads as a row of the list rather than a
-        // control belonging to the section. Artboard 1 shows the pattern on the inbox band.
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_missions),
             modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
@@ -379,13 +331,8 @@ private fun Greeting(
     memberName: String?,
     orgUnitName: String?,
 ) {
-    // Read so the date recomposes on a locale change, and recomputed rather than remembered so
-    // "today" stops being today when the day rolls over with the app open.
     LocalConfiguration.current
     val zone = remember { ZoneId.systemDefault() }
-    // Weekday spelled out, date numeric, which is the artboard's form. FormatStyle.FULL renders
-    // the month as a word and is a rung longer than the line has room for beside the org unit.
-    // The pattern is translatable so a locale can reorder the fields.
     val date = LocalDate.now(zone)
     val today =
         stringResource(
@@ -394,18 +341,10 @@ private fun Greeting(
             date.year + SC_YEAR_OFFSET,
         )
 
-    // The artboard puts the greeting in a filled block with the accent rail down its left edge,
-    // not on the bare background — it is the chapter's first element and the only one that
-    // addresses the member. Rendered as plain text it read as a caption above the announcement.
     KrtRailCard(
         modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
         contentPadding = PaddingValues(KrtSpacing.s12),
     ) {
-        // Uppercase and orange, which is what artboard 1 draws and what the token artifact's
-        // headline entries are annotated with. `headlineSmall` rather than a one-off style: the
-        // mockup measures 20 sp at weight 900 with 1 sp of tracking, the scale has no such entry,
-        // and headlineSmall (19/25/0.95, annotated "h3 - UPPERCASE") is the nearest token. A
-        // hand-rolled TextStyle would match the mockup by a dp and leave the system by a rung.
         KrtHeading(
             text =
                 if (memberName.isNullOrBlank()) {
@@ -428,10 +367,7 @@ private fun Greeting(
 /**
  * The announcement, collapsed to two lines until tapped.
  *
- * Collapsing rather than truncating: an announcement is written to be read, and a notice cut off at
- * two lines with no way to see the rest is worse than none. The state is local and unsaved on
- * purpose — marking it read is a mutation and belongs to Phase 3, so the app must not pretend to
- * remember a decision it cannot store.
+ * The expanded state is local and not saved.
  *
  * @param text the announcement.
  */
@@ -441,8 +377,6 @@ private fun AnnouncementBand(
     read: Boolean,
     onMarkRead: () -> Unit,
 ) {
-    // Unread opens expanded. The whole reason a notice is marked unread is that the member has not
-    // taken it in yet, and greeting them with three lines and an ellipsis asks them to work for it.
     var expanded by rememberSaveable(read) { mutableStateOf(!read) }
     val action =
         stringResource(
@@ -461,9 +395,6 @@ private fun AnnouncementBand(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // White and uppercase, as artboard 1 draws it. Orange would put the emphasis on the
-            // word „Information" when the chip beside it is the thing worth noticing, and the
-            // system reserves orange for the one thing on a screen a member should act on.
             Text(
                 text = stringResource(R.string.dashboard_announcement).krtUppercase(),
                 style = MaterialTheme.typography.labelLarge,
@@ -481,8 +412,6 @@ private fun AnnouncementBand(
             overflow = TextOverflow.Ellipsis,
         )
         if (!read) {
-            // Its own tap target, not the card's: the card toggles the fold, and a member who
-            // taps to read the rest of a notice must not thereby declare they have read it.
             Text(
                 text = stringResource(R.string.dashboard_announcement_mark_read).krtUppercase(),
                 style = MaterialTheme.typography.labelMedium,
@@ -508,12 +437,6 @@ private fun MissionBandRow(
     mission: Mission,
     onClick: () -> Unit,
 ) {
-    // Design ch. 05 draws this as a hud-box with three rows: name and briefing beside the status,
-    // then when and where, then the unit chip and the way in. It was a single line carrying the
-    // name and the status badge — everything a member needs to decide whether to open it was
-    // missing. See docs/DESIGN_PARITY_AUDIT.md.
-    // A **hud-box**, brackets and all: the chapter draws this one card with them and nothing else
-    // on the dashboard, which is what marks the Einsätze band as the thing the screen is for.
     KrtHudBox(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s14),
@@ -542,16 +465,9 @@ private fun MissionBandRow(
                     )
                 }
             }
-            // The row-level pill, not the page-level badge. The design system says which is
-            // which in as many words -- the pill is "the row-level status indicator ... inside a
-            // list the status must not compete with the record's name", the badge "belongs at the
-            // top of a detail screen where a single status describes the whole record" -- and this
-            // is a list. Artboard 1 draws the pill here too.
             KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         MissionFactsRow(mission = mission)
-        // The rule the artboard puts above the footer: the unit and the way in are about the row
-        // rather than about the Einsatz, and without it they read as a third fact.
         Box(
             modifier =
                 Modifier
@@ -573,13 +489,6 @@ private fun MissionBandRow(
 private fun MissionFactsRow(mission: Mission) {
     val zone = remember { ZoneId.systemDefault() }
     val formatter = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
-    // Design ch. 05 draws the countdown FIRST and the clock time after it: "in 2 Std. · TS 21:00".
-    // The relative half is what a member acts on — an absolute time alone makes them do the
-    // subtraction, and they do it against the wrong timezone often enough to matter. The absolute
-    // half stays because it is the one that survives being read out loud in TeamSpeak.
-    //
-    // Re-read once a minute so a countdown does not go stale while the dashboard sits open, which
-    // is exactly what it does between the greeting and the first tap.
     val tick by produceState(0L) {
         while (true) {
             delay(COUNTDOWN_TICK_MS)
@@ -591,8 +500,6 @@ private fun MissionFactsRow(mission: Mission) {
         mission.meetingTime?.let { at ->
             remember(at, tick, context, zone) {
                 val relative = at.relativeTo(Instant.now(), context, zone)
-                // Same rule as the Einsatz list: once the relative half is itself a clock reading
-                // („gestern, 21:14"), appending „· TS 21:14" prints the time twice.
                 if (at.carriesClock()) relative else "$relative · TS " + formatter.format(at)
             }
         }
@@ -713,12 +620,9 @@ private val QUICK_TILE_MIN_HEIGHT = 64.dp
 private val QUICK_TILE_ICON = 22.dp
 
 /**
- * How far ahead the Star Citizen calendar runs: its year 2956 is our 2026.
+ * The offset between the Star Citizen calendar year and the real year (2956 is 2026).
  *
- * The artboard dates the greeting „Sonntag, 17.08.2956" and the app prints both — the real date,
- * then the SC year in brackets (owner decision, 2026-08-26). Writing error copy in character is one
- * thing; a start screen that misstates today's date is another, and a member reading it beside a
- * calendar, Discord or the web tool would find three different years.
+ * The greeting prints the real date followed by the SC year in brackets.
  */
 private const val SC_YEAR_OFFSET = 930
 
@@ -726,15 +630,9 @@ private const val SC_YEAR_OFFSET = 930
 private const val COUNTDOWN_TICK_MS = 60_000L
 
 /**
- * The band design chapter 05 closes the dashboard with: what is new since the member last looked.
+ * The unread band: a read-only preview of the newest unread notifications that opens the inbox.
  *
- * Two rows and a way past them, on the phone and on the tablet alike (artboard 05). It is a
- * **preview of the inbox**, not a second inbox: the rows are read-only, tapping anything opens the
- * inbox, and nothing here marks a notification read — a dashboard that quietly clears the badge
- * while a member scrolls past it would take away the one signal they came for.
- *
- * Absent entirely when nothing is unread, rather than drawn empty. „Nichts Neues" is what an empty
- * dashboard already says by not having the band.
+ * Nothing here marks a notification read. The band is absent when nothing is unread.
  *
  * @param state the fetched parts.
  * @param onOpenInbox opens the inbox.
@@ -768,11 +666,7 @@ private fun LazyListScope.unreadSection(
 }
 
 /**
- * One row of the unread band.
- *
- * Wears the unread inset bar of the inbox's own rows, because it is the same thing seen from the
- * dashboard — and it borrows the inbox's sentence and time wording rather than restating them, so
- * the two surfaces cannot drift apart on what a notification says.
+ * One row of the unread band, styled and worded like the inbox's own rows.
  *
  * @param notification the row.
  * @param onClick opens the inbox.

@@ -17,25 +17,12 @@ import java.security.cert.X509Certificate
 import java.util.Date
 
 /**
- * Pins the network posture of both flavours against the one mistake that has no symptom.
+ * Pins the network posture of both flavours so the dev build's TLS relaxations never reach a release build.
  *
- * Every relaxation the dev build needs — cleartext to the emulator's loopback, and a trust anchor
- * for the test stack's backend certificate — is a hole in TLS validation. In a release build it
- * would be a serious one, and **nothing about a release build fails if it leaks in**: the APK
- * installs, the requests succeed, and the only difference is that
+ * - The relaxations live in the dev source set only.
+ * - They sit in `<debug-overrides>`, honoured only when debuggable, and the main config carries neither.
  *
- * Two mechanisms keep that from happening, and the tests below pin both because either alone can be
- * undone by an ordinary-looking edit:
- *
- * - the relaxations live in the **dev source set**, which the prod flavour never sees;
- * - they sit in `<debug-overrides>`, which Android honours only for `android:debuggable="true"`.
- *
- * The second is the backstop for somebody editing the wrong file, so the main config is asserted to
- * be free of both — not because it would be fatal today, but because a `debug-overrides` block
- * appearing there is exactly the kind of copy-paste nobody reviews twice.
- *
- * Read as text rather than parsed: the property being asserted is which strings appear in which
- * file, and an XML parser would add ceremony without adding an assertion.
+ * Reads the configs as text.
  */
 class NetworkSecurityConfigTest {
     private val releaseConfig = File("src/main/res/xml/network_security_config.xml")
@@ -60,19 +47,12 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * Every production host the app speaks to is pinned, and to **both** Let's Encrypt roots.
-     *
-     * The second root is the assertion that earns its place. ISRG Root X2 is the ECDSA root, and a
-     * certificate that chains to it while only X1 is pinned fails to validate — so pinning one
-     * root would turn an ordinary CA-side change into an outage that reaches every installed
-     * build at once.
+     * Every production host is pinned to both Let's Encrypt roots, ISRG Root X1 and the ECDSA root X2.
      */
     @Test
     fun `every production host is pinned to both Let's Encrypt roots`() {
         val xml = read(releaseConfig)
 
-        // Two hosts, not three, since the main repo's ADR-0166 retired the Keycloak host:
-        // identity is served at /auth on the web origin, under the pin-set below it.
         listOf("api.profit-base.online", "profit-base.online")
             .forEach { host ->
                 assertTrue(
@@ -99,10 +79,7 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * Counts a pin as an actual `<pin>` element.
-     *
-     * A bare substring search also matches the file's own comment, which documents both values —
-     * and would have passed with the pins present in prose and absent from the config.
+     * Counts the `<pin>` elements carrying `pin`, ignoring mentions in the file's comments.
      *
      * @param xml the config.
      * @param pin the base64 SPKI hash.
@@ -114,12 +91,8 @@ class NetworkSecurityConfigTest {
     ): Int = Regex(Regex.escape("<pin digest=\"SHA-256\">$pin</pin>")).findAll(xml).count()
 
     /**
-     * Every pin-set carries an expiry.
-     *
-     * Android stops enforcing an expired pin-set rather than failing the connection, and that is
-     * the only safety valve this design has: if both roots were ever replaced and no update
-     * shipped, the app degrades to ordinary system trust instead of going dark. A pin-set without
-     * one is a permanent commitment made by accident.
+     * Every pin-set carries an expiry, so an outdated build falls back to system trust instead of failing every
+     * connection.
      */
     @Test
     fun `no pin-set is open-ended`() {
@@ -133,11 +106,7 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * The dev flavour pins nothing.
-     *
-     * Its certificate is a throwaway signed by a CA that was destroyed at generation time, so a
-     * pin there would tie every debug build to a file in another repository — and would break the
-     * moment that material is regenerated.
+     * The dev flavour pins nothing, since its test certificate is a throwaway that can be regenerated.
      */
     @Test
     fun `the dev config pins nothing`() {
@@ -189,13 +158,7 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * **The bundled anchor is a certificate and nothing else.**
-     *
-     * The guard that makes committing the anchor defensible at all. `res/raw` takes any bytes, and
-     * the file it is copied from lives beside a keystore in the other repository — one wrong `cp`
-     * and a private key would be committed to a public repository and have to be treated as
-     * disclosed. Asserting the *absence* of key material is cheap and the mistake is silent
-     * otherwise: Android would simply fail to parse it, at runtime, on somebody else's machine.
+     * The bundled anchor is a certificate and carries no private key.
      */
     @Test
     fun `the bundled anchor carries no private key`() {
@@ -208,13 +171,7 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * The bundled anchor is a CA, is current, and says out loud that it is not for production.
-     *
-     * Three separate ways this file could rot into a confusing failure. A non-CA certificate is not
-     * usable as a trust anchor and would fail path validation with a message about the *server*. An
-     * expired one breaks every developer's stack at once, on a date nobody is watching. And a
-     * subject that does not name itself a test artefact is one that somebody eventually mistakes
-     * for a real one.
+     * The bundled anchor is a current CA certificate whose subject names it a test artefact.
      */
     @Test
     fun `the bundled anchor is a current, self-describing CA`() {
@@ -296,11 +253,7 @@ class NetworkSecurityConfigTest {
         const val ANCHOR_RESOURCE = "basetool_test_ca"
 
         /**
-         * The API host and the web frontend.
-         *
-         * Two since 2026-09-13, not three: the Keycloak host was retired into `/auth` on the web
-         * origin (main repo ADR-0166). No trust decision changed with it — the edge has always
-         * served one multi-SAN certificate, so the retired block held these same two digests.
+         * The number of pinned production hosts: the API host and the web frontend.
          */
         const val PINNED_HOSTS = 2
 

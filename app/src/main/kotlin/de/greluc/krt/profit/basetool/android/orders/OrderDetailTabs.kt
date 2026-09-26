@@ -53,8 +53,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * Positionen: the requester's note, then what was ordered and how much has arrived.
  *
  * @param order the order.
- * @param allowed whether the caller may book a production run — a hint, so the control is drawn
- *   either way and the server stays the authority.
+ * @param allowed whether the caller may book a production run; a hint only, the control is drawn
+ *   either way and the server decides.
  * @param denials where a refused tap is announced.
  * @param onProduce open „Herstellung erfassen" for one item line.
  * @param onHandOver open „Übergabe erfassen" for one item line.
@@ -69,16 +69,11 @@ internal fun LazyListScope.positionsTab(
     val onHandOver = items.onHandOver
     val tree = items.tree
     val itemStock = items.itemStock
-    // Only the top-level lines get a row of their own; a sub-assembly is drawn inside its parent's
-    // branch, because on its own it reads as a second thing that was ordered.
     val topLevel = if (tree.isEmpty()) order.items else tree.map { it.line }
     items(topLevel, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
         Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
             ItemLine(
                 item = line,
-                // A line the server sent without an id or a version cannot be addressed by the
-                // write, and one that is already fully built has nothing left to book — neither is
-                // a permission question, so neither is drawn as a locked control.
                 produce =
                     if (line.id != null && line.version != null && line.remaining > 0) {
                         ItemProduceGate(
@@ -89,8 +84,6 @@ internal fun LazyListScope.positionsTab(
                     } else {
                         null
                     },
-                // A line with nothing built and undelivered has nothing to hand over, which is a
-                // fact about the line and not a permission — so no locked control either.
                 handOver =
                     if (line.id != null && line.deliverable > 0) {
                         ItemProduceGate(
@@ -108,9 +101,6 @@ internal fun LazyListScope.positionsTab(
         }
     }
     if (order.materials.isEmpty()) {
-        // Only when the order carries nothing at all. An item order has no materials of its own —
-        // the server derives them from the blueprint — so saying "no materials" under its items
-        // would read as a defect.
         if (order.items.isEmpty()) {
             item(key = "materials-empty") {
                 Body(text = stringResource(R.string.order_detail_materials_empty))
@@ -123,24 +113,16 @@ internal fun LazyListScope.positionsTab(
             }
         }
     }
-    // Under the positions, where artboard 10-2 puts it: the note is what the requester said ABOUT
-    // the order, and above them it was read before the thing it comments on.
     order.comment?.let { comment ->
         item(key = "comment") { CommentCard(comment = comment) }
     }
 }
 
 /**
- * The sub-assemblies of one ordered item, and what each of them needs.
+ * The sub-assemblies of one ordered item and what each of them needs, display only.
  *
- * **Display only** — design ch. 10 artboard 12: „Der Baum ist Anzeige … nichts darin wird hier
- * bestellt." It is drawn from the order's own lines, because the server models a sub-assembly as a
- * real ordered line with a parent rather than as part of a recipe.
- *
- * **Two levels, on purpose.** Assembly → its materials, and no further: a deeper tree does not fit
- * a phone, and the card says so rather than truncating in silence.
- *
- * Indentation and a rail rather than chevrons: the tree does not fold, it shows.
+ * Built from the order's own lines, where a sub-assembly is an ordered line with a parent. Shows two
+ * levels (assembly and its materials) and says so rather than truncating silently.
  *
  * @param branch the item and its sub-assemblies.
  * @param itemStock the earmarked stock per item, for the availability chip.
@@ -165,8 +147,6 @@ private fun SubAssemblies(
             SubAssembly(child = child, stock = itemStock[child.id])
         }
         if (branch.deeper) {
-            // The recipe goes further than this screen draws, and saying so is the difference
-            // between a limit and a wrong answer.
             KrtHint(explanation = stringResource(R.string.order_detail_subassembly_deeper))
         }
     }
@@ -201,8 +181,6 @@ private fun SubAssembly(
             Body(text = child.amount.toString())
             stock?.let { AvailabilityChip(stock = it) }
         }
-        // The quantities are the line's own totals, already scaled to its count by the server —
-        // the app renders them and multiplies nothing.
         child.requirements.forEach { requirement ->
             Body(
                 text =
@@ -274,11 +252,7 @@ internal fun LazyListScope.assigneesTab(
 }
 
 /**
- * Übergaben: what has physically changed hands — and the action that adds to it.
- *
- * Read-only until 2026-08-29. In the web the handover is what **closes** an Auftrag, so an app that
- * could take one on and never record a delivery could never finish one either — the round-8 parity
- * programme's heaviest item (design ch. 10 artboard 14).
+ * Übergaben: what has physically changed hands, and the action that records another handover.
  *
  * One entry per material line, because a handover is booked against a line and its stock rows.
  *
@@ -305,8 +279,6 @@ internal fun LazyListScope.handoversTab(
             )
         }
     }
-    // An item order keeps its own handover log on a separate endpoint. Leaving it unread made the
-    // tab claim „nothing has been handed over" about an order that had been delivered in full.
     items(order.itemHandovers, key = { "item-" + it.id }) { handover ->
         val pieces = handover.lines.sumOf { line -> line.amount }
         Body(
@@ -320,8 +292,6 @@ internal fun LazyListScope.handoversTab(
                 ),
         )
     }
-    // A line the server sent without a material id cannot be handed over — the write is addressed
-    // by it — so it is not offered rather than offered and refused.
     val recordable = order.materials.filter { it.materialId != null }
     if (recordable.isNotEmpty()) {
         item(key = "handover-record") {
@@ -397,12 +367,9 @@ internal fun OrderFactsBar(order: JobOrder) {
 }
 
 /**
- * Says plainly that the order is only partly visible.
+ * Says plainly that the order is only partly visible (REQ-ORDERS-023).
  *
- * Its own composable, and NOT inside the facts bar: a redacted order can easily have no facts to
- * show — that is what redaction does — and the bar returns early when it has none. The notice would
- * then vanish exactly on the orders it exists for. A member reading a reduced order as a complete
- * one is the failure REQ-ORDERS-023 is there to prevent.
+ * Kept outside the facts bar, which draws nothing when a redacted order has no facts to show.
  *
  * @param order the order.
  */
@@ -420,10 +387,7 @@ internal fun RedactionNotice(order: JobOrder) {
 }
 
 /**
- * The requester's note, in the accented card artboard 10.2 gives it.
- *
- * An orange rail rather than a plain section: it is the one piece of prose on a screen of numbers,
- * and it is the piece that says what the numbers are for.
+ * The requester's note, in a card with an orange accent rail.
  *
  * @param comment the note.
  */

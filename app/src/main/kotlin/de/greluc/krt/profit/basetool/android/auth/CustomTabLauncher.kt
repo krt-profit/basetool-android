@@ -17,20 +17,11 @@ import androidx.core.net.toUri
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 
 /**
- * Opens the realm's login page in a Custom Tab.
+ * Opens the realm's login page in a Custom Tab, never a WebView (RFC 8252 §8.12).
  *
- * **Never a WebView** (RFC 8252 §8.12, design spec ch. 04, security concept §4). A WebView would put
- * the member's Keycloak password inside a surface this app controls and can read, it shares no
- * session with the browser so every login would start from scratch, and it is the pattern a
- * phishing app is indistinguishable from. A Custom Tab is the real browser: same cookie jar, same
- * password manager, an address bar the member can check.
- *
- * The toolbar is `#141414` because the realm's login page is themed dark; the default light chrome
- * around it reads as a different app (design spec ch. 04).
- *
- * If no browser supports Custom Tabs, [CustomTabsIntent] falls back to an ordinary `ACTION_VIEW`,
- * which still completes the flow — a plain browser is a worse experience, not a broken one. Only a
- * device with no browser at all fails, and that is reported rather than swallowed.
+ * The toolbar is `#141414` to match the dark login theme. Without Custom Tabs support
+ * [CustomTabsIntent] falls back to `ACTION_VIEW`; only a device with no browser at all fails, and
+ * that is reported.
  */
 object CustomTabLauncher {
     /** Toolbar colour of the realm's dark theme; a light toolbar reads as a different app. */
@@ -44,8 +35,7 @@ object CustomTabLauncher {
      *
      * @param context the activity starting the flow
      * @param url the authorization URL from `AuthorizationRequestFactory`
-     * @return `true` when a browser took it; `false` when the device has none, which the caller
-     *   surfaces as an error rather than a login that silently never returns
+     * @return `true` when a browser took it; `false` when the device has none
      */
     fun launch(
         context: Context,
@@ -76,8 +66,6 @@ object CustomTabLauncher {
             .setUrlBarHidingEnabled(false)
             .build()
             .apply {
-                // The login tab belongs to this task, so backing out of it returns to the login
-                // screen rather than to whatever was behind the app.
                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
 

@@ -11,16 +11,10 @@ import de.greluc.krt.profit.basetool.android.BuildConfig
 import de.greluc.krt.profit.basetool.android.core.auth.OidcConfiguration
 
 /**
- * The realm this build talks to.
+ * The OIDC realm this build talks to.
  *
- * The values come from `BuildConfig`, which the flavours set, and from nowhere else — there is no
- * runtime switch and no debug menu that changes them. A release build that can be pointed at
- * another server is a gift to anyone who gets hold of a device (DEV_CI §6): the dev flavour reaches
- * the local test stack, the prod flavour reaches production, and which one a member has is decided
- * by which APK they installed.
- *
- * The client id is the same in both realms, so it is a constant here rather than a fourth
- * `BuildConfig` field that could drift between flavours.
+ * Endpoints come only from the flavour's `BuildConfig`; there is no runtime switch. The client id is
+ * the same in both realms and is therefore a constant.
  */
 object AppOidc {
     /**

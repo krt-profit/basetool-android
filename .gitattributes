@@ -1,12 +1,8 @@
-# Normalize text files to LF in the repository; the working tree follows the platform.
 * text=auto eol=lf
 
-# The Gradle wrapper script must keep LF even on Windows checkouts — CRLF here breaks
-# every Linux and macOS CI runner with "bad interpreter".
 gradlew text eol=lf
 gradlew.bat text eol=crlf
 
-# Binary assets — never touch these.
 *.jar binary
 *.ttf binary
 *.otf binary
@@ -17,8 +13,6 @@ gradlew.bat text eol=crlf
 *.keystore binary
 *.jks binary
 
-# Generated design references: keep them out of diffs and language statistics, they are
-# browser-viewed specifications, not source.
 docs/design/** linguist-documentation
 docs/design/**/*.html -diff
 docs/design/**/*.js -diff

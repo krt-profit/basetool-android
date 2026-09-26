@@ -86,18 +86,10 @@ data class RefineryCreateActions(
 )
 
 /**
- * „Neuer Raffinerieauftrag" — design chapter 11, artboards 4 and 5.
+ * „Neuer Raffinerieauftrag": one scrolling form for a refinery order.
  *
- * One scrolling form rather than the two drawn screens: the artboards split it because a 412 dp
- * frame cannot show both halves at once, not because it is two steps. Nothing here is a wizard, and
- * a member who only wants to record what a run cost should not have to walk through goods to get
- * there.
- *
- * **„Endet" is computed, never typed** — start plus duration, shown as text. So is the profit
- * preview: ore sales less costs and other costs, which is the web's own definition.
- *
- * There is deliberately **no extractor import**: its handoff is consumed once in a browser and a
- * phone cannot receive it.
+ * „Endet" (start plus duration) and the profit preview (ore sales less costs and other costs) are
+ * computed, not typed. There is no extractor import.
  *
  * @param state what the form holds.
  * @param actions what it reports back.
@@ -118,9 +110,6 @@ fun RefineryCreateScreen(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (locked) {
-            // Artboard 6 is explicit that the info block comes BEFORE the fields it explains: a
-            // member who meets the lock first has to work out what it means; one who reads this
-            // first meets a lock they were told about.
             item(key = "locked-note") {
                 KrtHint(
                     explanation = lockReason,
@@ -178,8 +167,6 @@ fun RefineryCreateScreen(
                 color = KrtPalette.White,
             )
         }
-        // Keyed by the line's own identity, not its position: removing a line must not hand the
-        // next line's slot, and the picker state remembered in it, to a different line.
         itemsIndexed(state.draft.goods, key = { _, good -> good.key }) { index, good ->
             GoodCard(
                 good = good,
@@ -230,8 +217,6 @@ fun RefineryCreateScreen(
                         ),
                     onClick = actions.onCreate,
                     modifier = Modifier.fillMaxWidth(),
-                    // Validation-dimmed, without a padlock: nothing here is forbidden, it is
-                    // unfinished — which the design distinguishes deliberately.
                     enabled = draft.sendable && !state.saving && !state.loading,
                 )
             }
@@ -243,7 +228,7 @@ fun RefineryCreateScreen(
  * One goods line.
  *
  * @param good what to draw.
- * @param removable whether it may be taken away — the last line stays.
+ * @param removable whether it may be taken away; the last line stays.
  * @param materials the ores the input picker shows.
  * @param moreMaterials whether the catalogue holds ores this page does not carry.
  * @param onQuery the picker was typed into.
@@ -271,8 +256,6 @@ private fun GoodCard(
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
-            // A picker, not free text: the wire wants a material id, and a typed name carries
-            // none — every line would be dropped and the form could never be sent.
             MaterialField(
                 label = stringResource(R.string.refinery_create_input_material),
                 shown = good.inputMaterialName,
@@ -352,7 +335,6 @@ private fun TimingBlock(
             time = draft.startedTime,
             onDate = { onDraftChanged(draft.copy(startedDate = it)) },
             onTime = { onDraftChanged(draft.copy(startedTime = it)) },
-            // A run is entered after it was started, so the past is the normal case here.
             warnPast = false,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
@@ -369,8 +351,6 @@ private fun TimingBlock(
                 modifier = Modifier.weight(1f),
             )
         }
-        // Display, not a field: the design says „Endet" is derived, and a second editable time
-        // would be a place for the two to disagree.
         state.endsAt?.let {
             Text(
                 text = stringResource(R.string.refinery_create_ends, it.relativeToNow()),
@@ -394,8 +374,6 @@ private fun MoneyBlock(
     draft: RefineryOrderDraft,
     onDraftChanged: (RefineryOrderDraft) -> Unit,
 ) {
-    // Starts closed: the design says all three fields are usually zero, and a block that is usually
-    // empty should not be the first thing between a member and the CTA.
     var open by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtOutlineButton(
@@ -444,10 +422,7 @@ private fun MoneyBlock(
 }
 
 /**
- * A material picker.
- *
- * Typing clears the pick: a name that no longer matches what was chosen would otherwise send the
- * old id under a new label.
+ * A material picker; typing clears the pick.
  *
  * @param label what it is.
  * @param shown what to display.
@@ -495,12 +470,10 @@ private fun MaterialField(
 }
 
 /**
- * The refined material the picked ore resolves to, shown rather than asked for.
+ * The refined material the picked ore resolves to, shown read-only.
  *
- * `RefineryOrderService.resolveGood` derives it from the ore's `refinedMaterial` and refuses any
- * other value, so there is nothing here for a member to decide — and a picker offering the choice
- * could only ever produce a `400` whose reason the server strips before it leaves. Empty until an
- * ore is picked, which is the same em dash the web form's read-only box shows.
+ * The server derives it (`RefineryOrderService.resolveGood`); an em dash stands in until an ore is
+ * picked.
  *
  * @param name what the ore refines into, or blank before a pick.
  */
@@ -527,12 +500,9 @@ private fun DerivedOutputMaterial(name: String) {
 }
 
 /**
- * What a quantity in units comes to in SCU.
+ * What a quantity in units comes to in SCU, shown beside the field (REQ-APP-REF-004a).
  *
- * The wire counts units, a hundred to the SCU, and the fields above say so — but a member thinks
- * in SCU, and REQ-APP-REF-004a records what happened the last time the two were confused: a booking
- * that would have written a Lager entry a hundred times the yield. So the figure is shown rather
- * than converted, exactly as the web form's read-only SCU box does it.
+ * The wire counts units, a hundred to the SCU; the field's value is never converted.
  *
  * @param scu the converted figure, or `null` while the field holds no number.
  */

@@ -58,11 +58,7 @@ interface AnnouncementSource {
 }
 
 /**
- * Reads the announcement from the backend.
- *
- * **`204` is a result here, and that is the whole reason this uses the optional read.** A member
- * with nothing announced must see no banner, not an error where a banner would be; reading the
- * empty body through the ordinary path would fail to parse and surface as a broken contract.
+ * Reads the announcement from the backend; a `204` means no announcement and is read through the optional path.
  *
  * @property reader performs the call and classifies its failure
  */
@@ -80,11 +76,7 @@ class AnnouncementRepository(
     )
 
     /**
-     * Reads the current announcement.
-     *
-     * A blank `content` is treated as no announcement. The backend already suppresses blank ones
-     * with a `204`, but the field is nullable on the wire and a banner made of whitespace would be
-     * a visible defect for the sake of trusting a shape.
+     * Reads the current announcement; a blank `content` counts as none.
      *
      * @return the announcement, `null` when there is none, or the classified failure.
      */
@@ -93,13 +85,10 @@ class AnnouncementRepository(
             .map { it?.toModel() }
 
     /**
-     * Reads which announcement the caller has already marked read.
+     * Reads which announcement the caller has already marked read, from `lastReadAnnouncementId` on `/users/me`.
      *
-     * The flag lives on the member, not on the announcement -- `/users/me` carries
-     * `lastReadAnnouncementId` -- so "is this unread" is a comparison between two reads rather
-     * than a field. It is asked here rather than through `IdentityRepository`, which caches its
-     * answer for the process on the grounds that a member's id cannot change while the app runs.
-     * This value can, on the very next tap.
+     * Read fresh rather than through the process-cached `IdentityRepository`, since it changes on the
+     * next tap.
      *
      * @return the id, or `null` when the member has marked none.
      */
@@ -108,13 +97,9 @@ class AnnouncementRepository(
             .map { it.lastReadAnnouncementId }
 
     /**
-     * Marks an announcement read for the caller.
+     * Marks an announcement read for the caller with a bodyless `PUT`.
      *
-     * A bodyless `PUT` addressed entirely by its path, answering with the updated member. Note
-     * what the server's model does and does not promise: **editing an announcement keeps its id**,
-     * so a notice whose text is rewritten stays read for everyone who had read the old wording.
-     * That is the backend's semantics, shared with the web app, and the band reports it rather
-     * than inventing a second notion of freshness on the device.
+     * An edited announcement keeps its id, so it stays read for members who read the old wording.
      *
      * @param id the announcement's id.
      * @return the id the server now holds.

@@ -31,9 +31,8 @@ const val UNIT_PIECE: String = "PIECE"
 /**
  * Rounds a quantity the way the material's unit is counted.
  *
- * A `PIECE` material has no halves — a plan that asked for 2.5 casings would be refused by the
- * server — so it rounds to whole numbers; everything else settles at thousandths, which is where
- * the web's own reconcile gate rounds.
+ * A `PIECE` material rounds to whole numbers; everything else to thousandths, as the web's
+ * reconcile gate does.
  *
  * @receiver the quantity.
  * @param unit the material's `quantityType`.
@@ -52,13 +51,13 @@ fun Double.krtRoundForUnit(unit: String?): Double =
  * @property materialId which material.
  * @property name what it is called.
  * @property unit `SCU` or `PIECE`.
- * @property requiredTotal what the **whole** line needs, as the server derived it.
+ * @property requiredTotal what the whole line needs, as the server derived it.
  * @property lineAmount how many units the whole line is for, so a partial run can be priced.
  * @property loading whether its candidate rows are still being read.
  * @property rows the stock rows earmarked to this Auftrag that hold it.
  * @property amounts how much is taken off each row, keyed by row id, as typed.
- * @property skipped whether this material is deliberately not booked out — consumed outside the
- *   tool. Its demand then drops out of the gate and no draw is sent for it.
+ * @property skipped whether this material is consumed outside the tool; its demand then drops out
+ *   of the gate and no draw is sent for it.
  */
 data class ProductionMaterialDraft(
     val materialId: String,
@@ -74,9 +73,7 @@ data class ProductionMaterialDraft(
     /**
      * What manufacturing [units] of the line consumes of this material.
      *
-     * The server's figure is the line's total, so a partial run is that total scaled by the share
-     * being built. Deriving it from the line rather than from a per-unit figure keeps one rounding
-     * step instead of one per unit.
+     * The line's total scaled by the share being built, rounded once.
      *
      * @param units how many are being built.
      * @return the demand, rounded the way the unit is counted.
@@ -101,11 +98,10 @@ data class ProductionMaterialDraft(
     fun rest(units: Int): Double = (demand(units) - assigned).krtRoundForUnit(unit)
 
     /**
-     * Whether this material may pass the gate.
+     * Whether this material passes the gate.
      *
-     * **Exactly**, not "at least": the server refuses a plan that over- or under-covers the demand
-     * („Zuweisung deckt den Materialbedarf nicht exakt."), so approximate is a 400 waiting to
-     * happen. A skipped material is covered by definition — its demand was dropped.
+     * Requires an exact match, because the server refuses a plan that over- or under-covers the demand.
+     * A skipped material always passes.
      *
      * @param units how many are being built.
      * @return whether it reconciles.
@@ -137,7 +133,7 @@ data class ProductionMaterialDraft(
 /**
  * Where the produced units are stored, as the form holds it.
  *
- * @property locationId the chosen place, or `null` while none is. The server requires one.
+ * @property locationId the chosen place, or `null` while none is; the server requires one.
  * @property locationQuery what is typed in the place picker.
  * @property locations the current matches.
  * @property moreLocations whether the catalogue holds places this page does not carry.
@@ -146,7 +142,7 @@ data class ProductionMaterialDraft(
  * @property ownerQuery what is typed in the member picker.
  * @property members the current matches.
  * @property moreMembers whether the roster holds members this page does not carry.
- * @property orgUnits the owner's memberships, as read for **them** and not for the caller.
+ * @property orgUnits the owner's memberships, read for the owner and not for the caller.
  * @property orgUnitId the chosen pool.
  * @property personal whether it goes into the owner's personal pool.
  * @property allocate whether the produced units are earmarked back to this Auftrag.
@@ -176,12 +172,8 @@ data class ProductionBookInDraft(
         return ProductionBookIn(
             locationId = location,
             ownerUserId = ownerId,
-            // Only sent when the owner actually has a choice. With exactly one membership the
-            // server resolves it itself; with none there is nothing to send.
             owningOrgUnitId = orgUnitId.takeIf { orgUnits.size > 1 },
             personal = personal,
-            // Personal stock never carries earmarks (REQ-INV-032), and the server answers 400 for
-            // the combination rather than silently dropping one of them.
             allocateToOrder = !personal && allocate,
         )
     }
@@ -254,8 +246,8 @@ data class ProductionDraft(
  *
  * @receiver the line being manufactured.
  * @param orderId the Auftrag.
- * @return the draft, or `null` for a line the server sent without an id or a version — neither can
- *   be addressed by the write, so the sheet does not open on it.
+ * @return the draft, or `null` for a line without an id or a version, which the write cannot
+ *   address.
  */
 fun JobOrderItem.krtProductionDraft(orderId: String): ProductionDraft? {
     val lineId = id

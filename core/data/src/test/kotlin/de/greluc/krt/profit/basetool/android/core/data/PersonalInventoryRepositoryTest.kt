@@ -156,8 +156,6 @@ class PersonalInventoryRepositoryTest {
     @Test
     fun `a row without an id is dropped, and the server's total is kept`() =
         runTest {
-            // It cannot be opened, edited or deleted, so offering it produces a tap that does
-            // nothing. Lowering the total to match would hide the fault instead of showing it.
             respond(PAGE)
 
             val page = (repository.page() as ApiResult.Success).value
@@ -189,8 +187,6 @@ class PersonalInventoryRepositoryTest {
     @Test
     fun `a create sends what the member typed and nothing else`() =
         runTest {
-            // No version on a create: there is nothing yet to conflict with, and the contract's
-            // required list says so (REQ-API-009).
             respond(SAVED, HTTP_CREATED)
 
             repository.create(draft())
@@ -218,8 +214,6 @@ class PersonalInventoryRepositoryTest {
     @Test
     fun `a save returns the new version, which the next save has to echo`() =
         runTest {
-            // The response is not a courtesy: a client that kept its old version would 409 on its
-            // own second save.
             respond(SAVED)
 
             val saved = (repository.update("p1", VERSION, draft()) as ApiResult.Success).value
@@ -243,8 +237,6 @@ class PersonalInventoryRepositoryTest {
     @Test
     fun `a delete succeeds on a body-less answer`() =
         runTest {
-            // 204 has nothing to parse. Running it through the response parser would turn every
-            // successful delete into a reported server error.
             server.enqueue(MockResponse.Builder().code(HTTP_NO_CONTENT).build())
 
             val result = repository.delete("p1")
@@ -256,9 +248,6 @@ class PersonalInventoryRepositoryTest {
     @Test
     fun `the picker asks for one place more than it shows`() =
         runTest {
-            // This endpoint answers a bare array with no total, so the extra row IS the overflow
-            // signal (ADR-0104). Asking for exactly the render cap left „25 back" meaning both
-            // „that is all of them" and „there are more", which the screen then had to guess at.
             respond(LOCATIONS)
 
             val page = (repository.locations("ever") as ApiResult.Success).value
@@ -286,7 +275,6 @@ class PersonalInventoryRepositoryTest {
 
             val page = (repository.locations("o") as ApiResult.Success).value
 
-            // The probe row is counted and then dropped: the member sees the cap, not cap + 1.
             assertEquals(cap, page.rows.size)
             assertTrue(page.more)
         }
@@ -303,8 +291,6 @@ class PersonalInventoryRepositoryTest {
 
             val page = (repository.locations("o") as ApiResult.Success).value
 
-            // The case the old `size >= LIMIT` check got wrong: 25 places and no 26th means the
-            // catalogue holds 25, and the screen claimed it was hiding something.
             assertEquals(cap, page.rows.size)
             assertFalse(page.more)
         }

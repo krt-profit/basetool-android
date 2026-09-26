@@ -32,12 +32,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The gate's polling behaviour, which is the part with no push channel behind it.
- *
- * The source is scripted rather than mocked: the test needs to count invocations, and a queue of
- * answers reads more directly than a stubbing DSL. No socket is involved, which is the point —
- * every property asserted here is about *scheduling*, and driving it through a real HTTP stack
- * would be testing OkHttp.
+ * Tests the account gate's polling schedule against a scripted source.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountGateViewModelTest {
@@ -79,16 +74,10 @@ class AccountGateViewModelTest {
     }
 
     /**
-     * Runs a test body and then ends every view model's scope — **inside** `runTest`.
+     * Runs a test body and then cancels every view model's scope inside `runTest`, so the gate's endless polling loop
+     * cannot hang the test.
      *
-     * Polling a closed gate is an endless loop by design: it runs until the member is approved or
-     * the activity goes away. `runTest` waits for the coroutines on its scheduler before it
-     * returns, so a loop still running does not fail the test — it **hangs** it, advancing virtual
-     * time forever without the wall-clock timeout ever getting a look in. An `@After` block cannot
-     * rescue that, because `@After` only runs once `runTest` has already returned. Cancelling here
-     * is what the framework does to a real view model through `onCleared()`.
-     *
-     * @param body the test
+     * @param body the test.
      */
     private fun gateTest(body: suspend TestScope.() -> Unit) =
         runTest(dispatcher) {
@@ -124,10 +113,7 @@ class AccountGateViewModelTest {
         }
 
     /**
-     * Once cleared, nothing asks again.
-     *
-     * Without this the app would send one request per minute, per install, forever, for an answer
-     * that can no longer change what is on screen.
+     * Once cleared, the gate stops polling.
      */
     @Test
     fun `polling stops once the member is in`() =
@@ -156,7 +142,6 @@ class AccountGateViewModelTest {
 
             val elapsedMinutes = 3
             advanceTimeBy(elapsedMinutes.minutes)
-            // The initial read plus one per elapsed minute.
             assertEquals(1 + elapsedMinutes, source.calls)
         }
 
@@ -186,10 +171,7 @@ class AccountGateViewModelTest {
         }
 
     /**
-     * A failed read while already waiting keeps the waiting screen.
-     *
-     * Replacing it with an error would make a lost minute of connectivity look like the account had
-     * been reset — the more alarming of the two readings, and the wrong one.
+     * A failed re-read while waiting keeps the waiting screen rather than showing an error.
      */
     @Test
     fun `a failed re-read keeps the last known state`() =
@@ -229,10 +211,7 @@ class AccountGateViewModelTest {
         }
 
     /**
-     * An unreachable gate keeps asking on its own, along the 3 -> 6 -> 12 -> 30 s ladder.
-     *
-     * Design ch. 14 artboard 3. Without this the screen would sit there until the member happened
-     * to press the button, which is the wrong burden for an outage nothing they did caused.
+     * An unreachable gate retries on its own along the 3, 6, 12, 30 s ladder (design ch. 14, artboard 3).
      */
     @Test
     fun `an unreachable gate retries on the backoff ladder`() =
@@ -247,7 +226,6 @@ class AccountGateViewModelTest {
             advanceTimeBy(3.seconds + 1.seconds)
             assertEquals(2, source.calls)
 
-            // Still one wait short of the next rung: the ladder lengthens rather than repeating.
             advanceTimeBy(3.seconds)
             assertEquals(2, source.calls)
 
@@ -284,7 +262,6 @@ class AccountGateViewModelTest {
             val viewModel = viewModelFor(source)
 
             viewModel.start()
-            // Climb to the third rung, where the automatic wait is already twelve seconds.
             advanceTimeBy(3.seconds + 6.seconds + 2.seconds)
             val climbed = source.calls
             assertEquals(THIRD_ATTEMPT, climbed)
@@ -293,7 +270,6 @@ class AccountGateViewModelTest {
             runCurrent()
             assertEquals(climbed + 1, source.calls)
 
-            // Back on the first rung: three seconds is enough again.
             advanceTimeBy(3.seconds + 1.seconds)
             assertEquals(climbed + 2, source.calls)
         }

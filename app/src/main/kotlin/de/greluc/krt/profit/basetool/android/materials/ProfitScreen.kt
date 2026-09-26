@@ -56,17 +56,10 @@ const val PROFIT_TABLE_TAG: String = "profit-table"
 const val PROFIT_SHIP_TAG: String = "profit-ship"
 
 /**
- * „Profitberechnung" — one full load, priced per material (design spec ch. 16, artboard 4).
+ * „Profitberechnung" — one full load of the chosen ship, priced per material (design spec ch. 16,
+ * artboard 4).
  *
- * > **A ship calculation, not a material one.** The first draft of chapter 16 read it as a
- * > quantity-and-quality form; it is `shipId` plus a system filter, and the answer is one row per
- * > material for a **full load** of that hull.
- *
- * Every figure is the server's. The app renders margins and profits and computes none — a margin is
- * money advice, and one derived here could not be reconciled with the web's own answer.
- *
- * > **The artboard's route sub-line („Lorville → ARC-L1") is not built.** `ProfitCalculationDto`
- * > names no terminals at all, which the design handoff flags itself. On the design gap list.
+ * Every figure is the server's; the app computes no margin or profit.
  *
  * @param state what to draw.
  * @param actions what the form reports.
@@ -200,8 +193,6 @@ private fun ProfitBody(
         }
 
         state.shipId == null && !state.loadingOptions -> {
-            // A sentence, never a skeleton: a skeleton here would pretend a calculation is running
-            // that nobody has asked for.
             Muted(text = stringResource(R.string.materials_profit_select_ship))
         }
 
@@ -220,11 +211,8 @@ private fun ProfitBody(
 }
 
 /**
- * The result table, in the web's own column set.
- *
- * Seven columns will not fit a phone, so the narrow window carries the three that answer the
- * question — Material, Max Profit, Marge — and the wide one adds „Gewinn / SCU". The rest stay
- * web-only rather than being squeezed into an unreadable row.
+ * The result table: Material, Max Profit and Marge on a narrow window, plus „Gewinn / SCU" on a
+ * wide one.
  *
  * @param rows what the server computed.
  */

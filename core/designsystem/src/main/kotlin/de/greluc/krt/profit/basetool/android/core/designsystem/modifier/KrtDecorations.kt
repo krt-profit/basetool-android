@@ -22,11 +22,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
 /**
- * Draws the signature HUD corner brackets on top of the content.
- *
- * Two L-shaped strokes of [leg] length sit flush in diagonally opposite corners. This is one of the
- * three depth devices of the design system (hairline, bracket, bloom) — the system has no drop
- * shadows, so brackets carry the "this container matters" signal instead of elevation.
+ * Draws the HUD corner brackets on top of the content: two L-shaped strokes of [leg] length in
+ * diagonally opposite corners.
  *
  * @param color bracket colour; orange for standard containers, danger red for the danger modal.
  * @param leg length of each bracket leg (10 dp on containers, 13 dp on modals).
@@ -71,16 +68,10 @@ fun Modifier.krtCornerBrackets(
     }
 
 /**
- * Paints the orange "bloom" — the only glow the design system permits.
+ * Paints the orange bloom, the only permitted glow, as concentric strokes outside the bounds with
+ * quadratically falling alpha.
  *
- * CSS expresses it as `box-shadow: 0 0 N rgba(231,126,35,a)`. Compose has no blurred shadow that
- * works below API 31 (`Modifier.blur` is a no-op there), so the bloom is approximated by stacking
- * concentric strokes outside the bounds whose alpha falls off quadratically, the way a Gaussian
- * blur fades. At the sizes the system uses — 5 dp for focus, 20 dp for modals and CTA press — the
- * result is visually equivalent and renders identically on every supported API level.
- *
- * Never use this for elevation: soft drop shadows are forbidden, the bloom marks focus and the one
- * primary action.
+ * Marks focus and the primary action; never use it for elevation.
  *
  * @param color the glow colour including its alpha; the alpha is the peak value at the edge.
  * @param radius how far the glow reaches beyond the component bounds.
@@ -97,8 +88,6 @@ fun Modifier.krtBloom(
         val step = radiusPx / layers
         repeat(layers) { index ->
             val spread = step * (index + 1)
-            // Quadratic falloff: a linear ramp leaves visible concentric banding even at the
-            // 12 dp radius the modals and toasts use.
             val distance = (index + 1).toFloat() / layers
             val alpha = color.alpha * (1f - distance) * (1f - distance)
             drawRect(

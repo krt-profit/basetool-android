@@ -31,12 +31,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Which of the two orders is being raised.
+ * Which of the two orders is being raised: a material order or an item order.
  *
- * The web puts this on a radio pair at the head of the form and swaps the body under it; the app
- * uses the segmented control, which is the same choice in the design's own control. The two bodies
- * share the head — both units, the handle, the comment — and differ only in what is being asked
- * for.
+ * Both kinds share the form's head (units, handle, comment) and differ only in their lines.
  */
 enum class OrderKind {
     /** Raw materials, by amount and minimum quality. */
@@ -49,17 +46,14 @@ enum class OrderKind {
 /**
  * One material line as the form holds it, before it becomes a [JobOrderDraftLine].
  *
- * The amount stays a string: „12,5" is what a German keyboard produces, and parsing it early would
- * turn a half-typed „12," into a zero the member cannot see.
+ * The amount stays a string so a half-typed German decimal such as „12," is never parsed to zero.
  *
  * @property materialId which material, once picked.
  * @property materialName what the picker shows for it.
  * @property query what is in the picker's text field.
  * @property amount what was typed for the quantity.
- * @property minQuality the minimum quality, or `null` for „keine". Starts at
- *   [DEFAULT_MIN_QUALITY], which is where `JobOrderForm.JobOrderMaterialForm` starts it: the same
- *   order raised on a phone and in a browser has to ask for the same ore, and it did not — the app
- *   defaulted to „keine" and quietly ordered ungraded material.
+ * @property minQuality the minimum quality, or `null` for „keine"; starts at
+ *   [DEFAULT_MIN_QUALITY], matching the web form's default.
  */
 data class OrderLineDraft(
     val materialId: String? = null,
@@ -84,9 +78,8 @@ val OrderLineDraft.isComplete: Boolean
 /**
  * One item line as the form holds it, before it becomes a [JobOrderItemDraftLine].
  *
- * The picker's text is kept beside the picked id, because the two can disagree while the member is
- * typing and the form has to show what was typed, not what was last picked. The blueprints are held
- * per line, because two lines may name different items.
+ * The picker's text is kept beside the picked id because the two can disagree while typing, and the
+ * blueprints are held per line.
  *
  * @property gameItemId which item is picked, or `null`.
  * @property itemName the picked item's name; empty while nothing is picked.
@@ -128,7 +121,7 @@ val OrderLineDraft.isPartial: Boolean
     get() = !isComplete && (materialId != null || amount.isNotBlank())
 
 /**
- * The „Neuer Auftrag" form (design round 8, §1 — chapter 10 has no artboard for it yet).
+ * The state of the „Neuer Auftrag" form.
  *
  * @property responsibleId the unit that will process the order.
  * @property requestingId the unit the order is for.
@@ -198,10 +191,8 @@ data class OrderCreateState(
     /**
      * Whether the form may be submitted.
      *
-     * Mirrors what the backend requires, so the member learns about a missing field from a disabled
-     * button rather than from a 400: both units, a handle, and at least one line that names a
-     * material and a positive amount. A half-filled line blocks the submit rather than being
-     * dropped silently.
+     * Mirrors the backend's requirements: both units, a handle, and at least one line with a material
+     * and a positive amount. A half-filled line blocks the submit rather than being dropped.
      */
     val submittable: Boolean
         get() =
@@ -268,20 +259,16 @@ data class OrderCreateState(
                         minQuality = it.minQuality,
                     )
                 },
-            // `null` on a create; on an edit it is what the order was read at, and a mismatch is
-            // the 409 that keeps two people from overwriting each other.
             version = version,
         )
     }
 }
 
 /**
- * What the order form is doing.
+ * What the order form is doing: creating an order or editing one.
  *
- * One form, three writes. Design ch. 10 artboard 10 is explicit about it — „Dasselbe Formular wie
- * ‚Auftrag anlegen', vorbefüllt — kein zweites Layout" — and the server agrees: the update takes the
- * *same* payload as the create and replaces the details and the whole material list rather than
- * patching either.
+ * All modes use the same form; an update sends the same payload as the create and replaces the
+ * details and the whole line list.
  */
 enum class OrderFormMode {
     /** Raising a new order. */
@@ -293,10 +280,8 @@ enum class OrderFormMode {
     /**
      * The requester's own, narrower edit (`PUT /orders/{id}/requested`, REQ-ORDERS-023).
      *
-     * No Logistician role needed, and three fields are **drawn locked rather than removed**: the
-     * two units and the handle belong to the processing side. The server takes them from the stored
-     * order whatever the payload says, so editing them would be a control that silently does
-     * nothing — worse than one that says why it cannot.
+     * Needs no Logistician role. The two units and the handle are shown locked, because the server keeps
+     * the stored values for them whatever the payload says.
      */
     EDIT_AS_REQUESTER,
     ;
@@ -309,14 +294,8 @@ enum class OrderFormMode {
 /**
  * The call this form makes when it is submitted.
  *
- * Three writes behind one button: raising an order, a Logistician's rewrite, and the requester's
- * narrower one. Which it is follows from [OrderCreateState.mode] and nothing else — the app never
- * infers a permission from a role it read, it is told which form it opened.
- *
- * An **edit of an item order is not offered here**: `PUT /orders/{id}/items` takes a different
- * payload and needs the blueprint-variant picker and the sub-assembly tree of artboard 12, which is
- * its own screen. An item form in an edit mode therefore writes nothing rather than sending the
- * wrong shape.
+ * Chosen by [OrderCreateState.mode] alone: a create, a Logistician's rewrite, or the requester's
+ * narrower edit. An item form in the requester's edit mode yields no call.
  *
  * @receiver the form.
  * @param source where the writes go.
@@ -339,7 +318,6 @@ private fun OrderCreateState.krtWrite(
         null
     } else {
         suspend {
-            // The screen goes to the order it wrote — for an edit, the one it came from.
             write()
                 .map { id }
         }
@@ -347,14 +325,10 @@ private fun OrderCreateState.krtWrite(
 }
 
 /**
- * The rewrite behind an edit form — one of three endpoints, chosen by the mode and the kind.
+ * The rewrite behind an edit form, choosing one of three endpoints by the mode and the kind.
  *
- * Its own function because the create's branch and the edit's are two different questions, and one
- * `when` holding both was past the complexity the codebase allows.
- *
- * > **An item order's edit is a Logistician's alone.** `PUT /{id}/items` is the only item edit the
- * > app makes; the requester's own item path (`/{id}/items/requested`) is not built, so a requester
- * > form on an item order writes nothing rather than sending the wrong shape.
+ * An item order is rewritten only through the Logistician's `PUT /{id}/items`; a requester form on
+ * an item order yields no call.
  *
  * @receiver the form.
  * @param source where the writes go.
@@ -400,9 +374,6 @@ private fun OrderCreateState.krtPrefilled(order: JobOrder): OrderCreateState =
                     OrderItemLineDraft(
                         gameItemId = line.gameItemId,
                         query = line.name.orEmpty(),
-                        // The variant this line was ordered with. Its alternatives are read on
-                        // prefill, so the picker can offer them without the member re-picking the
-                        // item first — that is the „blueprint variant counting" parity point.
                         blueprintId = line.blueprintId,
                         blueprints = listOfNotNull(line.blueprintId?.let { it to line.blueprintName.orEmpty() }),
                         amount = line.amount.toString(),
@@ -422,8 +393,6 @@ private fun OrderCreateState.krtPrefilled(order: JobOrder): OrderCreateState =
                 }
                 .ifEmpty { listOf(OrderLineDraft()) },
         version = order.version,
-        // The floor under every line, summed from the handover lines rather than from the open
-        // remainder — that one counts claims (`MaterialClaimService`), not deliveries.
         delivered =
             order.materials
                 .mapNotNull { it.materialId }
@@ -433,15 +402,10 @@ private fun OrderCreateState.krtPrefilled(order: JobOrder): OrderCreateState =
     )
 
 /**
- * Drives the „Neuer Auftrag" form, in both of its kinds.
+ * Drives the „Neuer Auftrag" form in both of its kinds, for a create or an edit.
  *
- * The two share the head — the units, the handle, the comment — and hold their lines apart, so
- * switching the kind never has to throw away what was already typed. What is submitted is decided
- * by [OrderCreateState.kind] alone.
- *
- * The **sub-assembly tree** the web draws under an item line — adopting a blueprint's own
- * components as further lines — is not offered here; the order is raised with the items named and
- * the server derives their materials. Design round 8 §1.3 carries it.
+ * Both kinds share the head and keep their lines apart, so switching the kind discards nothing;
+ * what is submitted follows [OrderCreateState.kind]. The sub-assembly tree is not offered.
  *
  * @property source the creation and the pickers behind both kinds.
  * @property orgUnits the two unit pickers.
@@ -634,8 +598,7 @@ class OrderCreateViewModel(
     /**
      * The item picker's text changed without a pick.
      *
-     * Clears the picked item *and* its blueprint: a blueprint belongs to one item, so leaving it
-     * behind would submit a pairing the member never made.
+     * Clears the picked item and its blueprint, since a blueprint belongs to one item.
      *
      * @param index which line.
      * @param query what was typed.
@@ -722,10 +685,7 @@ class OrderCreateViewModel(
     }
 
     /**
-     * Fills one line's blueprint picker.
-     *
-     * A single blueprint is picked outright: the member has no choice to make, and one more tap on
-     * a one-entry dropdown is only a way to leave the line unfinished.
+     * Fills one line's blueprint picker; a single blueprint is picked outright.
      *
      * @param index which line.
      * @param gameItemId the item whose blueprints to read.
@@ -738,8 +698,6 @@ class OrderCreateViewModel(
             when (val result = source.blueprintsFor(gameItemId)) {
                 is ApiResult.Success -> {
                     editItemLine(index) {
-                        // Only if the line still names the item that was asked about: a slow answer
-                        // must not fill the picker of an item the member has since typed past.
                         if (it.gameItemId == gameItemId) {
                             it.copy(blueprints = result.value, blueprintId = result.value.singleOrNull()?.first)
                         } else {
@@ -790,8 +748,7 @@ class OrderCreateViewModel(
     /**
      * The picker's text changed without a pick.
      *
-     * The selection is cleared, because a query that no longer names the picked material must not
-     * leave the form quietly holding the old id behind different-looking text.
+     * Clears the selected material, so the form never holds an id the text no longer names.
      *
      * @param index which line.
      * @param query what was typed.

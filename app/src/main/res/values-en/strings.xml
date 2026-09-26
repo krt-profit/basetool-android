@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  English overrides. Every key in values/strings.xml has one here — a missing key falls back to
-  German silently, which on an English device reads as a bug rather than as a translation gap.
-  StringsParityTest asserts the two bundles carry the same keys.
--->
 <resources>
     <string name="login_org">Das Kartell // Bereich Profit</string>
     <string name="login_sign_in">Sign in</string>
@@ -93,7 +88,6 @@
     <string name="nav_more">More</string>
     <string name="nav_hangar">Hangar</string>
     <string name="nav_exchange">Materialbörse</string>
-    <!-- The rail entry, which the design shortens (ch. 03, ch. 05). -->
     <string name="nav_exchange_short">Börse</string>
     <string name="nav_refinery">Raffinerie</string>
     <string name="nav_personal_inventory">My inventory</string>
@@ -146,7 +140,6 @@
     <string name="licenses_retry">Try again</string>
     <string name="licenses_open_text">LICENCE TEXT</string>
     
-    <!-- Einsätze, list (design spec ch. 06 §1). The domain term stays German in English. -->
     <string name="missions_title">Einsätze</string>
     <string name="missions_search_placeholder">Search Einsätze…</string>
     <string name="missions_filter_status">Status</string>
@@ -169,7 +162,6 @@
     <string name="missions_status_active">Active</string>
     <string name="missions_status_completed">Completed</string>
     <string name="missions_status_cancelled">Cancelled</string>
-    <!-- Weekday and a numeric date, per design ch. 06 artboard 1. -->
     <string name="missions_day_pattern">EEEE · dd/MM</string>
     <string name="missions_day_today">Today</string>
     <string name="missions_day_tomorrow">Tomorrow</string>
@@ -189,7 +181,6 @@
     <string name="missions_error_message">The Einsätze could not be loaded.</string>
     <string name="missions_retry">Try again</string>
 
-    <!-- Einsatz detail (design spec ch. 06 §2), read-only. Domain terms stay German. -->
     <string name="mission_detail_title">Einsatz</string>
     <string name="mission_detail_tab_overview">Briefing</string>
     <string name="mission_detail_tab_participants">Participants</string>
@@ -251,7 +242,6 @@
     <string name="mission_detail_error_missing_message">This Einsatz no longer exists.</string>
     <string name="mission_detail_error_title">System Malfunction</string>
     <string name="mission_detail_error_message">The Einsatz could not be loaded.</string>
-    <!-- Operationen (design chapter 06 section 1 segment + section 5 detail) -->
     <string name="operations_title">Operationen</string>
     <string name="operations_segment_missions">Einsätze</string>
     <string name="operations_segment_operations">Operationen</string>
@@ -323,7 +313,6 @@
     <string name="operation_detail_error_missing_message">This Operation no longer exists.</string>
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">The Operation could not be loaded.</string>
-    <!-- Benachrichtigungen (design chapter 07) -->
     <string name="list_detail_none_title">Nothing selected</string>
     <string name="list_detail_none_message">Pick an entry on the left to see it here.</string>
     <string name="notifications_title">Benachrichtigungen</string>
@@ -341,8 +330,6 @@
     </plurals>
     <string name="notifications_end_of_list">End of list</string>
     <string name="notifications_unread_marker">Unread</string>
-    <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
-         Placeholders are NAMED because the two bundles order the values differently. -->
     <string name="notifications_mark_all_read">Mark all as read</string>
     <string name="notifications_delete_read">Delete read</string>
     <string name="notifications_mark_read_action">Mark as read</string>
@@ -363,7 +350,6 @@
     <string name="notifications_type_registration_pending">New registration awaiting approval: {username}</string>
     <string name="notifications_type_exchange_interest">{interessent} registered interest in your listing for {material}</string>
     <string name="notifications_type_exchange_fulfilment">{lieferant} can fulfil your request for {material}</string>
-    <!-- Dashboard (design chapter 05) -->
     <string name="dashboard_greeting">Welcome, %1$s</string>
     <string name="dashboard_greeting_anonymous">Welcome</string>
     <string name="dashboard_context">%1$s · %2$s</string>
@@ -378,9 +364,6 @@
     <string name="mission_tab_with_count">%1$s %2$d</string>
     <string name="dashboard_mission_open">Open</string>
     <string name="dashboard_missions_all">All Einsätze</string>
-    <!-- Weekday spelled out, date numeric, as design ch. 05 writes it. Translatable so a
-         locale can reorder the fields. -->
-    <!-- The greeting's date: the real one, then the Star Citizen year in brackets. -->
     <string name="dashboard_date">%1$s (%2$d)</string>
     <string name="dashboard_date_pattern">EEEE, dd/MM/yyyy</string>
     <string name="dashboard_unread">Unread</string>
@@ -390,7 +373,6 @@
     <string name="dashboard_quick_book_in">Book in (Lager)</string>
     <string name="dashboard_quick_order">Create Auftrag</string>
     <string name="dashboard_quick_offer">Börse: offer</string>
-    <!-- Hangar (design chapter 08) -->
     <string name="hangar_title">Hangar</string>
     <string name="hangar_segment_mine">My ships</string>
     <string name="hangar_segment_org">Org unit</string>
@@ -430,7 +412,6 @@
     <string name="hangar_empty_filtered_message">No ship type matches this filter.</string>
     <string name="hangar_error_title">Signal Lost</string>
     <string name="hangar_error_message">The hangar could not be loaded.</string>
-    <!-- Bank (design chapter 12) -->
     <string name="bank_total_for">TOTAL %1$s</string>
     <string name="bank_total_unit">aUEC</string>
     <string name="bank_total">TOTAL</string>
@@ -463,7 +444,6 @@
     <string name="bank_type_reversal">Reversal</string>
     <string name="bank_type_wipe_reset">Wipe reset</string>
     <string name="bank_sparkline_description">Balance over the last 30 days</string>
-    <!-- Booking requests (design chapter 12, artboards 1 + 3) -->
     <string name="bank_tab_accounts">Konten</string>
     <string name="bank_tab_requests">Requests</string>
     <string name="bank_request_action">Request a booking</string>
@@ -505,7 +485,6 @@
     <string name="bank_request_withdraw_confirm_title">Withdraw the request?</string>
     <string name="bank_request_withdraw_confirm_message">It will not be booked and disappears from the approval list.</string>
     <string name="bank_request_error_amount">The amount or the destination account is not valid.</string>
-    <!-- Bank staff surface (design chapter 12, artboards 4-8) -->
     <string name="bank_scope_member">Mitglied</string>
     <string name="bank_scope_staff">Verwaltung</string>
     <string name="action_ok">Got it</string>
@@ -543,7 +522,6 @@
     <string name="bank_staff_empty_title">No accounts</string>
     <string name="bank_staff_empty_message">This org unit runs no bank account.</string>
     <string name="bank_staff_empty_message_no_grant">No account is granted to you. Bank Management assigns the grants.</string>
-    <!-- Bank staff: the request queue (design chapter 12, artboard 5) -->
     <string name="bank_staff_confirm">Confirm</string>
     <string name="bank_staff_reject">Reject</string>
     <string name="bank_staff_queue_empty_title">No open requests</string>
@@ -561,7 +539,6 @@
     <string name="bank_staff_reject_message">No money moves. The requester is shown your reason.</string>
     <string name="bank_staff_reject_reason">Reason</string>
     <string name="bank_staff_reject_reason_placeholder">Reason for the rejection</string>
-    <!-- Bank staff: the account lifecycle (design chapter 12, artboard 6) -->
     <string name="bank_staff_tab_lifecycle">Konten</string>
     <string name="bank_lifecycle_empty_title">Nothing to manage</string>
     <string name="bank_lifecycle_empty_message">Neither accounts nor Halter have been set up.</string>
@@ -590,7 +567,6 @@
     <string name="bank_lifecycle_holder_deactivate_text">An inactive Halter can have no new money assigned to them. What they already hold stays withdrawable.</string>
     <string name="bank_lifecycle_holder_reactivate_title">Reactivate the Halter</string>
     <string name="bank_lifecycle_holder_reactivate_text">The Halter can be assigned money again.</string>
-    <!-- Bank staff: grants (design chapter 12, artboard 7) -->
     <string name="bank_staff_tab_grants_full">Grants</string>
     <string name="bank_grants_no_accounts_title">No accounts</string>
     <string name="bank_grants_no_accounts_message">With no account there is nothing to grant.</string>
@@ -650,7 +626,6 @@
     <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. You can add the entry again here at any time.</string>
     <string name="bank_grants_revoke_text_cartel">Takes every booking right on this account away from the member. Every member still sees the KRT account — that sight never hung on the entry.</string>
     <string name="bank_grants_view_note_cartel">Every member sees the KRT account anyway. An entry here therefore grants booking rights only, not sight.</string>
-    <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_create">Create order</string>
     <string name="order_create_title">New order</string>
@@ -707,7 +682,6 @@
     <string name="orders_materials_count">(%1$d)</string>
     <string name="orders_kind_material">Material</string>
     <string name="orders_kind_item">Item</string>
-    <!-- Materialbedarf — design ch. 18 §1. Reached from the order list's overflow. -->
     <string name="orders_demand_title">Materialbedarf</string>
     <string name="orders_demand_lead">%1$s · %2$s</string>
     <plurals name="orders_demand_uncovered">
@@ -783,7 +757,6 @@
     <string name="order_detail_error_missing_message">This order no longer exists.</string>
     <string name="order_detail_error_title">System Malfunction</string>
     <string name="order_detail_error_message">The order could not be loaded.</string>
-    <!-- Lager (design chapter 09) -->
     <string name="inventory_title">Lager</string>
     <string name="inventory_with_stock_only">In stock only</string>
     <string name="inventory_quality">Q %1$s</string>
@@ -826,7 +799,6 @@
     <string name="inventory_error_title">Signal Lost</string>
     <string name="inventory_error_message">The Lager could not be loaded.</string>
 
-    <!-- Mein Inventar (phase 3) -->
     <string name="personal_inventory_title">My inventory</string>
     <string name="personal_inventory_search">Search entry</string>
     <string name="personal_inventory_create">New entry</string>
@@ -856,16 +828,12 @@
     <string name="value_absent">—</string>
     <string name="conflict_title">Conflict detected</string>
     <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
-    <!-- The line that stays under the form once the dialog is dismissed. -->
     <string name="conflict_inline">Not saved — changed at the same time.</string>
     <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
-    <!-- Appended to a write failure the server did not explain: the status and the
-         correlation id are what makes a report diagnosable in one step. -->
     <string name="write_failed_reference">HTTP %1$d \u00b7 Ref. %2$s</string>
     <string name="write_failed_status">HTTP %1$d</string>
-    <!-- Fallback when the server refuses on a rule but names no reason. -->
     <string name="refused_inline">Not possible — the action was refused.</string>
     <string name="picker_more_matches">More matches available — narrow the search.</string>
     <plurals name="personal_inventory_location_capped">
@@ -873,7 +841,6 @@
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
     </plurals>
 
-    <!-- Blueprints (phase 3) -->
     <string name="blueprints_title">Blueprints</string>
     <string name="blueprints_tab_items">Items</string>
     <string name="blueprints_tab_blueprints">Blueprints</string>
@@ -891,7 +858,6 @@
     <string name="blueprints_recipe_scu">%1$.2f SCU</string>
     <string name="blueprints_edit">Edit</string>
     <string name="blueprints_search">Search blueprint</string>
-    <!-- Blueprint import and selection mode — design ch. 18 §§2–3. -->
     <string name="blueprints_import_title">Import blueprints</string>
     <string name="blueprints_import_intro">A file from the extractor or the export.</string>
     <string name="blueprints_import_privacy">JSON from the blueprint export. The file stays on the device until you confirm the preview.</string>
@@ -971,7 +937,6 @@
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
     </plurals>
 
-    <!-- Hangar writes (phase 3) -->
     <string name="hangar_ship_create">Add ship</string>
     <string name="hangar_ship_edit">Edit ship</string>
     <string name="hangar_field_name">Name (optional)</string>
@@ -1055,7 +1020,6 @@
         <item quantity="other">%1$d more. Search more precisely.</item>
     </plurals>
 
-    <!-- Lager bookings (phase 3) -->
     <string name="booking_mode_in">Book in</string>
     <string name="booking_mode_out">Book out</string>
     <string name="booking_mode_note">Note</string>
@@ -1180,8 +1144,6 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
-    <!-- The five channels of design ch. 14, so a member can silence one kind and keep
-         another. Their ids map onto NotificationKind. -->
     <string name="notification_channel_missions">Einsätze &amp; check-in</string>
     <string name="notification_channel_orders">Aufträge &amp; assignments</string>
     <string name="notification_channel_exchange">Materialbörse</string>
@@ -1192,7 +1154,6 @@
     <string name="retry_busy_title">Signal unstable</string>
     <string name="retry_busy_message">The server is busy. Retrying automatically in %1$d s.</string>
     <string name="retry_now">Retry now</string>
-    <!-- Raffinerie (design ch. 11) -->
     <string name="refinery_title">Raffinerie</string>
     <string name="refinery_order_title">Refinery order</string>
     <string name="refinery_filter_active">Active</string>
@@ -1289,7 +1250,6 @@
     </plurals>
     <string name="refinery_end_of_list">End of list</string>
     <string name="refinery_store_cancel">Cancel</string>
-    <!-- Materialbörse (design ch. 10 §3–4) -->
     <string name="board_title">Materialbörse</string>
     <string name="board_side_offers">Offers</string>
     <string name="board_side_requests">Requests</string>
@@ -1334,7 +1294,6 @@
         <item quantity="one">%1$d pledge</item>
         <item quantity="other">%1$d pledges</item>
     </plurals>
-    <!-- Forced-update gate (design ch. 14) -->
     <string name="update_required_title">Update required</string>
     <string name="update_required_message">The server no longer serves this version. Download the current build to carry on. Your stored data is kept.</string>
     <string name="update_required_cta">Open the download page</string>
@@ -1472,15 +1431,12 @@
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
     <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>
     <string name="gate_own_row_detail">Rule: your own entry, or edit rights on the entry’s org unit.</string>
-    <!-- Timestamps: the yesterday and older rungs of the design's relative-time ladder. -->
     <string name="time_yesterday_at">yesterday, %1$s</string>
     <string name="time_date_pattern">MMM d</string>
     <string name="time_date_at">%1$s, %2$s</string>
-    <!-- Unknown deep link (design ch. 03 rule, ch. 14 wording). Title is product canon and stays English. -->
     <string name="route_not_found_title">Signal Lost</string>
     <string name="route_not_found_message">This address does not exist in this app.</string>
     <string name="route_not_found_action">Back to base</string>
-    <!-- Einsatz: the Ablauf and Ziele editors (round 11 asks for their drawing) -->
     <string name="mission_step_new">New step</string>
     <string name="mission_step_editing">Edit step</string>
     <string name="mission_step_title">What happens</string>
@@ -1502,7 +1458,6 @@
     <string name="mission_timeline_edit">Edit</string>
     <string name="mission_timeline_remove">Remove</string>
     <string name="mission_timeline_cancel">Cancel</string>
-    <!-- Einsatz: the member picker behind the three member-shaped writes -->
     <string name="mission_member_party_lead">Set party lead</string>
     <string name="mission_member_manager">Add manager</string>
     <string name="mission_member_participant">Add participant</string>
@@ -1510,7 +1465,6 @@
     <string name="mission_member_search_hint">Type a name</string>
     <string name="mission_member_searching">Searching …</string>
     <string name="mission_member_hint">Party lead, managers and extra participants are named through the member search.</string>
-    <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
     <string name="mission_unit_rename">Rename</string>
     <string name="mission_unit_rename_save">Save Einheit</string>
     <string name="mission_crew_roles">Functions aboard (crew)</string>
@@ -1518,7 +1472,6 @@
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>
     <string name="mission_crew_assign">Assign someone</string>
-    <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
     <string name="mission_admin_people">People</string>
     <string name="mission_admin_state_saving">Saving…</string>
     <string name="mission_admin_state_saved">Saved %1$s</string>
@@ -1569,7 +1522,6 @@
     <string name="mission_timeline_sort">Sort</string>
     <string name="mission_timeline_sort_hint">Change the order: arrows on each row.</string>
     <string name="mission_crew_assign_title">Assign someone — %1$s</string>
-    <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Record handover</string>
     <string name="order_handover_subject">%1$s · %2$s of %3$s %4$s</string>
     <string name="order_handover_amount">Amount (%1$s)</string>
@@ -1587,7 +1539,6 @@
     <string name="order_handover_not_allowed">You need the Logistiker role for that.</string>
     <string name="order_handover_record_title">Record a handover for</string>
     <string name="order_handover_record_for">Hand over %1$s</string>
-    <!-- Auftrag: record production (design ch. 10 artboard 15) -->
     <string name="order_production_record">Record production</string>
     <string name="order_production_title">Record production</string>
     <string name="order_production_subject">%1$s · built %2$d / %3$d</string>
@@ -1618,7 +1569,6 @@
     <string name="order_production_cta">Book production</string>
     <string name="order_production_alloc_error">The plan does not cover the material demand exactly.</string>
     <string name="order_production_not_allowed">You need the Logistician role for that.</string>
-    <!-- Trade: material list and prices (design ch. 16) -->
     <string name="nav_materials">Trade</string>
     <string name="materials_title">Material list</string>
     <string name="materials_search_placeholder">Search materials …</string>
@@ -1653,7 +1603,6 @@
         <item quantity="one">%1$d material</item>
         <item quantity="other">%1$d materials</item>
     </plurals>
-    <!-- Trade: price matrix and profit calculation (design ch. 16, artboards 3 + 4) -->
     <string name="materials_matrix_title">Price overview</string>
     <string name="materials_matrix_material">Material</string>
     <string name="materials_matrix_sell">Sell</string>
@@ -1677,7 +1626,6 @@
     <string name="materials_profit_col_total">Max profit</string>
     <string name="materials_profit_col_margin">Margin (%)</string>
     <string name="materials_actions">More trade views</string>
-    <!-- Auftrag: handing over an item order (design ch. 10) -->
     <string name="order_item_handover_record">Record handover</string>
     <string name="order_item_handover_subject">%1$s · handed over %2$d / %3$d</string>
     <string name="order_item_handover_amount">Units handed over</string>
@@ -1688,7 +1636,6 @@
         <item quantity="one">%1$s · %2$d piece · %3$s</item>
         <item quantity="other">%1$s · %2$d pieces · %3$s</item>
     </plurals>
-    <!-- Auftrag: claims (design ch. 10 artboard 13) -->
     <string name="order_tab_claims">Zusagen</string>
     <string name="order_claims_progress">%1$s / %2$s claimed</string>
     <string name="order_claims_open">Still open: %1$s</string>
@@ -1706,7 +1653,6 @@
     <string name="order_claims_withdraw">Withdraw</string>
     <string name="order_claims_overclaim">The server refuses more than is still open. The sum across Staffeln may not exceed what is needed.</string>
     <string name="order_claims_not_allowed">You need the Logistician role for that.</string>
-    <!-- Editing an Auftrag (design ch. 10, artboards 10 + 11) -->
     <string name="order_edit_title">Edit the Auftrag</string>
     <string name="order_edit_submit">Save</string>
     <string name="order_edit_requester_note">You raised this Auftrag: you can change amounts and the comment, not the processing.</string>
@@ -1715,7 +1661,6 @@
     <string name="order_edit_below_delivered">Less than has already been handed over (%1$s) is refused by the server.</string>
     <string name="order_edit_open">Edit the Auftrag</string>
     <string name="order_detail_actions">More actions</string>
-    <!-- Auftrag: the linked stock overview (design ch. 10 artboard 16) -->
     <string name="order_collection_title">Materialsammelübersicht</string>
     <string name="order_collection_entries">Stock entries</string>
     <string name="order_collection_unbacked">Linked materials (no stock)</string>
@@ -1735,7 +1680,6 @@
     <string name="order_detail_missing">Missing %1$d</string>
     <string name="order_edit_item_only_web">Only a Logistician edits item lines, and only while nothing has been handed over.</string>
     <string name="order_edit_item_only_web_detail">Once anything has been handed over the lines are fixed.</string>
-    <!-- Creating and editing an Operation (design ch. 06, artboards 15 + 16) -->
     <string name="operation_form_title">New Operation</string>
     <string name="operation_form_edit_title">Edit the Operation</string>
     <string name="operation_form_name">Name</string>
@@ -1748,7 +1692,6 @@
     <string name="operation_status_planned">Planned</string>
     <string name="operation_status_active">Running</string>
     <string name="operation_status_completed">Completed</string>
-    <!-- Editing and deleting a refinery order (design ch. 11, artboards 6 and 7) -->
     <string name="refinery_edit_title">Edit order</string>
     <string name="refinery_edit_submit">Save</string>
     <string name="refinery_edit_locked_stored">Stored — the core and the goods are fixed. Money and the linked Einsatz stay editable.</string>
@@ -1762,7 +1705,6 @@
         <item quantity="one">The order at %1$s and its %2$d goods line will be deleted. A yield that was never stored is lost with it.</item>
         <item quantity="other">The order at %1$s and its %2$d goods lines will be deleted. A yield that was never stored is lost with it.</item>
     </plurals>
-    <!-- The board's item side and editing an entry (design ch. 17, artboards 1–3) -->
     <string name="board_kind_material">Material</string>
     <string name="board_kind_item">Item</string>
     <string name="board_field_item">Item</string>
@@ -1779,7 +1721,6 @@
         <item quantity="one">%1$d member said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
         <item quantity="other">%1$d members said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
     </plurals>
-    <!-- Taking over several blueprints at once (design ch. 17, artboard 5) -->
     <string name="blueprints_product_owned_hidden">Blueprints you already have are not offered.</string>
     <string name="blueprints_note_single_only">A note only travels with a single blueprint — several are taken over without one.</string>
     <plurals name="blueprints_batch_result">
@@ -1790,7 +1731,6 @@
         <item quantity="one">Take over %1$d blueprint</item>
         <item quantity="other">Take over %1$d blueprints</item>
     </plurals>
-    <!-- Blueprint availability (design ch. 17, artboard 6) -->
     <string name="blueprint_overview_title">Blueprint availability</string>
     <string name="blueprint_overview_search">Search for a blueprint …</string>
     <string name="blueprint_overview_filter_all">All</string>
@@ -1813,7 +1753,6 @@
         <item quantity="one">%1$d blueprint</item>
         <item quantity="other">%1$d blueprints</item>
     </plurals>
-    <!-- Selection mode and bulk delete in "Mein Inventar" (design ch. 17, artboard 4) -->
     <string name="personal_inventory_selected_word">SELECTED</string>
     <string name="personal_inventory_select_all">Select all</string>
     <string name="personal_inventory_bulk_delete_title">Delete entries?</string>
@@ -1825,7 +1764,6 @@
         <item quantity="one">%1$d deleted · %2$d skipped</item>
         <item quantity="other">%1$d deleted · %2$d skipped</item>
     </plurals>
-    <!-- Bulk checkout (design ch. 09, artboard 20) -->
     <string name="inventory_bulk_checkout">Bulk checkout</string>
     <string name="inventory_bulk_checkout_hint">Checking out is append-only: the rows leave the stock, the log stays. Whole rows only — use the single checkout for partial amounts.</string>
     <string name="inventory_bulk_checkout_full">in full</string>
@@ -1838,7 +1776,6 @@
         <item quantity="one">%1$d entry checked out.</item>
         <item quantity="other">%1$d entries checked out.</item>
     </plurals>
-    <!-- Game item stock (design ch. 09, artboard 21) -->
     <string name="game_items_title">Game items</string>
     <string name="game_items_search">Search for an item …</string>
     <string name="game_items_filter_all">All</string>
@@ -1864,7 +1801,6 @@
         <item quantity="one">%1$d place</item>
         <item quantity="other">%1$d places</item>
     </plurals>
-    <!-- The Verwaltung's direct booking (design ch. 12, artboard 9) -->
     <string name="bank_direct_title">Direct booking</string>
     <string name="bank_direct_filed_title">Filed for approval</string>
     <string name="bank_direct_filed_message">The amount is over your direct-booking ceiling. Nothing was booked — it is now an approval request. The balance changes only once it is approved.</string>
@@ -1908,7 +1844,6 @@
     <string name="bank_direct_book_deposit">Book the deposit</string>
     <string name="bank_direct_book_withdrawal">Book the withdrawal</string>
     <string name="bank_direct_book_transfer">Book the transfer</string>
-    <!-- Approval limits (design ch. 12, artboard 10) -->
     <string name="bank_limits_title">Approval limits</string>
     <string name="bank_limits_display_hint">Up to these amounts the tier may request bookings without a further approval.</string>
     <string name="bank_limits_tiers">Tiers</string>
@@ -1923,7 +1858,6 @@
     <string name="bank_limits_remove_title">Remove the limit?</string>
     <string name="bank_limits_remove_body">%1$s then falls back to the limit of %2$s aUEC.</string>
     <string name="bank_limits_remove_body_none">%1$s then has no limit — every booking will need your release.</string>
-    <!-- Verwaltung → people (design ch. 06, artboard 12) -->
     <string name="mission_member_party_lead_label">Party lead</string>
     <string name="mission_member_manager_label">Managers</string>
     <string name="mission_member_change">Change</string>

@@ -38,11 +38,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The rules of the app's first write screen.
- *
- * Two of them carry the phase, not just this screen: a save is impossible while the device has no
- * network (never queued — the version would age in the queue), and a conflict leaves what the member
- * typed exactly where it was.
+ * Tests the personal inventory's write rules: a save is refused while offline rather than queued, and a conflict leaves
+ * what the member typed in place.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -148,8 +145,6 @@ class PersonalInventoryViewModelTest {
             val first = item()
             val second = item().copy(id = "p2", name = "Bexalit")
             val source = FakeSource(rows = listOf(first, second))
-            // There is no bulk endpoint, so the loop can half-succeed — which is the whole reason
-            // the result is reported rather than assumed.
             source.refusals["p2"] = ApiError.Forbidden()
             val model = viewModel(source)
             model.loadOnce()
@@ -165,7 +160,6 @@ class PersonalInventoryViewModelTest {
             assertEquals(listOf("p1", "p2"), source.deleted)
             assertEquals(1, model.state.value.bulkResult?.deleted)
             assertEquals(1, model.state.value.bulkResult?.skipped)
-            // The refused row stays selected, so the member can see which one did not go.
             assertEquals(setOf("p2"), model.state.value.selection)
         }
 
@@ -217,8 +211,6 @@ class PersonalInventoryViewModelTest {
     @Test
     fun `a save is refused while the device has no network`() =
         runTest(dispatcher) {
-            // Not queued: the version would age while it waits, and the server would be right to
-            // refuse it. The screen says so up front instead (design ch. 14).
             val source = FakeSource()
             val connectivity = FakeConnectivity(initial = false)
             val model = viewModel(source, connectivity)
@@ -252,8 +244,6 @@ class PersonalInventoryViewModelTest {
     @Test
     fun `a conflict keeps what the member typed`() =
         runTest(dispatcher) {
-            // The one failure that is nobody's fault. Clearing the form would make the member pay
-            // for somebody else's edit.
             val source = FakeSource(saveAnswer = ApiResult.Failure(ApiError.OptimisticLock()))
             val model = viewModel(source)
             model.loadOnce()
@@ -289,8 +279,6 @@ class PersonalInventoryViewModelTest {
     @Test
     fun `a successful save closes the editor and re-reads the list`() =
         runTest(dispatcher) {
-            // Re-read rather than patched in place: the server owns the new version, and the row
-            // the member sees next has to be the row the next edit will be composed against.
             val source = FakeSource()
             val model = viewModel(source)
             model.loadOnce()
@@ -378,8 +366,6 @@ class PersonalInventoryViewModelTest {
     @Test
     fun `a cut answer is reported as capped, because the rest is not gone`() =
         runTest(dispatcher) {
-            // ADR-0104: a picker that silently drops the place a member is looking for is worse
-            // than one that admits the list was cut.
             val source = FakeSource()
             source.locationAnswer = List(LOCATION_CAP) { place().copy(uexId = it) }
             source.locationsCapped = true
@@ -395,10 +381,6 @@ class PersonalInventoryViewModelTest {
     @Test
     fun `a full answer that is the whole catalogue is not reported as capped`() =
         runTest(dispatcher) {
-            // The case the old `results.size >= LOCATION_LIMIT` check got wrong. The endpoint
-            // sends a bare array with no total, so a page of exactly the cap used to read as a
-            // truncation — and the screen told the member to narrow a search that had already
-            // shown them everything. The repository now settles it with a sentinel row.
             val source = FakeSource()
             source.locationAnswer = List(LOCATION_CAP) { place().copy(uexId = it) }
             source.locationsCapped = false

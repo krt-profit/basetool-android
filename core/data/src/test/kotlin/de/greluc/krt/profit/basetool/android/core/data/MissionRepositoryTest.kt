@@ -28,12 +28,9 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 
 /**
- * The Einsatz list read: what reaches the wire, and what the app does with answers it did not
- * expect.
+ * The Einsatz list read: what reaches the wire, and how unexpected answers are handled.
  *
- * Robolectric because the repository logs through the project facade, which calls
- * `android.util.Log` — unmocked in a plain JVM test, which would fail on the diagnostic rather than
- * on the assertion.
+ * Robolectric, because the repository logs through `android.util.Log`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -175,9 +172,6 @@ class MissionRepositoryTest {
     @Test
     fun `the search term is encoded exactly once`() =
         runTest {
-            // `&` and `=` are the characters that either truncate the request or arrive
-            // double-encoded when a query string is built by concatenation. The failure mode is a
-            // search that silently matches nothing, which reads as "no Einsätze" rather than a bug.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(text = "Abbau & Eskorte = 2"))
@@ -213,8 +207,6 @@ class MissionRepositoryTest {
     @Test
     fun `UNKNOWN is never sent as a status filter`() =
         runTest {
-            // It is this build's word for "a status I do not recognise", not a server value. Sending
-            // it would filter on a status the backend has never heard of and return nothing.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(statuses = setOf(MissionStatus.UNKNOWN, MissionStatus.ACTIVE)))
@@ -225,14 +217,10 @@ class MissionRepositoryTest {
     @Test
     fun `hiding past Einsaetze asks for the two statuses that are not over`() =
         runTest {
-            // Not a lower bound on the start: that also hid every RUNNING Einsatz, whose gathering
-            // time is by definition in the past. Found on a device, and the reason the design's
-            // own "seit 15:57" row could never appear.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(includePast = false))
 
-            // One takeRequest only: the helper consumes the queue, and a second call blocks.
             val url = requestedUrl()
             assertEquals(listOf("PLANNED", "ACTIVE"), url.queryParameterValues("status"))
             assertNull("the past is hidden by status, not by time", url.queryParameter("start"))
@@ -241,8 +229,6 @@ class MissionRepositoryTest {
     @Test
     fun `showing past Einsaetze narrows nothing`() =
         runTest {
-            // No status at all: the server answers with everything the caller may see, which for a
-            // member is all four.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(includePast = true))
@@ -265,9 +251,6 @@ class MissionRepositoryTest {
     @Test
     fun `including the past flips the list to most recent first`() =
         runTest {
-            // The screen is a flat list with no grouping, so keeping the ascending order here put
-            // the oldest mission the org ever ran at the top the moment „Vergangene" was switched
-            // on, burying everything recent pages deep.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(includePast = true))
@@ -278,8 +261,6 @@ class MissionRepositoryTest {
     @Test
     fun `a ticked status wins over the past toggle`() =
         runTest {
-            // Subtracting the finished ones from an explicit "show me the finished ones" would
-            // answer with an empty list.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(statuses = setOf(MissionStatus.COMPLETED), includePast = false))
@@ -301,8 +282,6 @@ class MissionRepositoryTest {
     @Test
     fun `the sort is one the backend whitelists`() =
         runTest {
-            // An unlisted sort field is answered with 400, so this is not a free-form string: the
-            // list would fail to load entirely rather than merely arrive in another order.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery.NONE)
@@ -313,8 +292,6 @@ class MissionRepositoryTest {
     @Test
     fun `a row without an id is dropped, and the server's total is left alone`() =
         runTest {
-            // It cannot be opened, so offering it produces a tap that does nothing. Lowering the
-            // total to match would hide the fault instead of surfacing it.
             respond(
                 """
                 {"content":[{"id":"m1","name":"A","status":"ACTIVE"},{"name":"B","status":"ACTIVE"}],
@@ -363,9 +340,6 @@ class MissionRepositoryTest {
     @Test
     fun `an empty page is a success, not a failure`() =
         runTest {
-            // "No Einsätze match" and "the list could not be loaded" are different screens, and
-            // showing the second for the first is how a member is told something is broken when it
-            // is not.
             respond("""{"content":[],"page":0,"size":25,"totalElements":0,"totalPages":0,"sort":[]}""")
 
             val result = repository.search(MissionQuery.NONE)
@@ -399,11 +373,8 @@ class MissionRepositoryTest {
         }
 
     /**
-     * The whole point of `setPlannedFunction` taking the row rather than an id: `PUT
-     * …/participants/{id}` is a **replace**. The server clears `desiredMissionJobType` and
-     * `comment` when they are absent, and assigns `startTime` unconditionally — so a request that
-     * carried only the new function would wipe the member's stated wish, their note, **and check
-     * them out**. Three silent losses with no error and no visible cause.
+     * `PUT …/participants/{id}` is a replace, so `setPlannedFunction` must echo the desired job type,
+     * the comment and the start time it is not changing.
      */
     @Test
     fun `setPlannedFunction echoes the fields it is not changing`() =
@@ -514,7 +485,6 @@ class MissionRepositoryTest {
             assertEquals("j1", row.desiredJobTypeId)
             assertEquals("Pilot", row.desiredJobName)
             assertEquals("j2", row.plannedJobTypeId)
-            // `role` shows the assignment, falling back to the wish — the display rule, unchanged.
             assertEquals("Turret", row.role)
             assertEquals(ROSTER_ROW_VERSION, row.version)
             assertTrue("a start time is what a check-in is", row.checkedIn)
@@ -590,8 +560,7 @@ class MissionRepositoryTest {
         }
 
     /**
-     * Setting the actual start time is what opens an Einsatz for check-in: the server refuses every
-     * check-in until it is set, so this write is the one that unblocks the roster.
+     * Setting the actual start time is the write that opens an Einsatz for check-in.
      */
     @Test
     fun `patching the Zeitplan carries the actual start time`() =
@@ -650,8 +619,6 @@ class MissionRepositoryTest {
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einsatz-1""""))
             assertTrue(body.contains("121.5"))
-            // And the answer maps back the right way round: a custom frequency has no type, so its
-            // own name is the label, and the number is the value.
             val saved = (result as ApiResult.Success).value.frequencies.single()
             assertEquals("Einsatz-1", saved.type)
             assertEquals("121.50", saved.value)
@@ -692,23 +659,14 @@ class MissionRepositoryTest {
             structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
 
             val request = server.takeRequest()
-            // The slim endpoint. This test used to assert the plain one and say so: the plain one
-            // answers with the whole Einsatz, which is what the screen swaps. That reasoning was
-            // right about the answer and wrong about the path — the plain one is
-            // `@ApiDeprecation`-marked with a sunset of 2026-10-20, and the edge admits neither.
-            // The Einsatz is re-read instead.
             assertTrue(request.target.endsWith("/units/u1/crew/slim"))
             assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
             assertEquals("GET", server.takeRequest().method)
         }
 
     /**
-     * The one call on the Einheiten screen that was still sending the deprecated full-DTO path.
-     *
-     * Two things had to move together. `DELETE …/crew/{crewId}` carries an `@ApiDeprecation` with a
-     * sunset, and the vhost admits neither it nor its replacement — so switching alone would have
-     * traded one 404 for another. The `/slim` endpoint answers `204`, which is why the Einsatz is
-     * re-read here rather than folded out of the answer: there is no answer to fold.
+     * Removing a member from an Einheit uses the `/slim` delete path and, since it answers `204`,
+     * re-reads the Einsatz.
      */
     @Test
     fun `taking somebody off an Einheit deletes the slim path and re-reads the Einsatz`() =
@@ -761,17 +719,8 @@ class MissionRepositoryTest {
         }
 
     /**
-     * The manager's add goes to the one participant-add path the API vhost admits.
-     *
-     * `POST …/participants/by-id/slim` (basetool REQ-MISSION-020): manager-only, by user id. The
-     * deprecated `POST …/participants` is deleted server-side, and `POST …/participants/slim` — the
-     * add-anybody endpoint — is refused at the edge, which is exactly the failure this path check
-     * exists to catch: a wrong path passes every local test and fails only on a device against
-     * production. The body carries the user id and nothing else.
-     *
-     * Two exchanges, not one: the endpoint answers with the participant list, so the Einsatz is
-     * re-read for `registeredParticipants`, which the head's „N Teilnehmer" comes from and which
-     * the server — not the client — counts.
+     * The manager's add goes to `POST …/participants/by-id/slim` (REQ-MISSION-020) with only the user
+     * id, then re-reads the Einsatz for the server-counted `registeredParticipants`.
      */
     @Test
     fun `putting a member on the roster uses the manager-only by-id path`() =
@@ -787,20 +736,12 @@ class MissionRepositoryTest {
                 "only …/participants/by-id/slim is admitted at the edge",
                 request.target.endsWith("/missions/m1/participants/by-id/slim"),
             )
-            // The user id and nothing else: the endpoint has no name, org-unit or comment field.
             assertEquals("""{"userId":"u9"}""", request.body?.utf8())
             assertEquals("GET", server.takeRequest().method)
         }
 
     /**
-     * The Funktions-Chips on a Crew-Slot, which are the reason this switch was worth making on its
-     * own.
-     *
-     * The audit filed `PUT …/crew/{crewId}` as a **latent** defect: the chips were never drawn,
-     * because the catalogue behind them (`GET /api/v1/job-types`) was refused at the edge. Runbook
-     * phase S admits that catalogue, which draws the chips and makes this write reachable — and it
-     * was still pointed at the deprecated path. Its `/slim` twin has been admitted since phase N,
-     * so unlike the other seven this one starts working on the app change alone.
+     * Setting the Funktionen on a Crew-Slot uses the `/slim` path the API vhost admits.
      */
     @Test
     fun `setting the Funktionen on a Crew-Slot uses the admitted slim path`() =
@@ -816,7 +757,6 @@ class MissionRepositoryTest {
             assertTrue(request.target.endsWith("/units/u1/crew/c1/slim"))
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""jobTypeIds":["j1"]"""))
-            // Echoed, not omitted: the crew row carries its own optimistic lock.
             assertTrue(body.contains(""""version":3"""))
             assertEquals("GET", server.takeRequest().method)
         }

@@ -26,18 +26,8 @@ import java.io.File
 /**
  * Opening a top-level destination must not strand the member on it.
  *
- * The shell moves between the navigation bar's destinations through [navigateToTopLevel], whose
- * `popUpTo(start) { saveState } / launchSingleTop / restoreState` triple gives each tab its own back
- * stack. A screen that opens a *top-level* destination with a bare `navigate` instead pushes that
- * tab onto the **current** tab's stack, and the two schemes then disagree about where the member is.
- *
- * That is not theory. The dashboard's four Schnellaktionen opened Lager, Einsätze, Aufträge and the
- * Materialbörse with a bare `navigate`; afterwards "Übersicht" no longer returned to the dashboard,
- * and nothing short of killing the app got the member out (reported 2026-09-02).
- *
- * The graph here is deliberately tiny — two routes, no view models. What is under test is the
- * interaction between the two navigation styles; the real graph would only add setup the assertions
- * never read.
+ * Top-level destinations go through [navigateToTopLevel], which gives each tab its own back stack; a
+ * bare `navigate` pushes the tab onto the current tab's stack. Uses a two-route graph.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -85,12 +75,8 @@ class TopLevelNavigationTest {
     }
 
     /**
-     * Why the rule exists, kept executable.
-     *
-     * This asserts the **broken** outcome on purpose: it is the behaviour that produced the
-     * 2026-09-02 report, and pinning it means the rationale in [navigateToTopLevel] cannot quietly
-     * become folklore. Should a Navigation release make a bare `navigate` survive this trip, this
-     * test fails and someone re-reads that rule rather than inheriting it forever.
+     * Asserts the stranding outcome of a bare `navigate` to a top-level destination, so a Navigation release that
+     * changes it fails this test.
      */
     @Test
     fun `a bare navigate to a top-level destination strands the member on it`() {
@@ -110,12 +96,8 @@ class TopLevelNavigationTest {
     }
 
     /**
-     * The call sites, guarded where the behavioural tests cannot reach.
-     *
-     * The graph wires around twenty screens and cannot be composed in a unit test, so the rule is
-     * checked against the source: a route belonging to the navigation bar or the "Mehr" list must
-     * never be handed to a bare `navigate(...)`. Options-carrying calls are exempt — those state
-     * their own back-stack intent, which is what the `NotFound` screen's "back to base" does.
+     * Checks the source so no navigation-bar or „Mehr" route is handed to a bare `navigate(...)`; calls carrying
+     * options are exempt.
      */
     @Test
     fun `no top-level destination is opened with a bare navigate`() {
@@ -123,16 +105,11 @@ class TopLevelNavigationTest {
             (PHONE_DESTINATIONS + TABLET_DESTINATIONS + MORE_DESTINATIONS + KrtDestination.Notifications)
                 .toSet()
 
-        // Line by line, not a whole-file contains: a destination opened correctly in one place and
-        // bare in another would otherwise exempt itself.
         val offenders =
             File(NAV_HOST).readLines().withIndex().flatMap { (index, line) ->
                 topLevel
                     .filter { destination ->
                         val call = "navController.navigate(KrtDestination.${destination.name}.route)"
-                        // A trailing " {" is the options block — such a call states its own
-                        // back-stack intent and is exempt, which is how the NotFound screen's
-                        // "back to base" reaches Übersicht without saveState/restoreState.
                         line.contains(call) && !line.contains("$call {")
                     }
                     .map { "${it.name} at line ${index + 1}" }
@@ -147,16 +124,8 @@ class TopLevelNavigationTest {
     }
 
     /**
-     * Every Schnellaktion on the dashboard, not just the one that was reported.
-     *
-     * The four tiles share a single handler, so one fix covers all of them — but "shares a handler"
-     * is a claim about today's code, and the reported defect was that a member could not get back.
-     * This walks each destination the dashboard offers and comes back, so the promise is checked per
-     * tile rather than argued from the handler.
-     *
-     * Note `Exchange` takes a different route home than the other three: it is a "Mehr" destination,
-     * not a navigation-bar tab, so the bar shows „Mehr" as selected while the member is on it. That
-     * asymmetry is exactly why it is walked rather than assumed.
+     * Walks every dashboard Schnellaktion and back, including `Exchange`, a „Mehr" destination that returns home
+     * differently.
      */
     @Test
     fun `every dashboard shortcut can be left again`() {

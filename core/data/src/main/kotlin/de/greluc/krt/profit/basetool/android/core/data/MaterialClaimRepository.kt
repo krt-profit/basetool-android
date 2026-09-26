@@ -44,13 +44,10 @@ enum class ClaimQuality {
 }
 
 /**
- * One Staffel's pledge on one bucket.
+ * One Staffel's pledge on one bucket; the claim belongs to the unit, keyed on
+ * `(bucket, claimingOrgUnit)`.
  *
- * > **A claim belongs to a unit, not to a member.** The wire keys it on `(bucket, claimingOrgUnit)`
- * > and a repeat post updates rather than duplicates. The member who lodged it is recorded, but the
- * > pledge is the Staffel's.
- *
- * @property id the claim — what a withdrawal addresses.
+ * @property id the claim, which a withdrawal addresses.
  * @property orgUnitId which Staffel pledged.
  * @property orgUnitName how it reads.
  * @property amount how much it pledged.
@@ -71,7 +68,7 @@ data class MaterialClaim(
  * @property quality which of the material's two buckets this is.
  * @property required how much the order needs.
  * @property claimed how much has been pledged in total.
- * @property open what is left — the server's own figure, so nobody has to subtract on screen.
+ * @property open what is left, as the server computed it.
  * @property claims the individual pledges.
  */
 data class ClaimBucket(
@@ -86,9 +83,6 @@ data class ClaimBucket(
 ) {
     /**
      * The pledge of one Staffel on this bucket, or `null` when it has none.
-     *
-     * The write is an upsert keyed on the unit, so „setzen" and „ändern" are the same call and the
-     * form has to know which of the two it is doing.
      *
      * @param orgUnitId the Staffel.
      * @return its claim.
@@ -116,20 +110,16 @@ interface MaterialClaimSource {
     suspend fun buckets(orderId: String): ApiResult<List<ClaimBucket>>
 
     /**
-     * Signs a Staffel up, or changes what it already pledged.
+     * Signs a Staffel up, or changes what it already pledged; the server upserts on
+     * `(bucket, claimingOrgUnit)`.
      *
-     * One call for both: the server upserts on `(bucket, claimingOrgUnit)`.
-     *
-     * > **Overclaim is refused.** The sum across Staffeln may not exceed what the bucket needs
-     * > (REQ-ORDERS-024); the server takes a row lock on the order and answers **400** for anything
-     * > over. Design ch. 10 artboard 13 says the opposite („Überzusage ist erlaubt") and is wrong —
-     * > flagged rather than coded around.
+     * Overclaim is refused with a 400: the sum across Staffeln may not exceed the bucket's need
+     * (REQ-ORDERS-024).
      *
      * @param orderId the Auftrag.
      * @param materialId which material.
      * @param quality which of its buckets.
-     * @param orgUnitId the pledging Staffel. Must be a **squadron** and profit-eligible; a
-     *   Spezialkommando places orders and never claims against one.
+     * @param orgUnitId the pledging Staffel; must be a profit-eligible squadron.
      * @param amount how much it pledges.
      * @return nothing on success, or the classified failure.
      */
@@ -142,9 +132,7 @@ interface MaterialClaimSource {
     ): ApiResult<Unit>
 
     /**
-     * Takes a pledge back.
-     *
-     * No confirmation anywhere in this flow: a claim books nothing, so withdrawing one is free.
+     * Takes a pledge back; a claim books nothing, so no confirmation is needed.
      *
      * @param orderId the Auftrag.
      * @param claimId the pledge.

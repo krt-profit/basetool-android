@@ -39,16 +39,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Anträge tab.
+ * Tests the Anträge tab: a request the caller raised stays theirs even on an account they are responsible for, and the
+ * badge counts only undecided requests.
  *
- * The rules with teeth: a request the caller raised is **theirs** even when it sits on an account
- * they are responsible for — nobody approves their own — and the badge counts only what is still
- * undecided.
- *
- * Robolectric rather than plain JUnit, and not for the resources: the view model logs a refused
- * write through `KrtLog`, which reaches `android.util.Log`. Unmocked, that throws inside
- * `viewModelScope`, whose supervisor swallows it — leaving the state stuck mid-write with no
- * failure anywhere. The refusal test was green-looking nonsense until the runner was right.
+ * Uses Robolectric because `KrtLog` reaches `android.util.Log`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)

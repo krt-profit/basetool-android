@@ -95,12 +95,8 @@ class BankRepositoryTest {
     }
 
     /**
-     * A `202` is **not** a booking, and the difference has to survive the repository.
-     *
-     * Over the KRT employee ceiling the server does not refuse the withdrawal — it files it as a
-     * band-routed approval request and answers `202` with a `pendingRequest` where a booking would
-     * have carried a `transaction` (REQ-BANK-047, ADR-0109). Both are 2xx, so a client that only
-     * asks "was it successful" closes its sheet on a withdrawal that moved nothing.
+     * A `202` with a `pendingRequest` is reported as a filed approval request, not as a booking
+     * (REQ-BANK-047).
      */
     @Test
     fun `a filed withdrawal is reported as filed, not as booked`() =
@@ -208,8 +204,6 @@ class BankRepositoryTest {
                     feeInclusive = true,
                 ),
             )
-            // A deposit is fee-free, so the flag decides nothing and must not travel: a field that
-            // changes nothing invites the next reader to think it did.
             assertFalse(server.takeRequest().body?.utf8().orEmpty().contains("feeInclusive"))
         }
 
@@ -286,8 +280,6 @@ class BankRepositoryTest {
     @Test
     fun `the direction of a booking comes from its kind, never from its sign`() =
         runTest {
-            // The ledger stores every amount as a positive magnitude. Reading the sign off the
-            // number would show every withdrawal as a deposit.
             respond(LEDGER)
 
             val lines = (repository.bookings("a1") as ApiResult.Success).value.rows
@@ -300,7 +292,6 @@ class BankRepositoryTest {
     @Test
     fun `a kind this build does not know is neither in nor out`() =
         runTest {
-            // Better an unsigned figure than a direction nobody checked.
             respond(LEDGER)
 
             assertNull((repository.bookings("a1") as ApiResult.Success).value.rows[2].incoming)
@@ -309,9 +300,6 @@ class BankRepositoryTest {
     @Test
     fun `a booking keeps the fee it cost and the recipient it named`() =
         runTest {
-            // Both are on the wire and both were dropped, which left a member re-reading a past
-            // transfer with an amount that did not match what left the account and no record of
-            // who received it.
             respond(LEDGER)
 
             val line = (repository.bookings("a1") as ApiResult.Success).value.rows[1]
@@ -353,8 +341,6 @@ class BankRepositoryTest {
     @Test
     fun `the member-facing paths are used, never the bank-employee ones`() =
         runTest {
-            // `/bank/accounts/**` lists every account in the organisation behind a bank role. This
-            // app must never reach for it.
             respond(BALANCES)
             repository.balances()
 

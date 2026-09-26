@@ -22,8 +22,8 @@ import okhttp3.OkHttpClient
  *
  * @property categoryName the category the topic belongs to, e.g. „Fliegerisches Können".
  * @property topicName the topic itself.
- * @property level the level the member holds, as the server spells it. Never translated here — the
- *   levels are configured per organisation and an app-side mapping would go stale silently.
+ * @property level the level the member holds, as the server spells it; never translated, since
+ *   levels are configured per organisation.
  */
 data class PromotionEvaluation(
     val categoryName: String,
@@ -58,9 +58,8 @@ data class PromotionCheck(
  * @property fromRank the rank held.
  * @property toRank the next one.
  * @property eligible whether the step is currently reachable.
- * @property hasConfiguredRules whether anybody has configured rules for this step at all. **Not
- *   the same as being ineligible**: with no rules there is nothing to fail, and a screen that
- *   showed "nicht erfüllt" here would be inventing a verdict the organisation never made.
+ * @property hasConfiguredRules whether any rules are configured for this step; without rules the
+ *   step is neither met nor failed.
  * @property checks the individual requirements, empty when there are no rules.
  */
 data class PromotionStanding(
@@ -91,10 +90,8 @@ interface PromotionSource {
 /**
  * Reads the member's own Beförderung record (REQ-APP-PROMO-001…003).
  *
- * **Me-scoped by construction.** Both paths end in `/my` and the server resolves the member from
- * the token, so there is no id to pass and no way for this repository to ask about somebody else.
- * The officers' matrix (`/promotion/manage`, `/evaluations/all`, `/evaluations/members`) is not
- * reachable from here and is not meant to be — the admin area stays web-only.
+ * Both paths end in `/my` and the server resolves the member from the token, so no other member can
+ * be queried; the officers' endpoints are not reachable from here.
  *
  * @property reader performs the calls and classifies their failures.
  */
@@ -137,19 +134,12 @@ class PromotionRepository(
 }
 
 /**
- * Maps one stored assessment.
- *
- * A row without a topic or a level is dropped rather than rendered with a gap: the screen's whole
- * content is "which topic, at which level", and a row missing either says nothing while looking
- * like an answer.
+ * Maps one stored assessment, dropping a row that lacks a topic or a level.
  *
  * @return the model, or `null` if the row carries nothing to show.
  */
 private fun MemberEvaluationResponse.toModel(): PromotionEvaluation? {
     val topic = topicName?.takeIf { it.isNotBlank() }
-    // The level is a generated enum, not a string: reading `.value` keeps the server's own
-    // spelling, which is what the screen shows. Translating it here would go stale the moment an
-    // organisation renames a level.
     val level = assignedLevel?.value?.takeIf { it.isNotBlank() }
     return if (topic == null || level == null) {
         null

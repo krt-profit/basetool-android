@@ -108,22 +108,15 @@ const val HANGAR_SEGMENT_TAG: String = "hangar-segment"
 const val HANGAR_ADD_TAG: String = "hangar-add"
 
 /**
- * The Hangar (design spec ch. 08 §1), read-only.
+ * The Hangar, with the member's own ships and the org unit's per-type aggregate.
  *
- * **The three-number band of the design's org tab is absent.** "Schiffe 42 · Fitted 31 · LTI 24" is
- * an aggregate over the whole org unit, and the API offers no such total: the overview is paged, so
- * adding up what is loaded would state a number the page cannot know. The per-type rows carry their
- * own counts, which are the server's.
- *
- * **Only the member's own half is writable.** The org aggregate is a count per hull, not a list of
- * ships, and the ships behind it belong to other members — so the create action and the row taps
- * exist on `Meine Schiffe` and nowhere else. Importing stays in phase 4.
+ * Only „Meine Schiffe" is writable; the aggregate counts ships that belong to other members.
  *
  * @param state what to draw.
  * @param onSegmentSelected the segment was switched.
  * @param onSearchChanged a keystroke in the filter field.
  * @param onRefresh pull-to-refresh.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onCreate the add action was taken.
  * @param onEdit a ship was tapped.
@@ -164,7 +157,6 @@ fun HangarScreen(
                         .testTag(HANGAR_SEGMENT_TAG),
             )
             KrtTextField(
-                // The typed value, not the debounced one (REQ-APP-MIS-004).
                 value = state.searchText,
                 onValueChange = onSearchChanged,
                 placeholder = stringResource(R.string.hangar_search_placeholder),
@@ -180,9 +172,6 @@ fun HangarScreen(
                 }
 
                 is HangarPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -221,10 +210,6 @@ fun HangarScreen(
                 }
             }
         }
-        // Design ch. 08 asks for a FAB here, and only on "Meine Schiffe" — the org overview is a
-        // read of everybody's fleet and has nothing to create. It replaces the inline CTA that sat
-        // in the header row: a list screen floats its primary action (ch. 00), and the header
-        // button also pushed the search field down on every phone.
         if (state.segment == HangarSegment.MINE) {
             KrtFab(
                 iconRes = DesignR.drawable.ic_krt_plus,
@@ -253,10 +238,6 @@ private fun ShipCardActions(
     online: Boolean,
     onEdit: () -> Unit,
 ) {
-    // ONE action on the row — the ✎ (round 14 · S14). Deleting a single ship happens in the sheet
-    // that pencil opens, as a quiet danger button at its foot: two icons left the row about 190 dp
-    // for its chips and its location and pushed long station names out, and „delete this one" is
-    // an action about the ship a member already has open rather than one to offer on every line.
     Row(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
@@ -300,9 +281,6 @@ private fun HangarBody(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         if (state.segment == HangarSegment.MINE && wide) {
-            // Design ch. 08: the tablet gets the web app's full table, the phone the cards.
-            // One item rather than one per ship — a table is a single grid whose columns have to
-            // line up, and a LazyColumn of table rows would size each one on its own.
             item(key = "ships-table") {
                 ShipTable(
                     ships = state.ships,
@@ -319,9 +297,6 @@ private fun HangarBody(
                 )
             }
         } else {
-            // A three-column aggregate stays a table on the phone as well. Design ch. 08,
-            // artboard 11 is explicit that the collapse to cards is about WIDTH, not about tables:
-            // „Schmale Aggregate … bleiben auch auf dem Telefon Tabelle."
             item(key = "org-figures") { ShipTypeFigures(types = state.types) }
             item(key = "org-table") {
                 ShipTypeTable(types = state.types, onPick = onTypeDrilldown)
@@ -382,16 +357,13 @@ private const val INSURANCE_COLUMN = 3
 private const val LOCATION_COLUMN = 4
 
 /**
- * The tablet's dense ship table — the web app's columns, per design ch. 08.
+ * The tablet's dense ship table, with the web app's columns in the web app's order.
  *
- * Carries the same five facts the card does, in the order the web table uses, so a member who
- * knows one recognises the other. The trailing column holds the row's two actions rather than a
- * value; giving them a column of their own keeps them off the data cells, where a mis-tap would
- * be a deletion.
+ * The trailing column holds the row's action, kept apart from the data cells.
  *
  * @param ships the rows.
  * @param online whether writes are possible; the actions disable with the rest of the screen.
- * @param onEdit opens the editor for a ship — the row's only action since round 14 (S14).
+ * @param onEdit opens the editor for a ship, the row's only action.
  */
 @Composable
 private fun ShipTable(
@@ -401,11 +373,6 @@ private fun ShipTable(
 ) {
     val columns =
         listOf(
-            // The manufacturer's lettermark leads the row, as the chapter's tablet frame draws it
-            // („HRST. · SCHIFFSTYP · VERS. · ORT · FIT. · NAME · AKT."). It was on the phone card
-            // and missing from the table, so the two layouts showed different facts about the
-            // same ship. The head is abbreviated because the artboard abbreviates it — the column
-            // is one lettermark wide, and „Hersteller" broke across two lines above it.
             KrtTableColumn(stringResource(R.string.hangar_column_manufacturer), weight = 0.5f),
             KrtTableColumn(stringResource(R.string.hangar_column_type), weight = 1.4f),
             KrtTableColumn(stringResource(R.string.hangar_column_name), weight = 1.2f),
@@ -418,8 +385,6 @@ private fun ShipTable(
     val fittedNo = stringResource(R.string.hangar_fitted_no)
     val unknown = stringResource(R.string.hangar_value_unknown)
 
-    // The row opens the editor, exactly as the card does — a member who learned the phone layout
-    // does not have to learn a second gesture on the tablet.
     KrtTable(
         columns = columns,
         rowCount = ships.size,
@@ -438,16 +403,9 @@ private fun ShipTable(
                 text =
                     when (column) {
                         TYPE_COLUMN -> ship.typeName
-
                         NAME_COLUMN -> ship.name ?: unknown
-
-                        // „6" on its own is six of nothing. The card has said „6 Monate" all
-                        // along; the table printed the server's raw value beside a column head
-                        // that only names the subject.
                         INSURANCE_COLUMN -> ship.insuranceLabel()
-
                         LOCATION_COLUMN -> ship.locationName ?: unknown
-
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
@@ -458,17 +416,11 @@ private fun ShipTable(
 }
 
 /**
- * One ship, as the design's card.
- *
- * The type is the headline because it is what identifies a ship at a glance; the member's own name
- * for it, when they gave one, sits beside it in quotes as the web app writes it.
- *
- * The card opens the editor; deleting has its own action, because a mis-tap that edits is
- * recoverable and a mis-tap that deletes is not.
+ * One ship as a card, headed by its type with the member's own name beside it in quotes.
  *
  * @param ship the ship.
  * @param online whether writes are possible.
- * @param onEdit opens the editor — which is also where the ship is deleted (S14).
+ * @param onEdit opens the editor, which is also where the ship is deleted.
  */
 @Composable
 private fun ShipCard(
@@ -476,15 +428,10 @@ private fun ShipCard(
     online: Boolean,
     onEdit: () -> Unit,
 ) {
-    // A card, not a padded Column: every design chapter draws its list items as bordered
-    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onEdit.takeIf { online },
     ) {
-        // The actions sit ON the row, not under it. Artboard 08-1 draws the card one row high with
-        // the pencil at its trailing edge; stacked below the chips they made every ship two rows
-        // tall and put the destructive one at the bottom of the card rather than beside its ship.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -502,17 +449,9 @@ private fun ShipCard(
 /**
  * The manufacturer as a lettermark square at the head of the row.
  *
- * Design ch. 08 leads each row with the maker rather than burying it in a subtitle: a fleet is read
- * by running down one column, and a subtitle forces the eye to read every second line to do it. The
- * square is an abbreviation of a fact already on screen, so screen readers still hear the full
- * name — a visual shorthand must not remove information from anyone.
+ * Screen readers still hear the full manufacturer name.
  *
- * Clean manufacturer vectors do not exist yet (the upstream SVGs embed rasters), so the handoff's
- * lettermark placeholder **is** the design here, not a stand-in for it.
- *
- * @param abbreviation the maker's own short form, preferred over anything derived from the legal
- *   name: initials of "Musashi Industrial and Starflight Concern" counted the "and" and produced
- *   „MIA", which is not what anyone calls MISC.
+ * @param abbreviation the maker's own short form, preferred over anything derived from the name.
  * @param maker the manufacturer's name, the fallback when the catalogue carries no short form.
  */
 @Composable
@@ -530,9 +469,6 @@ private fun ManufacturerMark(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            // White on a hairline square, as artboard 08-1 draws it — not orange. The maker is
-            // what the ship IS, in the same weight as its type beside it; orange is the app's
-            // action colour and made a label look like something to press.
             text = abbreviation.markOrNull() ?: spoken.lettermark(),
             style = MaterialTheme.typography.titleSmall,
             color = KrtPalette.White,
@@ -541,11 +477,7 @@ private fun ManufacturerMark(
 }
 
 /**
- * The catalogue's own short form as a mark, or `null` when it carries none.
- *
- * Capped at four characters because the square is drawn for four and the catalogue's short forms
- * are short *names* rather than codes — „Crusader" becomes „CRUS". A visible truncation of the
- * maker's own word beats a correct-looking abbreviation the app invented.
+ * The catalogue's own short form as a mark, capped at four characters and uppercased.
  *
  * @return the mark, or `null` to fall back to [lettermark].
  */
@@ -555,10 +487,8 @@ private fun String?.markOrNull(): String? =
 /**
  * The initials a manufacturer is abbreviated to.
  *
- * One letter per word for a multi-word maker ("Roberts Space Industries" -> "RSI"), the first two
- * for a single word ("Drake" -> "DR"), capped at three so the square never has to shrink its type.
- * An unknown maker gets an em dash rather than an empty square, which would read as a rendering
- * fault.
+ * One letter per word for a multi-word maker ("RSI"), the first two letters of a single word ("DR"),
+ * capped at three; an unknown maker gets an em dash.
  *
  * @return the mark's text.
  */
@@ -579,30 +509,19 @@ private fun String?.lettermark(): String {
 @Composable
 private fun ShipCardBody(ship: Ship) {
     Column {
-        // Two tones in one line, as artboard 08-1 sets it: the type is the catalogue's word and
-        // stays bright, the member's own name for the ship is theirs and sits back a step. Both in
-        // white, the sentence read as one long product name.
         Text(
             text = ship.headlineText(),
             style = MaterialTheme.typography.titleMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        // FlowRow, not Row: with the two icon buttons beside it the line has about 190 dp, and a
-        // Row squeezed the location out of existence — „Everus Harbor" rendered as „E…" and then as
-        // nothing. Wrapping costs a second line only on the cards that need one.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
-            // Insurance first, then fitted — the artboard's order, and the useful one: the policy
-            // is the fact that expires.
             val insurance = ship.insuranceLabel()
             KrtChip(
                 text = insurance,
-                // A month count is neutral; a named policy („LTI") is the one worth seeing from
-                // across the card, which is what the artboard's orange is for. Info blue appears on
-                // no chip in this chapter.
                 tone = if (ship.insuranceIsTerm()) KrtChipTone.Muted else KrtChipTone.Primary,
             )
             KrtChip(
@@ -617,8 +536,6 @@ private fun ShipCardBody(ship: Ship) {
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Design ch. 08: "Ort with map-pin". A bare place name beside two chips reads
-                    // as a third chip's caption; the glyph says what kind of fact it is.
                     KrtIcon(
                         id = DesignR.drawable.ic_krt_map_pin,
                         contentDescription = null,
@@ -652,13 +569,9 @@ private fun Ship.headlineText(): AnnotatedString =
     }
 
 /**
- * The band over the aggregate: how many ships the org unit has, and how many are ready.
+ * The band over the aggregate: how many ships the org unit has and how many are fitted.
  *
- * Design ch. 08, artboard 1 draws three figures — Schiffe, Fitted and LTI. Two of them ship: the
- * aggregate endpoint carries `count` and `fittedCount` and **no insurance at all**
- * (`SquadronShipDetailDto` has owner, location and fitted), so an LTI figure here would have to be
- * invented. It is named as a gap in the spec rather than filled with a dash, because a KPI tile
- * showing „—" claims the number exists and is merely missing today.
+ * There is no LTI figure, because the aggregate endpoint carries no insurance data.
  *
  * @param types the aggregate rows, which are also what the figures are summed from.
  */
@@ -684,11 +597,9 @@ private fun ShipTypeFigures(types: List<ShipTypeSummary>) {
 }
 
 /**
- * The aggregate itself — ship type, how many, how many fitted.
+ * The aggregate table: ship type, count and fitted count.
  *
- * Three columns, so it stays a table on the phone (design ch. 08, artboard 11). Tapping a row is
- * the artboard's own affordance: „Zeile antippen → gefilterte Schiffsliste" — it puts that type in
- * the filter and moves to „Meine Schiffe", which is the list the member was reaching for.
+ * Tapping a row filters „Meine Schiffe" by that type.
  *
  * @param types the rows.
  * @param onPick the type whose ships to show.
@@ -701,12 +612,7 @@ private fun ShipTypeTable(
     val columns =
         listOf(
             KrtTableColumn(stringResource(R.string.hangar_column_ship_type), weight = 2f),
-            // Both figures are numeric, so they sit right-aligned under their own headers — the
-            // artboard's columns line up, and two counts that drift left of their titles read as
-            // belonging to the name beside them instead.
             KrtTableColumn(stringResource(R.string.hangar_column_count), weight = 0.7f, numeric = true),
-            // „FITTED", not the ship table's „Ausgebaut": the aggregate counts a state, the ship
-            // table names one. Artboard 1 writes them differently and so does this.
             KrtTableColumn(stringResource(R.string.hangar_figure_fitted), weight = 0.7f, numeric = true),
         )
     KrtTable(
@@ -734,8 +640,6 @@ private fun ShipTypeTable(
                 )
             }
 
-            // The fitted figure is the one the eye is looking for, and the artboard states it in
-            // the success tint rather than as another neutral number.
             else -> {
                 Text(
                     text = type.fittedCount.toString(),
@@ -754,9 +658,6 @@ private fun ShipTypeTable(
 
 /**
  * The empty state, which differs by half and by whether a filter is applied.
- *
- * "You own no ship" and "your filter matches none" are different facts, and so are "you own none"
- * and "the org unit has none".
  *
  * @param segment which half is showing.
  * @param narrowed whether a filter is applied.
@@ -799,13 +700,8 @@ fun HangarRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // Design ch. 08 gives the Hangar a `⋮` with exactly these three: the bulk home location, the
-    // Fleetview import, and emptying the hangar. All three act on the fleet rather than on a row,
-    // which is why none of them belongs beside a ship.
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val actionsLabel = stringResource(R.string.hangar_actions)
-    // A dimmed row without a reason reads as a broken menu (design ch. 08, artboard 5).
-    // Two things can dim these entries and they are not the same answer.
     val offlineReason = if (state.online) null else stringResource(R.string.hangar_menu_reason_offline)
     val fleetReason =
         offlineReason
@@ -813,8 +709,6 @@ fun HangarRoute(
     val bulkLabel = stringResource(R.string.hangar_bulk_home_location)
     val importLabel = stringResource(R.string.fleet_import_title)
     val clearLabel = stringResource(R.string.hangar_clear)
-    // Only the actions: the Hangar is a top-level destination, so its bar keeps the section title,
-    // the org badge and the bell rather than turning into a subject bar.
     ProvideScreenTopBar(
         actions = {
             KrtOverflowMenu(
@@ -823,15 +717,9 @@ fun HangarRoute(
                 onExpandedChange = { menuOpen = it },
                 items =
                     listOf(
-                        // The order is the artboards' own: Home-Location, Hangar leeren, Import.
-                        // Destructive in the middle rather than last looks wrong by habit and is
-                        // what chapters 08.4 and 08.5 both draw, so it is followed rather than
-                        // tidied.
                         KrtMenuItem(
                             label = bulkLabel,
                             iconRes = DesignR.drawable.ic_krt_map_pin,
-                            // The one entry that carries its purpose even when it can be used: a
-                            // member has to know it means the WHOLE fleet before tapping it.
                             reason = fleetReason ?: stringResource(R.string.hangar_bulk_home_location_reason),
                             enabled = state.online && state.ships.isNotEmpty(),
                             onClick = viewModel::onBulkHomeLocationRequested,
@@ -869,8 +757,6 @@ fun HangarRoute(
     )
 
     (state.editor as? ShipEditor.Open)?.let { editor ->
-        // Design ch. 14's conflict dialog: a refused save must not be a line under a
-        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
         ConflictOn(
             error = editor.error,
             onReload = {
@@ -926,8 +812,6 @@ fun HangarRoute(
         }
     }
     state.cleared?.let { emptied ->
-        // Success is a toast, not a step: nothing is left to read afterwards, and the empty state
-        // behind it is the rest of the answer (design ch. 08, artboard 6).
         LaunchedEffect(emptied) {
             delay(CLEARED_TOAST_MS)
             viewModel.onClearedAcknowledged()
@@ -956,10 +840,7 @@ fun HangarRoute(
 }
 
 /**
- * „Alle N Schiffe löschen?" - the danger modal behind the overflow's last entry.
- *
- * The count is in the question because it is the only thing that distinguishes a member emptying a
- * hangar of three from one emptying a hangar of ninety. Design ch. 08 spells that wording out.
+ * „Alle N Schiffe löschen?": the danger modal that empties the hangar, naming the count.
  *
  * @param count how many ships would go.
  * @param onConfirm empties the hangar.
@@ -971,12 +852,6 @@ private fun HangarClearModal(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Three guards, none of them a typing hurdle (design ch. 08, artboard 6, which resolves 08.1's
-    // „type-safe" against 08.3): the menu entry is already red, the modal names the count, the
-    // consequence AND the way back, and the confirm repeats the count. Chapter 02 §7 reserves the
-    // typing hurdle for irreversible admin actions on organisation-wide data — a personal hangar is
-    // the member's own and comes back from another import, and spending the hurdle here would blunt
-    // it where it is meant to bite.
     KrtModal(
         title = stringResource(R.string.hangar_clear_title),
         confirmText = pluralStringResource(R.plurals.hangar_clear_confirm, count, count),
@@ -995,16 +870,11 @@ private fun HangarClearModal(
 }
 
 /**
- * The bulk home-location picker.
- *
- * One place for the whole fleet, which is what the endpoint does: a member who moves base moves
- * every hull with it, and setting thirty ships one at a time is the workflow the chapter puts in
- * the overflow to avoid.
+ * The bulk home-location picker, which sets one place for the whole fleet.
  *
  * @param bulk what the sheet holds.
  * @param places the org's home locations.
- * @param count how many ships it would touch — the length of the loaded list, which is where the
- *   figure comes from; there is no API field for it (design ch. 08, artboard 10).
+ * @param count how many ships it would touch, taken from the loaded list.
  * @param onChosen a place was picked.
  * @param onApply the CTA was pressed.
  * @param onDismiss the sheet was closed.
@@ -1041,9 +911,6 @@ private fun BulkHomeLocationSheet(
                 selectedValue = bulk.place?.id,
                 enabled = !bulk.saving,
             )
-            // The scope is stated here rather than behind a confirmation dialog. Nothing is lost —
-            // the write sets a location and can be repeated at will — so a second confirmation on
-            // top of a sheet would be a ceremony without a risk (design ch. 08, artboard 10).
             Text(
                 text = pluralStringResource(R.plurals.hangar_bulk_home_location_scope, count, count),
                 style = MaterialTheme.typography.bodySmall,
@@ -1061,8 +928,6 @@ private fun BulkHomeLocationSheet(
                 KrtCtaButton(
                     text = pluralStringResource(R.plurals.hangar_bulk_home_location_apply, count, count),
                     onClick = onApply,
-                    // The place marker, not the disk: the artboard's CTA carries the glyph of the
-                    // thing being set rather than the generic act of saving (design ch. 08, 7–10).
                     iconRes = DesignR.drawable.ic_krt_map_pin,
                     enabled = bulk.place != null && !bulk.saving,
                     modifier = Modifier.testTag(HANGAR_BULK_APPLY_TAG),
@@ -1097,9 +962,8 @@ private fun Ship.insuranceIsTerm(): Boolean {
 /**
  * The insurance chip's text.
  *
- * The API sends a bare string: "LTI" for a lifetime policy, otherwise a month count. A chip reading
- * "6" says nothing — six of what — so a numeric value gets its unit. Anything else is passed through
- * unchanged rather than guessed at, and a ship with no policy says so.
+ * "LTI" stays as is, a numeric value gets its month unit, anything else passes through unchanged,
+ * and a ship without a policy says so.
  *
  * @return the chip caption.
  */

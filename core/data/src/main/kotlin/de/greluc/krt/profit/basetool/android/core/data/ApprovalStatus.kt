@@ -10,15 +10,9 @@ package de.greluc.krt.profit.basetool.android.core.data
 /**
  * Why the account gate is holding a signed-in member, or that it is not.
  *
- * Three of the four constants mirror the backend's `RegistrationStatusDto.approvalStatus` (main
- * repo epic #720), which the app reads from `GET /api/v1/users/me/registration-status` — an
- * endpoint a pending caller may reach, whose only authority is `ROLE_PENDING_APPROVAL`.
- *
- * [NO_ROLE] is the exception and never appears in that field. It is derived from a *refusal*: the
- * backend answers 403 `NO_ROLE` to an approved account that holds no application role (main repo
- * REQ-SEC-053). The gate is the same screen either way, so the state belongs in the same enum;
- * what it must not do is arrive through [fromWire], which is why that function names the three
- * wire constants rather than excluding [UNKNOWN] alone.
+ * Three constants mirror `RegistrationStatusDto.approvalStatus` from
+ * `GET /api/v1/users/me/registration-status`. [NO_ROLE] is derived from the backend's 403 `NO_ROLE`
+ * refusal (REQ-SEC-053) and is never produced by [fromWire].
  */
 enum class ApprovalStatus {
     /** Submitted and waiting for an administrator. The app shows the approval-pending gate. */
@@ -33,10 +27,8 @@ enum class ApprovalStatus {
     /**
      * Approved, but holding no role an administrator has granted.
      *
-     * Never sent as an `approvalStatus`; folded in from the backend's 403 `NO_ROLE` refusal
-     * (main repo REQ-SEC-053). Not retryable by the member — it clears when an admin assigns a
-     * role — but the gate's refresh still reaches it, because the refusal disappears the moment
-     * one is.
+     * Folded in from the backend's 403 `NO_ROLE` refusal (REQ-SEC-053); it clears once an admin assigns
+     * a role.
      */
     NO_ROLE,
 
@@ -56,12 +48,7 @@ enum class ApprovalStatus {
 
     companion object {
         /**
-         * Maps the wire value.
-         *
-         * Parsed from a plain string rather than through an enum serializer on purpose:
-         * kotlinx.serialization throws on an unrecognised enum constant, which would turn a server
-         * adding a fourth status into a client-side crash on the login path — the worst possible
-         * place for one.
+         * Maps the wire value from a plain string, so an unknown status becomes [UNKNOWN] instead of throwing.
          *
          * @param wire the value the server sent, or `null` when the field was absent
          * @return the matching constant, or [UNKNOWN]

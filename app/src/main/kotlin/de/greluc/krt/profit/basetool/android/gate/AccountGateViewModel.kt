@@ -30,15 +30,10 @@ import kotlin.time.Duration.Companion.seconds
 private val POLL_INTERVAL: Duration = 60.seconds
 
 /**
- * Decides what a signed-in member is allowed to see, and keeps asking while the answer is "not yet".
+ * Decides what a signed-in member may see and keeps polling while the answer is "not yet".
  *
- * The polling is the whole reason this is a `ViewModel` rather than state hoisted into the
- * composable. The app has **no push channel** (resolved decision Q2), so an approval that lands
- * while the member is staring at the waiting screen reaches them only if something asks again — and
- * a loop tied to a composition would restart on every recomposition and die on every rotation.
- *
- * The loop runs **only** while the gate is closed. Polling an endpoint after being admitted would
- * be a request per minute, per install, forever, for an answer that no longer changes anything.
+ * The app has no push channel, so an approval is noticed only by asking again. The loop lives in the
+ * `ViewModel` to survive recomposition and rotation, and runs only while the gate is closed.
  *
  * @property source reads the approval status
  */
@@ -56,9 +51,7 @@ class AccountGateViewModel(
     /**
      * Reads the gate once and starts polling if it is closed.
      *
-     * Safe to call repeatedly — a second call while a poll is already running is ignored rather
-     * than starting a competing loop, because the caller is a `LaunchedEffect` whose key may change
-     * for reasons that have nothing to do with the gate.
+     * Idempotent: a call while a poll is already running is ignored.
      */
     fun start() {
         if (poll?.isActive == true) {
@@ -72,9 +65,6 @@ class AccountGateViewModel(
                         return@launch
                     }
                     if (mutableState.value is AccountGateState.Unavailable) {
-                        // An unreachable gate is paced by the outage ladder, not by the approval
-                        // poll's minute: a member who cannot get an answer at all should not have
-                        // to wait a full minute to find out the outage is over.
                         countDown(RetryBackoff.next(attempts).inWholeSeconds.toInt())
                         attempts++
                     } else {
@@ -86,11 +76,7 @@ class AccountGateViewModel(
     }
 
     /**
-     * Ticks the visible countdown down to the next automatic attempt.
-     *
-     * The ladder is `RetryBackoff`'s — 3 -> 6 -> 12 -> 30 s, the last step repeating — the same one
-     * every other waiting state in this app uses, so the gate does not invent a second rhythm for
-     * the same kind of wait (design ch. 14, artboard 3).
+     * Ticks the visible countdown down to the next automatic attempt, on the shared `RetryBackoff` ladder.
      *
      * @param seconds how long to wait before the caller asks again
      */
@@ -107,23 +93,14 @@ class AccountGateViewModel(
     }
 
     /**
-     * Re-reads the gate now, without disturbing the poll's schedule.
+     * Re-reads the gate now, for the "Status aktualisieren" button.
      *
-     * This is what the "Status aktualisieren" button does. While the account is merely *waiting*
-     * for approval it deliberately does **not** restart the timer: a member tapping it repeatedly
-     * would otherwise be able to shorten their own polling interval to nothing.
-     *
-     * An **unreachable** gate is the opposite case and design ch. 14 says so — a manual attempt
-     * resets the backoff ladder. Pressing the button is new information there, and inheriting a
-     * thirty-second wait from automatic attempts the member did not make would make their own
-     * attempt feel ignored. The poll is restarted rather than run alongside, so the app never has
-     * two questions in flight for one answer.
+     * While the account is waiting for approval the poll's schedule is left alone. While the gate is
+     * unreachable the backoff ladder is reset and the poll restarted, never run alongside.
      */
     fun refresh() {
         if (state.value is AccountGateState.Unavailable) {
             attempts = 0
-            // The failure streak drives one line of copy, and a manual attempt is a fresh start for
-            // it too: a member who just pressed the button has not "kept getting no answer" yet.
             mutableState.update { current ->
                 if (current is AccountGateState.Unavailable) current.copy(failures = 0) else current
             }
@@ -143,10 +120,8 @@ class AccountGateViewModel(
     /**
      * Performs one read and publishes the result.
      *
-     * A failed read while the gate is already known to be closed **keeps the last known state** and
-     * only clears the spinner. The alternative — replacing the waiting screen with an error — would
-     * make a lost minute of connectivity look like the account had been reset, which is the more
-     * alarming of two readings and the wrong one.
+     * A failed read while the gate is known to be closed keeps the last known state and only clears the
+     * spinner.
      *
      * @return `true` when the member may pass and the poll should stop
      */
@@ -158,10 +133,6 @@ class AccountGateViewModel(
                 current
             }
         }
-        // Ten seconds, then give up on THIS attempt and let the ladder schedule the next (design
-        // ch. 14: "Versuch wartet max. 10 s"). The HTTP client's own timeout is longer, and a
-        // member watching a countdown that has already reached zero has no way to tell a slow
-        // answer from a dead one.
         val result =
             withTimeoutOrNull(ATTEMPT_TIMEOUT) { source.registrationStatus() }
                 ?: ApiResult.Failure(ApiError.Network(SocketTimeoutException("gate attempt timed out")))
@@ -233,25 +204,15 @@ sealed interface AccountGateState {
         val error: ApiError,
         /**
          * Seconds until the app asks again on its own, or `null` while an attempt is running.
-         *
-         * Design ch. 14 artboard 3: the screen keeps trying without being told to. A state whose
-         * only way forward is a button the member has to keep pressing turns a passing outage into
-         * a chore, and this one is passing by definition — nothing the member did caused it.
          */
         val secondsUntilRetry: Int? = null,
         /**
-         * Whether an attempt is in flight right now.
-         *
-         * Its own flag rather than "the countdown is null": the two are the same only by accident,
-         * and the screen says different things about them — a wait is a wait, an attempt is work.
+         * Whether an attempt is in flight right now; distinct from a `null` countdown.
          */
         val attempting: Boolean = false,
         /**
-         * How many attempts have failed in a row.
-         *
-         * Design ch. 14 adds one line after the third — the Org-Discord as a fallback channel — and
-         * is emphatic that nothing else changes: no red, no error face. The state stays *waiting*,
-         * not *blame*.
+         * How many attempts have failed in a row; from the third on, the screen names the Org-Discord as a
+         * fallback channel.
          */
         val failures: Int = 0,
     ) : AccountGateState

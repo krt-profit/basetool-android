@@ -37,11 +37,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * „Blueprint-Verfügbarkeit" (design ch. 17 artboard 6, `REQ-APP-PI-014`).
+ * Tests „Blueprint-Verfügbarkeit" (design ch. 17, artboard 6, REQ-APP-PI-014).
  *
- * Three rules are worth pinning: owners load per row and one row's failure stays that row's, the
- * „Nicht erfasst" filter is a client-side narrowing that says so while more pages exist, and a row
- * is asked for its owners only once.
+ * Owners load per row with failures isolated, „Nicht erfasst" narrows client-side and says so while
+ * more pages exist, and each row's owners are read once.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -175,7 +174,6 @@ class BlueprintOverviewTest {
             model.onFilterChanged(OverviewFilter.UNRECORDED)
 
             assertEquals(listOf("b"), model.state.value.visible.map { it.productKey })
-            // The endpoint has no such filter, so the screen has to admit what it narrowed.
             assertTrue(model.state.value.filterIsPartial)
         }
 

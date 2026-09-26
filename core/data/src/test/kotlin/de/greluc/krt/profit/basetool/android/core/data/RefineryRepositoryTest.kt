@@ -180,12 +180,8 @@ class RefineryRepositoryTest {
             assertEquals("ARC-L1 Wide Forest", first.locationName)
             assertEquals("Dinyx-Solventierung", first.methodName)
             assertEquals(RefineryServerStatus.IN_PROGRESS, first.status)
-            // The OUTPUT material, not the input: the ore went in and no longer exists.
             assertEquals("Quantainium", first.yields.single().materialName)
             assertEquals("m1", first.yields.single().materialId)
-            // 62200 on the wire, 622 SCU on the screen. The server tracks outputQuantity in
-            // units and one SCU is a hundred of them; the app sends this same number back on a
-            // booking, so reading it raw would have created a Lager entry a hundredfold.
             assertEquals(YIELD_SCU, first.totalAmount, SCU_TOLERANCE)
             assertFalse(first.yields.single().unitIsPiece)
         }
@@ -197,7 +193,6 @@ class RefineryRepositoryTest {
 
             val running = (repository.myOrders() as ApiResult.Success).value.rows.first()
 
-            // One order, two answers. The server said IN_PROGRESS both times; only the clock moved.
             assertEquals(RefineryPhase.RUNNING, running.phaseAt(BEFORE))
             assertEquals(RefineryPhase.READY, running.phaseAt(AFTER))
         }
@@ -209,8 +204,6 @@ class RefineryRepositoryTest {
 
             val stored = (repository.myOrders() as ApiResult.Success).value.rows[1]
 
-            // Its end time is in the past too. A phase derived from the clock alone would call
-            // this "Abholbereit" and offer to book a yield that is already in the Lager.
             assertEquals(RefineryPhase.STORED, stored.phaseAt(AFTER))
             assertFalse(stored.canStoreAt(AFTER))
         }
@@ -222,8 +215,6 @@ class RefineryRepositoryTest {
 
             val order = (repository.detail("r1") as ApiResult.Success).value
 
-            // The detail DTO has no endsAt. Without this the detail would show "Restzeit
-            // unbekannt" for an order the list beside it was counting down.
             assertEquals("2026-08-17T03:41Z", order.endsAt)
             assertEquals(RefineryPhase.RUNNING, order.phaseAt(BEFORE))
         }
@@ -236,11 +227,8 @@ class RefineryRepositoryTest {
             val order = (repository.detail("r1") as ApiResult.Success).value
 
             val unrefined = order.yields[1]
-            // Named, so the member sees the row; unbookable, because a booking addresses a
-            // material by id and this one has none.
             assertEquals("Titanium (Raw)", unrefined.materialName)
             assertNull(unrefined.materialId)
-            // The order as a whole is still bookable — one of its two goods can be.
             assertTrue(order.canStoreAt(AFTER))
         }
 
@@ -257,13 +245,10 @@ class RefineryRepositoryTest {
             val request = server.takeRequest()
             val body = request.body?.utf8().orEmpty()
             assertTrue(request.target.endsWith("/api/v1/refinery-orders/r1/store"))
-            // One item, not two: the good without an output material is left out rather than sent
-            // with a null id.
             assertEquals(1, Regex("\"materialId\"").findAll(body).count())
             assertTrue(body.contains("\"materialId\":\"m1\""))
             assertTrue(body.contains("\"locationId\":\"loc1\""))
             assertTrue(body.contains("\"quality\":3"))
-            // SCU, not the wire's units: the endpoint reads this as the member's own figure.
             assertTrue("expected the SCU amount in $body", body.contains("\"amount\":622"))
             assertFalse("the raw unit count must never be sent", body.contains("62200"))
         }
@@ -284,8 +269,6 @@ class RefineryRepositoryTest {
 
             val result = repository.store(order)
 
-            // Nothing was sent. The endpoint marks an order COMPLETED whatever the item list holds,
-            // so an empty list is the quiet way to lose a whole run's yield.
             assertTrue(result is ApiResult.Failure)
             assertEquals(1, server.requestCount)
         }
@@ -313,8 +296,6 @@ class RefineryRepositoryTest {
 
             repository.myOrders(setOf(RefineryServerStatus.OPEN))
 
-            // The server's fallback is startedAt ASCENDING, which opened the list on the member's
-            // oldest order and pushed anything still refining onto the last page.
             assertEquals("startedAt,desc", requestedUrl().queryParameter("sort"))
         }
 
@@ -325,8 +306,6 @@ class RefineryRepositoryTest {
 
             repository.myOrders(setOf(RefineryServerStatus.UNKNOWN))
 
-            // UNKNOWN is this build's name for a status the server added. Sending it back would
-            // turn one unrecognised row into a 400 on the whole page.
             assertTrue(requestedUrl().queryParameterValues("status").isEmpty())
         }
 
@@ -337,10 +316,6 @@ class RefineryRepositoryTest {
 
             repository.searchMaterials("agr")
 
-            // Without it the picker offers refined and non-refinable materials, and
-            // `RefineryOrderService.resolveGood` answers a picked one with an
-            // IllegalArgumentException the global handler strips of its message: the member is
-            // told the order is invalid and never which line or why.
             assertEquals("true", requestedUrl().queryParameter("rawOnly"))
         }
 
@@ -351,7 +326,6 @@ class RefineryRepositoryTest {
 
             val rows = (repository.searchMaterials("") as ApiResult.Success).value.rows
 
-            // The form shows the output rather than asking for it, so the row has to carry it.
             assertEquals("Agricium", rows.first().refinedName)
             assertEquals("ref-agr", rows.first().refinedId)
         }
@@ -363,8 +337,6 @@ class RefineryRepositoryTest {
 
             val rows = (repository.searchMaterials("") as ApiResult.Success).value.rows
 
-            // The server falls back to the input material itself for these; the row says only
-            // that it knows of no refined material, and the form does the falling back.
             assertNull(rows.last().refinedId)
             assertNull(rows.last().refinedName)
         }
@@ -376,8 +348,6 @@ class RefineryRepositoryTest {
 
             val matches = (repository.searchMaterials("") as ApiResult.Success).value
 
-            // `totalElements` is 40 against the two rows carried. A picker that shows a full page
-            // and says nothing is indistinguishable from one that has shown everything (ADR-0104).
             assertTrue(matches.more)
         }
 
@@ -419,14 +389,8 @@ class RefineryRepositoryTest {
 
             assertTrue(result is ApiResult.Success)
             val body = server.takeRequest().body?.utf8().orEmpty()
-            // Asserted as an ABSENCE, because either value would have produced a request that
-            // looks perfectly valid. The server derives the output from the input's
-            // refinedMaterial and refuses a disagreeing one with a 400 it strips the message from;
-            // the bonus is UEX-derived and the write path drops it. The draft still carries both,
-            // because the form shows them.
             assertFalse("the derived output must not be sent, was: ${'$'}body", body.contains("outputMaterial\":{"))
             assertFalse("the read-only bonus must not be sent, was: ${'$'}body", body.contains("yieldBonusPercent\":1"))
-            // The line itself did travel, so the absences above are not an empty request.
             assertTrue(body.contains("\"inputMaterial\":{\"id\":\"raw-agr\""))
             assertTrue(body.contains("\"outputQuantity\":44200"))
         }
@@ -438,9 +402,6 @@ class RefineryRepositoryTest {
 
             val matches = (repository.searchMaterials("") as ApiResult.Success).value
 
-            // Asserted separately from the overflow case because the flag is read off
-            // `totalElements` rather than off a full-looking page: a page that happens to be
-            // exactly full is not evidence of more.
             assertFalse(matches.more)
         }
 }

@@ -13,18 +13,10 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Pins the adaptive launcher icon and, above all, keeps its two artwork layers from drifting apart.
+ * Pins the adaptive launcher icon and checks that its foreground and monochrome layers carry the same path data and
+ * group transform.
  *
- * `ic_launcher_foreground.xml` (brand orange) and `ic_launcher_monochrome.xml` (flat white, tinted
- * by the system on Android 13+) are the *same* mark drawn twice. Nothing in the build couples them:
- * editing one and forgetting the other produces a themed icon that is subtly the wrong shape or
- * sits off-centre, and it is only ever seen by users who turned themed icons on — which is exactly
- * the population least likely to report it. Comparing the geometry here turns that into a red
- * build.
- *
- * Reading the XML as text is deliberate, like [BackupExclusionTest]: the fact under test is a
- * string-level one (does layer A carry the same path data and the same group transform as layer B),
- * and inflating the drawables would only add a Robolectric dependency without adding certainty.
+ * Reads the XML as text, like [BackupExclusionTest].
  */
 class LauncherIconTest {
     private val manifest = File("src/main/AndroidManifest.xml")
@@ -33,9 +25,8 @@ class LauncherIconTest {
     private val monochrome = File("src/main/res/drawable/ic_launcher_monochrome.xml")
 
     /**
-     * Without this attribute the app ships the green Android robot. AGP's `MissingApplicationIcon`
-     * lint used to be disabled here while the icon was outstanding; it is enabled again, but lint
-     * runs in a separate task that a `test`-only invocation never reaches.
+     * The manifest declares the launcher icon, which lint's `MissingApplicationIcon` check does not verify in a
+     * test-only run.
      */
     @Test
     fun `the manifest declares the launcher icon`() {

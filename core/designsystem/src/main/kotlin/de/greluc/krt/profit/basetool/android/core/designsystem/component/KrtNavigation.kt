@@ -91,10 +91,7 @@ data class KrtNavItem(
 )
 
 /**
- * A count badge — orange block with black digits.
- *
- * Square like everything else in the system, and rendered with tabular figures so a count that
- * ticks up does not shift the layout.
+ * A square count badge — orange block with black tabular digits.
  *
  * @param count the number to show; values above 99 render as "99+".
  * @param modifier layout modifier.
@@ -134,12 +131,8 @@ private val BADGE_TEXT_SIZE = 10.sp
 private const val BADGE_MAX = 99
 
 /**
- * One navigation item — a square indicator with a glyph, plus a label underneath.
- *
- * The indicator is deliberately **square**, not the Material pill: `NavigationBarItem` renders its
- * active indicator with a shape that the theme cannot override, so the design system's bar and rail
- * are built here instead of on the Material components. The selected colours follow the brand rule
- * carried by `secondaryContainer`/`onSecondaryContainer` — orange background, black glyph.
+ * One navigation item — a square indicator with a glyph, plus a label underneath; selected is
+ * orange with a black glyph.
  *
  * @param item the destination.
  * @param selected whether this is the active destination.
@@ -206,9 +199,7 @@ private fun KrtNavItemContent(
 }
 
 /**
- * The phone navigation bar: up to five destinations across the bottom.
- *
- * Five is the hard ceiling of the design spec; everything else lives behind the "Mehr" destination.
+ * The phone navigation bar: at most five destinations, the rest behind "Mehr".
  *
  * @param items the destinations, in order.
  * @param selectedRoute route of the active destination.
@@ -261,9 +252,6 @@ private val RAIL_LABEL_TRACKING = 0.3.sp
 
 /**
  * The tablet navigation rail: the Basetool app mark, up to eight destinations, and a footer slot.
- *
- * Wider than the phone bar can carry, which is why the tablet exposes the destinations that sit
- * behind "Mehr" on a phone.
  *
  * @param items the destinations, in order.
  * @param selectedRoute route of the active destination.

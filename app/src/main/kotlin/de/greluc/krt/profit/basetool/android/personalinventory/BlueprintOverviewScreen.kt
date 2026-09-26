@@ -48,16 +48,10 @@ const val BLUEPRINT_OVERVIEW_TAG: String = "blueprint-overview"
 const val BLUEPRINT_OVERVIEW_SEARCH_TAG: String = "blueprint-overview-search"
 
 /**
- * „Blueprint-Verfügbarkeit" — design ch. 17 artboard 6.
+ * „Blueprint-Verfügbarkeit": which members hold each blueprint.
  *
- * The web page has exactly two columns, „Blueprint" and „Verfügbar bei", and the chapter's own
- * correction is explicit that there is **no buildability chip** here: the question this screen
- * answers is *who has it*, not *can it be built*. Buildability lives on the member's own blueprint
- * in „Mein Inventar".
- *
- * A card per blueprint rather than a table row, because the owner list wraps: names as data chips,
- * and an owner from outside the unit as a muted chip with the hint line the artboard quotes
- * verbatim.
+ * One card per blueprint with its owners as chips; an owner outside the unit is a muted chip with a
+ * hint. Shows no buildability.
  *
  * @param state what to draw.
  * @param onQueryChanged the search changed.
@@ -82,9 +76,6 @@ fun BlueprintOverviewScreen(
         KrtTextField(
             value = state.query,
             onValueChange = onQueryChanged,
-            // Inside the field, as artboard 17-6 draws it — a search box says what it searches
-            // while it is empty and gives the room back once it is not. As a label it stood above
-            // an empty box and kept a line of the list for a word the field no longer needed.
             placeholder = stringResource(R.string.blueprint_overview_search),
             modifier =
                 Modifier
@@ -178,9 +169,6 @@ private fun OverviewList(
             )
         }
         if (state.filterIsPartial) {
-            // What the filter can and cannot see. The endpoint takes a search term and paging and
-            // no such filter, so „Nicht erfasst" narrows what has been loaded — said out loud
-            // rather than left to read as a complete answer (ADR-0104).
             item(key = "filter-note") {
                 Text(
                     text = stringResource(R.string.blueprint_overview_filter_partial),
@@ -270,27 +258,17 @@ private fun OwnerChips(owners: List<BlueprintOwner>) {
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
-        // FlowRow, not one row per owner: the artboard runs the names along a line and lets them
-        // wrap, which is why the card exists at all („Karte statt Tabellenzeile, weil die
-        // Besitzerliste umbricht"). A row each turned five holders into five lines and pushed the
-        // next blueprint off the screen.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             owners.forEach { owner ->
-                // A DATA chip, not a primary one: the name is a value, and artboard 17-6 draws it
-                // grey with white text for that reason. In the primary tone it wore the outline of
-                // an Auswahl-Chip — chapter 18 §E6 calls a chip that looks like a switch and holds
-                // a value the worse of the two mistakes, and this was its mirror image.
                 KrtChip(text = owner.name, tone = KrtChipTone.Data)
                 if (!owner.orgUnitMember) {
                     KrtChip(text = stringResource(R.string.blueprint_overview_owner_foreign))
                 }
             }
         }
-        // Quoted verbatim from the artboard, and only drawn when it applies: it explains why a
-        // name that is not in the unit appears in a unit's list.
         if (owners.any { !it.orgUnitMember }) {
             Text(
                 text = stringResource(R.string.blueprint_overview_owner_foreign_hint),

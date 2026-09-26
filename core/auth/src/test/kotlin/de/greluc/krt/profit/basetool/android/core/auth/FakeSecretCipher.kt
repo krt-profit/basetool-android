@@ -13,17 +13,11 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * AES-256-GCM with an ordinary in-memory key, standing in for the Keystore one.
+ * AES-256-GCM with an in-memory key, standing in for the Keystore cipher (ADR-0002).
  *
- * This is the fake the whole test strategy of `core:auth` rests on (ADR-0002): the Android Keystore
- * cannot run on a JVM, so the seam is at the *cipher* and everything above it — what is written,
- * what a wipe removes, what happens when the key is gone — is the real implementation under test.
+ * Real encryption rather than a pass-through, so a store that forgot to encrypt fails its tests.
  *
- * Real AES rather than a pass-through on purpose. A fake that returned its input would let a store
- * that forgot to encrypt pass every test in this module.
- *
- * @property key the throwaway key; a fresh one per instance, so two fakes cannot read each other's
- *   blobs — which is what a restored-from-another-device ciphertext looks like
+ * @property key the throwaway key; fresh per instance, so two fakes cannot read each other's blobs
  */
 class FakeSecretCipher(
     private var key: SecretKey = newKey(),
@@ -49,11 +43,7 @@ class FakeSecretCipher(
     }
 
     /**
-     * Replaces the key, exactly as the Keystore implementation destroys it.
-     *
-     * Replaced rather than nulled so a later call still behaves like the real one: encryption keeps
-     * working for the next session, and anything written under the old key is now undecryptable —
-     * which is the property the wipe exists for.
+     * Replaces the key, so blobs written under the old one become undecryptable while encryption keeps working.
      */
     override fun deleteKey() {
         key = newKey()

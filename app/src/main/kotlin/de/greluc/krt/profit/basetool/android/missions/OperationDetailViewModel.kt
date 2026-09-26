@@ -71,29 +71,18 @@ data class OperationDetailState(
     val retryIn: Int? = null,
 ) {
     /**
-     * The caller's own payout row, when it can be identified.
+     * The caller's own payout row, matched by user id.
      *
-     * `null` covers three different situations that the screen renders identically and correctly:
-     * the identity read failed, the caller took part in no Einsatz of this Operation, or the rows
-     * are not loaded yet. In all three "Dein Anteil" has nothing truthful to say, and guessing —
-     * by name, say — would show a member someone else's money.
+     * `null` when the identity read failed, the caller took no part, or the rows are not loaded yet.
      */
     val myPayout: OperationPayout?
         get() = myUserId?.let { id -> overview?.payouts?.rows?.firstOrNull { it.participantId == id } }
 }
 
 /**
- * Drives one Operation's detail.
+ * Drives one Operation's detail with one load over three equally gated reads and one outcome.
  *
- * **One load, three reads, one outcome.** Unlike the Einsatz detail — whose Finanzen tab is behind
- * a second permission and therefore has its own state — every endpoint here carries the identical
- * `canSeeOperation` gate. A member who may open the Operation may read all of it, so a split state
- * would model a case the server cannot produce; and the head itself is built from the payouts,
- * because the participant count and the per-head share come from there.
- *
- * **The identity read is separate and never fatal.** It answers "which of these rows is mine",
- * which is a nicety on a screen whose subject is the Operation. If it fails, the screen loses one
- * line and keeps everything else.
+ * The identity read is separate and never fatal; without it only „Dein Anteil" is lost.
  *
  * @property source where the Operation comes from
  * @property identity supplies the caller's backend user id
@@ -136,9 +125,6 @@ class OperationDetailViewModel(
             }
         }
         observeLiveSync(liveSync, setOf(LiveSyncTopic.operation(operationId))) { _ ->
-            // The Operation is one read, and every section of its room feeds it — including the two
-            // that are cross-published from an Einsatz underneath it, which is exactly the case a
-            // member on this screen cannot otherwise see happening.
             reload(keepContent = true)
         }
     }
@@ -146,10 +132,8 @@ class OperationDetailViewModel(
     /**
      * Confirms one participant's payout, or takes that back.
      *
-     * **The app cannot tell whether the caller may take one back.** Confirming needs the
-     * mission-manager grant, which `/users/me` answers; rescinding needs an officer or an admin on
-     * top, which it does not. So both are offered to a mission manager and a refusal on the second
-     * is named rather than predicted.
+     * Both directions are offered to a mission manager; rescinding additionally needs an officer or
+     * admin, which the server enforces.
      *
      * @param payout the row.
      */
@@ -164,9 +148,6 @@ class OperationDetailViewModel(
         viewModelScope.launch {
             when (val result = source.setPaidOut(operationId, key, !payout.paidOut)) {
                 is ApiResult.Success -> {
-                    // The Operation is re-read rather than the row patched: the payout totals move
-                    // with a confirmation, and a patched row under a stale total is two numbers
-                    // that disagree.
                     mutableState.update { it.copy(saving = false, error = null) }
                     reload(keepContent = true)
                     publishLiveSync(
@@ -201,8 +182,6 @@ class OperationDetailViewModel(
         mutableState.update { it.copy(refreshing = true) }
         reload(keepContent = true)
         if (mutableState.value.myUserId == null) {
-            // Only retried when it is still missing — a member whose first attempt failed gets
-            // another chance out of the gesture they already made.
             resolveIdentity()
         }
     }
@@ -257,9 +236,6 @@ class OperationDetailViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // Deliberately not surfaced. The screen's subject is the Operation; losing the
-                    // "Dein Anteil" line is a smaller failure than an error over content that
-                    // loaded fine.
                     KrtLog.w(LOG_TAG) { "own user id could not be read: ${result.error}" }
                 }
             }

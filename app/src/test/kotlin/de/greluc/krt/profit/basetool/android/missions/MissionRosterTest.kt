@@ -26,12 +26,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The manager's half of the Teilnehmer tab.
- *
- * Its own class beside [MissionRoster] rather than more cases in `MissionDetailViewModelTest`,
- * which had grown past what detekt allows one class to carry — and because the roster answers one
- * question the rest of that screen does not: **may this caller act on somebody else's row, and does
- * the write carry the row whole.**
+ * Tests the manager's half of the Teilnehmer tab: whether the caller may act on another member's row, and that the
+ * write carries the row whole.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MissionRosterTest {
@@ -179,9 +175,8 @@ class MissionRosterTest {
         }
 
     /**
-     * The wish could only be set at sign-up before 2026-09-07: a member who changed their mind had
-     * to withdraw and sign up again. It takes the row directly rather than an id, because it is the
-     * caller's OWN row and `rowToManage` vouches only for rows a manager may write.
+     * The wish can be changed after signing up; the call takes the caller's own row directly, since `rowToManage`
+     * vouches only for rows a manager may write.
      */
     @Test
     fun `the wish can be changed after signing up`() =
@@ -199,7 +194,6 @@ class MissionRosterTest {
     @Test
     fun `tapping the wish already held clears it`() =
         runTest(dispatcher) {
-            // The fixture row already wishes for j1.
             roster(this).wish(row(), MissionJobType("j1", "Pilot"))
             advanceUntilIdle()
 
@@ -219,7 +213,9 @@ class MissionRosterTest {
             assertEquals(0, catalogueReads)
         }
 
-    /** And it is read only once for a manager who opens the tab twice. */
+    /**
+     * The Funktionen catalogue is read only once for a manager who opens the tab twice.
+     */
     @Test
     fun `the catalogue is read once`() =
         runTest(dispatcher) {

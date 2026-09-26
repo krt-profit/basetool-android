@@ -63,16 +63,10 @@ data class RefineryStoreActions(
 )
 
 /**
- * „Einlagern" — design chapter 11, artboard 3.
+ * „Einlagern": books a finished run's yield into the Lager.
  *
- * **The amount is the point.** Every line arrives at what the run computed and is meant to be
- * overridden; the handoff calls that override the reason the screen exists. The computed figure
- * stays visible above the field so a correction reads as one.
- *
- * **One submit for the run, not one per card.** The handoff has each card book and acknowledge on
- * its own. The server books whatever a call carries and then marks the order completed, refusing
- * every later call — so a per-card submit loses every material after the first, which is what a
- * device showed. The editing stays per line; only the sending is shared.
+ * Each line starts at the computed amount, which stays visible above the editable field. All lines
+ * are sent in one submit, because the server completes the order on the first booking call.
  *
  * @param lines the form.
  * @param busy whether the run is being booked right now.
@@ -165,9 +159,6 @@ private fun StoreLineCard(
             KrtCheckboxRow(
                 label = stringResource(R.string.refinery_store_personal),
                 checked = line.personal,
-                // Personal and a job order exclude each other on the server (400). Clearing the
-                // order here means the pair can never be sent, so the rule never arrives as a
-                // mystery refusal.
                 onCheckedChange = {
                     actions.onLineChanged(line.copy(personal = it, jobOrderId = null))
                 },
@@ -199,11 +190,8 @@ private fun StoreLineCard(
 /**
  * Who this line's output is booked onto.
  *
- * **Two shapes, one rule.** A Logistician (through the hierarchy, so an admin and an officer too)
- * gets a roster picker; everyone else gets a disabled field naming themselves. That is the web
- * app's own conclusion, written down beside its combobox: offering a roster whose every foreign
- * choice answers 403 is worse than not offering one (REQ-SEC-039). The server refuses per line —
- * `canManageUserInventory(targetUserId)` — so this is a hint, not the gate.
+ * A Logistician gets a roster picker; everyone else a disabled field naming themselves
+ * (REQ-SEC-039). The server's per-line `canManageUserInventory(targetUserId)` check is the gate.
  *
  * @param line the store line.
  * @param index its position, which is what the picker opens against.
@@ -217,9 +205,6 @@ private fun StoreReceiver(
     actions: RefineryStoreActions,
     picker: RefineryMemberPickerState,
 ) {
-    // Unknown counts as "not offered" here for the same reason the Lager gates lock: a picker
-    // whose every foreign choice answers 403 is worse than none, and that is exactly what an
-    // unread identity would produce.
     if (isLogistician() != true) {
         KrtTextField(
             value = stringResource(R.string.refinery_store_user_self),
@@ -256,7 +241,6 @@ private fun StoreReceiver(
         modifier = Modifier.fillMaxWidth(),
         label = stringResource(R.string.refinery_store_user),
         placeholder = stringResource(R.string.refinery_store_user_search),
-        // Stated when it bites and silent when it does not (ADR-0104).
         notice =
             when {
                 picker.open != index -> null

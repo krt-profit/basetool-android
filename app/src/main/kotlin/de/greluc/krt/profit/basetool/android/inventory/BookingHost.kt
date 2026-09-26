@@ -14,9 +14,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 /**
  * Shows the booking form whenever one is open.
  *
- * Hosted beside the Lager route rather than inside it, because the form is opened from two places —
- * the screen's own action and an entry row — and a sheet owned by one of them would close when the
- * other recomposed.
+ * Hosted beside the Lager route because the form is opened both from the screen's action and from an
+ * entry row.
  *
  * @param viewModel drives the form.
  */

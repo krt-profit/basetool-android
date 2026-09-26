@@ -13,12 +13,8 @@ import org.junit.Test
 import java.math.BigDecimal
 
 /**
- * What a member typed is not what `toDoubleOrNull()` expects.
- *
- * The app is German-first and the decimal key of a German keyboard is a comma. A device showed both
- * halves of the consequence: the refinery's Einlagern sent no request at all for „1,9", and the
- * bank's amounts folded the same text into `BigDecimal.ZERO` — which does not refuse a booking, it
- * books nothing and reports success.
+ * Pins that amounts typed with a German decimal comma parse correctly rather than being dropped or
+ * folded to zero.
  */
 class AmountsTest {
     private companion object {

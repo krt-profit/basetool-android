@@ -42,16 +42,10 @@ const val HERKUNFT_TAG: String = "booking-herkunft"
 private val SHARE_FIELD_WIDTH = 96.dp
 
 /**
- * „Herkunft der Menge" — where the deducted quantity comes from (design ch. 09 artboards 18–19).
+ * „Herkunft der Menge": where the deducted quantity comes from, as a row per earmark and a „Vom
+ * Rest" line per dimension.
  *
- * **Rows, not a table.** The web frontend lays this out as a grid of tag against amount, which
- * needs horizontal room a phone does not have. The artboards answer with a row per earmark and,
- * beneath each dimension, always the „Vom Rest" line — so the two numbers a member has to reconcile
- * sit above one another rather than across a scroll.
- *
- * The section is drawn only when there is something to decide. An entry with no earmarks in either
- * dimension has one possible answer, and a heading over two empty lists is a question with no
- * question in it.
+ * Drawn only when the entry has earmarks in at least one dimension.
  *
  * @param state the form.
  * @param onJobOrderShare a share of an Auftrag earmark changed.
@@ -116,8 +110,6 @@ private fun Dimension(
     if (dimension.tags.isEmpty()) {
         return
     }
-    // Auftrag is the app's orange, Einsatz its info blue — the same pairing the allocation sheet
-    // uses, so a member reads the two dimensions apart without a legend.
     val accent =
         when (kind) {
             AllocationKind.JOB_ORDER -> MaterialTheme.colorScheme.primary
@@ -159,9 +151,6 @@ private fun Dimension(
                     Muted(
                         stringResource(
                             R.string.herkunft_tag_assigned,
-                            // Through the app's own formatter: the server sends "3.0", and the
-                            // artboard writes "zugeordnet 200 SCU". Every other quantity on this
-                            // screen is grouped and trimmed, and one raw value reads as a bug.
                             formatAmount(tag.amount),
                             state.unit().orEmpty(),
                         ),
@@ -175,17 +164,12 @@ private fun Dimension(
                             typed[tag.targetId].orEmpty()
                         },
                     onValueChange = { onShare(tag.targetId, it) },
-                    // Locked, not hidden: the member is entitled to see the number that will be
-                    // sent, and this shape has only one possible value (artboard 18).
                     enabled = !state.saving && !dimension.locked,
                     modifier = Modifier.width(SHARE_FIELD_WIDTH),
                 )
             }
         }
 
-        // Always drawn beneath the tags, never only when non-zero: it is the line that tells a
-        // member where the difference is going, and a line that appears and disappears reads as a
-        // warning rather than as arithmetic.
         if (!dimension.locked) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -211,11 +195,7 @@ private fun Dimension(
 }
 
 /**
- * The line under a dimension, where its shape needs one.
- *
- * `COVERED` and `FROM_REST` are the two states that need no explanation — the chip has already said
- * it and the rest line has already shown the number. A function that returns is how that is said;
- * a `when` branch evaluating `Unit` says the same thing and reads as an oversight.
+ * The line under a dimension, where its shape needs one; `COVERED` and `FROM_REST` draw nothing.
  *
  * @param dimension what the plan adds up to.
  * @param deducted how much is leaving the entry.
@@ -263,10 +243,7 @@ private fun DimensionNote(
 }
 
 /**
- * The chip that names a dimension's shape at a glance.
- *
- * The chip states a relationship, not a quantity, so it carries no unit — that keeps it on one
- * line at font scale 1.3, which is how the artboards draw it.
+ * The chip that names a dimension's shape at a glance; it carries no unit so it stays on one line.
  *
  * @param dimension what the plan adds up to.
  * @param deducted how much is leaving the entry.

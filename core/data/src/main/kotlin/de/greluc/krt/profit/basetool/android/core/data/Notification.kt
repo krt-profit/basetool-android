@@ -59,11 +59,8 @@ enum class NotificationKind {
 }
 
 /**
- * One notification.
- *
- * **The text is not carried.** The server sends a `type` and a map of named parameters; the sentence
- * is assembled on the device from `notifications.type.<TYPE>`, exactly as the web app does. That is
- * what lets one stored notification read German for one member and English for the next.
+ * One notification, carried as a type and named parameters; the sentence is assembled on the
+ * device from `notifications.type.<TYPE>`.
  *
  * @property id the notification's id
  * @property type the server's type constant, which selects the sentence

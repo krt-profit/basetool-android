@@ -42,12 +42,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The board's rules.
- *
- * The two worth pinning: a toggle replaces one row rather than re-reading the page — the member's
- * scroll position is the whole cost of getting that wrong — and a picked material is dropped the
- * moment the field is edited, because a request addresses its material by id and a typed name has
- * none.
+ * Tests the board: a toggle replaces one row without re-reading the page, and a picked material is dropped once the
+ * field is edited, since a request addresses its material by id.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -260,7 +256,6 @@ class MaterialBoardViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf("gatling" to ITEM_PIECES), source.createdItemRequests)
-            // The material write is a different endpoint and must not have been touched.
             assertTrue(source.createdRequests.isEmpty())
         }
 
@@ -297,7 +292,6 @@ class MaterialBoardViewModelTest {
             model.onNewRequest()
             model.onRequestEdited { it.copy(kind = BoardKind.ITEM) }
             model.onProductPicked(product())
-            // Editing the text after a pick makes the key stale, and the wire needs the key.
             model.onProductQueryChanged("Gatl")
             model.onRequestEdited { it.copy(amount = ITEM_PIECES.toString()) }
 
@@ -323,8 +317,6 @@ class MaterialBoardViewModelTest {
             model.onEntrySubmitted()
             advanceUntilIdle()
 
-            // The amount too, against the artboard's "only the remark" — the web edits both and the
-            // wire requires the amount.
             assertEquals(1, source.updatedOffers.size)
             assertEquals("o1", source.updatedOffers.first().first)
             assertEquals(EDITED_AMOUNT, source.updatedOffers.first().second, TOLERANCE)
@@ -355,7 +347,6 @@ class MaterialBoardViewModelTest {
             other.onEditEntry(wanted)
             other.onWithdrawRequested()
             advanceUntilIdle()
-            // Nothing withdrawn yet: two members said they can help, so it asks first.
             assertTrue(second.withdrawn.isEmpty())
             assertTrue(other.state.value.sheet.let { it is BoardSheet.EditEntry && it.confirmingWithdrawal })
 
@@ -428,8 +419,6 @@ class MaterialBoardViewModelTest {
             model.onSignalToggled(model.state.value.entries.first())
             advanceUntilIdle()
 
-            // One row updated in place. Re-reading the page would scroll a member back to the top
-            // on every tap, on a board whose whole interaction is tapping rows.
             assertEquals(listOf(BoardSide.OFFERS), source.requestedSides)
             assertTrue(model.state.value.entries[0].viewerInterested)
             assertFalse(model.state.value.entries[1].viewerInterested)
@@ -447,7 +436,6 @@ class MaterialBoardViewModelTest {
             model.onSignalToggled(model.state.value.entries.single())
             advanceUntilIdle()
 
-            // The server refuses it; sending it anyway would be an invitation to a 400.
             assertTrue(source.interestCalls.isEmpty())
         }
 
@@ -462,8 +450,6 @@ class MaterialBoardViewModelTest {
             model.onWithdraw(model.state.value.entries.first())
             advanceUntilIdle()
 
-            // Dropped rather than replaced: a withdrawn row is no longer on the board, and leaving
-            // it there would invite the member to withdraw it again.
             assertEquals(listOf("o2"), model.state.value.entries.map { it.id })
         }
 
@@ -484,8 +470,6 @@ class MaterialBoardViewModelTest {
             model.onMaterialQueryChanged("Quantaini")
             advanceUntilIdle()
 
-            // The member is no longer describing what they picked. Submitting the stale id would
-            // post a request for a material they did not choose.
             val sheet = model.state.value.sheet as BoardSheet.NewRequest
             assertNull(sheet.materialId)
             assertFalse(sheet.submittable)
@@ -503,7 +487,6 @@ class MaterialBoardViewModelTest {
 
             model.onRequestSubmitted()
             advanceUntilIdle()
-            // No material picked yet: nothing is sent rather than a request the server would refuse.
             assertTrue(source.createdRequests.isEmpty())
 
             model.onMaterialPicked(MaterialOption(id = "m1", name = "Quantainium", unit = "SCU"))
@@ -545,8 +528,6 @@ class MaterialBoardViewModelTest {
             model.onSignalToggled(model.state.value.entries.single())
             advanceUntilIdle()
 
-            // Both sections, always: a member switching segments has to see a change made on the
-            // other half, and the frame carries no data so naming one would be cheaper by nothing.
             assertEquals(listOf("materialboard"), liveSync.announced.map { it.first })
             assertEquals(setOf("board", "requests"), liveSync.announced.single().second)
         }

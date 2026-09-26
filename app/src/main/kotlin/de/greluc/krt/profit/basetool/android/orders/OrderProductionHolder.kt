@@ -22,9 +22,6 @@ private const val LOG_TAG = "OrderProduction"
 /**
  * Where the production draft lives while it is being filled in.
  *
- * One value rather than a `read`/`write` pair of constructor arguments: the two are meaningless
- * apart, and passing them separately made the holder's constructor wider than the codebase allows.
- *
  * @property read the draft as it stands, or `null` when the sheet is shut.
  * @property write reports it back.
  */
@@ -34,24 +31,11 @@ data class ProductionSlot(
 )
 
 /**
- * „Herstellung erfassen" — booking a production run against one item line of an Auftrag.
+ * „Herstellung erfassen": books a production run against one item line of an Auftrag.
  *
- * > **The write that moves „hergestellt".** An item Auftrag has two writes and they are not the
- * > same thing: the Übergabe hands finished goods to somebody, the Herstellung *consumes* the
- * > earmarked raw material and *creates* item stock. Without this the app could deliver items it
- * > could never record having built.
- *
- * Three deviations from design ch. 10 artboard 15, all of them because the endpoint says so and all
- * of them on the design gap list rather than coded around:
- *
- * - The artboard offers **one** „Zutaten aus dem Lager ausbuchen" checkbox for the whole run. The
- *   server takes a plan per material, over named stock rows, that must cover the demand **exactly**
- *   — so the sheet carries the web's per-material „Nicht ausbuchen" instead.
- * - The artboard has no **Einlagerung** section, and `bookIn.locationId` is `@NotNull`: produced
- *   units have to land somewhere. The sheet asks.
- * - The artboard's **„Verwendete Variante"** and **„Übergeben an"** have no field on this payload.
- *   The variant is an order-level setting (`PATCH /blueprint-variant-counting`), and handing over
- *   is the separate item-handover write.
+ * Consumes earmarked raw material and creates item stock, moving the line's „hergestellt" figure.
+ * The plan is per material over named stock rows and must cover the demand exactly; the produced
+ * units need an Einlagerung place. Variant and recipient are not part of this write.
  *
  * @property source the two calls this sheet makes.
  * @property options where the produced stock may land.
@@ -85,8 +69,8 @@ class OrderProduction(
      *
      * @param orderId the Auftrag.
      * @param item the line being manufactured.
-     * @param responsibleOrgUnitId the unit working the Auftrag — preselected as the book-in pool
-     *   when the owner belongs to it, which is what the web does.
+     * @param responsibleOrgUnitId the unit working the Auftrag, preselected as the book-in pool when
+     *   the owner belongs to it.
      */
     fun open(
         orderId: String,
@@ -144,9 +128,7 @@ class OrderProduction(
     /**
      * Fills one material's plan to exactly its demand, taking from the rows in order.
      *
-     * The gate is an exact match and the arithmetic is the member's otherwise — three rows and a
-     * demand of 1 234,5 is a subtraction nobody should do on a phone. It never assigns more than a
-     * row can give.
+     * Never assigns more than a row can give.
      *
      * @param materialId which material.
      */
@@ -210,11 +192,10 @@ class OrderProduction(
     }
 
     /**
-     * Somebody else's name is on the produced stock.
+     * Puts the produced stock under another member's name.
      *
-     * The pool choice is re-read for **them**: the server validates the picked unit against the
-     * owner's own memberships, so keeping the previous owner's list would offer a unit the write
-     * then refuses.
+     * Re-reads the pool choices for the new owner, since the server validates the unit against the
+     * owner's memberships.
      *
      * @param id the member, or `null` to hand it back to the acting member.
      * @param name how they read.
@@ -259,8 +240,6 @@ class OrderProduction(
 
     /** Sends the booking. */
     fun submit() {
-        // `submittable` already carries the whole gate — a whole amount inside what is left, an
-        // exact plan, and a place — so the two reads below can only fail together with it.
         val draft = read()?.takeIf { it.submittable } ?: return
         val units = draft.units
         val bookIn = draft.bookIn.toWire()
@@ -361,9 +340,7 @@ class OrderProduction(
     /**
      * Reads the owner's memberships and preselects one.
      *
-     * The Auftrag's responsible unit when the owner belongs to it, else their first — the web's own
-     * resolution, and the reason the „more than one membership and no pick" 400 is unreachable from
-     * this screen.
+     * Preselects the Auftrag's responsible unit when the owner belongs to it, else their first.
      *
      * @param preferred the unit to preselect if the owner has it.
      */

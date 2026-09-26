@@ -22,19 +22,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.math.BigDecimal
 
 /**
- * Every decimal the API sends — money, quantities, yields.
+ * Every decimal the API sends — money, quantities, yields — held exactly as a `BigDecimal`.
  *
- * The backend's decimals are `BigDecimal`, and the two obvious client-side types are both wrong.
- * `Double` loses cents: the bank is a double-entry ledger where a rounding error is not a display
- * bug but a wrong balance. `String` reads without loss but cannot be compared or summed without
- * every call site parsing it again, and one of them will forget.
- *
- * `java.math.BigDecimal` itself is not usable either, and the reason is worth stating because it
- * is what this class exists to work around: kotlinx.serialization ships no serializer for it, so
- * the generator marks such fields `@Contextual` — and `@Contextual` on a property describes the
- * property's own type, not a type argument. A `Map<String, BigDecimal>` therefore fails to compile
- * with "Serializer for element of type java.math.BigDecimal has not been found", which is where
- * this was found. A type that carries its own serializer works everywhere a type can appear.
+ * Carries its own serializer, because kotlinx.serialization has none for `BigDecimal` and
+ * `@Contextual` does not reach type arguments such as `Map<String, BigDecimal>`.
  *
  * @property value the exact decimal, as the server sent it.
  */
@@ -52,13 +43,8 @@ value class KrtDecimal(
 }
 
 /**
- * Reads and writes [KrtDecimal] as a **JSON number**, keeping every digit the server sent.
- *
- * The precision lives in the transport, not only in the type: reading through `Double` would round
- * before the value ever reached `BigDecimal`, and writing through one would round on the way out.
- * So the number's own text is taken from the JSON tree and handed to `BigDecimal`, and on the way
- * back an unquoted literal is emitted — a quoted string would change the wire shape, and the
- * server's `BigDecimal` fields are declared `type: number`.
+ * Reads and writes [KrtDecimal] as a JSON number through its literal text, never through `Double`, and writes an
+ * unquoted literal back.
  */
 object KrtDecimalSerializer : KSerializer<KrtDecimal> {
     override val descriptor: SerialDescriptor =

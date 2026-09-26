@@ -20,15 +20,8 @@ import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 
 /**
- * The caller's own **backend** user id.
- *
- * Not the same thing as the Keycloak `sub` the app already holds in its ID token. Rows that belong
- * to a member server-side — an Operation's payout entries are the first case — are keyed by the
- * backend's own `user.id`, and there is no derivation from one to the other on the device.
- *
- * Matching by name was the alternative and is wrong: the server sends `displayName` when the member
- * set one and `username` otherwise, so a name match would work for some members and silently fail
- * for exactly those who personalised their profile.
+ * Provides the caller's own **backend** user id, which differs from the Keycloak `sub` and keys
+ * member-owned rows such as an Operation's payout entries.
  */
 interface IdentitySource {
     /**
@@ -48,45 +41,29 @@ interface IdentitySource {
     suspend fun me(): ApiResult<Identity>
 
     /**
-     * Drops the cached record so the next [me] reads the server again.
-     *
-     * Called when the app comes back to the foreground: a role granted while it was in the
-     * background otherwise takes effect only after a sign-out, and "sign out and back in" is not an
-     * instruction anybody should have to be given (REQ-APP-AUTH-013).
+     * Drops the cached record so the next [me] reads the server again; called when the app returns to
+     * the foreground (REQ-APP-AUTH-013).
      */
     fun forget()
 }
 
 /**
- * The caller, as far as any screen needs to know them.
+ * The caller as the screens need them: the backend id and server-resolved capability flags, with
+ * no name or email.
  *
- * No name and no email: those are personal details the app has no question for, and the privacy gate
- * (`ANDROID_APP_PLAN` §7) keeps them out of memory.
+ * All flags and [permissions] are hints for the UI, never a gate; the server stays the authority
+ * (ADR-0011).
  *
- * The **permissions** are here on purpose, and the reasoning that once kept them out does not apply
- * to them. They arrive in this very response, the access token the app must hold carries the realm
- * roles anyway, and a capability list is a statement about the session rather than a detail about
- * the person. Dropping them only ever meant the app could not read what it already had — and an app
- * that cannot read its own permissions offers actions the server refuses (ADR-0011).
- *
- * @property userId the backend user id — the key an Operation's payout rows and an order's
- *   assignee rows are written against
- * @property logistician whether the caller **reaches** Logistician through the role hierarchy —
- *   Logistician, Officer and Admin alike. The server's `isLogisticianOrAbove`, not the
- *   me-response's `isLogistician`: that one reports whether a *Staffel membership row* carries the
- *   flag, and an admin holds no Staffel membership by design.
- * @property missionManager whether they reach Mission-Manager the same way — the flag behind the
- *   Operation's payout confirmation, and false for an admin under the old membership reading.
- * @property bankEmployee whether the caller may see the bank's staff surface at all — the scope
- *   segment's gate (`REQ-APP-BANK-007`). A **hint, never a gate**, like everything else here.
+ * @property userId the backend user id that payout and assignee rows are keyed by
+ * @property logistician whether the caller reaches Logistician through the role hierarchy
+ *   (Logistician, Officer and Admin alike)
+ * @property missionManager whether the caller reaches Mission-Manager the same way; gates the
+ *   Operation's payout confirmation
+ * @property bankEmployee whether the caller may see the bank's staff surface (`REQ-APP-BANK-007`)
  * @property bankManagement whether they additionally hold Bank-Management, which decides the
- *   account lifecycle and the grants tab.
- * @property admin whether the caller holds ADMIN. Not „above a role" but a different scope: an
- *   admin sees every org unit rather than their own memberships, which is what the org picker turns
- *   on. Server-resolved like the rest.
- * @property permissions the backend's own capability vocabulary for this caller — `HANGAR_WRITE`,
- *   `MISSION_READ` and the rest. A **hint, never a gate**: the server stays the authority, and a
- *   screen that skips a check because this set said so is a defect rather than an optimisation
+ *   account lifecycle and the grants tab
+ * @property admin whether the caller holds ADMIN and so sees every org unit in the org picker
+ * @property permissions the backend's capability vocabulary for this caller, e.g. `HANGAR_WRITE`
  */
 data class Identity(
     val userId: String,
@@ -100,23 +77,10 @@ data class Identity(
 )
 
 /**
- * Reads the caller's own record and keeps its id for the process.
+ * Reads the caller's own record and caches the resulting [Identity] for the process.
  *
- * **Cached, unlike everything else in this package.** The id is the one value here that cannot
- * change while the app runs: a different id means a different session, and a sign-out tears the
- * whole object graph down. Re-reading it on every screen would spend a round trip to learn
- * something already known.
- *
- * Only the id and the capability flags are kept. The response also carries the member's email,
- * roles and rank; holding those would put personal data in memory for the lifetime of the process
- * to answer questions that need an opaque key and a handful of booleans.
- *
- * **Two reads, one identity.** The bank flags come from `GET /api/v1/me/capabilities` rather than
- * from anything on the member record. Deriving them client-side was tried and cannot work: the
- * me-response reports role **display names** (`"Bank Employee"`), not the codes the gates use; the
- * bank roles carry no permissions at all; and the hierarchy
- * `ADMIN > BANK_MANAGEMENT > BANK_EMPLOYEE` lives in the server's `SecurityConfig`. Asking the
- * server keeps the rule in the one place that owns it — and keeps role names off the wire.
+ * Only the id and the capability flags are kept. The bank flags come from
+ * `GET /api/v1/me/capabilities`, not from the member record.
  *
  * @property reader performs the call and classifies its failure
  */
@@ -127,14 +91,9 @@ class IdentityRepository(
     private var cached: Identity? = null
 
     /**
-     * The identity already read, without asking the server.
+     * The identity already read, without asking the server, for callers that cannot suspend.
      *
-     * For callers that need the answer synchronously while composing — the account detail decides
-     * on it which of the two account surfaces to read, and cannot suspend to find out. `null` until
-     * the first [me] has landed, which the screens tolerate because they draw the member view then
-     * and re-read once it does.
-     *
-     * @return the cached identity, or `null`.
+     * @return the cached identity, or `null` until the first [me] has landed.
      */
     val known: Identity?
         get() = cached
@@ -150,10 +109,7 @@ class IdentityRepository(
     )
 
     /**
-     * Reads the id, once per process.
-     *
-     * The lock is what makes "once" true: two screens opening at the same moment would otherwise
-     * both find the cache empty and both fetch.
+     * Reads the id at most once per process; a lock keeps concurrent callers from fetching twice.
      *
      * @return the id, or the classified failure.
      */
@@ -172,37 +128,18 @@ class IdentityRepository(
                 is ApiResult.Success -> {
                     val id = result.value.id
                     if (id.isNullOrBlank()) {
-                        // A record without an id is not an outage and not a refusal; it is an
-                        // answer this client cannot use. Reported as NotFound so the caller takes
-                        // the same "cannot tell which row is yours" path as a 404.
                         ApiResult.Failure(ApiError.NotFound())
                     } else {
-                        // `isLogistician` absent is read as "not one". The grant decides whether a
-                        // control is offered, and the narrower reading is the one that cannot
-                        // offer an action the server refuses.
-                        // A capabilities read that fails leaves both flags false, which locks
-                        // the staff scope rather than opening it. The narrower reading is the one
-                        // that cannot offer an action the server refuses.
                         val capabilities = readCapabilities()
                         val identity =
                             Identity(
                                 userId = id,
-                                // From /me/capabilities, NOT from the me-response's isLogistician
-                                // / isMissionManager. Those two answer „does a Staffel membership
-                                // row carry this flag" — an admin holds no Staffel membership by
-                                // design, so both read false for the one role that may do
-                                // everything, and reading them as permission hid the Lager writes,
-                                // the Auftrag writes and the payout confirmation from admins and
-                                // officers the server would have let through (REQ-SEC-047).
                                 logistician = capabilities?.isLogisticianOrAbove == true,
                                 missionManager = capabilities?.isMissionManagerOrAbove == true,
                                 admin = capabilities?.isAdmin == true,
                                 bankEmployee = capabilities?.canViewBankStaff == true,
                                 bankManagement = capabilities?.canManageBank == true,
                                 permissions = result.value.permissions.orEmpty().toSet(),
-                                // Officer and above, in the caller's oversight scope. Derived
-                                // server-side for the same reason the bank flags are: the
-                                // me-response carries display names, not the codes the gate uses.
                                 blueprintOverview = capabilities?.canSeeBlueprintOverview == true,
                             )
                         cached = identity

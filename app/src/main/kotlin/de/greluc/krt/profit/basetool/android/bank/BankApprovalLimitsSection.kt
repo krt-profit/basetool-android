@@ -47,20 +47,11 @@ const val BANK_LIMIT_SHEET_TAG: String = "bank-approval-limit-sheet"
 const val BANK_LIMIT_REMOVE_TAG: String = "bank-approval-limit-remove"
 
 /**
- * „Freigabe-Limits" — design ch. 12 artboard 10.
+ * „Freigabe-Limits": the approval limits of one account, per tier and per user.
  *
- * Up to the limit a booking may be requested **without a further approval**; above it the account's
- * owner has to release it. A **user** limit beats the tier limit. The chapter's own correction is
- * explicit that this is what the web has — limits per tier, not „approval steps by amount".
- *
- * > **Not a fifth tab.** The artboard makes it a tab of the Verwaltung, beside Grants. It cannot
- * > be one: every limit endpoint is `…/bank/accounts/{id}/approval-limit/…` and the current values
- * > ride on the **account's** settings, so a tab would have to make the member pick an account
- * > before it could show anything. It therefore lives in the account's own settings sheet, next to
- * > the visibility grants it resembles — same scope, same owner, same read. On the design gap list.
- *
- * The two actions are the artboard's words: **„Setzen"** and **„Entfernen"** — not „Speichern",
- * which would promise a form, and not „Löschen", which would promise a deletion.
+ * Up to a limit a booking may be requested without further approval; above it the account owner has
+ * to release it. A user limit beats the tier limit. Shown in the account's settings sheet, since
+ * every limit is scoped to an account.
  *
  * @param limits what the account has.
  * @param busy which limit is being written, or `null`.
@@ -88,8 +79,6 @@ fun BankApprovalLimitsSection(
             color = KrtPalette.TextMuted,
         )
         KrtSectionTitle(text = stringResource(R.string.bank_limits_tiers))
-        // The roles first and „Alle Mitglieder" last, as the artboard stacks them: the narrower a
-        // tier, the higher it sits, and everyone is the floor everything else is measured against.
         limits.availableRoleCodes.forEach { code ->
             LimitRow(
                 label = code.tierLabel(),
@@ -141,11 +130,7 @@ fun BankApprovalLimitsSection(
 }
 
 /**
- * What a role code is called on the limits list.
- *
- * Design ch. 12 ab. 10 names the four tiers in German; the wire sends role codes. An unknown code
- * is shown as it came rather than swallowed — a tier nobody can name is still a tier somebody set
- * a limit on.
+ * The German label of a tier role code on the limits list; an unknown code is shown as received.
  *
  * @receiver the server's role code.
  * @return the label.
@@ -220,10 +205,8 @@ private fun LimitRow(
 }
 
 /**
- * What applies once one limit is gone.
- *
- * A user falls back to the tiers, and a tier to „Alle Mitglieder"; the artboard's removal
- * confirmation names it, because removing a limit is not the same as setting it to zero.
+ * What applies once one limit is removed: a user falls back to the tiers, a tier to „Alle
+ * Mitglieder".
  *
  * @receiver the whole set.
  * @param target the limit being removed.
@@ -231,10 +214,7 @@ private fun LimitRow(
  */
 private fun BankApprovalLimits.fallbackFor(target: BankLimitTarget): String? =
     when (target) {
-        // Nothing sits under „everyone", so its removal leaves no limit at all — which the
-        // confirmation says in its own words rather than naming a figure.
         BankLimitTarget.AllMembers -> null
-
         else -> allMembersLimit
     }
 

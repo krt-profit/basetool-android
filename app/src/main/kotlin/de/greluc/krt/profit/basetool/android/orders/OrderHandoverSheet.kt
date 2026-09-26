@@ -62,23 +62,11 @@ data class OrderHandoverActions(
 )
 
 /**
- * „Übergabe erfassen" — the screen that lets an Auftrag be finished from the app.
+ * „Übergabe erfassen": records a material handover, the write that finishes an Auftrag.
  *
- * Design ch. 10 artboard 14, the round-8 parity programme's heaviest item: in the web the handover
- * is what closes an Auftrag, and until this existed the app could take one on and never end it.
- *
- * Three things the artboard insists on and this keeps:
- *
- * - **The live preview.** „Nach dieser Übergabe 300 / 400 · 75 %" — the figure that finishes an
- *   Auftrag is never formed in somebody's head. At 100 % the chip turns Success and says so.
- * - **The stock reference is the bridge into the Lager.** With a row, the server books it out;
- *   the field names that rather than leaving it to be discovered.
- * - **Append-only is written into the form, not into a modal afterwards.** Nothing here takes a
- *   handover back.
- *
- * > **One deviation, flagged not coded around.** The artboard offers „Ohne Lagerbezug erfassen".
- * > The endpoint cannot serve it — `inventoryItemId` is `@NotNull` — and the web's own form refuses
- * > to submit without a row. The option is absent; see the design gap list.
+ * Shows a live preview of the line's progress after this handover, names the stock row the server
+ * books out of, and is append-only. There is no „Ohne Lagerbezug erfassen" option, because the
+ * endpoint requires `inventoryItemId`.
  *
  * @param actions the draft and what it reports.
  */
@@ -125,8 +113,6 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
                 label = stringResource(R.string.order_handover_squadron),
                 enabled = !draft.saving,
             )
-            // In the form, not in a modal afterwards: a warning that arrives after the decision is
-            // a warning nobody acted on.
             Text(
                 text = stringResource(R.string.order_handover_append_only),
                 style = MaterialTheme.typography.bodySmall,
@@ -145,11 +131,7 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
 }
 
 /**
- * The position's own unit word.
- *
- * **Never a hardcoded SCU** — the rule `RefineryScreen` writes down. This sheet labelled every
- * amount „SCU", so handing over 8 *pieces* read as 8 SCU on the one screen that finishes an
- * Auftrag. A unit the server did not name is left unsaid rather than guessed.
+ * The position's own unit word, never a hardcoded SCU.
  *
  * @return the word to put after the figure, or an empty string when the server named no unit.
  */
@@ -204,10 +186,7 @@ private fun Projection(draft: OrderHandoverDraft) {
 }
 
 /**
- * Which stock row the handover books out of.
- *
- * Radios, not a combobox: the candidates are this order line's own rows and there are rarely more
- * than a handful, so a list that shows all of them beats one that has to be typed into.
+ * Which stock row the handover books out of, as radio buttons over this order line's own rows.
  *
  * @param draft what is typed.
  * @param actions what it reports.
@@ -242,8 +221,6 @@ private fun StockChoice(
             }
         }
     }
-    // The half of the field that says what choosing a row DOES — otherwise the booking-out is a
-    // side effect discovered afterwards.
     Text(
         text = stringResource(R.string.order_handover_stock_hint),
         style = MaterialTheme.typography.bodySmall,
@@ -277,10 +254,8 @@ private fun Double.krtPlainAmount(): String = java.math.BigDecimal(this.toString
 /**
  * What the last write returned.
  *
- * A validation refusal is shown in the server's own words: it names the field and the rule, which
- * is what design ch. 02 §6 draws under a field. A `409` keeps the sheet's own sentence — it means
- * the line was fulfilled while the sheet was open, the artboard's own case, and it reads as a
- * conflict rather than as a generic failure.
+ * A validation refusal is shown in the server's words; a `409` means the line was fulfilled while the
+ * sheet was open and is shown as a conflict.
  *
  * @param error the refusal.
  */

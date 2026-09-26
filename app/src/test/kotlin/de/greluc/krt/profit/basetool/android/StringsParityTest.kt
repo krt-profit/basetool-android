@@ -13,19 +13,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The two string bundles must carry the same keys.
- *
- * A missing English key does not fail anything: Android falls back to the German default, so an
- * English-speaking member sees one German line in an otherwise English screen and reads it as a
- * bug. The reverse — a key only in `values-en/` — is dead weight nobody will ever see. Neither
- * shows up in a build, a lint run or a screenshot of the locale the author was testing in.
- *
- * Format placeholders are compared too, because a translation that drops a `%1$s` crashes at
- * `getString` rather than merely reading oddly.
- *
- * Entries marked `translatable="false"` are skipped: a product name is the same in every locale,
- * and that marker is also what stops Android Lint's `MissingTranslation` from failing the build
- * over it — so honouring it here keeps one rule instead of two.
+ * Checks that the two string bundles carry the same keys and the same format placeholders; entries marked
+ * `translatable="false"` are skipped.
  */
 class StringsParityTest {
     private val german = File("src/main/res/values/strings.xml")
@@ -64,9 +53,6 @@ class StringsParityTest {
 
     @Test
     fun `no bundle carries the Fan Kit notice`() {
-        // It is prescribed legal wording that stays verbatim English in every locale, so it lives
-        // inside KrtFanKitBand where it cannot be translated by accident. A copy in a bundle is an
-        // invitation to "fix" it.
         listOf(german, english).forEach { file ->
             assertTrue(
                 "${file.name} must not contain the CIG trademark notice",

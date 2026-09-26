@@ -95,11 +95,7 @@ sealed interface ShipEditor {
         val error: ApiError? = null,
     ) : ShipEditor {
         /**
-         * What the insurance field will send.
-         *
-         * The server accepts `LTI` or a whole number of months from 0 to 120 and nothing else, so
-         * the app offers exactly those two shapes rather than a free-text field that fails
-         * validation after the save.
+         * What the insurance field will send: `LTI` or a whole number of months from 0 to 120.
          */
         val insurance: String? get() =
             if (insuranceLti) {
@@ -123,9 +119,7 @@ sealed interface ShipEditor {
 /**
  * Everything the Hangar screen draws.
  *
- * The two halves keep **separate** rows, totals and phases. Sharing them would make switching the
- * segment show the other half's content for a frame, and a failure on one half would present itself
- * as a failure of the other.
+ * The two halves keep separate rows, totals and phases.
  *
  * @property segment which half is showing
  * @property searchText what is in the search field right now, ahead of the debounce
@@ -142,9 +136,7 @@ sealed interface ShipEditor {
  * @property clearRequested whether "Hangar leeren" is waiting on its danger modal
  * @property homeLocationSet how many ships a just-finished bulk home-location write touched,
  *   until it is acknowledged
- * @property cleared how many ships a just-finished wipe removed, until it is acknowledged. An
- *   emptied hangar and a hangar that was always empty look identical, so the count is the only
- *   thing that says the write landed (design ch. 08, artboard 6)
+ * @property cleared how many ships a just-finished wipe removed, until it is acknowledged
  * @property bulkHomeLocation the open bulk home-location sheet, or `null`
  */
 data class HangarState(
@@ -180,20 +172,9 @@ data class HangarState(
 }
 
 /**
- * Drives the Hangar.
+ * Drives the Hangar: both halves, the ship editor, the delete confirmation and the bulk actions.
  *
- * Typing is debounced by 300 ms and the segment is not, for the reason the Einsatz list gives: a
- * search term arrives one keystroke at a time, a tapped segment is one deliberate act.
- *
- * **Switching the segment reloads that half from page 0.** The alternative — keeping whatever was
- * last loaded — shows a member the aggregate they saw ten minutes ago while the header says it is
- * current.
- *
- * **Why the function-count suppression:** the Hangar drives one list with two halves, a row editor,
- * a delete confirmation and three bulk actions, and each of them is a handful of one-line intent
- * methods. Splitting the class along those lines would put `onSave` in one object and the state it
- * saves into in another; the count is high because the screen is wide, not because the class does
- * two jobs.
+ * Typing is debounced by 300 ms; switching the segment reloads that half from page 0 without delay.
  *
  * @property source where the ships come from
  */
@@ -283,12 +264,8 @@ class HangarViewModel(
     }
 
     /**
-     * „Zeile antippen → gefilterte Schiffsliste" (design ch. 08, artboard 1).
-     *
-     * The aggregate answers *how many of this type the unit has*; the question a member asks next
-     * is *which ones*. So the row puts its type into the search and moves to „Meine Schiffe" rather
-     * than opening a screen of its own — the filtered list already exists and is where they were
-     * heading.
+     * Shows the member's ships of the tapped aggregate type, by putting it into the search and switching
+     * to „Meine Schiffe".
      *
      * @param typeName the ship type that was tapped.
      */
@@ -333,8 +310,6 @@ class HangarViewModel(
     ) {
         when (val result = source.myShips(search = search, page = page)) {
             is ApiResult.Success -> {
-                // Read the state again: a refresh may have replaced the rows while this page was
-                // in flight, and appending to the stale snapshot would resurrect them.
                 val latest = mutableState.value
                 mutableState.value =
                     latest.copy(
@@ -606,8 +581,6 @@ class HangarViewModel(
                     onRefresh()
                 }
 
-                // The draft stays as entered: a conflict is nobody's fault, and clearing the form
-                // would make the member pay for somebody else's edit.
                 is ApiResult.Failure -> {
                     editor { it.copy(saving = false, error = result.error) }
                 }
@@ -645,7 +618,6 @@ class HangarViewModel(
         if (!mutableState.value.online) {
             return
         }
-        // Counted before the write, because afterwards the list is empty and the number is gone.
         val emptied = mutableState.value.ships.size
         mutableState.update { it.copy(deleting = true) }
         viewModelScope.launch {
@@ -655,9 +627,6 @@ class HangarViewModel(
                     clearRequested = false,
                     deleting = false,
                     lastFailure = (result as? ApiResult.Failure)?.error,
-                    // An emptied hangar and a hangar that was always empty look identical, so the
-                    // one thing that distinguishes "it worked" from "nothing happened" is being
-                    // told how many went (design ch. 08, artboard 6).
                     cleared = (result as? ApiResult.Success)?.let { emptied },
                 )
             }
@@ -714,9 +683,6 @@ class HangarViewModel(
                 }
 
                 is ApiResult.Failure -> {
-                    // The sheet stays, and so does the picked place. Nothing was written, and a
-                    // member who has to re-pick after a refusal is being charged for the server's
-                    // answer (design ch. 08, artboard 10).
                     mutableState.update {
                         it.copy(
                             bulkHomeLocation = bulk.copy(saving = false, error = result.error),
@@ -765,12 +731,9 @@ class HangarViewModel(
     }
 
     /**
-     * Reads the two pickers, once per editor opening.
+     * Reads the hull and place catalogues, once per editor opening.
      *
-     * Both are catalogues that change on the scale of game patches, so they are re-read when the
-     * editor opens and not on every keystroke. A failure is silent: the member can still save a
-     * ship whose hull they already picked, and an error banner over an editor they just opened
-     * would be about something they have not asked for yet.
+     * A failure is silent; a ship whose hull is already picked can still be saved.
      */
     private fun loadPickers() {
         viewModelScope.launch {

@@ -27,26 +27,10 @@ const val BANK_DIRECT_OPEN_TAG: String = "bank-direct-open"
 const val BANK_CREATE_ACCOUNT_TAG: String = "bank-create-account"
 
 /**
- * The Konten tab's two calls to action, and the asymmetry between them.
+ * The Konten tab's two calls to action: direct booking and „Konto anlegen".
  *
- * Artboard 9 puts the direct booking here and nowhere in the member view. It carries **no** role
- * gate of its own: all four endpoints behind the sheet ask for `hasRole('BANK_EMPLOYEE')` and
- * nothing more (`BankBookingController`), and this whole scope is already unreachable without it —
- * the scope segment tests `bankEmployee`, which the server resolves through the hierarchy, so a
- * Bankleitung reaches it too.
- *
- * > Until 2026-09-03 this button was locked behind Bank-Management, which is the client inventing
- * > a stricter rule than the endpoint it calls: a plain Bankmitarbeiter could book directly in the
- * > web and was refused in the app. Artboard 9's state list asks for that lock („403 (Rolle
- * > Bank-Management fehlt)"); the endpoint is the authority and the artboard is wrong here.
- *
- * The per-account half of the server's rule (`canDeposit(#accountId, …)`) is decided on the write
- * and surfaces as a 403 the sheet shows. It cannot be pre-empted from here, because it is a fact
- * about the account picked inside.
- *
- * **„Konto anlegen" keeps its lock**, and that is the point of drawing them side by side: creating
- * an account is a management act and its endpoint gates on it, so the lock there states a real
- * rule rather than a copied one.
+ * Direct booking needs only `BANK_EMPLOYEE`, which this scope already requires; the per-account check
+ * surfaces as a 403 in the sheet. „Konto anlegen" is locked without Bank-Management.
  *
  * @param management whether the server grants this caller Bank-Management.
  * @param onDirectBooking open the booking sheet.

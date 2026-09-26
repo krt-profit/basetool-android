@@ -45,10 +45,8 @@ private const val TICK_MILLIS = 60_000L
 /**
  * The clock the Raffinerie screens judge readiness against.
  *
- * A parameter rather than a `while (true)` inside a ViewModel, and the reason is not tidiness: an
- * endless ticker started in `init` never lets a test's virtual clock go idle, so
- * `advanceUntilIdle()` hangs forever instead of failing. Found exactly that way. A test passes
- * `emptyFlow()` and drives [RefineryListState.now] itself.
+ * Injected rather than looped inside the view model, so a test can pass `emptyFlow()` and drive
+ * [RefineryListState.now] itself.
  *
  * @return a flow emitting the current time once a minute, for as long as it is collected.
  */
@@ -63,15 +61,10 @@ fun minuteTicker(): Flow<OffsetDateTime> =
 /** Which of the member's orders the list shows. */
 enum class RefineryFilter {
     /**
-     * Still refining **or** waiting to be collected — the runs there is something to do about.
+     * Still refining or waiting to be collected; the default filter.
      *
-     * A compound of two of the others rather than a server status, and the screen's default since
-     * design round 16: stored orders are finished and flood the list as the months pass. The web
-     * has defaulted to the same pair (`OPEN` + `IN_PROGRESS`) all along, so this is the app
-     * catching up rather than a new idea.
-     *
-     * Declared first because the chip row is drawn in declaration order and the artboard puts
-     * „Aktiv" at the head of it.
+     * Combines two of the other filters rather than naming a server status, and is declared first
+     * because the chip row follows declaration order.
      */
     ACTIVE,
 
@@ -91,9 +84,8 @@ enum class RefineryFilter {
     /**
      * The server statuses this filter has to ask for.
      *
-     * `RUNNING` and `READY` ask for the same pair, because the server does not distinguish them —
-     * both are `OPEN`/`IN_PROGRESS` and the run's end time is what tells them apart. The split
-     * happens on the device, against a clock that ticks.
+     * `RUNNING` and `READY` both request `OPEN`/`IN_PROGRESS`; the device splits them by the run's end
+     * time.
      *
      * @return the statuses to request; empty means all of them.
      */
@@ -124,16 +116,10 @@ enum class RefineryFilter {
         now: OffsetDateTime,
     ): Boolean =
         when (this) {
-            // The split between RUNNING and READY happens on the device, against a clock, so the
-            // compound has to name both phases rather than lean on the server pair above.
             ACTIVE -> order.phaseAt(now) in setOf(RefineryPhase.RUNNING, RefineryPhase.READY)
-
             ALL -> true
-
             RUNNING -> order.phaseAt(now) == RefineryPhase.RUNNING
-
             READY -> order.phaseAt(now) == RefineryPhase.READY
-
             STORED -> order.phaseAt(now) == RefineryPhase.STORED
         }
 }
@@ -167,7 +153,7 @@ sealed interface RefineryPhaseState {
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
  * @property myUserId the caller's own backend id, or `null` while the identity read is out or has
- *   failed — the owner line then names everybody plainly, which is wrong about nobody
+ *   failed
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property now the clock the countdown and the ready-split are judged against; ticks each minute
  */
@@ -184,24 +170,18 @@ data class RefineryListState(
     val now: OffsetDateTime = OffsetDateTime.now(),
 ) {
     /**
-     * The rows to draw.
+     * The rows to draw: [loaded] filtered by the chip against [now].
      *
-     * `RUNNING` and `READY` are a split of one server answer, so this filters what arrived rather
-     * than what the server counted. That is also why this screen shows **no total**: a count taken
-     * from the server would describe the unsplit pair, and one taken from [loaded] would describe
-     * only the pages fetched so far. Neither is the number a member would read it as, so the
-     * screen states none and keeps the „mehr laden" control honest instead.
+     * Because `RUNNING` and `READY` split one server answer, the screen shows no total.
      */
     val orders: List<RefineryOrder> get() = loaded.filter { filter.accepts(it, now) }
 }
 
 /**
- * Drives the member's own Raffinerie orders (REQ-APP-REF-001…004).
+ * Drives the Raffinerie order list (REQ-APP-REF-001…004).
  *
- * **The clock is state.** „Abholbereit" is not a status the server has — it is the run's end time
- * having passed — so the list would sit on „In Arbeit" forever without something that ticks. [now]
- * advances once a minute, which is the granularity design chapter 11 asks for and cheap enough to
- * run for as long as the screen is open.
+ * „Abholbereit" is derived from the run's end time, so [now] advances once a minute while the screen
+ * is open.
  *
  * @property source where the orders come from
  * @property identity supplies the caller's backend user id, or `null` where a caller cannot be
@@ -252,11 +232,7 @@ class RefineryViewModel(
     }
 
     /**
-     * Switches the chip.
-     *
-     * A move between `RUNNING` and `READY` needs no round trip — they are one server answer split
-     * two ways — but reloading anyway keeps one code path, and the alternative is a cache whose
-     * staleness nobody would notice until a member wondered why a finished run was missing.
+     * Switches the chip and reloads, even between `RUNNING` and `READY`.
      *
      * @param filter the chip that was tapped.
      */
@@ -445,39 +421,24 @@ data class RefineryDetailState(
         get() = online && !storing && order?.canStoreAt(now) == true
 
     /**
-     * Whether deleting this run is allowed.
+     * Whether deleting this run is allowed: it is the caller's own and not yet booked (REQ-APP-REF-012).
      *
-     * A booked run is not deletable: its yield already exists as Lager rows, and cancelling the
-     * order here would not take them back — design ch. 11 artboard 7 says so in the modal, and
-     * the corresponding correction is made on the Lager rows instead. The **server allows it**
-     * (`DELETE` only sets `CANCELED`, whatever the status), so this is the app's rule and the
-     * action is drawn locked rather than left out (`REQ-APP-REF-012`).
+     * The server would allow deleting a booked run; the app draws the action locked instead.
      */
     val deletable: Boolean
         get() = order != null && order.status != RefineryServerStatus.COMPLETED && mine
 
     /**
-     * Whether this run is the caller's own.
+     * Whether this run is the caller's own, which every write requires (`canEditRefineryOrder`).
      *
-     * The list shows the **unit's** orders since design round 16, so a member reaches a run they
-     * may read and not write: the server gates every write on `canEditRefineryOrder`, which is
-     * ownership. Unknown identity counts as **not** mine — offering a write that will be refused
-     * is worse than locking one that would have been allowed, and the lock says which it is.
+     * An unknown identity counts as not mine.
      */
     val mine: Boolean
         get() = myUserId != null && order?.ownerId == myUserId
 }
 
 /**
- * The writes the Raffinerie detail performs.
- *
- * Bundled rather than passed one by one: the view model already carries the six arguments detekt
- * allows, and a seventh would buy a suppression instead of a smaller constructor.
- *
- * **`identity` is a read and sits here anyway**, which is why the record no longer says „Writes":
- * since design round 16 the list shows the unit's orders, so the detail has to know whether this
- * one is the caller's before it offers a write the server would refuse. It belongs to the same
- * question as the writes it gates.
+ * The writes the Raffinerie detail performs, and the identity that gates them.
  *
  * @property store books a finished run's yield into the Lager, or `null` where that is not wired.
  * @property roster who the output may be booked onto, for a Logistician who may choose.
@@ -494,17 +455,15 @@ data class RefineryDetailSeams(
 /**
  * Drives one Raffinerie order and its booking (REQ-APP-REF-005…006).
  *
- * **The booking starts from the order and is meant to be corrected.** Each material begins at the
- * run's computed figure and the order's own refinery; every one of those is editable, because what
- * a run calculated and what came out of it are not always the same number — design chapter 11,
- * artboard 3, which calls that override the reason the form exists.
+ * Each material's booking starts at the run's computed figure and the order's refinery, both
+ * editable.
  *
  * @property source where the order comes from
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  * @property liveSync the shared change stream, or `null` when it is not wired
- * @property seams the two writes this screen performs — the booking and the deletion — plus the
- *   identity that gates them, each absent where it is not wired
+ * @property seams the booking and the deletion, plus the identity that gates them, each absent
+ *   where it is not wired
  */
 class RefineryDetailViewModel(
     private val source: RefinerySource,
@@ -601,10 +560,6 @@ class RefineryDetailViewModel(
             when (val result = source.store(order)) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(storing = false, stored = true, error = null) }
-                    // Two rooms, because a booking changes two screens that are not the same
-                    // screen: this order, and the Lager it just created entries in. Announcing
-                    // only the order would leave every open Lager — web tab or phone — showing a
-                    // stock figure that is already wrong.
                     publishLiveSync(
                         liveSync,
                         LiveSyncTopic.refineryOrder(order.id),
@@ -770,10 +725,7 @@ class RefineryDetailViewModel(
     }
 
     /**
-     * Books every line of the form in one call.
-     *
-     * One call, because the server closes the order on it: booking card by card loses every
-     * material after the first, which a device demonstrated before this was a single submit.
+     * Books every line of the form in one call, since the server closes the order on it.
      */
     fun onStoreAll() {
         val current = mutableState.value

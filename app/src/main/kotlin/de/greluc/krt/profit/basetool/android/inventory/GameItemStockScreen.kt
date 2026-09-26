@@ -49,18 +49,9 @@ const val GAME_ITEM_LIST_TAG: String = "game-item-list"
 const val GAME_ITEM_SEARCH_TAG: String = "game-item-search"
 
 /**
- * „Game-Items" — design ch. 09 artboard 21.
+ * „Game-Items": how many game items the org unit holds and where, counted in pieces.
  *
- * A surface of its own because the Lager tree groups by **material**, where an item counted in
- * pieces disappears between SCU figures. The question here is „how many do we have and where", and
- * the unit is always pieces — which is why no row spells it out twice.
- *
- * Read-only. No price column: game items have no UEX price.
- *
- * > **The artboard's jump into the Lager tree is not reachable.** It asks for a row to open the
- * > item in the tree on its path; the app's tree is material-only and has no `catalog=ITEM` mode,
- * > so there is nowhere to jump to. A row therefore opens **in place** and shows the stacks that
- * > came with it — the same holders and places, one tap earlier. On the design gap list.
+ * Read-only, with no price column. A row expands in place to show its stacks.
  *
  * @param state what to draw.
  * @param onQueryChanged the search changed.
@@ -83,9 +74,6 @@ fun GameItemStockScreen(
         KrtTextField(
             value = state.query,
             onValueChange = onQueryChanged,
-            // Inside the box, as the chapters draw every search field (ch. 09 artboard 21,
-            // ch. 16, ch. 17): a search box says what it searches while it is empty and
-            // gives the room back once it is not.
             placeholder = stringResource(R.string.game_items_search),
             modifier =
                 Modifier
@@ -107,8 +95,6 @@ fun GameItemStockScreen(
                     selected = state.kind == null,
                     onClick = { onKindChanged(null) },
                 )
-                // Built from the values that turned up: `kind` is free text on the wire, so a fixed
-                // set of chips would quietly hide whatever the catalogue grows next.
                 state.kinds.forEach { kind ->
                     KrtFilterChip(
                         text = kind,
@@ -178,7 +164,6 @@ private fun StockList(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         item(key = "count") {
-            // „27 Items · 412 Stück" — of what is shown, which after a filter is the honest figure.
             Text(
                 text =
                     pluralStringResource(R.plurals.game_items_count, rows.size, rows.size) +
@@ -273,9 +258,6 @@ private const val SEPARATOR = " · "
 
 /**
  * „4 Halter · 3 Orte", or the place itself when there is only one.
- *
- * Naming the single place is worth the branch: „1 Ort" answers nothing, and the whole point of the
- * screen is *where*.
  *
  * @receiver the row.
  * @return the line.

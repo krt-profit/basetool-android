@@ -53,14 +53,9 @@ const val PERSONAL_INVENTORY_EDITOR_TAG: String = "personal-inventory-editor"
 const val PERSONAL_INVENTORY_SAVE_TAG: String = "personal-inventory-save"
 
 /**
- * The create/edit sheet.
+ * The create/edit sheet for a personal inventory entry.
  *
- * A KRT bottom sheet, never a platform dialog (design ch. 02). The fields are the ones the API
- * actually carries — name, quantity, place, note — rather than the shared Lager's material-and-
- * quality form the design's § 4 points at: a personal entry is free text at a UEX location with a
- * whole-number count, and there is no material, no quality and no SCU precision to offer. Recorded
- * as a deviation in the spec for the same reason the phase-2 ones were: the aggregate the design
- * assumes does not exist on the wire.
+ * Carries the fields the API has: name, whole-number quantity, UEX place and note.
  *
  * @param editor what the editor holds.
  * @param locations the place picker's state.
@@ -98,9 +93,6 @@ fun PersonalInventoryEditor(
                 },
             ),
     ) {
-        // Scrollable, and that is not cosmetic: with a place chosen and the keyboard up, the
-        // action row was pushed past the bottom edge and the sheet could not be submitted at all.
-        // Found on a device; a fixed-height sheet is only ever as tall as the shortest phone.
         Column(
             modifier =
                 Modifier
@@ -162,11 +154,8 @@ fun PersonalInventoryEditor(
 /**
  * What a failed save says.
  *
- * A validation refusal is shown in the server's own words, because it names the field that was
- * rejected and the sheet cannot. A conflict gets its own wording, because it is the one failure
- * that is nobody's fault and has a specific remedy. Everything else is one sentence: the member
- * cannot act on the difference between a 500 and a dropped connection while a sheet is open over
- * their typing.
+ * A validation refusal is shown in the server's words, a conflict gets its own wording, and
+ * everything else one generic sentence.
  *
  * @param error what came back.
  */
@@ -185,11 +174,7 @@ private fun EditorError(error: ApiError) {
 }
 
 /**
- * The place picker.
- *
- * Search-driven rather than a list: UEX knows hundreds of places, and the server caps what it
- * returns. When the answer comes back full the cap is stated — a picker that silently drops the
- * place a member is looking for is worse than one that admits it did (ADR-0104).
+ * The search-driven place picker; a capped answer is stated (ADR-0104).
  *
  * @param chosen the place already picked, or `null`.
  * @param locations the search state.
@@ -243,8 +228,6 @@ private fun LocationPicker(
             )
         }
         val typed = locations.query.trim().length
-        // Nothing is said while a search is in flight: "kein Ort gefunden" that turns into a list
-        // half a second later reads as a fault the member then has to un-believe.
         if (!locations.searching) {
             if (typed < MIN_QUERY && chosen == null) {
                 Muted(stringResource(R.string.personal_inventory_location_hint))
@@ -283,10 +266,7 @@ private fun PersonalLocation.label(): String =
         .joinToString(" · ")
 
 /**
- * The delete confirmation.
- *
- * A KRT modal in its danger tone, naming the entry: "are you sure" without the name is a question
- * the member cannot actually answer.
+ * The delete confirmation, a danger modal naming the entry.
  *
  * @param item the entry about to go.
  * @param deleting whether the delete is in flight.

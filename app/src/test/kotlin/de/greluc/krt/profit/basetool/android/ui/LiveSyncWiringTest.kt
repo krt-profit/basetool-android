@@ -55,8 +55,6 @@ class LiveSyncWiringTest {
             val bridge = RecordingLiveSync()
             val seen = mutableListOf<Set<String>>()
             val model = TestModel(bridge) { seen += it }
-            // The collector is launched, so it is not running yet when the constructor returns.
-            // Emitting before it starts would test the SharedFlow's buffer, not the wiring.
             runCurrent()
 
             bridge.emit(LiveSyncTopic.INVENTORY, setOf(LiveSyncSections.INVENTORY_STOCK))
@@ -69,13 +67,9 @@ class LiveSyncWiringTest {
     @Test
     fun `the acceptance list is not a change, so a screen does not refresh on connect`() =
         runTest(dispatcher) {
-            // Otherwise every reconnect — and the server closes every stream after thirty minutes —
-            // would cost every screen a full read for nothing.
             val bridge = RecordingLiveSync()
             val seen = mutableListOf<Set<String>>()
             val model = TestModel(bridge) { seen += it }
-            // The collector is launched, so it is not running yet when the constructor returns.
-            // Emitting before it starts would test the SharedFlow's buffer, not the wiring.
             runCurrent()
 
             bridge.emitSubscribed(setOf(LiveSyncTopic.INVENTORY))
@@ -117,7 +111,6 @@ class LiveSyncWiringTest {
     @Test
     fun `a screen built without the bridge still works and never subscribes`() =
         runTest(dispatcher) {
-            // Live sync is an enhancement. A preview or a test double must not have to supply one.
             val model = TestModel(liveSync = null) {}
 
             model.announce(LiveSyncSections.INVENTORY_STOCK)

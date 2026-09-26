@@ -13,13 +13,8 @@ import de.greluc.krt.profit.basetool.android.core.data.OrgUnitKind
 /**
  * How one org unit reads in the switcher.
  *
- * Design ch. 02, artboard 7 draws two forms: a Staffel as „IRI — IRIDIUM" and a Spezialkommando as
- * „SK VANGUARD". So a Staffel leads with its shorthand and a unit of any other kind leads with a
- * marker for what it is — without one, „VANGUARD" the Staffel and „VANGUARD" the Spezialkommando
- * are the same word in a list whose whole job is telling them apart.
- *
- * A unit whose kind this build does not recognise falls back to its plain name rather than
- * inventing a marker for it.
+ * A Staffel leads with its shorthand („IRI — IRIDIUM"); another kind leads with a kind marker
+ * („SK VANGUARD"). An unrecognised kind falls back to the plain name.
  *
  * @return the label, ready to render.
  */
@@ -33,11 +28,7 @@ internal fun OrgUnit.switcherLabel(): String =
     }
 
 /**
- * Puts a kind marker in front of a name that does not already carry it.
- *
- * Units are named by hand and the organisation does name Spezialkommandos „SK Nebelkraehe", so a
- * marker added unconditionally reads „SK SK NEBELKRAEHE". Seen on the device; the switcher is one
- * of the few places where every unit's name is on screen at once, which is where a stutter shows.
+ * Puts a kind marker in front of a name that does not already start with it.
  *
  * @param marker the word for this kind of unit.
  * @return the name, prefixed at most once.

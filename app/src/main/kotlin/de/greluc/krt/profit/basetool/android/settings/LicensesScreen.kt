@@ -71,28 +71,14 @@ import kotlinx.coroutines.withContext
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * The open-source notice — every third-party artifact this build packages, grouped by licence.
+ * The open-source notice: every third-party artifact this build packages, grouped by licence.
  *
- * A page of its own rather than a section of the settings screen, because it is long by nature and
- * because it is a legal document: it has to be complete, and completeness here means the list is
- * generated from the dependency graph of the exact variant being built rather than curated
- * (see [OssLicenses]).
+ * The list is generated from the build's dependency graph ([OssLicenses]). The artifact rows are
+ * not interactive; without a browser the licence action copies the URL instead of opening it.
  *
- * Design chapter 15. Three of its properties are load-bearing and easy to lose:
- *
- * - **The framing text is required.** Without it the page is a wall of coordinates that never says
- *   what it is a list *of*, and the meta line is what ties those versions to one build.
- * - **The artifact rows are not interactive.** Only the licence has an address; a tappable
- *   coordinate would promise a destination that does not exist.
- * - **A device with no browser must still be able to read the licence.** The action copies the URL
- *   instead, decided when the screen is built rather than after a tap that goes nowhere.
- *
- * @param onOpenUrl opens a licence's canonical text; returns `false` when nothing handled it, which
- *   is the late half of the browser check — the early half is the package-manager probe.
+ * @param onOpenUrl opens a licence's canonical text; returns `false` when nothing handled it.
  * @param modifier layout modifier.
- * @param parseDispatcher where the report is parsed. Injected rather than reached for so a test can
- *   parse on its own scheduler and observe the loading state deterministically; the default is the
- *   only value production uses.
+ * @param parseDispatcher where the report is parsed; injectable so a test can control it.
  */
 @Composable
 fun LicensesScreen(
@@ -100,8 +86,6 @@ fun LicensesScreen(
     modifier: Modifier = Modifier,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    // LocalResources, not LocalContext.current.resources: the latter is not
-    // configuration-aware, and a language change recreates this screen's configuration.
     val resources = LocalResources.current
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
@@ -109,9 +93,6 @@ fun LicensesScreen(
     var reload by remember { mutableIntStateOf(0) }
     var copied by remember { mutableStateOf(false) }
 
-    // Parsed off the main thread — the chapter asks for it, and the report is a hundred-odd JSON
-    // entries. `null` means "still reading", which is what the delayed spinner distinguishes from
-    // "read and unusable".
     val report by
         produceState<OssReport?>(initialValue = null, resources, reload) {
             value = withContext(parseDispatcher) { OssLicenses.read(resources) }
@@ -159,11 +140,7 @@ fun LicensesScreen(
 }
 
 /**
- * The reading state.
- *
- * The read is a local resource and normally finishes inside a frame or two, so the spinner waits
- * 300 ms before appearing (design ch. 15). A spinner that flashes for 80 ms is worse than none — it
- * reads as a stutter rather than as progress.
+ * The reading state; the spinner appears only after 300 ms.
  *
  * @param modifier layout modifier.
  */
@@ -192,11 +169,9 @@ private fun LicensesLoading(modifier: Modifier = Modifier) {
 }
 
 /**
- * The report could not be read.
+ * The report could not be read; offers a retry that re-reads the local resource.
  *
- * Deliberately **not** in the in-fiction error voice: that canon belongs to HTTP failures
- * (chapter 14), and borrowing it here would dress a missing local file as a server outage. The
- * retry re-reads the resource, which is the only thing that can change.
+ * Uses plain wording, not the in-fiction voice reserved for HTTP failures.
  *
  * @param onRetry reads the resource again.
  * @param modifier layout modifier.
@@ -211,9 +186,6 @@ private fun LicensesFailed(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        // Artboard 15.5 leads with the danger triangle and states the failure uppercase: the
-        // report being unreadable is a fault in the installed app, not an empty list, and the two
-        // must not look alike.
         KrtIcon(
             id = DesignR.drawable.ic_krt_warning,
             contentDescription = null,
@@ -244,11 +216,11 @@ private fun LicensesFailed(
 }
 
 /**
- * The register itself.
+ * The licence register.
  *
  * @param groups the licences in use with their artifacts, already ordered.
- * @param artifactTotal how many artifacts the report holds — **not** the sum of the group sizes: a
- *   dual-licensed artifact is listed under every licence it carries, so that sum over-counts it.
+ * @param artifactTotal how many artifacts the report holds; not the sum of the group sizes, since a
+ *   dual-licensed artifact appears under each licence.
  * @param hasBrowser whether a licence address can be opened at all.
  * @param onLicenceAction opens or copies one licence's address.
  */
@@ -259,18 +231,7 @@ private fun LicensesList(
     hasBrowser: Boolean,
     onLicenceAction: (String) -> Unit,
 ) {
-    // Which groups the member has folded away. Collapsed rather than expanded is the remembered
-    // state, so the default stays what the chapter draws: everything visible.
     val collapsed = remember { mutableStateSetOf<String>() }
-    // Design ch. 15, tablet: one 480 dp column, the rest of the canvas left black. Two columns
-    // would break the sticky headers and the scan order, and a register stretched to 1200 dp puts
-    // a 30-character coordinate alone on a very wide line.
-    //
-    // The cap has to come BEFORE `fillMaxHeight` and needs something to centre it in: chained
-    // after `fillMaxSize()` a `widthIn` is a no-op — the fill has already fixed the width at the
-    // maximum, and a max-constraint cannot narrow a fixed one. It was written that way and the
-    // register ran the full 1280 dp on a tablet, which is exactly what the comment above says it
-    // must not do.
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
@@ -286,7 +247,7 @@ private fun LicensesList(
 }
 
 /**
- * The register itself, in its column.
+ * The licence register, laid out in its column.
  *
  * @param groups the licences in use with their artifacts, already ordered.
  * @param artifactTotal how many artifacts the report holds.
@@ -336,9 +297,6 @@ private fun LicenceRegister(
                             BuildConfig.FLAVOR.replaceFirstChar { it.uppercase() },
                         ).krtUppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    // Muted and uppercase, as artboard 1 draws it — not orange. This line states
-                    // what the register covers; the screen's orange belongs to the „LIZENZTEXT"
-                    // links, which are the only things on it a member can act on.
                     color = KrtPalette.TextMuted,
                 )
             }
@@ -376,9 +334,6 @@ private fun LicenceRegister(
                 key = { "${license.spdxId}-${it.coordinates}" },
             ) { artifact ->
                 Text(
-                    // ONE string, version included: the chapter is explicit that the coordinate is
-                    // not split across a title and a subtitle, because a reader checking a version
-                    // against an advisory reads it as a single token.
                     text = "${artifact.coordinates}:${artifact.version}",
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.Gray1,
@@ -400,18 +355,10 @@ private fun LicenceRegister(
 }
 
 /**
- * A licence's pinned heading: its name, how much of the report it covers, and its address.
+ * A licence's pinned heading: its name, how many artifacts it covers, and its address.
  *
- * Opaque and without elevation, so a pinned header is pixel-identical to a resting one (design
- * ch. 15) — a header that changes appearance when it sticks reads as a different element scrolling
- * in. In the no-browser case the action changes its **label**, not its glyph: the chapter rules out
- * inventing a second icon for it.
- *
- * The heading also folds its own group away. That is a deviation from the chapter, which draws
- * the register fully expanded and the rows inert — asked for by the owner (2026-08-25), because a
- * hundred-odd coordinates under one licence make the *second* licence unreachable without a long
- * scroll. The fold is on the heading's body only; the licence action keeps its own target, so
- * reaching the licence text never costs an accidental collapse.
+ * Looks the same pinned and resting. Tapping the heading folds its group; the licence action is a
+ * separate target whose label changes when no browser is installed.
  *
  * @param license the licence.
  * @param count how many artifacts sit under it.
@@ -436,8 +383,6 @@ private fun LicenseHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtIcon(
-                // The chevron is the affordance: without one, nothing says the heading can be
-                // tapped, and a member discovers the fold by accident or not at all.
                 id =
                     if (collapsed) {
                         DesignR.drawable.ic_krt_chevron_right
@@ -455,8 +400,6 @@ private fun LicenseHeader(
                         .padding(vertical = KrtSpacing.s4),
             ) {
                 Text(
-                    // Uppercase, as artboard 1 draws it and as the design system words every
-                    // heading of this weight.
                     text = license.displayName.krtUppercase(),
                     style = MaterialTheme.typography.titleSmall,
                     color = KrtPalette.White,
@@ -502,7 +445,6 @@ private fun LicenseHeader(
                 }
             }
         }
-        // The 2 dp orange rule that closes every heading in this design system.
         Box(
             modifier =
                 Modifier
@@ -516,10 +458,7 @@ private fun LicenseHeader(
 /**
  * Whether anything on this device can open an `https` address.
  *
- * Asked once when the screen is built rather than after a failed tap, because the chapter's
- * fallback changes the **label** — a member should read "URL KOPIEREN" before they act, not
- * discover that "LIZENZTEXT" went nowhere. Requires the `<queries>` declaration in the manifest;
- * without it API 30+ answers "nothing" for every device.
+ * Requires the manifest's `<queries>` declaration; without it API 30+ always answers no.
  *
  * @param context used for its package manager.
  * @return `true` when at least one activity handles `VIEW https:`.

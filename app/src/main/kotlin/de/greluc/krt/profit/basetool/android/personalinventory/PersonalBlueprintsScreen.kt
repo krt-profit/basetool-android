@@ -70,10 +70,7 @@ const val BLUEPRINTS_LIST_TAG: String = "blueprints-list"
 const val BLUEPRINTS_ADD_TAG: String = "blueprints-add"
 
 /**
- * Everything the selection mode and the file import can do (design ch. 18 sections 2 and 3).
- *
- * One object rather than eleven callbacks threaded through the tree: they belong to two features
- * that arrive together, and a screen signature with eleven more lambdas stops being readable.
+ * Everything the selection mode and the file import can do.
  *
  * @property onStartSelection a long press opened the mode on a row.
  * @property onToggleSelected a row was ticked or unticked.
@@ -102,13 +99,13 @@ data class BlueprintBulkActions(
 )
 
 /**
- * The Blueprints tab of "Mein Inventar" (design ch. 09 § 4).
+ * The Blueprints tab of „Mein Inventar".
  *
  * @param state what to draw.
  * @param onQueryChanged the search box changed.
  * @param onRefineryChanged the refining toggle changed.
  * @param onRefresh pull-to-refresh.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the retry countdown.
  * @param onLoadMore the next page was asked for.
  * @param onAdd the add action was taken.
  * @param onEdit a row was tapped.
@@ -172,10 +169,6 @@ fun PersonalBlueprintsScreen(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 placeholder = stringResource(R.string.blueprints_search),
             )
-            // FlowRow, not a Row with SpaceBetween: on a tablet this header sits in the ~397 dp
-            // LIST column of a master-detail, where the toggle and the two buttons do not fit on
-            // one line — and a Row does not wrap, so „Blueprint hinzufügen" was drawn past the
-            // pane's right edge as a bare orange stripe.
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -221,9 +214,6 @@ fun PersonalBlueprintsScreen(
                 }
 
                 is BlueprintsPhase.Failed -> {
-                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                    // empty state, because a countdown in front of a 403 promises a retry that will
-                    // answer exactly the same.
                     val retryIn = state.retryIn
                     if (retryIn != null) {
                         KrtRetryCountdown(
@@ -302,7 +292,7 @@ fun PersonalBlueprintsScreen(
 }
 
 /**
- * The rows.
+ * The list of owned blueprints.
  *
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
@@ -359,9 +349,7 @@ private fun BlueprintList(
 /**
  * One owned blueprint.
  *
- * The remove action is offered **only when the server says the entry is removable**. Showing it
- * regardless would produce a button that answers 409 — a rule the member cannot see, rendered as a
- * failure.
+ * The remove action is offered only when the server marks the entry removable.
  *
  * @param entry the row.
  * @param craftability what can be built from it, or `null` when that read has not answered.
@@ -372,9 +360,7 @@ private fun BlueprintList(
  * @param onSelect picks this row for the detail pane.
  * @param selectable whether a detail pane exists to select into.
  * @param selected whether this row is the one the pane is showing.
- * @param picking whether this row is ticked, or `null` when the selection mode is off. The three
- *   states are one nullable rather than two booleans, because „off" and „on but unticked" have to
- *   look and behave differently and two flags would let them be four.
+ * @param picking whether this row is ticked, or `null` when the selection mode is off.
  * @param onPick tick or untick it.
  * @param onStartPicking a long press opened the selection mode on this row.
  */
@@ -397,14 +383,6 @@ private fun BlueprintRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                // On a tablet the row picks the recipe shown beside it; on a phone it opens the
-                // editor, because the phone has no detail pane for a recipe to appear in. Editing
-                // is not lost on the tablet — it moves into the pane, where the row it applies to
-                // is the one on screen. Selecting also stays available offline: reading a recipe
-                // is not a write.
-                // While the selection mode is on, the whole row is the tick: the design system's
-                // mode (ch. 02 §4) gives the row one meaning at a time, and leaving the editor
-                // reachable underneath is how somebody opens a note they meant to tick.
                 .combinedClickable(
                     enabled = picking != null || selectable || online,
                     onLongClick = onStartPicking,
@@ -419,8 +397,6 @@ private fun BlueprintRow(
                     if (selected) {
                         MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_ROW_ALPHA)
                     } else {
-                        // Design ch. 09 artboard 4 draws a blueprint as a bordered tile on the
-                        // surface fill, not as a line on the page ground.
                         MaterialTheme.colorScheme.surface
                     },
                 )
@@ -429,8 +405,6 @@ private fun BlueprintRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The tick is drawn, not swapped in for the content: a row that changes shape when the mode
-        // opens makes the list jump under the finger that opened it.
         picking?.let { KrtSelectionCheckbox(checked = it) }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -463,11 +437,9 @@ private fun BlueprintRow(
 }
 
 /**
- * Whether this one can be built.
+ * Whether this blueprint can be built.
  *
- * Absent while the craftability read has not answered — or has failed. A chip that said "nicht
- * baubar" because a request did not come back would be a claim about the member's stock made out of
- * an outage.
+ * Absent while the craftability read has not answered or has failed.
  *
  * @param craftability the entry, or `null`.
  * @param withRefinery whether refining counts.
@@ -503,14 +475,10 @@ private fun CraftabilityChip(
 private const val SELECTED_ROW_ALPHA = 0.12f
 
 /**
- * The recipe pane of the tablet's master-detail (design ch. 09).
+ * The recipe pane of the tablet's master-detail.
  *
- * Renders each ingredient with the quality it demands — `minQuality`, the lowest grade that still
- * satisfies the requirement — which is the "live ingredient quality" the chapter names.
- *
- * **Quantities print in the scale the server sent, never converted.** Converting between SCU and
- * units in the client is exactly the mistake that produced the refinery's hundred-fold stock bug,
- * and a recipe is read while standing at a terminal, so a wrong figure here costs real cargo.
+ * Shows each ingredient with its `minQuality`. Quantities print in the scale the server sent, never
+ * converted between SCU and units.
  *
  * @param recipe the pane's state.
  * @param entry the selected row, for the heading and the edit action; `null` while the list has
@@ -543,11 +511,6 @@ private fun RecipePane(
                 )
             }
         }
-        // Idle draws nothing: KrtListDetail already shows its own prompt when nothing is
-        // selected, and a second empty state under the heading would say it twice.
-        // Idle is unreachable here — the pane is only composed once a row is selected, and
-        // selecting sets Loading in the same update — so it is simply not drawn rather than
-        // given a branch that does nothing.
         if (recipe is RecipeState.Loading) {
             KrtLoadingIndicator(text = stringResource(R.string.blueprints_recipe_loading))
         }

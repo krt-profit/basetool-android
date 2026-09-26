@@ -35,15 +35,11 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 /**
- * The badge and the inbox, which are one state on purpose.
+ * Tests the badge and the inbox, which share one state: a failed count read keeps the badge, and the push stream is not
+ * its only refresh.
  *
- * Two things are asserted that a happy-path run never shows: a failed count read must not blank the
- * badge, and the push stream must not be the only thing keeping it fresh.
- *
- * **Nothing here waits for the scheduler to run dry, on purpose.** `onForeground` starts a poll
- * loop that always has another delayed task queued, so a wait-until-idle never arrives: the test
- * would hang rather than fail, which is the worst way for a test to be wrong. Every step is either
- * `runCurrent()` or an explicit `advanceTimeBy`.
+ * Steps use `runCurrent()` or `advanceTimeBy`, never a wait-until-idle, because `onForeground`
+ * starts a poll loop that never goes idle.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -168,8 +164,6 @@ class NotificationsViewModelTest {
     @Test
     fun `the badge is read as soon as the app is in front, without the inbox`() =
         runTest(dispatcher) {
-            // The bell is on every screen; the list is one screen. Reading fifty rows to draw a
-            // number would be a page fetched for a badge.
             val model = viewModel()
 
             model.onForeground()
@@ -183,8 +177,6 @@ class NotificationsViewModelTest {
     @Test
     fun `the badge is polled while the app stays in front`() =
         runTest(dispatcher) {
-            // The stream is best-effort: the server closes it every thirty minutes and drops the
-            // oldest of six. A badge kept fresh only by push would go stale in exactly those cases.
             val model = viewModel()
             model.onForeground()
             runCurrent()
@@ -200,8 +192,6 @@ class NotificationsViewModelTest {
     @Test
     fun `leaving the foreground stops the poll and closes the stream`() =
         runTest(dispatcher) {
-            // Holding a socket open for a screen nobody is looking at spends battery to learn
-            // something the member cannot see.
             val model = viewModel()
             model.onForeground()
             runCurrent()
@@ -232,8 +222,6 @@ class NotificationsViewModelTest {
     @Test
     fun `a push signal re-reads the list only once it has been opened`() =
         runTest(dispatcher) {
-            // Refreshing a list nobody has opened would fetch fifty rows for a screen that is not
-            // on show.
             val model = viewModel()
             model.onForeground()
             runCurrent()
@@ -254,8 +242,6 @@ class NotificationsViewModelTest {
     @Test
     fun `a failed count read leaves the badge alone rather than blanking it`() =
         runTest(dispatcher) {
-            // Showing zero would tell the member their inbox is clear, which is a claim about
-            // their notifications made out of an outage.
             source.queueCount(ApiResult.Failure(ApiError.Network(IOException("offline"))))
             val model = viewModel()
             model.onForeground()
@@ -339,8 +325,6 @@ class NotificationsViewModelTest {
 
             model.onMarkRead("n1")
 
-            // Asserted before runCurrent: the point of an optimistic update is that the member
-            // does not wait for the network to see what they asked for.
             assertTrue("row should read as read at once", model.state.value.notifications.first().read)
             assertEquals(unreadBefore - 1, model.state.value.unread)
             runCurrent()
@@ -371,8 +355,6 @@ class NotificationsViewModelTest {
     @Test
     fun `mark-all-read takes the badge from the server, not from an assumption`() =
         runTest(dispatcher) {
-            // Another device may have produced an unread row while the call was in flight.
-            // Assuming zero would hide it until the next poll.
             source.replaceInbox(ApiResult.Success(page(notification("n1"))))
             source.bulkAnswer =
                 ApiResult.Success(NotificationBulkResult(affected = 3, unreadCount = 1L))
@@ -393,8 +375,6 @@ class NotificationsViewModelTest {
     @Test
     fun `a delete does not reach the server while it can still be taken back`() =
         runTest(dispatcher) {
-            // This is the whole reason the call waits instead of the row being restored
-            // afterwards: the server cannot un-delete a notification.
             source.replaceInbox(
                 ApiResult.Success(page(notification("n1"), notification("n2"))),
             )
@@ -428,7 +408,6 @@ class NotificationsViewModelTest {
     @Test
     fun `undo restores the row at its own place and cancels the call`() =
         runTest(dispatcher) {
-            // Restoring to the top would reorder an inbox whose whole ordering is chronological.
             source.replaceInbox(
                 ApiResult.Success(page(notification("n1"), notification("n2"), notification("n3"))),
             )
@@ -451,7 +430,6 @@ class NotificationsViewModelTest {
     @Test
     fun `leaving the screen commits a delete that is still pending`() =
         runTest(dispatcher) {
-            // Without this a member who deleted a row and immediately left would find it back.
             source.replaceInbox(ApiResult.Success(page(notification("n1"))))
             val model = viewModel()
             model.loadOnce()

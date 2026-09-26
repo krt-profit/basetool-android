@@ -12,15 +12,10 @@ import okhttp3.Response
 import java.time.Instant
 
 /**
- * Feeds every response's `Date` header into the [ServerClock].
+ * Feeds every response's `Date` header into the [ServerClock], observing without modifying.
  *
- * Placed as an application interceptor so it also sees responses served from a cache or produced by
- * a redirect chain; it never modifies the request or the response, only observes.
- *
- * A malformed or missing `Date` is ignored rather than treated as an error: the header is advisory
- * here, and a single odd response must not poison the offset. `Response.receivedResponseAtMillis`
- * is used as the device-side reading so the pair is taken at the same instant OkHttp completed the
- * exchange, not whenever this interceptor happens to run.
+ * A malformed or missing `Date` is ignored; `Response.receivedResponseAtMillis` is the device-side
+ * reading.
  *
  * @property serverClock the clock to update
  */

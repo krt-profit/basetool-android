@@ -191,9 +191,7 @@ class BookingViewModelTest {
         override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
             ApiResult.Success(
                 listOf(
-                    // Asks for m1 only, so a Titanium booking must not be offered it.
                     AllocationTarget("jo1", "#91", requiredMaterialIds = listOf("m1")),
-                    // Names no requirement, so it is offered whatever is booked.
                     AllocationTarget("jo2", "#104"),
                 ),
             )
@@ -229,7 +227,6 @@ class BookingViewModelTest {
             vm.onOutKindChanged(BookOutKind.TRANSFER)
             advanceUntilIdle()
 
-            // Nobody picked yet: the entry's own holder keeps it, so it is their pools that apply.
             assertEquals("u1", source.orgUnitsAskedFor)
 
             vm.onMemberChosen(MemberOption("u2", "Kell"))
@@ -321,8 +318,6 @@ class BookingViewModelTest {
             advanceUntilIdle()
             vm.onMergeStockChanged(true)
 
-            // Asserted before the save: a booking that lands closes the form, so the state is
-            // gone by the time the draft can be read.
             assertEquals(false, vm.state.value?.materialIsScu)
 
             vm.onSave()
@@ -475,9 +470,6 @@ class BookingViewModelTest {
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onAmountChanged("12.5")
 
-            // Still not sendable: the server requires a grade of a material row
-            // (`InventoryItemCreateDto`, REQ-INV-029) and the web form marks the field required.
-            // Without this the CTA invited a booking that comes back a 400.
             assertEquals(false, vm.state.value?.submittable)
 
             vm.onQualityChanged("874")
@@ -498,8 +490,6 @@ class BookingViewModelTest {
 
             vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
 
-            // No quality was ever typed, and none is wanted: the server refuses one on an item
-            // row (`isQualityConsistentWithCatalog`, REQ-INV-029).
             assertEquals(true, vm.state.value?.submittable)
         }
 
@@ -512,7 +502,6 @@ class BookingViewModelTest {
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
 
-            // `ValidQuantityAmountValidator` refuses `amount % 1 != 0` for a game item outright.
             vm.onAmountChanged("2,5")
             assertEquals(false, vm.state.value?.submittable)
 
@@ -534,9 +523,6 @@ class BookingViewModelTest {
             vm.onSave()
             advanceUntilIdle()
 
-            // The material and the grade picked before the switch are gone, not merely unused:
-            // the server takes exactly one catalogue reference and refuses a quality beside an
-            // item, so either survivor would have refused the whole booking.
             val sent = source.bookedIn.single()
             assertEquals("gi1", sent.gameItemId)
             assertNull(sent.materialId)
@@ -565,8 +551,6 @@ class BookingViewModelTest {
             vm.onKindChanged(BookingCatalogKind.ITEM)
             vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
 
-            // Drives both the cSCU hint and the merge opt-in. An item always merges into a
-            // matching stack server-side, so the toggle would be a control that changes nothing.
             assertEquals(false, vm.state.value?.materialIsScu)
         }
 
@@ -585,8 +569,6 @@ class BookingViewModelTest {
             vm.onSave()
             advanceUntilIdle()
 
-            // One request, not a booking followed by a write per target: the server checks the sum
-            // and every target in the same transaction that creates the row (Variante C).
             val sent = source.bookedIn.single()
             assertEquals(1, sent.jobOrderAllocations.size)
             assertEquals("jo1", sent.jobOrderAllocations.single().targetId)
@@ -604,7 +586,6 @@ class BookingViewModelTest {
             vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
             assertEquals("400", vm.state.value?.jobOrderSplit?.single()?.amount)
 
-            // And the next one starts at what the first left over.
             vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "250")
             vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo2", "#104"))
             assertEquals("150", vm.state.value?.jobOrderSplit?.last()?.amount)
@@ -624,8 +605,6 @@ class BookingViewModelTest {
 
             vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "500")
 
-            // The server refuses the booking, not just the earmark (R5), so the CTA goes dark
-            // rather than letting a member expect a row that will not exist.
             assertEquals(true, vm.state.value?.splitOverbooked)
             assertEquals(false, vm.state.value?.submittable)
         }
@@ -640,8 +619,6 @@ class BookingViewModelTest {
             vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
             vm.splits.add(AllocationKind.MISSION, AllocationTarget("mi1", "Bergung"))
 
-            // The same 400 SCU may be promised to an Auftrag and to an Einsatz; one shared rest
-            // would be wrong in both directions.
             assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.jobOrderRest), 0)
             assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.missionRest), 0)
             assertEquals(false, vm.state.value?.splitOverbooked)
@@ -661,8 +638,6 @@ class BookingViewModelTest {
             vm.onSave()
             advanceUntilIdle()
 
-            // The form does not offer the Einsatz split in item mode; this is the second lock, for
-            // a split entered before the switch. The server refuses one outright (REQ-INV-031).
             assertEquals(emptyList<Any>(), source.bookedIn.single().missionAllocations)
         }
 
@@ -674,8 +649,6 @@ class BookingViewModelTest {
             advanceUntilIdle()
             vm.onMaterialChosen(MaterialOption("m2", "Titanium", "SCU"))
 
-            // The server checks every earmark against its target's own requirement, so offering
-            // #91 here would be offering a rejection. A target naming no requirement stays.
             val offered = vm.state.value?.offerable(AllocationKind.JOB_ORDER).orEmpty().map { it.id }
             assertEquals(listOf("jo2"), offered)
         }
@@ -710,8 +683,6 @@ class BookingViewModelTest {
     @Test
     fun `a quantity keeps one separator, because SCU has fractions`() =
         runTest(dispatcher) {
-            // cSCU and µSCU are real quantities. A member typing 1.2.5 is typing a typo, and the
-            // field takes the first separator and drops the rest.
             val vm = model()
             vm.openBookIn {}
 
@@ -738,9 +709,6 @@ class BookingViewModelTest {
     @Test
     fun `handing an entry to whoever already holds it moves nothing`() =
         runTest {
-            // The picker offers the entry's own holder like anyone else, and the server refuses
-            // the transfer that results. The form knows the rule too, rather than letting the
-            // member find out from a refusal (found on a device, 2026-08-23).
             val vm = model()
             vm.openForEntry(entry(), BookingMode.OUT) {}
             vm.onAmountChanged("2")
@@ -793,8 +761,6 @@ class BookingViewModelTest {
     @Test
     fun `the amount survives a change of mode`() =
         runTest(dispatcher) {
-            // A member who typed 12 before realising they meant the note should not have to type
-            // it again when they switch back.
             val vm = model()
             vm.openForEntry(entry(), BookingMode.OUT) {}
             vm.onAmountChanged("12")
@@ -872,8 +838,6 @@ class BookingViewModelTest {
     @Test
     fun `a sale offers the terminals of the entry's material`() =
         runTest(dispatcher) {
-            // The entry carries a material id for exactly this: without it the sale would show an
-            // empty list and read as a failed load.
             val vm = model()
             vm.openForEntry(entry(), BookingMode.OUT) {}
 
@@ -896,8 +860,6 @@ class BookingViewModelTest {
     @Test
     fun `an emptied note is a change worth sending`() =
         runTest(dispatcher) {
-            // Clearing a note is a deliberate edit. Requiring text to save would leave the member
-            // with no way to remove one.
             val vm = model()
             vm.openForEntry(entry(note = "alt"), BookingMode.NOTE) {}
 

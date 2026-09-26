@@ -32,9 +32,6 @@ android {
 
     lint {
         warningsAsErrors = true
-        // Version-currency checks: see app/build.gradle.kts. warningsAsErrors would turn an
-        // upstream release into a failing build on every branch at once, for a change no commit
-        // made. Dependabot keeps versions current here.
         disable += "AndroidGradlePluginVersion"
         disable += "GradleDependency"
         abortOnError = true
@@ -55,8 +52,6 @@ kotlin {
 
 dependencies {
     api(project(":core:network"))
-    // api, not implementation: AuthDataStore.create returns a DataStore<Preferences>, so the type
-    // is part of this module's surface and consumers need it on their compile classpath.
     api(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)

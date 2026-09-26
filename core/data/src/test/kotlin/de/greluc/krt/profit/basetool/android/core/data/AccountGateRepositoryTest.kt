@@ -141,12 +141,8 @@ class AccountGateRepositoryTest {
         }
 
     /**
-     * The refusal that is the only way this state can arrive.
-     *
-     * A role-less account is refused on every API path (main repo REQ-SEC-053), so there is no
-     * successful body that could carry the state — it exists only as this 403. Left as a
-     * failure it would reach the member as a connectivity screen for a perfectly healthy
-     * connection.
+     * A `NO_ROLE` 403 is the only way this state arrives (REQ-SEC-053), so it must map to the state,
+     * not to a connectivity error.
      */
     @Test
     fun `a NO_ROLE refusal is the answer, not an error`() =

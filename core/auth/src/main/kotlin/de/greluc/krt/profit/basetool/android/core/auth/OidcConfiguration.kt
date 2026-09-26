@@ -10,20 +10,14 @@ package de.greluc.krt.profit.basetool.android.core.auth
 /**
  * Where the realm lives and who the app claims to be.
  *
- * **The endpoints are derived, not discovered.** Keycloak's URL layout is fixed
- * (`<issuer>/protocol/openid-connect/…`), so a `/.well-known/openid-configuration` fetch would buy
- * nothing but a round trip on the critical login path and one more way for login to fail while
- * offline. Deriving them also makes an omission enforceable: there is no `userinfo` property here,
- * and under the refresh-only DPoP policy that is a hard requirement rather than an oversight —
- * Keycloak answers **HTTP 500** at `/userinfo` for a client under that policy (security concept §4,
- * constraint 1). Profile claims come from the ID token. An endpoint that does not exist in the
- * configuration cannot be called by accident.
+ * The endpoints are derived from Keycloak's fixed URL layout rather than discovered. There is
+ * deliberately no `userinfo` endpoint, which answers HTTP 500 under the refresh-only DPoP policy.
  *
  * @property issuer realm base URL, e.g. `https://keycloak.example/realms/iri`; a trailing slash is
  *   tolerated and normalised away
  * @property clientId the public client id registered in the realm (`basetool-android`)
  * @property redirectUri the exact, wildcard-free redirect the realm has registered — the verified
- *   App Link in production, the custom scheme only on the dev/test realm (security concept §3)
+ *   App Link in production, the custom scheme only on the dev/test realm
  * @property postLogoutRedirectUri where Keycloak sends the browser after the end-session call
  */
 data class OidcConfiguration(

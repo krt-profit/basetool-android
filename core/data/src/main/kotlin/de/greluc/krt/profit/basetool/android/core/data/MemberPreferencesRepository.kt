@@ -55,15 +55,9 @@ data class BlueprintSharing(
 )
 
 /**
- * The two standing choices Einstellungen offers beyond the device's own toggles.
+ * The caller's payout preference and blueprint sharing, read and written through `/users/me/…`.
  *
- * Both are **me-scoped by construction**: the paths end in `/users/me/…` and take no id, so there is
- * no version of this repository that could read or write somebody else's preference.
- *
- * Both are also **optimistically locked** — each read carries a version and each write echoes it —
- * which is unusual for a settings row and is the reason they live here rather than in a
- * fire-and-forget preference store. A member signed in on a phone and a browser can change the same
- * value twice, and the server is entitled to refuse the second one.
+ * Both are optimistically locked: each read carries a version and each write echoes it.
  */
 interface MemberPreferencesSource {
     /**
@@ -74,11 +68,11 @@ interface MemberPreferencesSource {
     suspend fun payoutPreference(): ApiResult<PayoutSetting>
 
     /**
-     * Sets it.
+     * Sets the caller's payout preference.
      *
      * @param preference the new choice.
      * @param version the version the value was read at.
-     * @return the saved choice and its **new** version, or the classified failure —
+     * @return the saved choice and its new version, or the classified failure;
      *   `ApiError.OptimisticLock` when somebody else wrote first.
      */
     suspend fun setPayoutPreference(
@@ -94,11 +88,11 @@ interface MemberPreferencesSource {
     suspend fun blueprintSharing(): ApiResult<BlueprintSharing>
 
     /**
-     * Sets it.
+     * Sets whether the caller shares their blueprints.
      *
      * @param sharing whether to share.
      * @param version the version the value was read at.
-     * @return the saved flag and its **new** version, or the classified failure.
+     * @return the saved flag and its new version, or the classified failure.
      */
     suspend fun setBlueprintSharing(
         sharing: Boolean,

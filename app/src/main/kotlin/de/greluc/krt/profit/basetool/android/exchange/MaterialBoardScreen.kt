@@ -122,12 +122,7 @@ const val BOARD_SUBMIT_TAG: String = "board-submit"
 const val BOARD_PRIVACY_TAG: String = "board-privacy"
 
 /**
- * How many card columns a tablet's board shows.
- *
- * Two, and **two at every width** — ratified by design ch. 18 §3 (E9): offers left, requests right,
- * 480 dp each with a 24 dp gutter, and past 1600 dp the columns grow rather than a third appearing.
- * A third at 1280 dp would put a card below the width its own row of name, figures and chips needs,
- * which is narrower than the phone's.
+ * How many card columns a tablet's board shows: two at every width, offers left and requests right.
  */
 private const val BOARD_WIDE_COLUMNS = 2
 
@@ -243,8 +238,6 @@ fun MaterialBoardScreen(
                         }
                     }
                 }
-                // The label follows the segment: on "Gesuche" the action creates a request, not
-                // an offer, and a FAB that said "Angebot" there would be lying about what it does.
                 KrtFab(
                     iconRes = DesignR.drawable.ic_krt_plus,
                     label =
@@ -307,14 +300,8 @@ private fun BoardColumn(
 }
 
 /**
- * „Übergabe & Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse."
- *
- * Part of the design, not decoration: chapter 10 states it as copy, because the board deliberately
- * carries no place and no handover and a member has to be able to tell that from the screen rather
- * than from its absence.
- *
- * **Under the cards**, where artboard 10-3 puts it — above them it pushed the first offer down by
- * two lines to say something about the offers nobody had read yet.
+ * The note under the cards that handover and place stay off-tool and private; the board only brokers
+ * interest.
  */
 @Composable
 private fun BoardPrivacyNote() {
@@ -329,13 +316,7 @@ private fun BoardPrivacyNote() {
 /**
  * The board as two columns of cards, which is what a tablet gets.
  *
- * A card is self-contained — the material, the member, the figures and the action — so two fit side
- * by side. Stretched to a tablet's full width a single column packed all of that into the left
- * quarter and pinned one chip at the right edge, leaving about three quarters of every card empty
- * (design round 8 §5, ruled 2026-08-28).
- *
- * No hairline between the cards here: a rule under one card of a pair reads as a divider across the
- * row it is not in. The card border is the separation a grid needs.
+ * No hairline between cards; the card border separates them.
  *
  * @param state what the screen holds.
  * @param onSignalToggled a row's interest was signalled or withdrawn.
@@ -354,8 +335,6 @@ private fun BoardGrid(
         state = rememberRootGridState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
         contentPadding = PaddingValues(KrtSpacing.s12),
-        // 10 dp down the column and a 24 dp gutter across it — design ch. 18 §3 (E9). They differ
-        // on purpose: the gutter separates two columns, the other is the rhythm within one.
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s24),
     ) {
@@ -368,7 +347,6 @@ private fun BoardGrid(
                 onWithdraw = { onWithdraw(entry) },
             )
         }
-        // The note and the footer are one thing about the whole board, not about one column of it.
         item(key = "privacy", span = { GridItemSpan(maxLineSpan) }) { BoardPrivacyNote() }
         item(key = "footer", span = { GridItemSpan(maxLineSpan) }) {
             BoardFooter(state = state, onLoadMore = onLoadMore)
@@ -424,8 +402,6 @@ private fun BoardRow(
     onSignalToggled: () -> Unit,
     onWithdraw: () -> Unit,
 ) {
-    // A card, not a padded Column: every design chapter draws its list items as bordered
-    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(
         modifier = Modifier.fillMaxWidth().testTag(BOARD_ROW_TAG),
     ) {
@@ -442,9 +418,6 @@ private fun BoardRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            // The amount belongs beside the name, right-aligned and loud, because it is what a
-            // board is scanned for. It used to sit inside a grey run of three facts where the
-            // quantity, the quality and the pledge count all read the same weight (artboard 3).
             BoardAmount(entry)
             entry.ownerOrgUnits.take(MAX_BADGES).forEach { badge ->
                 KrtChip(text = badge, tone = KrtChipTone.Muted)
@@ -471,8 +444,6 @@ private fun BoardRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        // Owner-only, and the server decides it: the list is `null` for everybody else, so this
-        // renders nothing rather than an empty „Zusagen" heading that would imply nobody answered.
         entry.interestedHandles?.takeIf { it.isNotEmpty() }?.let { handles ->
             KrtSectionTitle(text = stringResource(R.string.board_supporters))
             Text(
@@ -507,10 +478,6 @@ private fun RowActions(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         if (entry.mine) {
-            // Design ch. 17 artboard 3 moved both of the member's own actions into one sheet:
-            // „Bisher gab es nur «Zurückziehen» und kein Update — beides liegt jetzt hier." So the
-            // row opens the sheet, and the withdrawal lives inside it next to „Speichern" — where
-            // the interested members it affects are also listed.
             KrtOutlineButton(
                 text = stringResource(R.string.board_edit_entry),
                 onClick = onWithdraw,
@@ -525,11 +492,6 @@ private fun RowActions(
                 } else {
                     R.string.board_signal_on
                 }
-            // Outline when off, ghost when on: the design's toggle reads as pressed once the
-            // member has committed, and a filled CTA on every row would make the list shout.
-            // Full width, with the glyph: artboard 10.3 gives the signal the whole card foot,
-            // because it is the only thing a member does on this screen and a button sized to its
-            // own label reads as one option among several.
             if (entry.viewerInterested) {
                 KrtGhostButton(
                     text = stringResource(label),
@@ -577,13 +539,9 @@ private fun ownerLine(entry: BoardEntry): String {
 }
 
 /**
- * How long ago an ISO timestamp is, on the ladder every screen in the app shares.
+ * How long ago an ISO timestamp is, on the relative-time ladder every screen shares.
  *
- * The value arrives as a string here rather than as an `Instant`, so the parse happens on the way
- * in. An unparseable value is shown as it came rather than dropped: a server that changed its
- * format is something to see, not to hide.
- *
- * @return the timestamp, or the raw string when it does not parse.
+ * @return the relative time, or the raw string when it does not parse.
  */
 @Composable
 private fun String.relativeToNow(): String {
@@ -624,10 +582,8 @@ private fun BoardAmount(entry: BoardEntry) {
 }
 
 /**
- * What is left of the row's facts once the quantity has moved into the header.
- *
- * **Never a hardcoded SCU.** An item counted in pieces and labelled „SCU" is a quantity a member
- * would act on — the one thing on this screen that could cause a wrong handover off-tool.
+ * The row's remaining facts once the quantity has moved into the header; the unit is never
+ * hardcoded as SCU.
  *
  * @param entry the row.
  * @return the line.
@@ -681,8 +637,6 @@ fun NewRequestSheet(
         modifier = Modifier.testTag(BOARD_SHEET_TAG),
     ) {
         val kind = sheet.kind
-        // The switch stands at the very top and changes only the middle fields; the frame —
-        // remark and CTA — is the same on both halves (design ch. 17, artboards 1 and 2).
         KrtSegmentedControl(
             options =
                 listOf(
@@ -691,9 +645,6 @@ fun NewRequestSheet(
                 ),
             selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
             onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
-            // Stretched, like every other two-option switch in the app: without it each segment is
-            // the fixed 52 dp box, and „MATERIAL" broke across two lines inside a control one line
-            // high — found on a device in the Gesuch- and the Angebot-Sheet.
             stretch = true,
             modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
         )
@@ -733,8 +684,6 @@ fun NewRequestSheet(
             )
             PickerOverflowNote(more = sheet.moreMatches)
         }
-        // Menge and Min. Qualitaet share a row (artboard 10.4): both are short numbers about the
-        // same stack, and full width each they pushed the CTA off the sheet on a phone.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -811,9 +760,6 @@ fun NewOfferSheet(
                 ),
             selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
             onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
-            // Stretched, like every other two-option switch in the app: without it each segment is
-            // the fixed 52 dp box, and „MATERIAL" broke across two lines inside a control one line
-            // high — found on a device in the Gesuch- and the Angebot-Sheet.
             stretch = true,
             modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
         )
@@ -840,8 +786,6 @@ fun NewOfferSheet(
         }
         when {
             kind == BoardKind.ITEM -> {
-                // An item offer binds no stock row: items live in the personal inventory and the
-                // endpoint takes a product key. Nothing to pick from here.
             }
 
             sheet.loadingStock -> {
@@ -889,10 +833,8 @@ fun NewOfferSheet(
 }
 
 /**
- * The item half's product picker.
- *
- * A picker rather than free text, for the reason the material field gives: the two item writes
- * address a product by its **key**, and a typed name carries none.
+ * The item half's product picker; the item writes address a product by its key, which free text
+ * cannot carry.
  *
  * @param shown what is in the field.
  * @param selectedKey the picked product's key, or `null`.
@@ -915,12 +857,6 @@ private fun ProductField(
             onQuery(it)
             open = true
         },
-        // The catalogue's own products, the caller's blueprints first: „Vorschläge zeigen erst
-        // deinen Bestand" (artboard 1). The manufacturer rides along because two products can
-        // share a name across makers.
-        // The variant count rides in the label, because the artboard's variant *select* has no wire
-        // field: a product key already identifies the product. Naming the count is what lets a
-        // member put the variant in the remark, which the help text below says in so many words.
         options =
             products.map { product ->
                 KrtOption(
@@ -946,9 +882,6 @@ private fun ProductField(
         placeholder = stringResource(R.string.board_field_item_hint),
         selectedValue = selectedKey,
     )
-    // Ch. 17 ab. 1: „Der Ort der Übergabe und — falls nötig — die Variante gehören hierher: der
-    // Vertrag hat für beides kein Feld." A remark that stands in for missing structure has to be
-    // explained, or it reads as a free-text box nobody fills.
     Text(
         text = stringResource(R.string.board_field_item_help),
         style = MaterialTheme.typography.bodySmall,
@@ -967,11 +900,9 @@ private fun variantLabel(count: Int): String =
     pluralStringResource(R.plurals.board_item_variants, count, count)
 
 /**
- * „Eintrag bearbeiten" — design ch. 17 artboard 3.
+ * „Eintrag bearbeiten": edits an offer or a request.
  *
- * One sheet for an offer and a request. What is fixed is drawn locked with its reason rather than
- * removed: the material or item behind a row cannot change, because changing it would make the row
- * a different entry with the same id and the same interested members.
+ * The material or item behind a row cannot change and is drawn locked with its reason.
  *
  * @param sheet the row and what has been typed.
  * @param saving whether the write is in flight.
@@ -1037,8 +968,6 @@ fun EditEntrySheet(
             placeholder = stringResource(R.string.board_field_remark_hint),
             modifier = Modifier.fillMaxWidth(),
         )
-        // The interested members belong in this sheet because withdrawing affects them — which is
-        // the artboard's own reason for putting them here rather than on the row.
         entry.interestedHandles?.takeIf { it.isNotEmpty() }?.let { handles ->
             Text(
                 text = stringResource(R.string.board_edit_interested, handles.joinToString(SEPARATOR)),
@@ -1063,15 +992,11 @@ fun EditEntrySheet(
 }
 
 /**
- * The two buttons that close a Boerse sheet.
- *
- * Both artboards of chapter 10 end in „ABBRECHEN" beside the publish CTA, and it is the same pair
- * the Buchen and Schiff sheets already use. Publishing is org-wide and cannot be undone quietly, so
- * the way out is a button and not only a swipe a member has to know about.
+ * The „ABBRECHEN" and publish buttons that close a Börse sheet.
  *
  * @param submit label of the publish button.
  * @param enabled whether the form may be submitted.
- * @param saving whether a create is in flight - both buttons rest while it is.
+ * @param saving whether a create is in flight; both buttons rest while it is.
  * @param onSubmit publish was pressed.
  * @param onDismiss abort was pressed.
  */
@@ -1100,10 +1025,9 @@ private fun SheetActions(
 }
 
 /**
- * One of the caller's own stacks, offered as the stock suggestion of chapter 10.
+ * One of the caller's own stacks, offered as a stock suggestion.
  *
- * The place is shown because two stacks of the same material at different stations are otherwise
- * indistinguishable — and it stays on this sheet: nothing about a place reaches the board.
+ * Its place is shown only on this sheet and never reaches the board.
  *
  * @param stock the entry.
  * @param picked which entry is currently chosen.
@@ -1154,11 +1078,7 @@ private fun StockRow(
 }
 
 /**
- * „Zurückziehen" with interested members waiting.
- *
- * With nobody waiting the withdrawal happens straight away; this asks only when somebody would be
- * left standing, and names them — the artboard's own rule, and the reason the interested members
- * are listed in the sheet in the first place.
+ * „Zurückziehen" confirmation, shown only when interested members are waiting, and naming them.
  *
  * @param entry the row.
  * @param busy whether the write is in flight.
@@ -1219,7 +1139,6 @@ fun MaterialBoardRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onSignalToggled = viewModel::onSignalToggled,
-        // The own-row button opens the sheet; the withdrawal itself now lives inside it.
         onWithdraw = viewModel::onEditEntry,
         onCreate = {
             if (state.side == BoardSide.OFFERS) viewModel.onNewOffer() else viewModel.onNewRequest()
@@ -1227,9 +1146,6 @@ fun MaterialBoardRoute(
         modifier = modifier,
     ) {
         when (val sheet = state.sheet) {
-            // No sheet is the ordinary case and draws nothing. An empty block rather than `Unit`:
-            // the `when` is a statement here, so a bare `Unit` is an unused expression and the
-            // module compiles warnings as errors.
             is BoardSheet.None -> {}
 
             is BoardSheet.NewRequest -> {

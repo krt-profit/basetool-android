@@ -24,12 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * The Verwaltung tab's „Personen" section — design ch. 06 artboard 12.
- *
- * The artboard corrected an earlier build, and these tests pin the correction: **every row shows
- * its current value first**. Three ghost buttons with noun labels said neither who the
- * Einsatzleitung was nor that pressing one would be a change, and a manager could be added and
- * never seen — which is why nobody could remove one either.
+ * Tests the Verwaltung tab's „Personen" section (design ch. 06, artboard 12): every row shows its current value first.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
@@ -43,8 +38,6 @@ class MissionPeopleSectionTest {
         show(partyLead = "Rhea")
 
         compose.onNodeWithText("Rhea").assertIsDisplayed()
-        // The action is a button whose label the design system uppercases, so it is reached by its
-        // handle rather than by the string the resource carries.
         compose.onAllNodesWithTag(MISSION_PARTY_LEAD_TAG).onFirst().assertIsDisplayed()
     }
 

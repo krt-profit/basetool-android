@@ -14,19 +14,10 @@ import de.greluc.krt.profit.basetool.android.navigation.KrtDestination
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
- * The four shortcuts on the dashboard, in the order design chapter 05 draws them.
+ * The four dashboard shortcuts, in a fixed order.
  *
- * **The glyphs are the action, not the destination.** Artboard 1 draws an enter arrow, a download
- * arrow, a plus and a swap — what the member is about to *do*. The app had a target, a crate and a
- * clipboard, which name the section each tile leads to; that reads as a second navigation bar under
- * the first one, and it put the same crate on this tile and on the Lager's rail entry.
- *
- * Each opens the **surface** its action lives on, not the action itself. There is no global "check
- * in" — a check-in belongs to one Einsatz — so the tile opens the Einsatz list the member picks
- * from. A tile that guessed which Einsatz they meant would be wrong on exactly the days it matters.
- *
- * The order is the chapter's and is deliberately fixed: shortcuts that move with the data are
- * shortcuts nobody can build muscle memory on.
+ * Each glyph shows the action; each tile opens the surface the action lives on, such as the Einsatz
+ * list for a check-in.
  *
  * @property labelRes the tile's caption.
  * @property iconRes the glyph above it, from the in-house stroke set.

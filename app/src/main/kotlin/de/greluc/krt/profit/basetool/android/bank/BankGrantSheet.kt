@@ -54,16 +54,11 @@ data class BankGrantSheetActions(
 )
 
 /**
- * „+ Grant hinzufügen" — design chapter 12, artboard 7.
+ * „+ Grant hinzufügen": creates a bank grant on one account.
  *
- * **The picker searches every member, not only bank employees**, because the server's own search
- * does (`/users/search-bank` is `/users/search` with a widened role gate and nothing else). A member
- * without the Bank Employee role can therefore be picked, and the creation is then refused with
- * `BANK_GRANTEE_MISSING_ROLE`. The sheet says so plainly instead of hiding the possibility, which it
- * could only do by second-guessing the server's own list.
- *
- * All three flags may stay off: that is the deliberate „darf sehen, darf nichts buchen" entry, and
- * the sheet says as much rather than requiring a tick.
+ * The picker searches every member, so a pick without the Bank Employee role is possible and is
+ * refused with `BANK_GRANTEE_MISSING_ROLE`; the sheet says so. All three flags may stay off, which
+ * grants sight without booking rights.
  *
  * @param draft what the sheet holds.
  * @param accountName the account the grant will be on.
@@ -103,9 +98,6 @@ fun BankGrantSheet(
                 options = draft.options.map { KrtOption(value = it.id, label = it.handle) },
                 onSelect = { option ->
                     expanded = false
-                    // Built from the option itself rather than looked up in `draft.options`: the
-                    // row already carries the id and the handle, and a lookup can only add a way
-                    // to find nothing.
                     actions.onSelect(BankGrantee(id = option.value, handle = option.label))
                 },
                 expanded = expanded,
@@ -154,12 +146,9 @@ fun BankGrantSheet(
 }
 
 /**
- * What to say about a refused grant write.
+ * The message for a refused grant write, chosen by the RFC 7807 `code`.
  *
- * Two conflicts are reachable from this sheet and they need different answers, so the RFC 7807
- * `code` decides rather than the bare 409: the picker searches every member, so the pick can be
- * someone who holds no Bank Employee role, and it can equally be someone already on the matrix.
- * "Pick someone else, and here is why" and "they are already listed" are not interchangeable.
+ * Distinguishes a grantee without the Bank Employee role from one already on the matrix.
  *
  * @param error what came back.
  * @return the message to show.
@@ -173,13 +162,10 @@ internal fun bankGrantErrorMessage(error: ApiError): String =
     }
 
 /**
- * What to say about a refused bank write.
+ * The message for a refused bank write, chosen by the `BankConflictException` code.
  *
- * **A 409 from the bank is usually not an optimistic lock.** The shared wording answers every 409
- * with „gleichzeitig geändert", which is right for a stale version and wrong for all of
- * `BankConflictException`'s codes — a holder transfer refused because the fee-bearing KRT account is
- * missing was reported to the user as a concurrent edit, which sends them to reload a page that will
- * refuse again. Each code the app can provoke gets its own sentence; the rest still falls through.
+ * Each code the app can provoke gets its own sentence; other 409s fall through to the shared
+ * concurrent-edit wording.
  *
  * @param error what came back.
  * @return the message to show.
