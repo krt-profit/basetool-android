@@ -100,6 +100,7 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
+import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
@@ -463,6 +464,12 @@ class MainActivity : AppCompatActivity() {
                                             onPayout = memberPreferencesViewModel::onPayout,
                                             onSharing = memberPreferencesViewModel::onSharing,
                                             onRetryPreferences = memberPreferencesViewModel::refresh,
+                                            rsiActions =
+                                                RsiHandleActions(
+                                                    onDraft = memberPreferencesViewModel::onRsiDraft,
+                                                    onSave = memberPreferencesViewModel::onRsiSave,
+                                                    onSavedShown = memberPreferencesViewModel::onRsiSavedShown,
+                                                ),
                                         ),
                                 )
                             }

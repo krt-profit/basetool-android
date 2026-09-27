@@ -11,8 +11,10 @@ import de.greluc.krt.profit.basetool.android.core.data.BlueprintSharing
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesSource
 import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.data.PayoutSetting
+import de.greluc.krt.profit.basetool.android.core.data.RsiHandle
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,8 +35,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Tests the two server-side Einstellungen rows, whose fake models one version for both settings, as the backend stores
- * them on the same `User` row.
+ * Tests the server-side Einstellungen rows, whose fake models one version for all three settings, as the backend
+ * stores them on the same `User` row.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -53,25 +55,63 @@ class MemberPreferencesViewModelTest {
         /** What the first `loadOnce` did pick up in that test. */
         const val FIRST_VERSION = 5L
 
-        /** One pass reads both values — the retry has to be a real second pass, not a redraw. */
-        const val READS_PER_PASS = 2
+        /** One pass reads all three values — the retry has to be a real second pass, not a redraw. */
+        const val READS_PER_PASS = 3
+
+        /** A handle another profile already carries, in the fake's lower case. */
+        const val TAKEN_HANDLE = "someone_else"
+
+        /** The server's handle alphabet, as REQ-SEC-072 states it. */
+        val HANDLE_SHAPE = Regex("^[A-Za-z0-9_-]{3,60}$")
     }
 
     private val dispatcher = StandardTestDispatcher()
 
     /**
-     * A backend whose two preferences share one row, and which refuses a stale version.
+     * A backend whose three preferences share one row, and which refuses a stale version.
      *
      * @property payout the stored choice.
      * @property sharing the stored flag.
-     * @property version the row's version — one counter for both, bumped by either write.
+     * @property handle the stored RSI handle.
+     * @property version the row's version — one counter for all, bumped by any write.
      */
     private class SharedRow(
         var payout: PayoutPreference? = null,
         var sharing: Boolean = false,
+        var handle: String? = null,
         var version: Long = 1L,
     ) : MemberPreferencesSource {
         var refusals = 0
+        val sentHandles = mutableListOf<String>()
+
+        override suspend fun rsiHandle() = ApiResult.Success(RsiHandle(handle, version))
+
+        override suspend fun setRsiHandle(
+            handle: String,
+            version: Long,
+        ): ApiResult<RsiHandle> {
+            sentHandles += handle
+            return when {
+                version != this.version -> {
+                    refusals += 1
+                    ApiResult.Failure(ApiError.OptimisticLock())
+                }
+
+                handle.lowercase() == TAKEN_HANDLE -> {
+                    ApiResult.Failure(ApiError.Conflict(ProblemDetail(code = "DUPLICATE_ENTITY")))
+                }
+
+                handle.isNotEmpty() && !HANDLE_SHAPE.matches(handle) -> {
+                    ApiResult.Failure(ApiError.Validation())
+                }
+
+                else -> {
+                    this.handle = handle.ifEmpty { null }
+                    this.version += 1
+                    ApiResult.Success(RsiHandle(this.handle, this.version))
+                }
+            }
+        }
 
         override suspend fun payoutPreference() =
             ApiResult.Success(PayoutSetting(payout, version))
@@ -114,6 +154,16 @@ class MemberPreferencesViewModelTest {
      */
     private class UnreadableRow : MemberPreferencesSource {
         var reads = 0
+
+        override suspend fun rsiHandle(): ApiResult<RsiHandle> {
+            reads += 1
+            return ApiResult.Failure(ApiError.NotFound())
+        }
+
+        override suspend fun setRsiHandle(
+            handle: String,
+            version: Long,
+        ): ApiResult<RsiHandle> = ApiResult.Failure(ApiError.NotFound())
 
         override suspend fun payoutPreference(): ApiResult<PayoutSetting> {
             reads += 1
@@ -307,5 +357,125 @@ class MemberPreferencesViewModelTest {
             advanceUntilIdle()
 
             assertEquals("loadOnce reads once", FIRST_VERSION, model.state.value.version)
+        }
+
+    /**
+     * Saving the handle adopts the row's new version, so the payout row written next is not refused, and the toast
+     * is due.
+     */
+    @Test
+    fun `a saved handle moves the shared version and announces itself`() =
+        runTest(dispatcher) {
+            val source = SharedRow(version = STORED_VERSION)
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onRsiDraft("  GrafRotz_SC ")
+            model.onRsiSave()
+            advanceUntilIdle()
+            model.onPayout(PayoutPreference.DONATE)
+            advanceUntilIdle()
+
+            assertEquals("the handle goes out trimmed", listOf("GrafRotz_SC"), source.sentHandles)
+            assertEquals("GrafRotz_SC", model.state.value.rsi.confirmed)
+            assertTrue(model.state.value.rsi.saved)
+            assertEquals("no write may be refused in this sequence", 0, source.refusals)
+            assertEquals(PayoutPreference.DONATE, source.payout)
+
+            model.onRsiSavedShown()
+            assertFalse(model.state.value.rsi.saved)
+        }
+
+    /**
+     * A taken handle is refused at the field: the input stays, the group shows no second message, and typing clears
+     * the refusal.
+     */
+    @Test
+    fun `a taken handle is refused at the field and the input stays`() =
+        runTest(dispatcher) {
+            val source = SharedRow(handle = "GrafRotz")
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onRsiDraft(TAKEN_HANDLE)
+            model.onRsiSave()
+            advanceUntilIdle()
+
+            assertEquals(RsiHandleRefusal.TAKEN, model.state.value.rsi.refusal)
+            assertEquals(TAKEN_HANDLE, model.state.value.rsi.draft)
+            assertEquals("GrafRotz", model.state.value.rsi.confirmed)
+            assertNull("the field says it, the group does not", model.state.value.error)
+            assertFalse(model.state.value.saving)
+
+            model.onRsiDraft("GrafRotz_2")
+            assertNull(model.state.value.rsi.refusal)
+        }
+
+    @Test
+    fun `a malformed handle is refused at the field`() =
+        runTest(dispatcher) {
+            val model = MemberPreferencesViewModel(SharedRow())
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onRsiDraft("a b")
+            model.onRsiSave()
+            advanceUntilIdle()
+
+            assertEquals(RsiHandleRefusal.INVALID, model.state.value.rsi.refusal)
+            assertNull(model.state.value.error)
+        }
+
+    /** An emptied field clears the handle without asking — it is reversible. */
+    @Test
+    fun `an emptied field clears the handle`() =
+        runTest(dispatcher) {
+            val source = SharedRow(handle = "GrafRotz")
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+            assertEquals("GrafRotz", model.state.value.rsi.draft)
+
+            model.onRsiDraft("")
+            model.onRsiSave()
+            advanceUntilIdle()
+
+            assertEquals(listOf(""), source.sentHandles)
+            assertNull(source.handle)
+            assertNull(model.state.value.rsi.confirmed)
+        }
+
+    @Test
+    fun `an unchanged handle writes nothing`() =
+        runTest(dispatcher) {
+            val source = SharedRow(handle = "GrafRotz")
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onRsiDraft(" GrafRotz ")
+            model.onRsiSave()
+            advanceUntilIdle()
+
+            assertTrue(source.sentHandles.isEmpty())
+        }
+
+    /** Before the handle is read no version is known, so the row cannot write. */
+    @Test
+    fun `an unread handle cannot be saved`() =
+        runTest(dispatcher) {
+            val source = UnreadableRow()
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onRsiDraft("GrafRotz")
+            model.onRsiSave()
+            advanceUntilIdle()
+
+            assertFalse(model.state.value.rsi.read)
+            assertFalse(model.state.value.saving)
         }
 }

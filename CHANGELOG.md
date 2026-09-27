@@ -15,6 +15,9 @@
   Einsätzen; das Formular sagt, welche Zuordnungen dabei entfallen.
 - **Lieferstatus aus „Mein Lager" erreichbar.** Das Menü eines Eintrags öffnet die Materialsammlung
   des Auftrags, dem er zugeordnet ist.
+- **RSI-Handle in den Einstellungen.** Unter KONTO lässt sich optional dein RSI-Handle hinterlegen,
+  ändern oder leeren. Ein verbundenes Tool darf nur fragen, ob ein Handle zu dir gehört – den Handle
+  selbst erfährt es nie. Ist er schon einem anderen Profil zugeordnet, sagt das Feld es.
 
 - **Kennzeichnung „gestohlen".** Gestohlener Bestand trägt überall, wo die App Bestand zeigt, einen
   roten Hinweis – im Lager, bei der Übergabe eines Auftrags und in der Materialbörse – und bildet
