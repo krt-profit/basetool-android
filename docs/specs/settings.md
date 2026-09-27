@@ -1,4 +1,4 @@
-> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-08-20.
+> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-09-27.
 > **Owner area:** SET · **Related:** design chapter 13 (`docs/design/android/13 Einstellungen.dc.html`),
 > [`auth.md`](auth.md) (`REQ-APP-AUTH-010`, the app lock this screen switches on),
 > ADR-0007 (per-app language), main repo `REQ-UI-018` (Fan Kit placement)
@@ -140,6 +140,56 @@ it had no place on the screen either.
   is writes nothing (`MemberPreferencesViewModelTest`).
 - [x] Verified on a device against the test stack: both writes landed in one session, the entity's
   version moving 2 → 3 → 4.
+
+---
+
+### REQ-APP-SET-012 — The RSI handle is edited in place, and a taken one is refused at the field
+
+Server REQ-SEC-072 and REQ-XCH-031, design ch. 19 artboard 10 (entered in ch. 13 artboard 2). The
+member may store one RSI handle, so a connected tool can ask whether a game log belongs to them; the
+server answers yes, no or unknown and never hands the handle out.
+
+**The row is the last one of KONTO**: glyph, „RSI-Handle (optional)", an inline field with a ghost
+„Speichern" beside it, and the purpose sentence under it **at all times** — it answers „why does the
+app want my handle" before anyone asks. Empty is a valid state and carries no „missing" hint.
+Clearing the field and saving removes the handle, without a confirmation: it is reversible.
+
+**It shares the `User` row's version with the two rows above** (`REQ-APP-SET-011`): the handle is
+read in the same pass, its write echoes the one version and adopts the one it gets back, and every
+row is shut while any of them writes. „Speichern" is offered only when the trimmed field differs
+from what the server confirmed, and gives way to the spinner while the write runs; success says
+„RSI-Handle gespeichert." as a toast.
+
+**A taken handle is refused at the field**, not below the group: the server's `409
+DUPLICATE_ENTITY` becomes „Dieser Handle ist bereits einem anderen Profil zugeordnet." with a danger
+frame, and the input stays. The row never says *whose* it is — the server does not disclose it and
+the app does not invent it. A handle outside the alphabet (`400`) is refused the same way with the
+web app's sentence on the shape. Any other refusal, including `OPTIMISTIC_LOCK`, is the group's
+notice. Typing again clears the field's refusal.
+
+> [!note] Placement beside ADR-0021
+> The artboard puts the row „directly after Auszahlungspräferenz" and calls it the last KONTO row;
+> it was drawn with „Blueprints mit Org teilen" still under APP. Since ADR-0021 that switch sits
+> under KONTO below the payout row, so the two descriptions cannot both hold. The handle is drawn
+> **last**, which keeps the payout and sharing rows together as ADR-0021 wants.
+
+**Acceptance**
+
+- [x] The handle is read with the other two and saved with the shared version; a payout write after
+  it is not refused (`MemberPreferencesViewModelTest`).
+- [x] A taken handle is refused at the field and the input stays; a malformed one likewise; typing
+  clears it (`MemberPreferencesViewModelTest`).
+- [x] An emptied field clears the handle; an unchanged one writes nothing
+  (`MemberPreferencesViewModelTest`).
+- [x] The purpose sentence stands with an empty field; the conflict line appears on a refusal;
+  „Speichern" only for a change and never twice (`RsiHandleRowTest`).
+- [x] The wire: trimmed handle and version out, a blank handle back reads as none, the refusal keeps
+  its code (`RsiHandleRepositoryTest`).
+- [x] Walked on a device against the test stack in German, against artboard 10: save, clear, and the
+  conflict with a handle another account carries.
+
+**Code:** `MemberPreferencesRepository.rsiHandle`, `.setRsiHandle`, `MemberPreferencesViewModel`
+(`onRsiDraft`, `onRsiSave`), `RsiHandleRow`, `RsiHandleSavedToast`
 
 ---
 

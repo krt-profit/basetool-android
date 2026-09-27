@@ -26,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
+import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import kotlinx.coroutines.launch
@@ -68,6 +69,7 @@ class SettingsPreviewActivity : AppCompatActivity() {
                         preferences = MemberPreferencesState(),
                         onPayout = {},
                         onRetryPreferences = {},
+                        rsiActions = RsiHandleActions(),
                         onSharing = {},
                         accountName = "GrafRotz",
                         language = language,
