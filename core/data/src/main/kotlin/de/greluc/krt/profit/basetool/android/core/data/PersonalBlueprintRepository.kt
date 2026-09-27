@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBluepri
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
@@ -472,9 +473,20 @@ class PersonalBlueprintRepository(
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers
      * @param baseUrl the flavour's API origin
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = LOG_TAG,
+            consent = consent,
+        ),
     )
 
     override suspend fun page(

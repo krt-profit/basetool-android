@@ -66,6 +66,15 @@
     <string name="terms_decline_cancel">Back</string>
     <string name="terms_error">Your consent could not be recorded. Please try again.</string>
     <string name="terms_error_offline">No connection. Your consent could not be recorded.</string>
+    <string name="reconsent_title">Terms of use updated</string>
+    <string name="reconsent_lead">The terms of use have changed (%1$s). To carry on, confirm the new version.</string>
+    <string name="reconsent_resume">After you confirm, you carry on exactly where you were — the refused request is sent again.</string>
+    <string name="reconsent_confirm">Confirm</string>
+    <string name="reconsent_sign_out">Sign out</string>
+    <string name="reconsent_load_failed">The new version could not be loaded.</string>
+    <string name="reconsent_load_offline">No connection. The new version could not be loaded.</string>
+    <string name="reconsent_offline_reason">Offline — you can confirm once the connection is back.</string>
+    <string name="reconsent_retry">Load again</string>
     <string name="lock_title">Locked</string>
     <string name="lock_body">Local data is protected. Unlock to continue.</string>
     <string name="lock_unlock">Unlock</string>

@@ -36,6 +36,8 @@ import java.io.IOException
  * @property json the reader configured for this backend's wire format
  * @property logTag the subsystem name for diagnostics; no token, name or email is ever logged
  * @property errorMapper turns a non-2xx response into a named [ApiError]
+ * @property consent waits for the member's consent after a [ApiError.TermsAcceptanceRequired]
+ *   refusal, so the refused call can be re-issued once (ADR-0025)
  */
 class ApiReader(
     private val httpClient: OkHttpClient,
@@ -43,6 +45,7 @@ class ApiReader(
     private val json: Json,
     private val logTag: String,
     private val errorMapper: ApiErrorMapper = ApiErrorMapper(),
+    private val consent: ConsentRecovery = ConsentRecovery.None,
 ) {
     /**
      * Performs one GET and parses its body.
@@ -69,6 +72,12 @@ class ApiReader(
         path: String,
         params: List<Pair<String, String>> = emptyList(),
         headers: List<Pair<String, String>> = emptyList(),
+    ): ApiResult<DownloadedFile> = reconsenting { getBytesOnce(path, params, headers) }
+
+    private suspend fun getBytesOnce(
+        path: String,
+        params: List<Pair<String, String>>,
+        headers: List<Pair<String, String>>,
     ): ApiResult<DownloadedFile> =
         try {
             val url =
@@ -107,6 +116,11 @@ class ApiReader(
      * @return the parsed value, `null` when the answer carried no body, or the classified failure
      */
     suspend fun <T> getOptional(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T?> = reconsenting { getOptionalOnce(path, deserializer) }
+
+    private suspend fun <T> getOptionalOnce(
         path: String,
         deserializer: DeserializationStrategy<T>,
     ): ApiResult<T?> =
@@ -421,6 +435,11 @@ class ApiReader(
     private suspend fun withoutBody(
         path: String,
         builder: Request.Builder,
+    ): ApiResult<Unit> = reconsenting { withoutBodyOnce(path, builder) }
+
+    private suspend fun withoutBodyOnce(
+        path: String,
+        builder: Request.Builder,
     ): ApiResult<Unit> =
         withContext(Dispatchers.IO) {
             try {
@@ -465,6 +484,12 @@ class ApiReader(
         path: String,
         builder: Request.Builder,
         deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> = reconsenting { callOnce(path, builder, deserializer) }
+
+    private suspend fun <T> callOnce(
+        path: String,
+        builder: Request.Builder,
+        deserializer: DeserializationStrategy<T>,
     ): ApiResult<T> =
         withContext(Dispatchers.IO) {
             try {
@@ -485,6 +510,24 @@ class ApiReader(
                 ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
             }
         }
+
+    /**
+     * Runs [attempt] and, when the server refused it for missing consent, waits for [consent] and
+     * runs it once more.
+     *
+     * The refusal is a definite answer the server gave before acting, so the second attempt is a new
+     * request, not a replay of one that may have landed (ADR-0023, ADR-0025). A second refusal is
+     * returned as it is.
+     *
+     * @param R the result type
+     * @param attempt one request and its classification
+     * @return the second attempt's result after consent, otherwise the first
+     */
+    private suspend fun <R> reconsenting(attempt: suspend () -> ApiResult<R>): ApiResult<R> {
+        val first = attempt()
+        val refusedForConsent = first is ApiResult.Failure && first.error is ApiError.TermsAcceptanceRequired
+        return if (refusedForConsent && consent.awaitConsent()) attempt() else first
+    }
 
     private companion object {
         /** The status an unreadable body is reported under, since the response itself was fine. */

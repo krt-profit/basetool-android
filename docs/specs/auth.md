@@ -466,8 +466,9 @@ it renders while every gated endpoint refuses.
   a forced scroll measures that a finger moved, not that anything was read.
 - [x] The tick survives rotation (`rememberSaveable`), so a disabled CTA never becomes a mystery.
 - [x] Declining names its consequence in a danger modal before signing out.
-- [ ] Observed end to end against a live backend. **Open** — needs a test-realm user with no
-  acceptance on record, and the main repo's document endpoint merged.
+- [x] Observed end to end against a live backend (2026-09-27, test stack, Pixel_10a in German): the
+  test member's acceptance withdrawn on the server, the gate showed the served wording and its
+  digest, and accepting opened the app.
 - [ ] Observed against a live backend with a genuinely pending account. **Open** — needs a second
   test-realm user held in the approval queue.
 
@@ -995,3 +996,58 @@ passes — its gate is `canEditShip(#id)`, whose scope predicate has an `isAdmin
 `HangarService.updateShip` throws unless the caller owns the ship, with no admin bypass. Reading the
 annotation without the service behind it gives the wrong answer, which is how this nearly became a
 feature.
+
+---
+
+### REQ-APP-AUTH-016 — A change of the terms is confirmed over the open screen, and the refused call goes out again
+
+Design ch. 19 artboard 11 (N7), [ADR-0025](../adr/0025-a-call-refused-for-consent-is-reissued-once-after-it.md),
+main repo REQ-SEC-028. The first-run gate (`REQ-APP-AUTH-009`) asks once, at start. When the terms
+change while the app runs, the server refuses **every** call with `403 TERMS_NOT_ACCEPTED`.
+
+> [!warning] Corrected 2026-09-27 — the app listened for a code the server never sends
+> Until this requirement the app mapped `TERMS_ACCEPTANCE_REQUIRED`, the name design chapter 19 and
+> this repository's docs used. The server's `TermsAcceptanceAccessFilter` refuses with
+> **`TERMS_NOT_ACCEPTED`** and has no other code for it, so every such refusal fell through to a plain
+> `ApiError.Forbidden` — found on the device walk for this requirement, where the first refused call
+> showed „Signal Lost" instead of the overlay. The mapping now follows the server; the Kotlin type
+> keeps its name `ApiError.TermsAcceptanceRequired`.
+
+**Any such refusal opens the re-consent overlay** over whatever screen is open — not a navigation,
+the screen and its input stay underneath. It shows the first-run wording from
+`GET /api/v1/terms/document`, the server's „Stand …" line in the lead sentence and the „Fassung …"
+stamp under the text, and says that the refused call will be repeated. **Exactly two ways out:**
+„Bestätigen" records consent through the first-run `POST` and closes the overlay; „Abmelden" signs
+out. No close glyph, no back, no scrim tap — without consent the app cannot work, and a dismissed
+overlay would return with the next call.
+
+**Parallel refusals share one overlay**, and „Bestätigen" releases every waiting call, each of which
+is **issued once more**; a second refusal is returned as it is. „Abmelden" returns the refusal to
+every waiting call. A call is held only while the overlay can be shown — after the first-run gates
+have cleared and before sign-out; the gates' own reads are never held.
+
+**States:** „Bestätigen" shows a spinner while it runs; a refusal of the confirmation is an error line
+inside the overlay, which stays; offline the CTA is dimmed with its reason, and wording that could
+not be read is fetched again when the connection returns.
+
+The overlay carries **no checkbox**, unlike the first-run gate: artboard 11 draws „Bestätigen" as the
+consent itself.
+
+**Acceptance**
+
+- [x] `TERMS_NOT_ACCEPTED` maps to `ApiError.TermsAcceptanceRequired` (`ApiErrorMapperTest`).
+- [x] A refused call waits for consent and is issued once more; a declined one keeps its refusal; a
+  second refusal is not looped on; any other refusal never asks (`ConsentRecoveryTest`).
+- [x] A refused write goes out again with the same body (`ConsentRecoveryTest`).
+- [x] Parallel refusals share one overlay and are all released; signing out and disarming release
+  them unanswered; an unarmed broker holds nothing (`ReconsentTest`).
+- [x] A failed confirmation keeps the overlay and the calls waiting; offline nothing is sent; the
+  wording is fetched again on reconnect (`ReconsentTest`).
+- [x] Title, lead sentence, wording and the resume sentence are shown; no close glyph; the two ways
+  out do what they say; offline the CTA is dimmed with its reason (`ReconsentModalTest`).
+- [x] Walked on a device against the test stack in German: acceptance withdrawn on the server while
+  the app was open, the next call raised the overlay over the open screen, and after „Bestätigen" the
+  screen loaded as if nothing had happened.
+
+**Code:** `ApiReader.reconsenting`, `ConsentRecovery`, `ReconsentBroker`, `ReconsentViewModel`,
+`ReconsentOverlay`, `KrtModal` (`dismissible`, `confirmEnabled`, `busy`), `AuthContainer.reconsent`

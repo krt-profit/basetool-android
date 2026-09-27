@@ -41,7 +41,7 @@ fun interface AccountGateSource {
 /**
  * Reads whether a signed-in member is admitted: an approved registration, an assigned role and accepted Terms of Use.
  *
- * The backend otherwise refuses with 403 `PENDING_APPROVAL`, `NO_ROLE` or `TERMS_ACCEPTANCE_REQUIRED`
+ * The backend otherwise refuses with 403 `PENDING_APPROVAL`, `NO_ROLE` or `TERMS_NOT_ACCEPTED`
  * (REQ-SEC-017). Nothing is cached, so a stale approval can never let anybody past a closed gate.
  *
  * @property reader performs the call and classifies its failures

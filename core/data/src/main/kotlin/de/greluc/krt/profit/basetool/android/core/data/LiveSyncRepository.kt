@@ -11,6 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import de.greluc.krt.profit.basetool.android.core.network.SseStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -164,10 +165,21 @@ class LiveSyncRepository(
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers.
      * @param baseUrl the flavour's API origin.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
         SseStream(httpClient = httpClient, baseUrl = baseUrl),
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = LOG_TAG,
+            consent = consent,
+        ),
     )
 
     /** {@inheritDoc} */

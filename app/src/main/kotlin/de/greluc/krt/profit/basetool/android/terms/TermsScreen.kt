@@ -151,7 +151,7 @@ fun TermsScreen(
  * @param modifier layout modifier; the caller decides the width and the weight.
  */
 @Composable
-private fun TermsDocumentColumn(
+internal fun TermsDocumentColumn(
     document: TermsDocument,
     modifier: Modifier = Modifier,
 ) {

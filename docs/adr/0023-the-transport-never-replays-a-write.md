@@ -60,6 +60,9 @@ after send, `408`, `503`/`Retry-After: 0`) are all closed for writes.
   presses save again. That is the trade: a failure the member sees and can judge, instead of a
   duplicate nobody sees. Whether the first attempt landed is then answered the way it always is on
   this API — the next read shows it, and a versioned retry of a save that did land is a `409`.
+- A call the server **refused** is a different case, and ADR-0025 re-issues one: a
+  `TERMS_NOT_ACCEPTED` refusal is a definite answer given before anything was applied, and the
+  call goes out again only after the member consented. Nothing here is relaxed for it.
 - `WriteReplayTest` pins both halves — the writes that must not be replayed and the reads that must
   still be — and was checked to fail with the interceptor removed (four of eight tests red).
 

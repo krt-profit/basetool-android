@@ -83,7 +83,7 @@ class TermsRepository(
     /**
      * Reads the consent status.
      *
-     * A `TERMS_ACCEPTANCE_REQUIRED` refusal becomes a successful `false` with a `null` version.
+     * A `TERMS_NOT_ACCEPTED` refusal becomes a successful `false` with a `null` version.
      *
      * @return the consent status, or a failure the caller can show
      */

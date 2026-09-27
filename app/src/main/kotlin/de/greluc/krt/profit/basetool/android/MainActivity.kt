@@ -102,6 +102,8 @@ import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
 import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
+import de.greluc.krt.profit.basetool.android.terms.ReconsentOverlay
+import de.greluc.krt.profit.basetool.android.terms.ReconsentViewModel
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
 import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
@@ -149,6 +151,7 @@ class MainActivity : AppCompatActivity() {
 
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
+    private val reconsentViewModel: ReconsentViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
 
     /** The two Einstellungen rows that live on the server (design ch. 13, artboard 2). */
@@ -266,6 +269,7 @@ class MainActivity : AppCompatActivity() {
                             onLogout = signOut,
                         ) {
                             TermsGate(viewModel = termsViewModel, onDecline = signOut) {
+                                ReconsentOverlay(viewModel = reconsentViewModel, onSignOut = signOut)
                                 LaunchedEffect(Unit) { orgUnitViewModel.load() }
                                 RequestNotificationPermissionOnce()
                                 val orgUnit by orgUnitViewModel.state.collectAsState()
@@ -592,6 +596,16 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         /**
+         * Registers the first-run terms gate and the re-consent overlay (ADR-0025).
+         *
+         * @param container the auth object graph.
+         */
+        private fun InitializerViewModelFactoryBuilder.termsViewModels(container: AuthContainer) {
+            initializer { TermsGateViewModel(container.terms) }
+            initializer { ReconsentViewModel(container.reconsent, container.terms, container.connectivity) }
+        }
+
+        /**
          * Registers the bank's three view models: member list, requests and staff surface.
          *
          * @param container the auth object graph.
@@ -639,7 +653,7 @@ class MainActivity : AppCompatActivity() {
                     UpdateGateViewModel(container.appVersion, BuildConfig.VERSION_CODE)
                 }
                 initializer { AppLockViewModel(container.appLock) }
-                initializer { TermsGateViewModel(container.terms) }
+                termsViewModels(container)
                 initializer {
                     OrgUnitViewModel(container.orgUnits, container.activeOrgUnit, container.identity)
                 }
