@@ -12,9 +12,12 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BulkOrgUnitChan
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkOrgUnitChangeResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkStolenMarkRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkStolenMarkResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemOrgUnitChangeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemPersonalRebookDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemStolenMarkDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -188,6 +191,31 @@ class LagerRepository(
             deserializer = BulkOrgUnitChangeResultDto.serializer(),
         ).map { BulkChangeResult(changed = it.changed ?: 0, skipped = it.skipped ?: 0) }
 
+    override suspend fun markStolen(
+        entry: InventoryEntry,
+        stolen: Boolean,
+        amount: String,
+    ): ApiResult<Unit> {
+        val typed = parseTypedAmount(amount)
+        val whole = typed != null && typed == entry.amount?.toDoubleOrNull()
+        return reader.postUnit(
+            "$INVENTORY_PATH/${entry.id}/stolen",
+            InventoryItemStolenMarkDto(stolen = stolen, amount = typed.takeUnless { whole }, version = entry.version),
+            InventoryItemStolenMarkDto.serializer(),
+        )
+    }
+
+    override suspend fun bulkMarkStolen(
+        entryIds: List<String>,
+        stolen: Boolean,
+    ): ApiResult<BulkChangeResult> =
+        reader.post(
+            path = BULK_STOLEN_PATH,
+            body = BulkStolenMarkRequest(itemIds = entryIds, stolen = stolen),
+            bodySerializer = BulkStolenMarkRequest.serializer(),
+            deserializer = BulkStolenMarkResultDto.serializer(),
+        ).map { BulkChangeResult(changed = it.changed ?: 0, skipped = it.skipped ?: 0) }
+
     /**
      * Reads one grouped endpoint and maps its groups.
      *
@@ -214,6 +242,7 @@ class LagerRepository(
         const val MY_ENTRY_IDS_PATH = "/api/v1/inventory/my-inventory/entry-ids"
         const val BULK_REBOOK_PATH = "/api/v1/inventory/bulk-rebook"
         const val BULK_ORG_UNIT_PATH = "/api/v1/inventory/bulk-org-unit"
+        const val BULK_STOLEN_PATH = "/api/v1/inventory/bulk-stolen"
 
         const val CATALOG_PARAM = "catalog"
         const val CATALOG_ITEM = "ITEM"

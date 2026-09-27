@@ -64,6 +64,8 @@ interface IdentitySource {
  *   account lifecycle and the grants tab
  * @property admin whether the caller holds ADMIN and so sees every org unit in the org picker
  * @property permissions the backend's capability vocabulary for this caller, e.g. `HANGAR_WRITE`
+ * @property markStolen whether the server offers booking in as stolen and marking stock
+ *   („gestohlen", REQ-INV-053); `false` while its switch is off
  */
 data class Identity(
     val userId: String,
@@ -74,6 +76,7 @@ data class Identity(
     val permissions: Set<String> = emptySet(),
     val blueprintOverview: Boolean = false,
     val admin: Boolean = false,
+    val markStolen: Boolean = false,
 )
 
 /**
@@ -141,6 +144,7 @@ class IdentityRepository(
                                 bankManagement = capabilities?.canManageBank == true,
                                 permissions = result.value.permissions.orEmpty().toSet(),
                                 blueprintOverview = capabilities?.canSeeBlueprintOverview == true,
+                                markStolen = capabilities?.canMarkStolen == true,
                             )
                         cached = identity
                         ApiResult.Success(identity)

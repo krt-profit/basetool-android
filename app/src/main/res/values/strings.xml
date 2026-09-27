@@ -1976,4 +1976,26 @@
         <item quantity="one">%1$d Zuordnung wird entfernt</item>
         <item quantity="other">%1$d Zuordnungen werden entfernt</item>
     </plurals>
+    <string name="stolen_chip">Gestohlen</string>
+    <string name="stolen_filter_without">Ohne gestohlene</string>
+    <string name="stolen_filter_only">Nur gestohlene</string>
+    <string name="stolen_mark_title">Als gestohlen markieren</string>
+    <string name="stolen_unmark_title">Markierung „gestohlen“ entfernen</string>
+    <string name="stolen_mark_cta">Markieren</string>
+    <string name="stolen_unmark_cta">Entfernen</string>
+    <string name="stolen_bulk_hint_mark">Ganze Zeilen, keine Mengen: jeder markierte Eintrag wird als gestohlen markiert. Einträge, die es bereits sind, werden übersprungen.</string>
+    <string name="stolen_bulk_hint_unmark">Ganze Zeilen, keine Mengen: bei jedem markierten Eintrag wird die Markierung entfernt. Einträge ohne Markierung werden übersprungen.</string>
+    <string name="stolen_part_mark">Teilmenge: der markierte Teil wird ein eigener Eintrag. %1$s bleiben regulär.</string>
+    <string name="stolen_part_unmark">Teilmenge: der entmarkierte Teil wird ein eigener Eintrag. %1$s bleiben gestohlen.</string>
+    <string name="stolen_offer_limit">Was auf der Materialbörse angeboten ist, bleibt regulär: eine Teilmenge darf den Rest nicht unter das Angebot drücken.</string>
+    <string name="stolen_failed">Die Markierung wurde abgelehnt. Nichts wurde geändert.</string>
+    <plurals name="stolen_mark_result">
+        <item quantity="one">%1$d Eintrag markiert, %2$d waren es bereits.</item>
+        <item quantity="other">%1$d Einträge markiert, %2$d waren es bereits.</item>
+    </plurals>
+    <plurals name="stolen_unmark_result">
+        <item quantity="one">Markierung bei %1$d Eintrag entfernt, %2$d waren nicht markiert.</item>
+        <item quantity="other">Markierung bei %1$d Einträgen entfernt, %2$d waren nicht markiert.</item>
+    </plurals>
+    <string name="booking_stolen">Gestohlen — eigener Stapel, an regulären Terminals nicht verkäuflich</string>
 </resources>

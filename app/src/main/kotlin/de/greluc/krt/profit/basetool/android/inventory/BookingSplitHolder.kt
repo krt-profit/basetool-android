@@ -66,6 +66,14 @@ class BookingSplitHolder(
     fun personal(personal: Boolean) = update { it.copy(personal = personal, picking = null, error = null) }
 
     /**
+     * Books the stock in as „gestohlen", its own stack that never merges with regular stock
+     * (design ch. 19, artboard 3; REQ-INV-053).
+     *
+     * @param stolen whether the row is stolen.
+     */
+    fun stolen(stolen: Boolean) = update { it.copy(stolen = stolen, error = null) }
+
+    /**
      * Adds an earmark row for the picked target, starting at the remaining rest.
      *
      * @param kind which split.

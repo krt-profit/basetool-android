@@ -35,6 +35,7 @@ import okhttp3.OkHttpClient
  * @property slice how much of this row is earmarked to this Auftrag; a production booking may only
  *   draw against it.
  * @property version the row's optimistic lock, echoed by the consumption.
+ * @property stolen whether the row is marked „gestohlen" (REQ-INV-053); shown, never refused
  */
 data class HandoverStockRow(
     val id: String,
@@ -45,6 +46,7 @@ data class HandoverStockRow(
     val stock: Double = 0.0,
     val slice: Double = 0.0,
     val version: Long? = null,
+    val stolen: Boolean = false,
 ) {
     /**
      * The most this row can give up: `min(slice, stock)`, never negative.
@@ -353,6 +355,7 @@ private fun InventoryItemDto.krtStockRow(orderId: String): HandoverStockRow? {
         stock = amount ?: 0.0,
         slice = jobOrderAllocations.orEmpty().firstOrNull { it.jobOrderId == orderId }?.amount ?: 0.0,
         version = version,
+        stolen = stolen == true,
     )
 }
 

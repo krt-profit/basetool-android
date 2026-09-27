@@ -966,3 +966,58 @@ for the flag).
   `BasetoolNavHost`).
 
 **Code:** `EntryMoreMenu`, `InventoryRoute.onOpenOrder`
+
+---
+
+### REQ-APP-INV-032 — The „gestohlen" marker is shown wherever the app shows stock, whatever the server's switch
+
+Server REQ-INV-053, design ch. 19 artboard 9. One chip, `KrtChip("Gestohlen", Danger)`, never a row
+tint: on stack and entry rows of both Lager scopes, on the stock an Auftrag's handover and production
+pick from, and on the Materialbörse's rows, its edit sheet and its release picker. Stolen and regular
+stock of one material, place and grade are two stacks, and the stack's entries are read with
+`stolen=true` (`REQ-APP-INV-025`). Both Lager scopes filter „Ohne gestohlene" / „Nur gestohlene"
+(`nonStolenOnly` / `stolenOnly`), exclusive, tapping the active one resets to all.
+
+Reading, the chip and the filters work while the server's marking switch is off — a build must read
+the marker before the server starts writing it (#2092).
+
+**Not reachable from the app, stated rather than omitted:** the order's „Materialsammelübersicht"
+(`MaterialCollectionEntryDto` carries no `stolen`), a mission's allocated stock (the app has no such
+view), and the Materialbörse's „ohne gestohlene" filter (the app's board has no filter row, and none
+is drawn).
+
+**Acceptance**
+
+- [x] Stack and entry chips in both scopes, with marking off (`StolenMarkerScreenTest`).
+- [x] The filter is exclusive and resets (`StolenMarkerScreenTest`).
+- [x] Walked on the device: a stolen stack beside the regular one of the same identity.
+
+**Code:** `StolenChip`, `LagerFilterRow`, `StackChips`, `OrderHandoverSheet`, `OrderProductionSheet`,
+`MaterialBoardScreen`
+
+---
+
+### REQ-APP-INV-033 — Marking is offered only while the server offers it, and a part becomes its own row
+
+The book-in's „Gestohlen — eigener Stapel, an regulären Terminals nicht verkäuflich" (artboard 3), an
+entry's „Als gestohlen markieren" / „Markierung „gestohlen“ entfernen" and the selection bar's two
+entries appear only while `/api/v1/me/capabilities` answers `canMarkStolen` — the app has no flag of
+its own. An entry's menu carries them in both scopes; the server decides who may edit the row.
+
+The single sheet (artboard 8) takes an amount with „Alles"; a part is sent with its amount and split
+off by the server, the whole row without one, and the line under the field says what stays regular (or
+stolen). The Materialbörse limit is the server's to enforce: an offer names no Lager row the app could
+sum, so artboard 8's live „angeboten" figure cannot be drawn, and a part that would undercut an offer
+comes back as the server's refusal, which names the offer. A selection is marked or unmarked whole,
+and its result reads „{n} markiert, {m} waren es bereits".
+
+**Acceptance**
+
+- [x] A part is sent with its amount, a whole row without (`LagerRepositoryTest`).
+- [x] The capability gates the book-in's checkbox and the Org-Lager's menu (`StolenMarkerScreenTest`).
+- [x] A selection is unmarked whole with its result (`StockMoveHolderTest`).
+- [x] Walked on the device against a stack with marking on: 10 of 40 unmarked, split off as a regular
+  row.
+
+**Code:** `StockMoveHolder.openStolen`, `.openBulkStolen`, `StolenFields`, `stolenBarEntries`,
+`BookingSplitHolder.stolen`, `LagerRepository.markStolen`, `.bulkMarkStolen`

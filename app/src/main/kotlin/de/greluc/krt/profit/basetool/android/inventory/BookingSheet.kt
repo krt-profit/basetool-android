@@ -67,6 +67,7 @@ import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
+import de.greluc.krt.profit.basetool.android.ui.canMarkStolen
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -97,6 +98,9 @@ const val BOOKING_MERGE_TAG: String = "booking-merge"
 
 /** Test handle for the book-in's „Persönlich". */
 const val BOOKING_PERSONAL_TAG: String = "booking-personal"
+
+/** Test handle for the book-in's „Gestohlen". */
+const val BOOKING_STOLEN_TAG: String = "booking-stolen"
 
 /** Test handle for the line that replaces the earmarks of a personal book-in. */
 const val BOOKING_PERSONAL_NOTE_TAG: String = "booking-personal-note"
@@ -234,6 +238,7 @@ fun BookingSheet(
  * @property onOrgUnit an org-unit pool was picked for a transfer.
  * @property onMergeStock the stock-merge opt-in changed.
  * @property onPersonal a book-in's „Persönlich" changed.
+ * @property onStolen a book-in's „Gestohlen" changed.
  * @property onSellAmount what the sale fetched changed.
  * @property onNote the entry's note changed.
  * @property onSave the save action was taken.
@@ -264,6 +269,7 @@ data class BookingCallbacks(
     val onOrgUnit: (OrgUnitOption) -> Unit,
     val onMergeStock: (Boolean) -> Unit,
     val onPersonal: (Boolean) -> Unit,
+    val onStolen: (Boolean) -> Unit = {},
     val onSellAmount: (String) -> Unit,
     val onNote: (String) -> Unit,
     val onSave: () -> Unit,
@@ -402,6 +408,15 @@ private fun BookInFields(
             enabled = !state.saving,
             modifier = Modifier.fillMaxWidth().testTag(BOOKING_PERSONAL_TAG),
         )
+        if (canMarkStolen()) {
+            KrtCheckboxRow(
+                checked = state.stolen,
+                onCheckedChange = callbacks.onStolen,
+                label = stringResource(R.string.booking_stolen),
+                enabled = !state.saving,
+                modifier = Modifier.fillMaxWidth().testTag(BOOKING_STOLEN_TAG),
+            )
+        }
         if (state.personal) {
             PersonalSplitsNote(state = state)
         } else {

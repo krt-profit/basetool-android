@@ -285,6 +285,37 @@ class LagerRepositoryTest {
         }
 
     @Test
+    fun `a whole row is marked without an amount, a part with one`() =
+        runTest {
+            respond(ROW)
+            respond(ROW)
+
+            repository.markStolen(entry(personal = true), stolen = true, amount = "80")
+            repository.markStolen(entry(personal = true), stolen = true, amount = "30")
+
+            val whole = server.takeRequest()
+            assertEquals("/api/v1/inventory/e1/stolen", whole.url.encodedPath)
+            val wholeBody = whole.json()
+            assertEquals("true", wholeBody.getValue("stolen").jsonPrimitive.content)
+            assertTrue(wholeBody["amount"] == null || wholeBody["amount"] == JsonNull)
+            assertEquals(VERSION.toString(), wholeBody.getValue("version").jsonPrimitive.content)
+            assertEquals("30.0", server.takeRequest().json().getValue("amount").jsonPrimitive.content)
+        }
+
+    @Test
+    fun `a selection is marked whole and reports what it changed`() =
+        runTest {
+            respond("""{"changed": 1, "skipped": 1}""")
+
+            val result = repository.bulkMarkStolen(listOf("a", "b"), stolen = false) as ApiResult.Success
+
+            assertEquals(BulkChangeResult(1, 1), result.value)
+            val request = server.takeRequest()
+            assertEquals("/api/v1/inventory/bulk-stolen", request.url.encodedPath)
+            assertEquals("false", request.json().getValue("stolen").jsonPrimitive.content)
+        }
+
+    @Test
     fun `the selection's org-unit change reports changed and skipped`() =
         runTest {
             respond("""{"changed": 2, "skipped": 1}""")

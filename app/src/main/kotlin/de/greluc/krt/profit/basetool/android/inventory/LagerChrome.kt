@@ -41,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LagerScope
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.PersonalFilter
+import de.greluc.krt.profit.basetool.android.core.data.StolenFilter
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtButtonStyles
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
@@ -61,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
+import de.greluc.krt.profit.basetool.android.ui.canMarkStolen
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -112,11 +114,13 @@ internal fun LagerScopeSegment(
  * @property onPersonal a stock-kind chip was tapped.
  * @property onWithStockOnly the „Nur mit Bestand" chip was tapped.
  * @property onLocations the place selection changed.
+ * @property onStolen a „gestohlen" chip was tapped.
  */
 internal data class LagerFilterActions(
     val onPersonal: (PersonalFilter) -> Unit,
     val onWithStockOnly: (Boolean) -> Unit,
     val onLocations: (Set<String>) -> Unit,
+    val onStolen: (StolenFilter) -> Unit = {},
 )
 
 /**
@@ -170,6 +174,21 @@ internal fun LagerFilterRow(
                 onClick = { actions.onWithStockOnly(!state.withStockOnly) },
             )
         }
+        val stolen = state.filter.stolen
+        KrtFilterChip(
+            text = stringResource(R.string.stolen_filter_without),
+            selected = stolen == StolenFilter.WITHOUT,
+            onClick = {
+                actions.onStolen(if (stolen == StolenFilter.WITHOUT) StolenFilter.ALL else StolenFilter.WITHOUT)
+            },
+            modifier = Modifier.testTag(LAGER_STOLEN_WITHOUT_TAG),
+        )
+        KrtFilterChip(
+            text = stringResource(R.string.stolen_filter_only),
+            selected = stolen == StolenFilter.ONLY,
+            onClick = { actions.onStolen(if (stolen == StolenFilter.ONLY) StolenFilter.ALL else StolenFilter.ONLY) },
+            modifier = Modifier.testTag(LAGER_STOLEN_ONLY_TAG),
+        )
     }
     if (picking) {
         LocationFilterSheet(
@@ -332,7 +351,7 @@ internal fun StackChips(
     scope: LagerScope,
 ) {
     val showUnit = scope == LagerScope.MY
-    if (!stack.personal && !stack.stolen && !showUnit) {
+    if (!showUnit) {
         return
     }
     FlowRow(
@@ -343,11 +362,36 @@ internal fun StackChips(
         if (stack.personal) {
             KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
         }
-        if (showUnit) {
-            UnitPill(name = stack.owningOrgUnitName)
+        UnitPill(name = stack.owningOrgUnitName)
+        if (stack.stolen) {
+            StolenChip()
         }
     }
 }
+
+/**
+ * The „gestohlen" marker: one danger chip, the same everywhere stock appears, never a row tint
+ * (design ch. 19, artboard 9).
+ *
+ * @param modifier layout modifier.
+ */
+@Composable
+fun StolenChip(modifier: Modifier = Modifier) {
+    KrtChip(
+        text = stringResource(R.string.stolen_chip),
+        tone = KrtChipTone.Danger,
+        modifier = modifier.testTag(STOLEN_CHIP_TAG),
+    )
+}
+
+/** Test handle for the „gestohlen" chip. */
+const val STOLEN_CHIP_TAG: String = "stolen-chip"
+
+/** Test handle for the „Ohne gestohlene" filter chip. */
+const val LAGER_STOLEN_WITHOUT_TAG: String = "lager-stolen-without"
+
+/** Test handle for the „Nur gestohlene" filter chip. */
+const val LAGER_STOLEN_ONLY_TAG: String = "lager-stolen-only"
 
 /**
  * What the Lager screen reports beyond the Org-Lager tree: the scope segment, the „Mein Lager"
@@ -361,6 +405,8 @@ internal fun StackChips(
  * @property onRebook a row is to move between personal and the shared Lager.
  * @property onOrgUnit a personal row's unit is to change.
  * @property onOpenOrder an Auftrag's collection is to open, where the delivery flag is set.
+ * @property onStolen the „gestohlen" filter changed.
+ * @property onMarkStolen a row is to be marked (`true`) or unmarked (`false`).
  */
 data class LagerScreenActions(
     val scoped: Boolean = false,
@@ -371,6 +417,8 @@ data class LagerScreenActions(
     val onRebook: (InventoryEntry) -> Unit = {},
     val onOrgUnit: (InventoryEntry) -> Unit = {},
     val onOpenOrder: (String) -> Unit = {},
+    val onStolen: (StolenFilter) -> Unit = {},
+    val onMarkStolen: (InventoryEntry, Boolean) -> Unit = { _, _ -> },
 )
 
 /**
@@ -381,51 +429,40 @@ data class LagerScreenActions(
  * @param entry the row.
  * @param online whether a write can be sent.
  * @param lager where the choices go.
+ * @param scope which Lager the row is shown in; the Org-Lager offers the marking alone.
  */
 @Composable
 internal fun EntryMoreMenu(
     entry: InventoryEntry,
     online: Boolean,
     lager: LagerScreenActions,
+    scope: LagerScope = LagerScope.MY,
 ) {
     var open by rememberSaveable(entry.id) { mutableStateOf(false) }
     val earmarked = entry.jobOrderAllocations.isNotEmpty() || entry.missionAllocations.isNotEmpty()
+    val marking = canMarkStolen()
     val items =
         buildList {
-            add(
-                KrtMenuItem(
-                    label =
-                        stringResource(
-                            if (entry.personal) R.string.lager_entry_to_shared else R.string.lager_entry_to_personal,
-                        ),
-                    iconRes = DesignR.drawable.ic_krt_swap,
-                    enabled = online && (entry.personal || !earmarked),
-                    reason =
-                        stringResource(R.string.lager_entry_to_personal_earmarked).takeIf {
-                            !entry.personal && earmarked
-                        },
-                    onClick = { lager.onRebook(entry) },
-                ),
-            )
-            add(
-                KrtMenuItem(
-                    label = stringResource(R.string.lager_entry_org_unit),
-                    iconRes = DesignR.drawable.ic_krt_users,
-                    enabled = online && entry.personal,
-                    reason = stringResource(R.string.lager_entry_org_unit_shared).takeUnless { entry.personal },
-                    onClick = { lager.onOrgUnit(entry) },
-                ),
-            )
-            entry.jobOrderAllocations.forEach { allocation ->
+            if (scope == LagerScope.MY) {
+                addAll(myEntryItems(entry = entry, online = online, lager = lager, earmarked = earmarked))
+            }
+            if (marking) {
                 add(
                     KrtMenuItem(
-                        label = stringResource(R.string.lager_entry_order, allocation.label),
-                        iconRes = DesignR.drawable.ic_krt_external_link,
-                        onClick = { lager.onOpenOrder(allocation.targetId) },
+                        label =
+                            stringResource(
+                                if (entry.stolen) R.string.stolen_unmark_title else R.string.stolen_mark_title,
+                            ),
+                        iconRes = DesignR.drawable.ic_krt_warning,
+                        enabled = online,
+                        onClick = { lager.onMarkStolen(entry, !entry.stolen) },
                     ),
                 )
             }
         }
+    if (items.isEmpty()) {
+        return
+    }
     KrtOverflowMenu(
         items = items,
         contentDescription = stringResource(R.string.lager_entry_more),
@@ -434,6 +471,58 @@ internal fun EntryMoreMenu(
         modifier = Modifier.testTag(LAGER_ENTRY_MORE_TAG),
     )
 }
+
+/**
+ * The „Mein Lager" entries of a row's menu: the rebooking, the unit and the delivery status.
+ *
+ * @param entry the row.
+ * @param online whether a write can be sent.
+ * @param lager where the choices go.
+ * @param earmarked whether the row carries an earmark, which keeps it from becoming personal.
+ * @return the entries.
+ */
+@Composable
+private fun myEntryItems(
+    entry: InventoryEntry,
+    online: Boolean,
+    lager: LagerScreenActions,
+    earmarked: Boolean,
+): List<KrtMenuItem> =
+    buildList {
+        add(
+            KrtMenuItem(
+                label =
+                    stringResource(
+                        if (entry.personal) R.string.lager_entry_to_shared else R.string.lager_entry_to_personal,
+                    ),
+                iconRes = DesignR.drawable.ic_krt_swap,
+                enabled = online && (entry.personal || !earmarked),
+                reason =
+                    stringResource(R.string.lager_entry_to_personal_earmarked).takeIf {
+                        !entry.personal && earmarked
+                    },
+                onClick = { lager.onRebook(entry) },
+            ),
+        )
+        add(
+            KrtMenuItem(
+                label = stringResource(R.string.lager_entry_org_unit),
+                iconRes = DesignR.drawable.ic_krt_users,
+                enabled = online && entry.personal,
+                reason = stringResource(R.string.lager_entry_org_unit_shared).takeUnless { entry.personal },
+                onClick = { lager.onOrgUnit(entry) },
+            ),
+        )
+        entry.jobOrderAllocations.forEach { allocation ->
+            add(
+                KrtMenuItem(
+                    label = stringResource(R.string.lager_entry_order, allocation.label),
+                    iconRes = DesignR.drawable.ic_krt_external_link,
+                    onClick = { lager.onOpenOrder(allocation.targetId) },
+                ),
+            )
+        }
+    }
 
 /**
  * Says where a personal book-in went when it was made from the Org-Lager, which does not show it;

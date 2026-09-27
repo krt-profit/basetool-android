@@ -46,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.canMarkStolen
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the bar's `⋮`. */
@@ -173,6 +174,48 @@ internal fun MyLagerSelectionBar(
         }
     }
 }
+
+/**
+ * The bar's two marking entries, when the server offers marking; one that cannot apply to the loaded
+ * rows stays visible, dimmed (design ch. 08 overflow rule).
+ *
+ * @param state the tree's state.
+ * @param onMark marks (`true`) or unmarks (`false`) the selection.
+ * @return the entries, or none while marking is off.
+ */
+@Composable
+internal fun stolenBarEntries(
+    state: InventoryState,
+    onMark: (Boolean) -> Unit,
+): List<BarMenuEntry> {
+    if (!canMarkStolen()) {
+        return emptyList()
+    }
+    val chosen = state.selectedEntries()
+    val allKnown = chosen.size == state.selection.size
+    return listOf(
+        BarMenuEntry(
+            label = stringResource(R.string.stolen_mark_title),
+            iconRes = DesignR.drawable.ic_krt_warning,
+            enabled = state.online && !(allKnown && chosen.all { it.stolen }),
+            tag = MY_LAGER_BAR_MARK_TAG,
+            onClick = { onMark(true) },
+        ),
+        BarMenuEntry(
+            label = stringResource(R.string.stolen_unmark_title),
+            iconRes = DesignR.drawable.ic_krt_warning,
+            enabled = state.online && !(allKnown && chosen.none { it.stolen }),
+            tag = MY_LAGER_BAR_UNMARK_TAG,
+            onClick = { onMark(false) },
+        ),
+    )
+}
+
+/** Test handle for the menu's „Als gestohlen markieren". */
+const val MY_LAGER_BAR_MARK_TAG: String = "my-lager-bar-mark"
+
+/** Test handle for the menu's „Markierung entfernen". */
+const val MY_LAGER_BAR_UNMARK_TAG: String = "my-lager-bar-unmark"
 
 /**
  * The bar's menu, raised above the bar at its right edge (artboard 2).

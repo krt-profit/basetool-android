@@ -203,6 +203,26 @@ internal class FakeMoves : StockMoveSource {
         bulkUnitChanges.add(entryIds to targetOrgUnitId)
         return ApiResult.Success(BulkChangeResult(entryIds.size, 0))
     }
+
+    val marked = mutableListOf<Triple<String, Boolean, String>>()
+    val bulkMarked = mutableListOf<Pair<List<String>, Boolean>>()
+
+    override suspend fun markStolen(
+        entry: InventoryEntry,
+        stolen: Boolean,
+        amount: String,
+    ): ApiResult<Unit> {
+        marked.add(Triple(entry.id, stolen, amount))
+        return answer
+    }
+
+    override suspend fun bulkMarkStolen(
+        entryIds: List<String>,
+        stolen: Boolean,
+    ): ApiResult<BulkChangeResult> {
+        bulkMarked.add(entryIds to stolen)
+        return ApiResult.Success(BulkChangeResult(entryIds.size, 0))
+    }
 }
 
 /** A caller with a fixed id. */
