@@ -12,6 +12,8 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MyBlueprintShar
 import de.greluc.krt.profit.basetool.android.core.contract.model.MyBlueprintSharingResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.MyPayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MyPayoutPreferenceResponse
+import de.greluc.krt.profit.basetool.android.core.contract.model.MyRsiHandleRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.MyRsiHandleResponse
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
@@ -56,9 +58,24 @@ data class BlueprintSharing(
 )
 
 /**
- * The caller's payout preference and blueprint sharing, read and written through `/users/me/…`.
+ * The member's RSI handle, which a connected tool may ask about but never read.
  *
- * Both are optimistically locked: each read carries a version and each write echoes it.
+ * Server REQ-SEC-072 and REQ-XCH-031.
+ *
+ * @property handle the stored handle, or `null` when the member has set none — a valid state.
+ * @property version the value the next `PUT` must send back.
+ */
+data class RsiHandle(
+    val handle: String?,
+    val version: Long,
+)
+
+/**
+ * The caller's payout preference, blueprint sharing and RSI handle, read and written through
+ * `/users/me/…`.
+ *
+ * All three are columns of one server row and optimistically locked: each read carries the row's
+ * version and each write echoes it.
  */
 interface MemberPreferencesSource {
     /**
@@ -99,6 +116,28 @@ interface MemberPreferencesSource {
         sharing: Boolean,
         version: Long,
     ): ApiResult<BlueprintSharing>
+
+    /**
+     * Reads the member's RSI handle.
+     *
+     * @return the handle and the row's version, or the classified failure.
+     */
+    suspend fun rsiHandle(): ApiResult<RsiHandle>
+
+    /**
+     * Stores or clears the member's RSI handle.
+     *
+     * @param handle the new handle; blank clears it.
+     * @param version the version the row was read at.
+     * @return the saved handle and the row's new version, or the classified failure:
+     *   `ApiError.Conflict` with code `DUPLICATE_ENTITY` when another profile carries it,
+     *   `ApiError.Validation` when it is outside the handle alphabet, `ApiError.OptimisticLock` when
+     *   somebody else wrote first.
+     */
+    suspend fun setRsiHandle(
+        handle: String,
+        version: Long,
+    ): ApiResult<RsiHandle>
 }
 
 /**
@@ -174,6 +213,22 @@ class MemberPreferencesRepository(
         )
             .map { it.toModel() }
 
+    override suspend fun rsiHandle(): ApiResult<RsiHandle> =
+        reader.get(RSI_HANDLE_PATH, MyRsiHandleResponse.serializer())
+            .map { it.toModel() }
+
+    override suspend fun setRsiHandle(
+        handle: String,
+        version: Long,
+    ): ApiResult<RsiHandle> =
+        reader.put(
+            path = RSI_HANDLE_PATH,
+            body = MyRsiHandleRequest(version = version, rsiHandle = handle.trim()),
+            bodySerializer = MyRsiHandleRequest.serializer(),
+            deserializer = MyRsiHandleResponse.serializer(),
+        )
+            .map { it.toModel() }
+
     private companion object {
         /** Log subsystem. No member identity is written here. */
         const val LOG_TAG = "member-prefs"
@@ -183,8 +238,22 @@ class MemberPreferencesRepository(
 
         /** The blueprint-sharing flag. */
         const val SHARING_PATH = "/api/v1/users/me/blueprint-sharing"
+
+        /** The member's own RSI handle. */
+        const val RSI_HANDLE_PATH = "/api/v1/users/me/rsi-handle"
     }
 }
+
+/**
+ * Maps the wire RSI-handle response.
+ *
+ * @return the handle, `null` when none or blank, and the row's version.
+ */
+private fun MyRsiHandleResponse.toModel() =
+    RsiHandle(
+        handle = rsiHandle?.takeIf { it.isNotBlank() },
+        version = version ?: 0L,
+    )
 
 /**
  * Maps the wire payout response.

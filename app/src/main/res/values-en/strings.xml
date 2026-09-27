@@ -120,6 +120,15 @@
     <string name="settings_prefs_retry">Try again</string>
     <string name="settings_blueprint_sharing">Share blueprints with the org</string>
     <string name="settings_blueprint_sharing_hint">Visible in the availability overview</string>
+    <string name="settings_rsi_handle">RSI handle</string>
+    <string name="settings_rsi_handle_optional">(optional)</string>
+    <string name="settings_rsi_handle_placeholder">e.g. Your_Handle</string>
+    <string name="settings_rsi_handle_save">Save</string>
+    <string name="settings_rsi_handle_purpose">Only for this: a connected tool may ask whether a handle belongs to you. The server answers yes, no or unknown — and never gives the handle out.</string>
+    <string name="settings_rsi_handle_taken">This handle is already assigned to another profile.</string>
+    <string name="settings_rsi_handle_invalid">An RSI handle has 3 to 60 characters: letters, digits, underscore and hyphen.</string>
+    <string name="settings_rsi_handle_saved_title">Saved</string>
+    <string name="settings_rsi_handle_saved">RSI handle saved.</string>
     <string name="settings_language">Language</string>
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_imprint">Imprint</string>
