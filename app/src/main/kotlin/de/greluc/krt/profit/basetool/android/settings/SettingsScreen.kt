@@ -396,7 +396,7 @@ private fun AccountGroup(
                         },
                     ),
                 leadingIcon = DesignR.drawable.ic_krt_bank,
-                enabled = preferences.payout != null && !preferences.saving,
+                enabled = preferences.payoutRead && !preferences.saving,
                 onClick = {
                     onPayout(
                         if (preferences.payout == PayoutPreference.DONATE) {
@@ -554,6 +554,7 @@ private fun SettingsPreview() {
                 preferences =
                     MemberPreferencesState(
                         payout = PayoutPreference.PAYOUT,
+                        payoutRead = true,
                         sharing = true,
                         version = 1,
                     ),

@@ -30,6 +30,12 @@
 - **Lager: Die Filterzeile lässt sich über den Filter in der Kopfzeile einklappen**; eingeklappt
   zählt das Symbol die aktiven Filter.
 
+### Fixed
+
+- **Einstellungen: Die Auszahlungspräferenz lässt sich auch beim ersten Mal setzen.** Wer noch nie
+  eine gewählt hatte, sah „Noch nicht gewählt" auf einer gesperrten Zeile und konnte sie nur im
+  Browser setzen.
+
 ## [0.3.1] — 2026-09-25
 
 ### Added

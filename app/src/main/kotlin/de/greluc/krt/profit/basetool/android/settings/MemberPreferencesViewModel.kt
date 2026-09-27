@@ -70,7 +70,9 @@ data class RsiHandleActions(
  *
  * All three are columns of the backend's `User` entity, so they share one optimistic-lock version.
  *
- * @property payout the standing payout choice, or `null` until the read lands.
+ * @property payout the standing payout choice, or `null` while unread or never chosen.
+ * @property payoutRead whether a read of [payout] has landed; `null` with this set means the member
+ *   has not chosen yet, and the row is writable.
  * @property sharing whether blueprints are shared, or `null` until the read lands.
  * @property rsi the RSI-handle row.
  * @property version the entity's version as the last read or write left it; every write echoes it.
@@ -82,6 +84,7 @@ data class RsiHandleActions(
  */
 data class MemberPreferencesState(
     val payout: PayoutPreference? = null,
+    val payoutRead: Boolean = false,
     val sharing: Boolean? = null,
     val rsi: RsiHandleState = RsiHandleState(),
     val version: Long = 0L,
@@ -142,7 +145,11 @@ class MemberPreferencesViewModel(
         when (val result = source.payoutPreference()) {
             is ApiResult.Success -> {
                 mutableState.update {
-                    it.copy(payout = result.value.preference, version = result.value.version)
+                    it.copy(
+                        payout = result.value.preference,
+                        payoutRead = true,
+                        version = result.value.version,
+                    )
                 }
                 null
             }
