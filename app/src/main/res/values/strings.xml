@@ -113,6 +113,15 @@
     <string name="settings_prefs_retry">Erneut versuchen</string>
     <string name="settings_blueprint_sharing">Blueprints mit Org teilen</string>
     <string name="settings_blueprint_sharing_hint">Sichtbar in der Verfügbarkeits-Übersicht</string>
+    <string name="settings_rsi_handle">RSI-Handle</string>
+    <string name="settings_rsi_handle_optional">(optional)</string>
+    <string name="settings_rsi_handle_placeholder">z. B. Dein_Handle</string>
+    <string name="settings_rsi_handle_save">Speichern</string>
+    <string name="settings_rsi_handle_purpose">Nur dafür: ein verbundenes Tool darf fragen, ob ein Handle zu dir gehört. Der Server antwortet ja, nein oder unbekannt — und gibt den Handle nie heraus.</string>
+    <string name="settings_rsi_handle_taken">Dieser Handle ist bereits einem anderen Profil zugeordnet.</string>
+    <string name="settings_rsi_handle_invalid">Ein RSI-Handle hat 3 bis 60 Zeichen: Buchstaben, Ziffern, Unterstrich und Bindestrich.</string>
+    <string name="settings_rsi_handle_saved_title">Gespeichert</string>
+    <string name="settings_rsi_handle_saved">RSI-Handle gespeichert.</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_privacy">Datenschutzerklärung</string>
     <string name="settings_imprint">Impressum</string>

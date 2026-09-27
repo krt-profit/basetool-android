@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import org.junit.Assert.assertEquals
@@ -53,6 +54,7 @@ class SettingsScreenTest {
                     screenCaptureAllowed = false,
                     onScreenCaptureChange = {},
                     onRetryPreferences = {},
+                    rsiActions = RsiHandleActions(),
                     onOpenPrivacy = {},
                     onOpenImprint = {},
                     onOpenTerms = {},
@@ -71,7 +73,7 @@ class SettingsScreenTest {
         val loggedOut = mutableListOf<Unit>()
         show(loggedOut)
 
-        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performClick()
+        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performScrollTo().performClick()
 
         compose.onNodeWithTag(SETTINGS_LOGOUT_CONFIRM_TAG).assertIsDisplayed()
         assertEquals(emptyList<Unit>(), loggedOut)
@@ -85,7 +87,7 @@ class SettingsScreenTest {
     fun `the confirmation names what sign out costs`() {
         show(mutableListOf())
 
-        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performClick()
+        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performScrollTo().performClick()
 
         compose
             .onNodeWithText(
@@ -100,7 +102,7 @@ class SettingsScreenTest {
         val loggedOut = mutableListOf<Unit>()
         show(loggedOut)
 
-        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performClick()
+        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performScrollTo().performClick()
         compose.onNodeWithText("JETZT ABMELDEN").performClick()
 
         assertEquals(listOf(Unit), loggedOut)
@@ -112,7 +114,7 @@ class SettingsScreenTest {
         val loggedOut = mutableListOf<Unit>()
         show(loggedOut)
 
-        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performClick()
+        compose.onNodeWithTag(SETTINGS_LOGOUT_TAG).performScrollTo().performClick()
         compose.onNodeWithText("ABBRECHEN").performClick()
 
         assertEquals(emptyList<Unit>(), loggedOut)

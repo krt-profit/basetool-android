@@ -101,6 +101,7 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
+import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.LocalRootScrollTick
@@ -905,6 +906,7 @@ private fun PushedDestination(
                 onPayout = settings.onPayout,
                 onSharing = settings.onSharing,
                 onRetryPreferences = settings.onRetryPreferences,
+                rsiActions = settings.rsiActions,
                 language = settings.language,
                 onLanguageChange = settings.onLanguageChange,
                 appLockEnabled = settings.appLockEnabled,
@@ -987,10 +989,11 @@ data class BlueprintOverviewBindings(
  * @property orgUnitName the active org unit as the top bar's chip names it, or `null` while the
  *   scope is unknown.
  * @property onSwitchOrgUnit opens the org switcher, the same sheet the chip opens.
- * @property preferences the two standing choices that live on the server.
+ * @property preferences the three standing choices that live on the server.
  * @property onPayout sets where the member's share goes by default.
  * @property onSharing shares or unshares the member's blueprints with the organisation.
- * @property onRetryPreferences re-reads the two account values after a failed read.
+ * @property onRetryPreferences re-reads the account values after a failed read.
+ * @property rsiActions the RSI-handle row's callbacks.
  */
 @Immutable
 data class SettingsBindings(
@@ -1013,6 +1016,7 @@ data class SettingsBindings(
     val onPayout: (PayoutPreference) -> Unit,
     val onSharing: (Boolean) -> Unit,
     val onRetryPreferences: () -> Unit,
+    val rsiActions: RsiHandleActions = RsiHandleActions(),
 )
 
 /**

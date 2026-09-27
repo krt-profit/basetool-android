@@ -56,8 +56,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 /**
  * Einstellungen: the app's own settings, the legal texts and sign-out.
  *
- * Shows the active org unit, the payout preference, the blueprint-sharing switch and a
- * „Screenshots erlauben" switch; no rank and no „Lokale Daten löschen". Sign-out sits at the bottom
+ * Shows the active org unit, the payout preference, the blueprint-sharing switch, the RSI handle and
+ * a „Screenshots erlauben" switch; no rank and no „Lokale Daten löschen". Sign-out sits at the bottom
  * and asks first via [SignOutConfirmModal].
  *
  * @param accountName the signed-in member's username, from the ID token; `null` while unknown.
@@ -84,6 +84,7 @@ fun SettingsScreen(
     onPayout: (PayoutPreference) -> Unit,
     onSharing: (Boolean) -> Unit,
     onRetryPreferences: () -> Unit,
+    rsiActions: RsiHandleActions,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -101,6 +102,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        RsiHandleSavedToast(shown = preferences.rsi.saved, onShown = rsiActions.onSavedShown)
         SettingsColumn(
             accountName = accountName,
             orgUnitName = orgUnitName,
@@ -109,6 +111,7 @@ fun SettingsScreen(
             onPayout = onPayout,
             onSharing = onSharing,
             onRetryPreferences = onRetryPreferences,
+            rsiActions = rsiActions,
             language = language,
             onLanguageChange = onLanguageChange,
             appLockEnabled = appLockEnabled,
@@ -157,6 +160,7 @@ private fun SettingsColumn(
     onPayout: (PayoutPreference) -> Unit,
     onSharing: (Boolean) -> Unit,
     onRetryPreferences: () -> Unit,
+    rsiActions: RsiHandleActions,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -189,6 +193,7 @@ private fun SettingsColumn(
             onPayout = onPayout,
             onSharing = onSharing,
             onRetryPreferences = onRetryPreferences,
+            rsiActions = rsiActions,
         )
 
         SettingsGroup(stringResource(R.string.settings_section_app)) {
@@ -331,18 +336,19 @@ private fun PreferencesNotice(
 }
 
 /**
- * The KONTO group: who the member is, their active scope, and their two server-side settings
- * (ADR-0021).
+ * The KONTO group: who the member is, their active scope, and their three server-side settings
+ * (ADR-0021, REQ-APP-SET-012).
  *
  * Everything here belongs to the account rather than the device.
  *
  * @param accountName the signed-in member's username, or `null` while unknown.
  * @param orgUnitName the active scope's name, or `null` while unknown.
  * @param onSwitchOrgUnit open the scope switcher.
- * @param preferences the two server-side rows.
+ * @param preferences the three server-side rows.
  * @param onPayout set where the member's share goes by default.
  * @param onSharing share or unshare the member's blueprints.
- * @param onRetryPreferences re-read both values after a failed read.
+ * @param onRetryPreferences re-read the values after a failed read.
+ * @param rsiActions the RSI-handle row's callbacks.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -354,6 +360,7 @@ private fun AccountGroup(
     onPayout: (PayoutPreference) -> Unit,
     onSharing: (Boolean) -> Unit,
     onRetryPreferences: () -> Unit,
+    rsiActions: RsiHandleActions,
 ) {
     if (accountName != null || preferences.readError != null || preferences.error != null) {
         SettingsGroup(stringResource(R.string.settings_section_account)) {
@@ -419,6 +426,12 @@ private fun AccountGroup(
                     enabled = preferences.sharing != null && !preferences.saving,
                 )
             }
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            RsiHandleRow(
+                rsi = preferences.rsi,
+                enabled = preferences.rsi.read && !preferences.saving,
+                actions = rsiActions,
+            )
             PreferencesNotice(preferences = preferences, onRetry = onRetryPreferences)
         }
     }
@@ -546,6 +559,7 @@ private fun SettingsPreview() {
                     ),
                 onPayout = {},
                 onRetryPreferences = {},
+                rsiActions = RsiHandleActions(),
                 onSharing = {},
                 onOpenImprint = {},
                 onOpenTerms = {},
