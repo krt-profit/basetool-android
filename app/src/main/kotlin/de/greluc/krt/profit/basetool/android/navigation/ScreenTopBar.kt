@@ -42,10 +42,19 @@ data class ScreenTopBar(
  * @property count how many rows are selected — the bar's whole text, „n gewählt".
  * @property onClear leaves selection mode; the design offers exactly two ways out, this ✕ and the
  *   system back gesture, and never "deselect everything one by one".
+ * @property title the screen's name above the count, or `null` for the count alone (design ch. 19,
+ *   artboard 2).
+ * @property detail the line under the title in place of the bare count, or `null`.
+ * @property selectAll a trailing action that selects everything the view shows, or `null`.
+ * @property selectAllLabel what that action is called.
  */
 data class SelectionBar(
     val count: Int,
     val onClear: () -> Unit,
+    val title: String? = null,
+    val detail: String? = null,
+    val selectAll: (() -> Unit)? = null,
+    val selectAllLabel: String? = null,
 )
 
 /**

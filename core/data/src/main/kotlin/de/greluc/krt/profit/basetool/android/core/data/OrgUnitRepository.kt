@@ -161,13 +161,21 @@ private fun OrgUnitMembershipOptionDto.toModel(): OrgUnit? {
         name = orgUnitName ?: orgUnitShorthand ?: id,
         shorthand = orgUnitShorthand.orEmpty(),
         profitEligible = isProfitEligible == true,
-        kind =
-            when (kind) {
-                OrgUnitMembershipOptionDto.Kind.SQUADRON -> OrgUnitKind.SQUADRON
-                OrgUnitMembershipOptionDto.Kind.SPECIAL_COMMAND -> OrgUnitKind.SPECIAL_COMMAND
-                OrgUnitMembershipOptionDto.Kind.BEREICH -> OrgUnitKind.BEREICH
-                OrgUnitMembershipOptionDto.Kind.ORGANISATIONSLEITUNG -> OrgUnitKind.ORGANISATIONSLEITUNG
-                null -> OrgUnitKind.UNKNOWN
-            },
+        kind = kind.toModel(),
     )
 }
+
+/**
+ * Maps the wire's org-unit kind onto the app's.
+ *
+ * @receiver the kind, or `null` when the server named none.
+ * @return the kind; [OrgUnitKind.UNKNOWN] for `null`.
+ */
+internal fun OrgUnitMembershipOptionDto.Kind?.toModel(): OrgUnitKind =
+    when (this) {
+        OrgUnitMembershipOptionDto.Kind.SQUADRON -> OrgUnitKind.SQUADRON
+        OrgUnitMembershipOptionDto.Kind.SPECIAL_COMMAND -> OrgUnitKind.SPECIAL_COMMAND
+        OrgUnitMembershipOptionDto.Kind.BEREICH -> OrgUnitKind.BEREICH
+        OrgUnitMembershipOptionDto.Kind.ORGANISATIONSLEITUNG -> OrgUnitKind.ORGANISATIONSLEITUNG
+        null -> OrgUnitKind.UNKNOWN
+    }

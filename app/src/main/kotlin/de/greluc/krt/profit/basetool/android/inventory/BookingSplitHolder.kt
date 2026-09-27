@@ -56,6 +56,16 @@ class BookingSplitHolder(
     fun picking(kind: AllocationKind?) = update { it.copy(picking = kind) }
 
     /**
+     * Books the stock in as the member's personal stock, or not (design ch. 19, N2).
+     *
+     * A personal row carries no earmark, so the typed splits stay on the form but are not sent;
+     * the sheet says how many will be dropped.
+     *
+     * @param personal whether the row is personal.
+     */
+    fun personal(personal: Boolean) = update { it.copy(personal = personal, picking = null, error = null) }
+
+    /**
      * Adds an earmark row for the picked target, starting at the remaining rest.
      *
      * @param kind which split.

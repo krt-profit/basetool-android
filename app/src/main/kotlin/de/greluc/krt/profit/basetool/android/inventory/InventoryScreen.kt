@@ -54,6 +54,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LagerScope
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
@@ -76,7 +77,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
@@ -151,8 +155,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param onRetryNow the member pressed the manual retry of the countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param modifier layout modifier.
- * @param pane what the tablet pane is showing, or `null` while nothing is selected.
- * @param paneActions what the tablet pane reports back.
+ * @param lager the scope segment, the filter row and the „Mein Lager" row actions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,18 +175,29 @@ fun InventoryScreen(
     onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
+    lager: LagerScreenActions = LagerScreenActions(),
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (!state.online) {
                 OfflineBand()
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12)) {
-                KrtFilterChip(
-                    text = stringResource(R.string.inventory_with_stock_only),
-                    selected = state.withStockOnly,
-                    onClick = { onWithStockOnlyChanged(!state.withStockOnly) },
+            if (lager.scoped) {
+                LagerScopeSegment(scope = state.scope, onScope = lager.onScope)
+            }
+            if (state.filtersOpen) {
+                LagerFilterRow(
+                    state = state,
+                    actions =
+                        LagerFilterActions(
+                            onPersonal = lager.onPersonal,
+                            onWithStockOnly = onWithStockOnlyChanged,
+                            onLocations = lager.onLocations,
+                        ),
                 )
+            }
+            if (state.phase is InventoryPhase.Ready && state.visibleGroups.isNotEmpty()) {
+                LagerCountLine(state = state)
             }
 
             when (state.phase) {
@@ -226,7 +240,9 @@ fun InventoryScreen(
                         if (state.visibleGroups.isEmpty()) {
                             KrtRefreshableFill {
                                 InventoryEmpty(
-                                    filtered = state.withStockOnly && state.groups.isNotEmpty(),
+                                    state = state,
+                                    onBookIn = onBookIn,
+                                    onReset = lager.onResetFilters,
                                 )
                             }
                         } else {
@@ -242,6 +258,7 @@ fun InventoryScreen(
                                 denials = denials,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
+                                lager = lager,
                             )
                         }
                     }
@@ -279,6 +296,7 @@ fun InventoryScreen(
  * @param denials where a tapped lock raises its refusal.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
+ * @param lager the „Mein Lager" row actions.
  */
 @Composable
 private fun InventoryTree(
@@ -293,6 +311,7 @@ private fun InventoryTree(
     denials: DenialState,
     online: Boolean,
     onLoadMore: () -> Unit,
+    lager: LagerScreenActions,
 ) {
     LazyColumn(
         state = rememberRootListState(),
@@ -300,7 +319,7 @@ private fun InventoryTree(
         contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         state.visibleGroups.forEach { group ->
-            val materialId = group.materialId
+            val materialId = group.key
             val entryRowContext =
                 EntryRowContext(
                     unit = group.unit,
@@ -311,6 +330,8 @@ private fun InventoryTree(
                     onBookOut = onBookOut,
                     onAllocate = onAllocate,
                     onToggleSelected = onToggleSelected,
+                    scope = state.scope,
+                    lager = lager,
                 )
             item(key = "group-${materialId ?: group.name}") {
                 val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
@@ -335,6 +356,7 @@ private fun InventoryTree(
                             rows = entryRowContext,
                             onToggleStack = onToggleStack,
                             onToggleBranch = onToggleBranch,
+                            scope = state.scope,
                         ),
                 )
             }
@@ -371,6 +393,7 @@ private fun InventoryTree(
  * @property rows what an entry row needs.
  * @property onToggleStack a stack was tapped.
  * @property onToggleBranch a stack was long-pressed.
+ * @property scope which Lager the tree shows; „Mein Lager" has no holder level.
  */
 private data class OpenedGroupContext(
     val unit: String?,
@@ -378,6 +401,7 @@ private data class OpenedGroupContext(
     val rows: EntryRowContext,
     val onToggleStack: (String, InventoryStack) -> Unit,
     val onToggleBranch: (String, InventoryStack?) -> Unit,
+    val scope: LagerScope = LagerScope.ORG,
 )
 
 /**
@@ -413,8 +437,10 @@ private fun LazyListScope.openedGroup(
             } else {
                 var index = 0
                 byHolder(phase.stacks).forEach { holder ->
-                    item(key = "holder-$materialId-${holder.key}") {
-                        HolderRow(holder = holder, unit = context.unit)
+                    if (context.scope == LagerScope.ORG) {
+                        item(key = "holder-$materialId-${holder.key}") {
+                            HolderRow(holder = holder, unit = context.unit)
+                        }
                     }
                     holder.stacks.forEach { stack ->
                         val at = index++
@@ -424,6 +450,7 @@ private fun LazyListScope.openedGroup(
                                 unit = context.unit,
                                 onClick = { context.onToggleStack(materialId, stack) },
                                 onLongClick = { context.onToggleBranch(materialId, stack) },
+                                scope = context.scope,
                             )
                         }
                         entryRows(
@@ -519,6 +546,8 @@ private fun GroupRow(
  * @property onBookOut an entry's booking action was taken.
  * @property onAllocate an entry's Zuordnung was opened.
  * @property onToggleSelected a row was long-pressed, or tapped while selecting.
+ * @property scope which Lager the row is shown in.
+ * @property lager the „Mein Lager" row actions.
  */
 private data class EntryRowContext(
     val unit: String?,
@@ -529,6 +558,8 @@ private data class EntryRowContext(
     val onBookOut: (InventoryEntry) -> Unit,
     val onAllocate: (InventoryEntry) -> Unit,
     val onToggleSelected: (String) -> Unit,
+    val scope: LagerScope = LagerScope.ORG,
+    val lager: LagerScreenActions = LagerScreenActions(),
 )
 
 /**
@@ -579,6 +610,12 @@ private fun LazyListScope.entryRows(
                             onToggleSelected = { rows.onToggleSelected(entry.id) },
                             released = entry.id in rows.released,
                             denials = rows.denials,
+                            more =
+                                if (rows.scope == LagerScope.MY) {
+                                    { EntryMoreMenu(entry = entry, online = rows.online, lager = rows.lager) }
+                                } else {
+                                    null
+                                },
                         )
                     }
                 }
@@ -599,6 +636,7 @@ private fun LazyListScope.entryRows(
  * @param selecting whether the list is in selection mode at all.
  * @param onToggleSelected the row was long-pressed, or tapped while selecting.
  * @param denials where a tapped lock raises its refusal.
+ * @param more the row's `⋮` in „Mein Lager", or `null`.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -613,6 +651,7 @@ private fun EntryRow(
     onAllocate: () -> Unit,
     onToggleSelected: () -> Unit,
     denials: DenialState,
+    more: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -689,6 +728,7 @@ private fun EntryRow(
                 onAllocate = onAllocate,
                 denials = denials,
             )
+            more?.invoke()
         }
     }
 }
@@ -728,19 +768,27 @@ private fun EntryActions(
             reason = stringResource(R.string.gate_own_row),
             detail = stringResource(R.string.gate_own_row_detail),
         )
-    if (!entry.personal) {
-        val (dim, click) = rememberGated(roleGate, onAllocate, denials)
-        Box {
-            KrtIconButton(
-                iconRes = DesignR.drawable.ic_krt_target,
-                label = stringResource(R.string.allocation_open),
-                onClick = click,
-                modifier = dim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
-                enabled = online,
+    val allocationGate =
+        if (entry.personal) {
+            Gate(
+                allowed = false,
+                reason = stringResource(R.string.lager_personal_no_allocation),
+                detail = stringResource(R.string.lager_personal_no_allocation_detail),
             )
-            if (!roleGate.allowed) {
-                KrtLockBadge(modifier = Modifier.align(Alignment.BottomEnd))
-            }
+        } else {
+            roleGate
+        }
+    val (dim, click) = rememberGated(allocationGate, onAllocate, denials)
+    Box {
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_target,
+            label = stringResource(R.string.allocation_open),
+            onClick = click,
+            modifier = dim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            enabled = online,
+        )
+        if (!allocationGate.allowed) {
+            KrtLockBadge(modifier = Modifier.align(Alignment.BottomEnd))
         }
     }
     val (bookDim, bookClick) = rememberGated(rowGate, onBookOut, denials)
@@ -795,6 +843,8 @@ private fun QualityMark(quality: String) {
  * @param unit the group's quantity unit, since a stack carries none of its own.
  * @param onClick opens its entries.
  * @param onLongClick selects every entry in it; a stack row carries no selection of its own.
+ * @param scope which Lager the stack is shown in; „Mein Lager" names place and grade in the title
+ *   and carries the stack's chips beneath it (design ch. 19, artboard 1).
  */
 @Composable
 private fun StackRow(
@@ -802,6 +852,7 @@ private fun StackRow(
     unit: String?,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    scope: LagerScope = LagerScope.ORG,
 ) {
     Row(
         modifier =
@@ -816,28 +867,42 @@ private fun StackRow(
         Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stack.title(),
+                text =
+                    if (scope == LagerScope.MY) {
+                        listOfNotNull(
+                            stack.title().takeIf { it.isNotBlank() },
+                            stack.quality?.let { stringResource(R.string.inventory_quality, it) },
+                        ).joinToString(" · ")
+                    } else {
+                        stack.title()
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.inventory_entry_count,
-                        stack.entryCount,
-                        stack.entryCount,
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
+            if (scope == LagerScope.MY) {
+                StackChips(stack = stack, scope = scope)
+            } else {
+                Text(
+                    text =
+                        pluralStringResource(
+                            R.plurals.inventory_entry_count,
+                            stack.entryCount,
+                            stack.entryCount,
+                        ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
         }
-        if (stack.personal) {
-            KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
+        if (scope == LagerScope.ORG) {
+            if (stack.personal) {
+                KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
+            }
+            stack.quality?.let { QualityMark(quality = it) }
         }
-        stack.quality?.let { QualityMark(quality = it) }
-        Amount(value = stack.amount, unit = unit)
+        Amount(value = stack.amount, unit = unit.takeIf { scope == LagerScope.ORG })
     }
 }
 
@@ -943,7 +1008,7 @@ private fun Amount(
         )
         unit?.takeIf { it.isNotBlank() }?.let {
             Text(
-                text = it,
+                text = it.unitWord(),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
@@ -987,26 +1052,43 @@ private fun StackNote(text: String) {
 }
 
 /**
- * The empty state, which differs by whether the chip is what emptied it.
+ * The empty state: a filter that emptied the tree offers „Zurücksetzen", an empty „Mein Lager"
+ * offers „Einbuchen", and the chip that hid every group says so.
  *
- * @param filtered whether "Nur mit Bestand" hid everything on this page.
+ * @param state the tree's state.
+ * @param onBookIn opens the book-in.
+ * @param onReset clears the filters.
  */
 @Composable
-private fun InventoryEmpty(filtered: Boolean) {
+private fun InventoryEmpty(
+    state: InventoryState,
+    onBookIn: () -> Unit,
+    onReset: () -> Unit,
+) {
+    val stockChip = state.withStockOnly && state.groups.isNotEmpty()
+    val (title, message) =
+        when {
+            state.filter.active -> R.string.lager_empty_filtered_title to R.string.lager_empty_filtered_message
+            stockChip -> R.string.inventory_empty_filtered_title to R.string.inventory_empty_filtered_message
+            state.scope == LagerScope.MY -> R.string.lager_empty_my_title to R.string.lager_empty_my_message
+            else -> R.string.inventory_empty_title to R.string.inventory_empty_message
+        }
     KrtEmptyState(
         iconRes = DesignR.drawable.ic_krt_crate,
-        title =
-            stringResource(
-                if (filtered) R.string.inventory_empty_filtered_title else R.string.inventory_empty_title,
-            ),
-        message =
-            stringResource(
-                if (filtered) {
-                    R.string.inventory_empty_filtered_message
-                } else {
-                    R.string.inventory_empty_message
-                },
-            ),
+        title = stringResource(title),
+        message = stringResource(message),
+        actionText =
+            when {
+                state.filter.active -> stringResource(R.string.lager_filter_reset)
+                state.scope == LagerScope.MY && !stockChip -> stringResource(R.string.booking_mode_in)
+                else -> null
+            },
+        onAction =
+            when {
+                state.filter.active -> onReset
+                state.scope == LagerScope.MY && !stockChip -> onBookIn
+                else -> null
+            },
         modifier = Modifier.padding(KrtSpacing.s16),
     )
 }
@@ -1015,7 +1097,10 @@ private fun InventoryEmpty(filtered: Boolean) {
  * The Lager, bound to its view model.
  *
  * @param viewModel drives the tree.
+ * @param onBookIn opens the book-in.
+ * @param onBookOut opens the booking sheet on one entry.
  * @param modifier layout modifier.
+ * @param onOpenOrder opens an Auftrag's collection, where the delivery status of its stock is set.
  */
 @Composable
 fun InventoryRoute(
@@ -1023,17 +1108,57 @@ fun InventoryRoute(
     onBookIn: () -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenOrder: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val denials = rememberDenialState()
+    val (personal, shared) = state.selectionComposition()
     ProvideScreenTopBar(
+        actions = {
+            LagerFilterToggle(
+                open = state.filtersOpen,
+                hidden = state.filter.count,
+                onToggle = viewModel.controls::toggleRow,
+            )
+        },
         selection =
             state.selection
                 .takeIf { it.isNotEmpty() }
-                ?.let { SelectionBar(count = it.size, onClear = viewModel::onSelectionCleared) },
+                ?.let {
+                    if (state.scope == LagerScope.MY) {
+                        SelectionBar(
+                            count = it.size,
+                            onClear = viewModel::onSelectionCleared,
+                            title = stringResource(R.string.lager_selection_title),
+                            detail =
+                                pluralStringResource(
+                                    R.plurals.lager_selection_detail,
+                                    it.size,
+                                    it.size,
+                                    personal,
+                                    shared,
+                                ),
+                            selectAll = viewModel.controls::selectAll,
+                            selectAllLabel = stringResource(R.string.lager_select_all),
+                        )
+                    } else {
+                        SelectionBar(count = it.size, onClear = viewModel::onSelectionCleared)
+                    }
+                },
     )
     BackHandler(enabled = state.selection.isNotEmpty(), onBack = viewModel::onSelectionCleared)
     InventoryScreen(
+        lager =
+            LagerScreenActions(
+                scoped = true,
+                onScope = viewModel.controls::scope,
+                onPersonal = viewModel.controls::personal,
+                onLocations = viewModel.controls::locations,
+                onResetFilters = viewModel.controls::reset,
+                onRebook = viewModel.moves::openRebook,
+                onOrgUnit = viewModel.moves::openOrgUnit,
+                onOpenOrder = onOpenOrder,
+            ),
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
         onToggleStack = viewModel::onToggleStack,
@@ -1051,7 +1176,14 @@ fun InventoryRoute(
         modifier = modifier,
     )
 
-    if (state.selection.isNotEmpty()) {
+    if (state.selection.isNotEmpty() && state.scope == LagerScope.MY) {
+        MyLagerSelectionBar(
+            state = state,
+            onCheckout = viewModel.checkoutActions::request,
+            onRebook = { viewModel.moves.openBulkRebook(toPersonal = personal == 0 && shared > 0) },
+            onOrgUnit = viewModel.moves::openBulkOrgUnit,
+        )
+    } else if (state.selection.isNotEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             KrtBottomCtaBar {
                 Row(
@@ -1121,6 +1253,36 @@ fun InventoryRoute(
     }
 
     DenialToast(state = denials)
+    PersonalBookedToast(shown = state.personalNotice, onShown = viewModel.controls::personalNoticeShown)
+
+    state.move?.let { move ->
+        StockMoveSheet(
+            move = move,
+            count = move.ids.size,
+            callbacks =
+                StockMoveCallbacks(
+                    onAmount = viewModel.moves::amount,
+                    onAll = viewModel.moves::all,
+                    onUnit = viewModel.moves::unit,
+                    onMerge = viewModel.moves::merge,
+                    onMode = { mode ->
+                        if (mode == null) {
+                            viewModel.moves.close()
+                            viewModel.onBulkMoveRequested()
+                        } else {
+                            viewModel.moves.openBulkRebook(toPersonal = mode)
+                        }
+                    },
+                    onDropShared = viewModel.moves::dropShared,
+                    onConfirm = viewModel.moves::confirm,
+                    onClose = viewModel.moves::close,
+                    onConflictReload = {
+                        viewModel.moves.close()
+                        viewModel.onRefresh()
+                    },
+                ),
+        )
+    }
 
     state.checkout?.let { checkout ->
         BulkCheckoutSheet(

@@ -52,6 +52,7 @@ import okhttp3.OkHttpClient
  * @property amount how much of it the org unit holds, as the server rendered it
  * @property quality the average quality, or `null`
  * @property maxQuality the best quality in the group, or `null`
+ * @property gameItemId the game item's id for a group of pieces rather than a material, or `null`
  */
 data class InventoryGroup(
     val materialId: String?,
@@ -60,7 +61,17 @@ data class InventoryGroup(
     val amount: String?,
     val quality: String?,
     val maxQuality: String?,
-)
+    val gameItemId: String? = null,
+) {
+    /** What the tree opens this group under: the material's id, or the game item's with a prefix. */
+    val key: String?
+        get() = materialId ?: gameItemId?.let { "$ITEM_KEY_PREFIX$it" }
+
+    private companion object {
+        /** Keeps a game item's id apart from a material's in the tree's keys. */
+        const val ITEM_KEY_PREFIX = "item:"
+    }
+}
 
 /**
  * One stack inside a group: a member's holding at one place and quality.
@@ -76,6 +87,9 @@ data class InventoryGroup(
  * @property locationId where it is, by id
  * @property owningOrgUnitId which org-unit pool it belongs to, or `null` for an unpooled holding;
  *   part of the entry read's key
+ * @property owningOrgUnitName that unit's name, or `null` without one
+ * @property stolen whether the stack holds stock marked „gestohlen"; part of the entry read's key
+ *   (REQ-INV-053)
  */
 data class InventoryStack(
     val holder: String?,
@@ -87,6 +101,8 @@ data class InventoryStack(
     val holderId: String? = null,
     val locationId: String? = null,
     val owningOrgUnitId: String? = null,
+    val owningOrgUnitName: String? = null,
+    val stolen: Boolean = false,
 )
 
 /**
@@ -121,6 +137,9 @@ typealias MaterialEntryPage = Page<InventoryEntry>
  * @property missionRest what is left after the Einsatz split, independent of [jobOrderRest]
  * @property owningOrgUnitId which org-unit pool the entry sits in, or `null` for an unpooled row;
  *   the transfer's org-unit picker presets to it
+ * @property owningOrgUnitName that unit's name, or `null` without one
+ * @property stolen whether the row is marked „gestohlen" (REQ-INV-053)
+ * @property gameItemId the game item a piece row holds, or `null` for a material row
  */
 data class InventoryEntry(
     val id: String,
@@ -142,6 +161,9 @@ data class InventoryEntry(
     val missionRest: String? = null,
     val owningOrgUnitId: String? = null,
     val canEdit: Boolean? = null,
+    val owningOrgUnitName: String? = null,
+    val stolen: Boolean = false,
+    val gameItemId: String? = null,
 )
 
 /**
@@ -150,11 +172,13 @@ data class InventoryEntry(
  * @property id what the booking sends
  * @property name the unit as it is called
  * @property shorthand its abbreviation, or `null`
+ * @property kind which of the four org-unit kinds it is
  */
 data class OrgUnitOption(
     val id: String,
     val name: String,
     val shorthand: String? = null,
+    val kind: OrgUnitKind = OrgUnitKind.UNKNOWN,
 )
 
 /**
@@ -280,7 +304,8 @@ private fun List<InventoryAllocation>.krtToInputs(): List<InventoryAllocationInp
  * @property locationId where it goes
  * @property amount how much
  * @property quality the quality, 0–1000; `null` for an item row
- * @property personal whether it is private stock; always `false` from the app
+ * @property personal whether it is the member's private stock („Mein Lager"); a personal row carries
+ *   no earmark, so both allocation lists must be empty when it is set (REQ-INV-007)
  * @property mergeStock whether the server may merge it into an identical entry
  * @property jobOrderAllocations Auftrag earmarks for the new row, validated in the same
  *   transaction as the booking (REQ-INV-027); empty leaves the row unassigned
@@ -725,6 +750,9 @@ class InventoryRepository(
                 stack.holderId?.let { add(USER_ID_PARAM to it) }
                 stack.quality?.wholeNumber()?.let { add(QUALITY_PARAM to it) }
                 stack.owningOrgUnitId?.let { add(OWNING_ORG_UNIT_PARAM to it) }
+                if (stack.stolen) {
+                    add(STOLEN_PARAM to "true")
+                }
                 add(PAGE_PARAM to "0")
                 add(SIZE_PARAM to ENTRY_PAGE_SIZE.toString())
             }
@@ -1182,6 +1210,9 @@ class InventoryRepository(
         private const val QUALITY_PARAM = "quality"
         private const val OWNING_ORG_UNIT_PARAM = "owningOrgUnitId"
 
+        /** Narrows a stack's entries to the stolen ones; absent means the regular ones. */
+        private const val STOLEN_PARAM = "stolen"
+
         /** Widens the membership lookup from Staffel/SK to all four org-unit kinds. */
         private const val ALL_KINDS_PARAM = "allKinds"
         private const val SEARCH_PARAM = "search"
@@ -1238,7 +1269,7 @@ private fun AggregatedInventoryDto.toModel(): InventoryGroup =
  *
  * @return the stack.
  */
-private fun InventoryStackDto.toModel(): InventoryStack =
+internal fun InventoryStackDto.toModel(): InventoryStack =
     InventoryStack(
         holder = user?.effectiveName,
         location = location?.name,
@@ -1249,6 +1280,8 @@ private fun InventoryStackDto.toModel(): InventoryStack =
         holderId = user?.id,
         locationId = location?.id,
         owningOrgUnitId = owningSquadron?.id,
+        owningOrgUnitName = owningSquadron?.name?.takeIf { it.isNotBlank() },
+        stolen = stolen == true,
     )
 
 /**
@@ -1256,12 +1289,13 @@ private fun InventoryStackDto.toModel(): InventoryStack =
  *
  * @return the option, or `null` without an id — a choice a booking cannot send.
  */
-private fun OrgUnitMembershipOptionDto.toOption(): OrgUnitOption? {
+internal fun OrgUnitMembershipOptionDto.toOption(): OrgUnitOption? {
     val unitId = orgUnitId ?: return null
     return OrgUnitOption(
         id = unitId,
         name = orgUnitName.orEmpty().ifBlank { orgUnitShorthand.orEmpty() },
         shorthand = orgUnitShorthand?.takeIf { it.isNotBlank() },
+        kind = kind.toModel(),
     )
 }
 
@@ -1270,7 +1304,7 @@ private fun OrgUnitMembershipOptionDto.toOption(): OrgUnitOption? {
  *
  * @return the digits before the decimal point, or `null` when the text is not a number at all.
  */
-private fun String.wholeNumber(): String? = toBigDecimalOrNull()?.toBigInteger()?.toString()
+internal fun String.wholeNumber(): String? = toBigDecimalOrNull()?.toBigInteger()?.toString()
 
 /**
  * Renders a quantity without scientific notation.
@@ -1282,18 +1316,21 @@ private fun String.wholeNumber(): String? = toBigDecimalOrNull()?.toBigInteger()
  */
 private fun Double.toPlainString(): String = java.math.BigDecimal(this.toString()).toPlainString()
 
+/** What the server calls a quantity counted in whole pieces; every game-item row is one. */
+internal const val PIECE_UNIT = "PIECE"
+
 /**
  * Maps one entry onto the model.
  *
  * @return the entry, or `null` without an id — a row a booking cannot address.
  */
-private fun InventoryItemDto.toEntry(): InventoryEntry? {
+internal fun InventoryItemDto.toEntry(): InventoryEntry? {
     val rowId = id ?: return null
     return InventoryEntry(
         id = rowId,
-        materialName = material?.name.orEmpty(),
+        materialName = material?.name ?: gameItem?.name.orEmpty(),
         materialId = material?.id,
-        unit = material?.quantityType?.value,
+        unit = material?.quantityType?.value ?: gameItem?.let { PIECE_UNIT },
         locationName = location?.name,
         locationId = location?.id,
         holder = user?.effectiveName,
@@ -1302,6 +1339,9 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         quality = quality?.toString(),
         personal = personal == true,
         owningOrgUnitId = owningSquadron?.id,
+        owningOrgUnitName = owningSquadron?.name?.takeIf { it.isNotBlank() },
+        stolen = stolen == true,
+        gameItemId = gameItem?.id,
         canEdit = canEdit,
         note = note?.takeIf { it.isNotBlank() },
         version = version,

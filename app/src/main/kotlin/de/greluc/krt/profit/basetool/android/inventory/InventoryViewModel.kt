@@ -17,11 +17,17 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LagerFilter
+import de.greluc.krt.profit.basetool.android.core.data.LagerScope
+import de.greluc.krt.profit.basetool.android.core.data.LagerTreeSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
+import de.greluc.krt.profit.basetool.android.core.data.PersonalFilter
+import de.greluc.krt.profit.basetool.android.core.data.StockGroup
+import de.greluc.krt.profit.basetool.android.core.data.StolenFilter
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -118,6 +124,15 @@ sealed interface EntriesPhase {
  * @property allocation the open Zuordnung sheet, or `null`
  * @property selection the rows long-pressed into selection mode; empty means the mode is off
  * @property bulk the open bulk-move sheet, or `null`
+ * @property checkout the open Sammel-Ausbuchen sheet, or `null`
+ * @property scope which Lager the tree shows (design ch. 19, N1)
+ * @property filter what the tree is narrowed to
+ * @property filtersOpen whether the filter row is expanded (REQ-INV-037)
+ * @property preloaded the stacks a grouped read already delivered, keyed by group key
+ * @property locationOptions the places the location filter offers, taken from an unfiltered read
+ * @property selectionPersonal for each selected row whose kind is known, whether it is personal
+ * @property move the open „Mein Lager" move sheet, or `null`
+ * @property personalNotice whether to say that a personal book-in landed in „Mein Lager"
  */
 data class InventoryState(
     val groups: List<InventoryGroup> = emptyList(),
@@ -137,7 +152,37 @@ data class InventoryState(
     val selection: Set<String> = emptySet(),
     val bulk: BulkMoveState? = null,
     val checkout: BulkCheckoutState? = null,
+    val scope: LagerScope = LagerScope.ORG,
+    val filter: LagerFilter = LagerFilter(),
+    val filtersOpen: Boolean = true,
+    val preloaded: Map<String, List<InventoryStack>> = emptyMap(),
+    val locationOptions: List<LocationOption> = emptyList(),
+    val selectionPersonal: Map<String, Boolean> = emptyMap(),
+    val move: StockMoveState? = null,
+    val personalNotice: Boolean = false,
 ) {
+    /** Whether the tree reads the grouped endpoints rather than the paged aggregate. */
+    val grouped: Boolean
+        get() = scope == LagerScope.MY || filter.active
+
+    /**
+     * How the selection splits into personal and shared rows, counting only rows whose kind is known.
+     *
+     * @return the personal count and the shared count.
+     */
+    fun selectionComposition(): Pair<Int, Int> {
+        val kinds = selection.mapNotNull { selectionPersonal[it] }
+        return kinds.count { it } to kinds.count { !it }
+    }
+
+    /**
+     * Every entry the tree has loaded, across open and collapsed stacks.
+     *
+     * @return the entries.
+     */
+    fun loadedEntries(): List<InventoryEntry> =
+        openedStacks.values.filterIsInstance<EntriesPhase.Ready>().flatMap { it.entries }
+
     /**
      * The selected entries among those the tree has loaded; ids whose entry is not loaded are left out.
      *
@@ -234,11 +279,14 @@ data class BulkCheckoutState(
  *   actions are offered
  * @property liveSync the live-sync bridge, or `null` in a test or a preview; a peer's change
  *   re-reads what is open
+ * @property lager the grouped reads and the „Mein Lager" writes; without them the tree is the
+ *   unfiltered Org-Lager only
  */
 class InventoryViewModel(
     private val source: InventorySource,
     connectivity: Connectivity,
     private val liveSync: LiveSyncSource? = null,
+    private val lager: LagerSources = LagerSources(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(InventoryState())
 
@@ -305,14 +353,24 @@ class InventoryViewModel(
         mutableState.update { it.copy(withStockOnly = enabled) }
     }
 
-    fun onToggleGroup(materialId: String) {
-        val opened = mutableState.value.opened
-        if (materialId in opened) {
-            mutableState.update { it.copy(opened = opened - materialId) }
+    /**
+     * Opens or closes one group; a grouped read already carries its stacks, so it opens at once.
+     *
+     * @param groupKey the group's [InventoryGroup.key].
+     */
+    fun onToggleGroup(groupKey: String) {
+        val current = mutableState.value
+        if (groupKey in current.opened) {
+            mutableState.update { it.copy(opened = it.opened - groupKey) }
             return
         }
-        mutableState.update { it.copy(opened = opened + (materialId to StackPhase.Loading)) }
-        viewModelScope.launch { readStacks(materialId) }
+        if (current.grouped) {
+            val stacks = current.preloaded[groupKey].orEmpty()
+            mutableState.update { it.copy(opened = it.opened + (groupKey to StackPhase.Ready(stacks))) }
+            return
+        }
+        mutableState.update { it.copy(opened = it.opened + (groupKey to StackPhase.Loading)) }
+        viewModelScope.launch { readStacks(groupKey) }
     }
 
     /**
@@ -323,6 +381,17 @@ class InventoryViewModel(
      *   to decide which of them still need their entries re-read.
      */
     private suspend fun readStacks(materialId: String): List<InventoryStack> {
+        if (mutableState.value.grouped) {
+            val stacks = mutableState.value.preloaded[materialId].orEmpty()
+            mutableState.update { state ->
+                if (materialId in state.opened) {
+                    state.copy(opened = state.opened + (materialId to StackPhase.Ready(stacks)))
+                } else {
+                    state
+                }
+            }
+            return stacks
+        }
         val result = source.stacks(materialId)
         val phase =
             when (result) {
@@ -335,9 +404,8 @@ class InventoryViewModel(
                     StackPhase.Failed
                 }
             }
-        val current = mutableState.value
-        if (materialId in current.opened) {
-            mutableState.value = current.copy(opened = current.opened + (materialId to phase))
+        mutableState.update { state ->
+            if (materialId in state.opened) state.copy(opened = state.opened + (materialId to phase)) else state
         }
         return (phase as? StackPhase.Ready)?.stacks.orEmpty()
     }
@@ -353,13 +421,11 @@ class InventoryViewModel(
         stack: InventoryStack,
     ) {
         val key = stackKey(materialId, stack)
-        val current = mutableState.value
-        if (key in current.openedStacks) {
-            mutableState.value = current.copy(openedStacks = current.openedStacks - key)
+        if (key in mutableState.value.openedStacks) {
+            mutableState.update { it.copy(openedStacks = it.openedStacks - key) }
             return
         }
-        mutableState.value =
-            current.copy(openedStacks = current.openedStacks + (key to EntriesPhase.Loading))
+        mutableState.update { it.copy(openedStacks = it.openedStacks + (key to EntriesPhase.Loading)) }
         viewModelScope.launch { readEntries(materialId, stack) }
     }
 
@@ -374,8 +440,17 @@ class InventoryViewModel(
         stack: InventoryStack,
     ) {
         val key = stackKey(materialId, stack)
+        val state = mutableState.value
+        val group = state.groups.firstOrNull { it.key == materialId }
+        val tree = lager.tree
+        val read =
+            if (tree != null && group != null) {
+                tree.stackEntries(scope = state.scope, group = group, stack = stack)
+            } else {
+                source.entries(materialId = materialId, stack = stack)
+            }
         val phase =
-            when (val result = source.entries(materialId = materialId, stack = stack)) {
+            when (val result = read) {
                 is ApiResult.Success -> {
                     EntriesPhase.Ready(result.value)
                 }
@@ -385,9 +460,12 @@ class InventoryViewModel(
                     EntriesPhase.Failed
                 }
             }
-        val latest = mutableState.value
-        if (key in latest.openedStacks) {
-            mutableState.value = latest.copy(openedStacks = latest.openedStacks + (key to phase))
+        mutableState.update { latest ->
+            if (key in latest.openedStacks) {
+                latest.copy(openedStacks = latest.openedStacks + (key to phase))
+            } else {
+                latest
+            }
         }
         if (phase is EntriesPhase.Ready) {
             val ids = phase.entries.map { it.id }
@@ -472,9 +550,19 @@ class InventoryViewModel(
      * @param entryId the row.
      */
     fun onToggleSelected(entryId: String) {
-        val current = mutableState.value.selection
-        val next = if (entryId in current) current - entryId else current + entryId
-        mutableState.update { it.copy(selection = next) }
+        val personal = mutableState.value.loadedEntries().firstOrNull { it.id == entryId }?.personal
+        mutableState.update { state ->
+            val adding = entryId !in state.selection
+            state.copy(
+                selection = if (adding) state.selection + entryId else state.selection - entryId,
+                selectionPersonal =
+                    if (adding && personal != null) {
+                        state.selectionPersonal + (entryId to personal)
+                    } else {
+                        state.selectionPersonal
+                    },
+            )
+        }
     }
 
     /**
@@ -490,24 +578,44 @@ class InventoryViewModel(
         stack: InventoryStack? = null,
     ) {
         val prefix = if (stack == null) "$materialId|" else stackKey(materialId, stack)
-        val ids =
+        val entries =
             mutableState.value.openedStacks
                 .filterKeys { if (stack == null) it.startsWith(prefix) else it == prefix }
                 .values
                 .filterIsInstance<EntriesPhase.Ready>()
-                .flatMap { phase -> phase.entries.map { it.id } }
-                .toSet()
+                .flatMap { it.entries }
+        val ids = entries.map { it.id }.toSet()
         if (ids.isEmpty()) {
+            val current = mutableState.value
+            val closed =
+                (stack?.let(::listOf) ?: current.preloaded[materialId].orEmpty())
+                    .filter { stackKey(materialId, it) !in current.openedStacks }
+            if (current.grouped && closed.isNotEmpty()) {
+                mutableState.update { state ->
+                    state.copy(
+                        openedStacks =
+                            state.openedStacks + closed.associate { stackKey(materialId, it) to EntriesPhase.Loading },
+                    )
+                }
+                viewModelScope.launch {
+                    closed.forEach { readEntries(materialId, it) }
+                    onToggleBranch(materialId, stack)
+                }
+            }
             return
         }
-        val current = mutableState.value.selection
-        val next = if (ids.all { it in current }) current - ids else current + ids
-        mutableState.update { it.copy(selection = next) }
+        mutableState.update { state ->
+            val removing = ids.all { it in state.selection }
+            state.copy(
+                selection = if (removing) state.selection - ids else state.selection + ids,
+                selectionPersonal = state.selectionPersonal + entries.associate { it.id to it.personal },
+            )
+        }
     }
 
     /** Clears the selection, which leaves selection mode. */
     fun onSelectionCleared() {
-        mutableState.update { it.copy(selection = emptySet()) }
+        mutableState.update { it.copy(selection = emptySet(), selectionPersonal = emptyMap()) }
     }
 
     /**
@@ -606,49 +714,7 @@ class InventoryViewModel(
         }
     }
 
-    /**
-     * Books every selected row out.
-     *
-     * **All or nothing.** The endpoint refuses the whole call on a foreign row or an unknown id, so
-     * there is no „ausgebucht / übersprungen" to report the way the bulk rebooking does — the
-     * sheet shows either the done step or the refusal, and the selection survives a refusal.
-     */
-    fun onBulkCheckoutConfirmed() {
-        val current = mutableState.value
-        val open = current.checkout ?: return
-        val ids = current.selection.toList()
-        if (ids.isEmpty() || open.saving) {
-            return
-        }
-        mutableState.value = current.copy(checkout = open.copy(saving = true, error = null))
-        viewModelScope.launch {
-            when (val result = source.bulkCheckout(ids)) {
-                is ApiResult.Success -> {
-                    mutableState.update {
-                        it.copy(
-                            checkout = open.copy(saving = false, done = true),
-                        )
-                    }
-                    publishLiveSync(
-                        liveSync,
-                        LiveSyncTopic.INVENTORY,
-                        LiveSyncSections.INVENTORY_STOCK,
-                    )
-                }
-
-                is ApiResult.Failure -> {
-                    KrtLog.w(LOG_TAG) { "the bulk checkout was refused: ${result.error}" }
-                    mutableState.update {
-                        it.copy(
-                            checkout = open.copy(saving = false, error = result.error),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-/** Opens the bulk-move sheet over the current selection. */
+    /** Opens the bulk-move sheet over the current selection. */
     fun onBulkMoveRequested() {
         if (mutableState.value.selection.isEmpty()) {
             return
@@ -913,6 +979,11 @@ class InventoryViewModel(
 
     /** Reads page 0 into the state, whatever the reason for the read was. */
     private suspend fun readFirstPage() {
+        val tree = lager.tree
+        if (tree != null && mutableState.value.grouped) {
+            readGrouped(tree)
+            return
+        }
         when (val result = source.groups(page = 0)) {
             is ApiResult.Success -> {
                 mutableState.update {
@@ -924,6 +995,7 @@ class InventoryViewModel(
                         phase = InventoryPhase.Ready,
                         loadingMore = false,
                         refreshing = false,
+                        preloaded = emptyMap(),
                     )
                 }
                 retry.onSuccess()
@@ -943,6 +1015,211 @@ class InventoryViewModel(
         }
     }
 
+    /**
+     * Reads the grouped view of the current scope and filter, keeping the rows on screen until the
+     * answer arrives.
+     *
+     * @param tree the grouped reads.
+     */
+    private suspend fun readGrouped(tree: LagerTreeSource) {
+        val asked = mutableState.value
+        when (val result = tree.grouped(asked.scope, asked.filter)) {
+            is ApiResult.Success -> {
+                val groups = result.value
+                mutableState.update { state ->
+                    if (state.scope != asked.scope || state.filter != asked.filter) {
+                        state
+                    } else {
+                        state.copy(
+                            groups = groups.map { it.group },
+                            total = groups.size.toLong(),
+                            page = 0,
+                            hasMore = false,
+                            phase = InventoryPhase.Ready,
+                            loadingMore = false,
+                            refreshing = false,
+                            preloaded = groups.mapNotNull { g -> g.group.key?.let { it to g.stacks } }.toMap(),
+                            opened =
+                                state.opened.mapValues { (key, phase) ->
+                                    groups.firstOrNull { it.group.key == key }?.let { StackPhase.Ready(it.stacks) }
+                                        ?: phase
+                                },
+                            locationOptions =
+                                if (asked.filter.active) state.locationOptions else groups.krtPlaces(),
+                        )
+                    }
+                }
+                retry.onSuccess()
+                if (asked.filter.active && mutableState.value.locationOptions.isEmpty()) {
+                    (tree.grouped(asked.scope, LagerFilter()) as? ApiResult.Success)?.let { unfiltered ->
+                        mutableState.update { it.copy(locationOptions = unfiltered.value.krtPlaces()) }
+                    }
+                }
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "the grouped Lager could not be read: ${result.error}" }
+                mutableState.update {
+                    it.copy(phase = InventoryPhase.Failed(result.error), loadingMore = false, refreshing = false)
+                }
+                retry.onFailure(result.error, hasContent = false)
+            }
+        }
+    }
+
+    /**
+     * The Lager's scope segment, its filter row and „Alles wählen", as one object: the view model
+     * already carries every function detekt allows.
+     */
+    val controls: LagerControls = LagerControls()
+
+    /** Switches scope and narrows the tree; every change re-reads the first view from scratch. */
+    inner class LagerControls {
+        /**
+         * Switches between the Org-Lager and „Mein Lager".
+         *
+         * The selection, the open branches and the place filter belong to one scope and are dropped;
+         * the personal filter is kept for a later return.
+         *
+         * @param scope the scope to show.
+         */
+        fun scope(scope: LagerScope) {
+            if (mutableState.value.scope == scope) {
+                return
+            }
+            mutableState.update {
+                it.copy(
+                    scope = scope,
+                    filter = it.filter.copy(locationIds = emptySet()),
+                    selection = emptySet(),
+                    selectionPersonal = emptyMap(),
+                    opened = emptyMap(),
+                    openedStacks = emptyMap(),
+                    locationOptions = emptyList(),
+                    groups = emptyList(),
+                )
+            }
+            loadedOnce = true
+            reload(keepRows = false)
+        }
+
+        /**
+         * Sets the „Mein Lager" stock-kind filter; tapping the active value again resets it to all.
+         *
+         * @param value the value tapped.
+         */
+        fun personal(value: PersonalFilter) {
+            val current = mutableState.value.filter.personal
+            narrow { it.copy(personal = if (current == value) PersonalFilter.ALL else value) }
+        }
+
+        /**
+         * Sets the „gestohlen" filter.
+         *
+         * @param value the value tapped.
+         */
+        fun stolen(value: StolenFilter) = narrow { it.copy(stolen = value) }
+
+        /**
+         * Sets the places to keep.
+         *
+         * @param ids the place ids; empty keeps every place.
+         */
+        fun locations(ids: Set<String>) = narrow { it.copy(locationIds = ids) }
+
+        /** Clears every filter value. */
+        fun reset() = narrow { LagerFilter() }
+
+        /**
+         * Notes that a personal book-in landed; from the Org-Lager, where the row will not appear,
+         * the screen says where it went (design ch. 19, artboard 3).
+         */
+        fun personalBooked() {
+            if (mutableState.value.scope == LagerScope.ORG) {
+                mutableState.update { it.copy(personalNotice = true) }
+            }
+        }
+
+        /** Clears that notice once it has been shown. */
+        fun personalNoticeShown() {
+            mutableState.update { it.copy(personalNotice = false) }
+        }
+
+        /** Opens or closes the filter row. */
+        fun toggleRow() {
+            mutableState.update { it.copy(filtersOpen = !it.filtersOpen) }
+        }
+
+        /**
+         * Selects every one of the caller's rows under the current filter, across collapsed stacks,
+         * as the server resolves it (REQ-INV-034); in the Org-Lager it selects what is loaded.
+         */
+        fun selectAll() {
+            val tree = lager.tree
+            val state = mutableState.value
+            if (tree == null || state.scope != LagerScope.MY) {
+                val loaded = state.loadedEntries()
+                mutableState.update {
+                    it.copy(
+                        selection = it.selection + loaded.map { e -> e.id },
+                        selectionPersonal = it.selectionPersonal + loaded.associate { e -> e.id to e.personal },
+                    )
+                }
+                return
+            }
+            viewModelScope.launch {
+                when (val result = tree.myEntryIds(state.filter)) {
+                    is ApiResult.Success -> {
+                        mutableState.update {
+                            it.copy(selection = result.value.keys, selectionPersonal = result.value)
+                        }
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "the selection could not be resolved: ${result.error}" }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Replaces the filter and re-reads, keeping the selection only where the filter still shows it.
+         *
+         * @param change what to make of the current filter.
+         */
+        private fun narrow(change: (LagerFilter) -> LagerFilter) {
+            val before = mutableState.value.filter
+            val after = change(before)
+            if (after == before) {
+                return
+            }
+            mutableState.update {
+                it.copy(
+                    filter = after,
+                    selection = emptySet(),
+                    selectionPersonal = emptyMap(),
+                    opened = emptyMap(),
+                    openedStacks = emptyMap(),
+                )
+            }
+            loadedOnce = true
+            reload(keepRows = false)
+        }
+    }
+
+    /** The „Mein Lager" move sheets: rebooking, the org-unit change, their bulk forms. */
+    val moves: StockMoveHolder =
+        StockMoveHolder(
+            state = mutableState,
+            scope = viewModelScope,
+            lager = lager,
+            options = source,
+            afterWrite = {
+                publishLiveSync(liveSync, LiveSyncTopic.INVENTORY, LiveSyncSections.INVENTORY_STOCK)
+                reReadOpenPath()
+            },
+        )
+
     private companion object {
         /** Log subsystem. A holder's name is member data and never reaches the log. */
         const val LOG_TAG = "inventory"
@@ -950,14 +1227,48 @@ class InventoryViewModel(
 }
 
 /**
- * The key one stack is opened under: material, holder, place and quality together, the same four
- * values the entry read is narrowed by.
+ * The distinct places a grouped read's stacks sit at, by name.
  *
- * @param materialId the group's material.
+ * @receiver the grouped read.
+ * @return the places, sorted by name.
+ */
+private fun List<StockGroup>.krtPlaces(): List<LocationOption> =
+    flatMap { it.stacks }
+        .mapNotNull { stack -> stack.locationId?.let { LocationOption(it, stack.location.orEmpty()) } }
+        .distinctBy { it.id }
+        .sortedBy { it.name.lowercase() }
+
+/**
+ * What the Lager screen reads and writes beyond the Org-Lager aggregate.
+ *
+ * @property tree the grouped reads of both scopes, or `null` where only the aggregate is wanted.
+ * @property moves the „Mein Lager" writes, or `null`.
+ * @property identity who the caller is, for the unit pickers of „Mein Lager", or `null`.
+ */
+data class LagerSources(
+    val tree: LagerTreeSource? = null,
+    val moves: de.greluc.krt.profit.basetool.android.core.data.StockMoveSource? = null,
+    val identity: de.greluc.krt.profit.basetool.android.core.data.IdentitySource? = null,
+)
+
+/**
+ * The key one stack is opened under: its group and the whole stack identity the entry read is
+ * narrowed by — holder, place, quality, owning unit, the personal flag and the stolen marker.
+ *
+ * @param materialId the group's key.
  * @param stack the stack.
  * @return the key.
  */
 fun stackKey(
     materialId: String,
     stack: InventoryStack,
-): String = listOf(materialId, stack.holderId, stack.locationId, stack.quality).joinToString("|")
+): String =
+    listOf(
+        materialId,
+        stack.holderId,
+        stack.locationId,
+        stack.quality,
+        stack.owningOrgUnitId,
+        stack.personal,
+        stack.stolen,
+    ).joinToString("|")

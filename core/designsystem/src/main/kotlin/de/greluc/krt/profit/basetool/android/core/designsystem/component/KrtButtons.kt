@@ -196,6 +196,8 @@ object KrtButtonStyles {
  * @param modifier layout modifier.
  * @param enabled whether the button reacts to input; disabled renders at 45 % opacity.
  * @param iconRes optional leading glyph, rendered at 16 dp with an 8 dp gap.
+ * @param compact whether the button sits in a dense action bar: 8 dp side padding, the smaller label
+ *   and one line (design ch. 19, artboard 2).
  */
 @Composable
 fun KrtButton(
@@ -205,6 +207,7 @@ fun KrtButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     @DrawableRes iconRes: Int? = null,
+    compact: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -254,8 +257,9 @@ fun KrtButton(
                     role = Role.Button,
                     onClick = onClick,
                 )
-                .padding(horizontal = BUTTON_HORIZONTAL_PADDING),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.CenterHorizontally),
+                .padding(horizontal = if (compact) KrtSpacing.s8 else BUTTON_HORIZONTAL_PADDING),
+        horizontalArrangement =
+            Arrangement.spacedBy(if (compact) KrtSpacing.s4 else KrtSpacing.s8, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CompositionLocalProvider(LocalContentColor provides content) {
@@ -264,8 +268,9 @@ fun KrtButton(
             }
             Text(
                 text = text.krtUppercase(),
-                style = MaterialTheme.typography.labelLarge,
+                style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
                 color = content,
+                maxLines = if (compact) 1 else Int.MAX_VALUE,
             )
         }
     }
@@ -323,7 +328,8 @@ fun KrtOutlineButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     @DrawableRes iconRes: Int? = null,
-) = KrtButton(text, onClick, KrtButtonStyles.outline, modifier, enabled, iconRes)
+    compact: Boolean = false,
+) = KrtButton(text, onClick, KrtButtonStyles.outline, modifier, enabled, iconRes, compact)
 
 /**
  * The routine, repeated action (Bearbeiten, Check-Out, "Mehr laden").
@@ -341,7 +347,8 @@ fun KrtGhostButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     @DrawableRes iconRes: Int? = null,
-) = KrtButton(text, onClick, KrtButtonStyles.ghost, modifier, enabled, iconRes)
+    compact: Boolean = false,
+) = KrtButton(text, onClick, KrtButtonStyles.ghost, modifier, enabled, iconRes, compact)
 
 /**
  * A destructive action that rests in quiet grey and turns red only under the finger.

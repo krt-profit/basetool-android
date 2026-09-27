@@ -116,6 +116,7 @@ private const val SCU_UNIT = "SCU"
  *   entry at the target; only meaningful for an SCU material.
  * @property sellAmount what the sale fetched, as typed.
  * @property note the entry's note, as typed.
+ * @property personal whether a book-in is the member's personal stock, which carries no earmark.
  * @property online whether a booking can be sent at all.
  * @property saving whether a booking is in flight.
  * @property error what the last attempt returned, or `null`.
@@ -157,6 +158,7 @@ data class BookingState(
     val mergeStock: Boolean = false,
     val sellAmount: String = "",
     val note: String = "",
+    val personal: Boolean = false,
     val online: Boolean = true,
     val saving: Boolean = false,
     val error: ApiError? = null,
@@ -173,7 +175,7 @@ data class BookingState(
                 }
 
                 BookingMode.IN -> {
-                    positiveAmount && place != null && !splitOverbooked &&
+                    positiveAmount && place != null && (personal || !splitOverbooked) &&
                         when (kind) {
                             BookingCatalogKind.MATERIAL -> material != null && qualityGiven
                             BookingCatalogKind.ITEM -> gameItem != null && wholeAmount
@@ -380,6 +382,7 @@ class BookingViewModel(
 
     private var searchJob: Job? = null
     private var saved: (() -> Unit)? = null
+    private var personalSaved: (() -> Unit)? = null
 
     init {
         viewModelScope.launch {
@@ -393,10 +396,15 @@ class BookingViewModel(
     /**
      * Opens the form for booking material in.
      *
+     * @param onPersonalSaved what to run in addition once a personal book-in lands.
      * @param onSaved what to run once a booking lands, so the tree can re-read itself.
      */
-    fun openBookIn(onSaved: () -> Unit) {
+    fun openBookIn(
+        onPersonalSaved: () -> Unit = {},
+        onSaved: () -> Unit,
+    ) {
         saved = onSaved
+        personalSaved = onPersonalSaved
         mutableState.value = BookingState(mode = BookingMode.IN, online = onlineState.value)
         splits.load()
     }
@@ -670,6 +678,9 @@ class BookingViewModel(
                 is ApiResult.Success -> {
                     mutableState.value = null
                     saved?.invoke()
+                    if (current.mode == BookingMode.IN && current.personal) {
+                        personalSaved?.invoke()
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -696,9 +707,11 @@ class BookingViewModel(
                         locationId = current.place?.id.orEmpty(),
                         amount = current.amount,
                         quality = current.quality.toIntOrNull().takeUnless { item },
-                        jobOrderAllocations = current.jobOrderSplit.krtToAllocations(),
+                        personal = current.personal,
+                        jobOrderAllocations =
+                            if (current.personal) emptyList() else current.jobOrderSplit.krtToAllocations(),
                         missionAllocations =
-                            if (item) emptyList() else current.missionSplit.krtToAllocations(),
+                            if (item || current.personal) emptyList() else current.missionSplit.krtToAllocations(),
                     ),
                 )
             }

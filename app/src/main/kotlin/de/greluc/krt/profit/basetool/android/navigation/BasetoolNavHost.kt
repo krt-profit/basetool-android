@@ -404,10 +404,16 @@ private fun listDestination(
             LaunchedEffect(Unit) { inventory.loadOnce() }
             InventoryRoute(
                 viewModel = inventory,
-                onBookIn = { booking.openBookIn(inventory::onBookingSaved) },
+                onBookIn = {
+                    booking.openBookIn(
+                        onSaved = inventory::onBookingSaved,
+                        onPersonalSaved = inventory.controls::personalBooked,
+                    )
+                },
                 onBookOut = { entry ->
                     booking.openForEntry(entry, BookingMode.OUT, inventory::onBookingSaved)
                 },
+                onOpenOrder = { navController.navigate(orderCollectionRoute(it)) },
             )
             BookingHost(viewModel = booking)
         }

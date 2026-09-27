@@ -50,6 +50,7 @@ fun BookingHost(viewModel: BookingViewModel) {
                     onMissionShare = viewModel::onMissionShare,
                     onOrgUnit = viewModel::onOrgUnitChosen,
                     onMergeStock = viewModel::onMergeStockChanged,
+                    onPersonal = viewModel.splits::personal,
                     onSellAmount = viewModel::onSellAmountChanged,
                     onNote = viewModel::onNoteChanged,
                     onSave = viewModel::onSave,

@@ -21,6 +21,8 @@ the unit, confirming and rejecting requests, direct bookings, Storno, holders an
 app since v0.2.0. Two file imports work from the phone: the **Fleetview import** in the Hangar
 (CCU-Game Fleetview, HangarXPLOR shiplist, Fleetyards JSON) and the **blueprint JSON import** in
 Mein Inventar, both with a preview before anything is written.
+The Lager has a „Mein Lager" mode for your own stock: filter it by kind and place, move rows between
+personal and the shared Lager, and give a personal row a unit or none.
 Data updates live while the app is in front; on a tablet the list sits beside its detail.
 
 **What it deliberately does not do.** The administration stays in the browser, permanently and by

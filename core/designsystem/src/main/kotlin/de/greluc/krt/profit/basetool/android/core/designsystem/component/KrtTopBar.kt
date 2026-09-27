@@ -147,6 +147,8 @@ fun KrtSelectionTopBar(
     onClear: () -> Unit,
     closeLabel: String,
     modifier: Modifier = Modifier,
+    title: String? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -163,12 +165,30 @@ fun KrtSelectionTopBar(
             onClick = onClear,
             style = KrtButtonStyles.chrome,
         )
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
-        )
+        if (title == null) {
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                color = KrtPalette.White,
+            )
+        } else {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title.krtUppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                    maxLines = 1,
+                )
+            }
+        }
+        trailing?.invoke()
     }
 }
 

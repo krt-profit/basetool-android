@@ -1874,4 +1874,106 @@
         <item quantity="one">%1$d Variante</item>
         <item quantity="other">%1$d Varianten</item>
     </plurals>
+    <string name="lager_scope_org">Org-Lager</string>
+    <string name="lager_scope_my">Mein Lager</string>
+    <string name="lager_filter_all">Alle</string>
+    <string name="lager_filter_personal_only">Nur persönliche</string>
+    <string name="lager_filter_shared_only">Nur nicht-persönliche</string>
+    <string name="lager_filter_location">Ort: %1$s</string>
+    <string name="lager_filter_location_title">Ort</string>
+    <string name="lager_filter_location_none">Noch keine Orte mit Bestand.</string>
+    <string name="lager_filter_reset">Zurücksetzen</string>
+    <string name="lager_filter_apply">Übernehmen</string>
+    <string name="lager_filter_show">Filter zeigen</string>
+    <string name="lager_filter_hide">Filter ausblenden</string>
+    <plurals name="lager_filter_chosen">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <plurals name="lager_count_my">
+        <item quantity="one">%1$d Material · nur deine Einträge</item>
+        <item quantity="other">%1$d Materialien · nur deine Einträge</item>
+    </plurals>
+    <plurals name="lager_count_org">
+        <item quantity="one">%1$d Material</item>
+        <item quantity="other">%1$d Materialien</item>
+    </plurals>
+    <string name="lager_no_unit">Keine Einheit</string>
+    <string name="lager_empty_my_title">Du hast noch keinen Bestand.</string>
+    <string name="lager_empty_my_message">Buche Material ein — persönlich oder ins gemeinsame Lager.</string>
+    <string name="lager_empty_filtered_title">Kein Treffer</string>
+    <string name="lager_empty_filtered_message">Kein Bestand passt zu den Filtern.</string>
+    <string name="lager_entry_more">Weitere Aktionen</string>
+    <string name="lager_entry_to_shared">Ins gemeinsame Lager umbuchen</string>
+    <string name="lager_entry_to_personal">Als persönlich umbuchen</string>
+    <string name="lager_entry_org_unit">Einheit ändern</string>
+    <string name="lager_entry_org_unit_shared">Nur für persönliche Einträge — ein gemeinsamer Eintrag wechselt die Einheit per Umbuchen.</string>
+    <string name="lager_entry_to_personal_earmarked">Einem Auftrag oder Einsatz zugeordneter Bestand kann nicht persönlich werden.</string>
+    <string name="lager_entry_order">Auftrag %1$s — Lieferstatus</string>
+    <string name="lager_personal_no_allocation">Ein persönlicher Eintrag trägt keine Zuordnung.</string>
+    <string name="lager_personal_no_allocation_detail">Buche ihn zuerst ins gemeinsame Lager um.</string>
+    <string name="lager_select_all">Alle wählen</string>
+    <string name="lager_selection_title">Mein Lager</string>
+    <plurals name="lager_selection_detail">
+        <item quantity="one">%1$d gewählt · %2$d persönlich, %3$d gemeinsam</item>
+        <item quantity="other">%1$d gewählt · %2$d persönlich, %3$d gemeinsam</item>
+    </plurals>
+    <string name="lager_selection_more">Weitere Aktionen</string>
+    <string name="lager_booked_personal_title">Persönlich gebucht</string>
+    <string name="lager_booked_personal_message">Zu finden in „Mein Lager“.</string>
+    <string name="stock_move_title_rebook">Umbuchen</string>
+    <string name="stock_move_title_bulk_rebook">Markierte umbuchen</string>
+    <string name="stock_move_title_unit">Einheit ändern</string>
+    <string name="stock_move_title_bulk_unit">Markierte: Einheit ändern</string>
+    <plurals name="stock_move_selected">
+        <item quantity="one">%1$d Eintrag gewählt</item>
+        <item quantity="other">%1$d Einträge gewählt</item>
+    </plurals>
+    <string name="stock_move_mode">Umbuchungsart</string>
+    <string name="stock_move_mode_personal">Als persönlich umbuchen</string>
+    <string name="stock_move_mode_shared">Ins gemeinsame Lager umbuchen</string>
+    <string name="stock_move_mode_location">Ort / Nutzer</string>
+    <string name="stock_move_bulk_hint_personal">Alle markierten Einträge werden als persönlich markiert. Einträge, die bereits persönlich sind, werden übersprungen.</string>
+    <string name="stock_move_bulk_hint_shared">Alle markierten Einträge werden ins gemeinsame Lager umgebucht. Einträge, die bereits dort liegen, werden übersprungen.</string>
+    <string name="stock_move_all">Alles</string>
+    <string name="stock_move_unit">Einheit</string>
+    <string name="stock_move_units_loading">Einheiten werden geladen …</string>
+    <string name="stock_move_units_none">Du gehörst keiner Einheit an — der Eintrag bleibt ohne Pool.</string>
+    <string name="stock_move_pool_note">Pool im gemeinsamen Lager — vorbelegt mit der Einheit des Eintrags, nie leer.</string>
+    <string name="stock_move_merge">Mit vorhandenem Bestand zusammenführen (nur SCU)</string>
+    <string name="stock_move_visibility">Mitglieder mit Bearbeitungsrecht in dieser Einheit können den Eintrag dann sehen und ändern. Ohne Einheit siehst nur du ihn.</string>
+    <plurals name="stock_move_shared_refusal">
+        <item quantity="one">Nicht möglich: die Auswahl enthält %1$d gemeinsamen Eintrag. „Einheit ändern“ gilt nur für persönliche Einträge — hebe ihn aus der Auswahl oder buche ihn um.</item>
+        <item quantity="other">Nicht möglich: die Auswahl enthält %1$d gemeinsame Einträge. „Einheit ändern“ gilt nur für persönliche Einträge — hebe sie aus der Auswahl oder buche sie um.</item>
+    </plurals>
+    <string name="stock_move_shared_refusal_kept">Die Auswahl bleibt erhalten. Keine Einheit wurde geändert.</string>
+    <string name="stock_move_drop_shared">Gemeinsame aus der Auswahl nehmen</string>
+    <string name="stock_move_changed">Geändert</string>
+    <plurals name="stock_move_rebook_result">
+        <item quantity="one">%1$d Eintrag umgebucht, %2$d lagen bereits am Ziel — kein Fehler, keine Änderung nötig.</item>
+        <item quantity="other">%1$d Einträge umgebucht, %2$d lagen bereits am Ziel — kein Fehler, keine Änderung nötig.</item>
+    </plurals>
+    <plurals name="stock_move_unit_result">
+        <item quantity="one">Einheit bei %1$d Eintrag geändert, %2$d hatten sie bereits.</item>
+        <item quantity="other">Einheit bei %1$d Einträgen geändert, %2$d hatten sie bereits.</item>
+    </plurals>
+    <string name="stock_move_whole_rows">Ganze Zeilen, keine Mengen — Teilmengen gibt es nur einzeln.</string>
+    <string name="stock_move_done">Fertig</string>
+    <string name="stock_move_unit_cta">Einheit übernehmen</string>
+    <string name="stock_move_rebook_failed">Die Umbuchung wurde abgelehnt. Nichts wurde geändert.</string>
+    <string name="stock_move_unit_failed">Die Einheit konnte nicht geändert werden. Nur eigene persönliche Einträge lassen sich so umstellen.</string>
+    <string name="stock_move_personal_word">persönlich</string>
+    <string name="stock_move_shared_word">gemeinsam</string>
+    <string name="stock_move_kind_squadron">Staffel</string>
+    <string name="stock_move_kind_sk">SK</string>
+    <string name="stock_move_kind_bereich">Bereich</string>
+    <string name="stock_move_kind_ol">OL</string>
+    <string name="stock_move_kind_unknown">Einheit</string>
+    <string name="booking_personal">Persönlich — nur in Mein Lager, ohne Auftrag/Einsatz</string>
+    <string name="booking_personal_splits_title">Zuordnung zu Aufträgen / Einsätzen</string>
+    <string name="booking_personal_splits_none">Entfällt bei persönlichen Einträgen — ein persönlicher Eintrag trägt keine Zuordnung.</string>
+    <plurals name="booking_personal_splits_dropped">
+        <item quantity="one">%1$d Zuordnung wird entfernt</item>
+        <item quantity="other">%1$d Zuordnungen werden entfernt</item>
+    </plurals>
 </resources>
