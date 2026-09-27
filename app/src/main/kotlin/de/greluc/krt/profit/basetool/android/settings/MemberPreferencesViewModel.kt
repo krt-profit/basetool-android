@@ -25,7 +25,9 @@ import kotlinx.coroutines.launch
  *
  * Both are columns of the backend's `User` entity, so they share one optimistic-lock version.
  *
- * @property payout the standing payout choice, or `null` until the read lands.
+ * @property payout the standing payout choice, or `null` while unread or never chosen.
+ * @property payoutRead whether a read of [payout] has landed; `null` with this set means the member
+ *   has not chosen yet, and the row is writable.
  * @property sharing whether blueprints are shared, or `null` until the read lands.
  * @property version the entity's version as the last read or write left it; both writes echo it.
  * @property saving whether a write is in flight; both rows are disabled meanwhile.
@@ -36,6 +38,7 @@ import kotlinx.coroutines.launch
  */
 data class MemberPreferencesState(
     val payout: PayoutPreference? = null,
+    val payoutRead: Boolean = false,
     val sharing: Boolean? = null,
     val version: Long = 0L,
     val saving: Boolean = false,
@@ -88,6 +91,7 @@ class MemberPreferencesViewModel(
                     mutableState.update {
                         it.copy(
                             payout = result.value.preference,
+                            payoutRead = true,
                             version = result.value.version,
                         )
                     }

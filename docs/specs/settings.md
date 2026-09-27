@@ -107,6 +107,18 @@ settings row that displays the member's rejected choice is lying about the state
 is a decision, not the absence of one, so a row whose value has not arrived reads „Noch nicht
 gewählt".
 
+**„Noch nicht gewählt" is also what a read returns**, and that row is open. The server's
+`defaultPayoutPreference` is `null` until the member chooses, so a `null` payout means either „not
+read yet" or „read, never chosen". The state carries the read separately (`payoutRead`, set only by
+a successful read), and the row is enabled on that, not on the value: a read `null` has a version
+to echo, an unread one has none.
+
+> [!danger] Corrected 2026-09-27 — a member who had never chosen could never choose
+> The row was drawn `enabled = payout != null`, which conflated the two meanings above. On the
+> Pixel_10a AVD against the test stack it sat disabled on „Noch nicht gewählt" with no read error,
+> for every account that had not set the preference in the browser first. The ViewModel wrote the
+> first choice correctly; only the screen's gate was wrong, and no screen test drew a read `null`.
+
 **The sharing toggle cannot do that**, and the spec should not pretend otherwise: a switch has two
 positions and no third, so an unread one is drawn **off**. That is the safe reading — nothing of the
 member's is being published — but it *is* a default, which is why the row stays disabled until the
@@ -138,6 +150,8 @@ it had no place on the screen either.
   why and offers a retry (`MemberPreferencesViewModelTest`).
 - [x] A refusal is shown and the row keeps the confirmed value; setting a value to what it already
   is writes nothing (`MemberPreferencesViewModelTest`).
+- [x] A payout that was read but never chosen can be set; an unread one cannot
+  (`MemberPreferencesViewModelTest`, `SettingsScreenTest`).
 - [x] Verified on a device against the test stack: both writes landed in one session, the entity's
   version moving 2 → 3 → 4.
 

@@ -25,6 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -159,8 +160,32 @@ class MemberPreferencesViewModelTest {
 
             assertNotNull("the failure has to reach the screen", model.state.value.readError)
             assertNull(model.state.value.payout)
+            assertFalse("an unread payout keeps its row shut", model.state.value.payoutRead)
             assertNull(model.state.value.sharing)
             assertFalse(model.state.value.reading)
+        }
+
+    /**
+     * A payout the member never chose reads as `null`, and that read is still a read: the row opens
+     * and the first choice is written with the version it returned.
+     */
+    @Test
+    fun `a read but never chosen payout can be written`() =
+        runTest(dispatcher) {
+            val source = SharedRow(payout = null, version = STORED_VERSION)
+            val model = MemberPreferencesViewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+            assertNull(model.state.value.payout)
+            assertTrue("a read null is a value, not a missing one", model.state.value.payoutRead)
+
+            model.onPayout(PayoutPreference.PAYOUT)
+            advanceUntilIdle()
+
+            assertEquals(0, source.refusals)
+            assertEquals(PayoutPreference.PAYOUT, source.payout)
+            assertEquals(PayoutPreference.PAYOUT, model.state.value.payout)
+            assertEquals(STORED_VERSION + 1, model.state.value.version)
         }
 
     /** A read that lands leaves no failure behind. */
