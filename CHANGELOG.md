@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Lager: „Mein Lager".** Ein Umschalter „Org-Lager | Mein Lager" zeigt deinen eigenen Bestand –
+  persönlich und gemeinsam, Material und Items – mit den Filtern „Nur persönliche" / „Nur
+  nicht-persönliche" und nach Ort. Jeder Stapel nennt seine Einheit oder „Keine Einheit".
+- **Umbuchen zwischen persönlich und gemeinsamem Lager.** Einzeln mit Teilmenge und Einheit, oder
+  für eine Auswahl als ganze Zeilen; das Ergebnis sagt, was umgebucht und was übersprungen wurde.
+- **Einheit eines persönlichen Eintrags ändern**, auch auf „Keine Einheit" – einzeln oder für eine
+  Auswahl. Bestand, der aus anderen Tools kommt, trägt anfangs keine Einheit.
+- **Einbuchen als „Persönlich".** Ein persönlicher Eintrag trägt keine Zuordnung zu Aufträgen oder
+  Einsätzen; das Formular sagt, welche Zuordnungen dabei entfallen.
+- **Lieferstatus aus „Mein Lager" erreichbar.** Das Menü eines Eintrags öffnet die Materialsammlung
+  des Auftrags, dem er zugeordnet ist.
+
+### Changed
+
+- **Lager: Die Filterzeile lässt sich über den Filter in der Kopfzeile einklappen**; eingeklappt
+  zählt das Symbol die aktiven Filter.
+
 ## [0.3.1] — 2026-09-25
 
 ### Added

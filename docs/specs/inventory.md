@@ -1,6 +1,7 @@
 # Lager — the stock tree
 
-> **Doc type:** Living spec · **Area:** `REQ-APP-INV-*` · **Design:** `docs/design/android/09 Lager.dc.html`
+> **Doc type:** Living spec · **Area:** `REQ-APP-INV-*` · **Design:** `docs/design/android/09 Lager.dc.html`,
+> `docs/design/android/19 Mein Lager.dc.html` („Mein Lager", `025`–`031`)
 > **Server contract:** main repo `REQ-API-009`
 > **Related:** [`api-contract.md`](api-contract.md)
 
@@ -445,14 +446,14 @@ blue, matching the allocation sheet so the dimensions read apart without a legen
 
 ## Known gaps, stated rather than omitted
 
-- **No Material and no Ort filter.** Both need pickers (design ch. 02 bottom sheets) and a catalog
-  read; they ship with the shared picker work, together with the Einsatz list's date range.
-- **Private stock is not reachable from the app at all.** It needs the `my-inventory` read, which is
-  its own screen in the web app („Mein Lager", `/inventory/my`) and its own slice here.
-  `POST /inventory/{id}/personal-rebook` is in the contract set and on the vhost allow-list ready
-  for it, and no app code calls it today. The same slice carries the bulk bar's
-  `POST /inventory/bulk-checkout` and the `PERSONALIZE` / `DEPERSONALIZE` modes of
-  `POST /inventory/bulk-rebook` — the app sends only `LOCATION` today.
+- **No Material filter, and the Ort filter is „Mein Lager"'s only.** The place filter
+  (`REQ-APP-INV-026`) derives its options from the caller's own stacks; the Org-Lager's paged
+  aggregate carries no stacks to derive them from. The Material filter still needs the shared picker
+  work.
+- **The scope segment is not remembered across a restart.** Design ch. 19 artboard 1 asks for the
+  last scope per device and a `?scope=my` deep link; both need a stored preference and with it a
+  § 25 TDDDG storage entry, so they are left for their own change (ADR-0024). Within a process the
+  scope survives navigation.
 - **The sale's coupled-proceeds hint is not drawn.** Mission reductions already decide who is
   credited what — that is server-side and works — but artboard 19's live „Gekoppelter Verkaufserlös"
   line under the sale amount is not there yet, so a seller cannot see the split before committing
@@ -470,8 +471,14 @@ blue, matching the allocation sheet so the dimensions read apart without a legen
 `/locations/search` and `/users/search` are in the `REQ-API-009` contract set and the vhost
 allow-list. So are the writes — `POST /inventory`, `POST /inventory/{id}/book-out`,
 `POST /inventory/{id}/personal-rebook` and `PUT /inventory/{id}/note` — as named exceptions to the
-vhost's read-only guard on the family; every other verb on it still answers `405`. Three of the four
-are sent by this screen; `personal-rebook` waits for the `my-inventory` slice (see the gaps above).
+vhost's read-only guard on the family; every other verb on it still answers `405`. All four are
+sent by this screen since „Mein Lager" (`REQ-APP-INV-027`).
+
+„Mein Lager" adds `GET /inventory/my-inventory/grouped`, `…/stack/entries` and `…/entry-ids`
+(admitted by krt-profit/basetool#2171, frozen by #2174) and the writes
+`POST /inventory/{id}/org-unit` and `POST /inventory/bulk-org-unit`, which were admitted with the
+server's REQ-INV-052. **A build that reads „Mein Lager" must not be released before the three reads
+are live on the production edge** — until then the screen answers „Signal Lost".
 
 ### REQ-APP-INV-017 — The tree has a holder level, and it carries their total
 
@@ -804,3 +811,158 @@ separate piece of work rather than part of showing the flag.
 - [ ] Walked on a device: outstanding.
 
 **Code:** `InventoryRepository.releasedEntryIds`, `InventoryViewModel`, `InventoryScreen`
+
+---
+
+### REQ-APP-INV-025 — „Mein Lager" is a mode of the Lager, and reads the caller's own stock grouped
+
+Design ch. 19 artboard 1: a segment „Org-Lager | Mein Lager" under the Lager's head, not a second
+destination. „Mein Lager" shows **only the caller's rows**, personal and shared, from
+`GET /inventory/my-inventory/grouped` — once for materials and once with `catalog=ITEM`, because the
+member's own stock is one list (artboard 1 draws „Medpen (Hemozal) · 24 Stück" among the ores). A
+grouped read answers groups **and** stacks, so opening a group reads nothing more; a stack's entries
+are read on the tap from `…/my-inventory/stack/entries`, keyed by the stack's whole identity:
+catalogue entry, place, grade, owning unit, the personal flag and the „gestohlen" marker
+(REQ-INV-053). The tree has no holder level here — every row is the caller's — and a stack names
+„place · Q grade" with its chips beneath: „Persönlich" and the unit as the one pill, or „Keine
+Einheit" for a personal row without one (stock synced from other tools arrives that way). A stack
+row carries the bare amount; the unit stands on the group.
+
+The Org-Lager keeps its paged aggregate while unfiltered; a filtered Org-Lager reads
+`/inventory/all/grouped` the same way, so the group totals always match the visible stacks.
+
+**Acceptance**
+
+- [x] Both catalogues are read with the filter, materials first (`LagerRepositoryTest`).
+- [x] A group opens from the grouped read without a second request; switching scope drops the
+  selection and the place filter (`MeinLagerViewModelTest`).
+- [x] Stacks that differ only in the personal flag or the marker open under different keys
+  (`MeinLagerViewModelTest`).
+- [x] Stack chips and the count line render in German (`MeinLagerScreenTest`).
+- [x] Walked on the `Pixel_10a` AVD against the local stack, 2026-09-27, compared with artboard 1.
+
+**Code:** `LagerRepository`, `InventoryViewModel.LagerControls`, `LagerChrome`, `InventoryScreen`
+
+---
+
+### REQ-APP-INV-026 — The „Mein Lager" filters: stock kind, place, and a collapsible row
+
+„Alle · Nur persönliche · Nur nicht-persönliche" exclude each other; tapping the active one resets
+it to „Alle" (server REQ-INV-046, `personalOnly` / `nonPersonalOnly`). „Ort" is a multi-select whose
+options are the places the caller's stock sits at, taken from an **unfiltered** read so an active
+filter never narrows its own options (REQ-INV-040); its label reads „Alle", the one place's name, or
+„N ausgewählt" (REQ-INV-037). The top bar's funnel collapses the row and, while it is collapsed,
+counts the filter values it hides. Every change re-reads from the server; the selection is dropped
+because the rows it named may no longer be shown.
+
+**Acceptance**
+
+- [x] The kind filter is exclusive and resets on a second tap (`MeinLagerViewModelTest`).
+- [x] The place options come from an unfiltered read (`MeinLagerViewModelTest`).
+
+**Code:** `LagerFilter`, `LagerFilterRow`, `LagerFilterToggle`
+
+---
+
+### REQ-APP-INV-027 — A row moves between personal and the shared Lager; a part only one at a time
+
+The entry's `⋮` offers the one rebooking its flag allows (server REQ-INV-007, design ch. 19
+artboard 4): a personal row goes „Ins gemeinsame Lager" with an amount — „Alles" fills the row — and
+a **pool** from the caller's memberships of all four kinds, preset to the row's unit and otherwise to
+the first membership, never empty and without „Keine Einheit"; a shared row becomes personal with no
+unit field, and is offered disabled with its reason while it carries an earmark, which the server
+refuses. The SCU merge opt-in appears only for SCU material.
+
+„Markierte umbuchen" (artboard 5, server REQ-INV-036) chooses between „Ort / Nutzer" (the existing
+place move), „Als persönlich umbuchen" and „Ins gemeinsame Lager umbuchen", moves **whole rows**, and
+shows „umgebucht / übersprungen" as its own step. A selection moving into the shared Lager takes
+**one** pool for every row — that is what the server does (`InventoryCheckoutService.bulkRebookPersonalMarker`
+resolves a single target unit) and what the web offers; artboard 5's footnote that every row keeps its
+own unit describes neither (ADR-0024).
+
+**Acceptance**
+
+- [x] Personal to shared sends the pool and the version; shared to personal sends none
+  (`LagerRepositoryTest`).
+- [x] The pool is never empty; more than the row holds cannot be sent (`StockMoveHolderTest`).
+- [x] A selection sends one mode and one pool and shows its result until closed (`StockMoveHolderTest`).
+- [x] Walked on the device: 40 of 80 moved into a new shared row on Profit; a selection of three
+  moved one and skipped two.
+
+**Code:** `StockMoveHolder`, `StockMoveSheet`, `LagerRepository.rebookPersonal`, `.bulkRebookPersonal`
+
+---
+
+### REQ-APP-INV-028 — A personal row's unit can be changed, to „Keine Einheit" too
+
+Server REQ-INV-052, design ch. 19 artboards 6 and 7. „Einheit ändern" is offered on personal rows
+only; the picker lists „Keine Einheit" first, then the caller's memberships of all four kinds, preset
+to the row's unit, and the call to action stays dimmed while the unit is unchanged. The web's
+visibility notice stands verbatim as an info block: „Mitglieder mit Bearbeitungsrecht in dieser
+Einheit können den Eintrag dann sehen und ändern. Ohne Einheit siehst nur du ihn." For a selection
+that holds a shared row the sheet refuses **before** the picker — the server refuses such a
+selection as a whole — names the count, keeps the selection and offers „Gemeinsame aus der Auswahl
+nehmen"; the result reads „Einheit bei {0} Einträgen geändert, {1} hatten sie bereits."
+
+**Acceptance**
+
+- [x] `null` is sent for „Keine Einheit" (`LagerRepositoryTest`).
+- [x] The refusal, the way out and the result step (`StockMoveHolderTest`, `MeinLagerScreenTest`).
+- [x] Walked on the device, compared with artboards 6 and 7.
+
+**Code:** `StockMoveHolder.openOrgUnit`, `.openBulkOrgUnit`, `.dropShared`, `StockMoveSheet`
+
+---
+
+### REQ-APP-INV-029 — The „Mein Lager" selection knows its composition, and „Alle wählen" is the server's
+
+Design ch. 19 artboard 2. The head reads „MEIN LAGER" over „n gewählt · x persönlich, y gemeinsam",
+because two of the actions depend on it. A long-press on a group or a stack selects every entry
+beneath it, **reading the entries first** when the stack was never opened. „Alle wählen" takes the
+server's filtered set from `…/my-inventory/entry-ids` (REQ-INV-034), asked once per kind so every id
+arrives with its kind. The bar carries „Ausbuchen · Umbuchen · ⋮", and the `⋮` holds „Einheit
+ändern"; clearing is the ✕ in the head.
+
+**Acceptance**
+
+- [x] A long-press on a collapsed group reads and selects its rows (`MeinLagerViewModelTest`).
+- [x] Select-all maps each id to its kind (`LagerRepositoryTest`, `MeinLagerViewModelTest`).
+- [x] The bar and its menu (`MeinLagerScreenTest`).
+
+**Code:** `InventoryViewModel.onToggleBranch`, `LagerControls.selectAll`, `MyLagerSelectionBar`
+
+---
+
+### REQ-APP-INV-030 — Booking in as „Persönlich"
+
+Design ch. 19 artboard 3. The book-in's checkbox „Persönlich — nur in Mein Lager, ohne
+Auftrag/Einsatz" sends `personal = true`; a personal row carries no earmark, so the earmark rows give
+way to a dashed line that says why and, in the warning colour, how many typed earmarks the booking
+will drop. Booked from the Org-Lager, which does not show personal stock, a toast says where the row
+went. The unit is the pinned org unit's, as for every book-in (`X-Active-Org-Unit-Id`); a member of
+several units without a pin is refused by the server with `OWNER_ORG_UNIT_REQUIRED`.
+
+**Acceptance**
+
+- [x] The draft is personal and carries no earmark, even after earmarks were typed
+  (`PersonalBookInTest`).
+- [x] Walked on the device, compared with artboard 3.
+
+**Code:** `BookingSplitHolder.personal`, `BookingSheet.PersonalSplitsNote`, `PersonalBookedToast`
+
+---
+
+### REQ-APP-INV-031 — The delivery status of earmarked stock is reached through its Auftrag
+
+A Lager row carries no delivery state; it lives on the Auftrag's „Materialsammelübersicht"
+(`PATCH /inventory/{id}/delivered`, `REQ-APP-ORD-*`). An entry's `⋮` in „Mein Lager" therefore lists
+one entry per Auftrag it is earmarked for — „Auftrag #1042 — Lieferstatus" — which opens that
+collection (owner decision 2026-09-27; neither the web's Mein Lager nor ch. 19 draws a second place
+for the flag).
+
+**Acceptance**
+
+- [x] The menu entry navigates to the order collection (`EntryMoreMenu`, wired in
+  `BasetoolNavHost`).
+
+**Code:** `EntryMoreMenu`, `InventoryRoute.onOpenOrder`
