@@ -20,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemPro
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemProductionCreateDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -233,9 +234,20 @@ class JobOrderWorkRepository(
      * @param httpClient the shared client, so the bearer, the correlation id and the org pin are
      *   already on every request.
      * @param baseUrl where the API lives.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "JobOrderWork"),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = "JobOrderWork",
+            consent = consent,
+        ),
     )
 
     override suspend fun stockFor(

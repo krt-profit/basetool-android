@@ -75,7 +75,7 @@ data class ProblemDetail(
         const val CODE_NO_ROLE: String = "NO_ROLE"
 
         /** The Terms of Use in force have not been accepted (REQ-SEC-028). */
-        const val CODE_TERMS_ACCEPTANCE_REQUIRED: String = "TERMS_ACCEPTANCE_REQUIRED"
+        const val CODE_TERMS_NOT_ACCEPTED: String = "TERMS_NOT_ACCEPTED"
 
         /** A rate budget was exhausted; `Retry-After` says when to come back. */
         const val CODE_RATE_LIMIT_EXCEEDED: String = "RATE_LIMIT_EXCEEDED"

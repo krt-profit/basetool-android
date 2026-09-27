@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.ClaimDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateClaimDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -153,9 +154,20 @@ class MaterialClaimRepository(
      *
      * @param httpClient the shared client.
      * @param baseUrl where the API lives.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "MaterialClaim"),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = "MaterialClaim",
+            consent = consent,
+        ),
     )
 
     override suspend fun buckets(orderId: String): ApiResult<List<ClaimBucket>> =

@@ -46,7 +46,7 @@ class ApiErrorMapper(
                 ApiError.NoRole(problem)
             }
 
-            ProblemDetail.CODE_TERMS_ACCEPTANCE_REQUIRED -> {
+            ProblemDetail.CODE_TERMS_NOT_ACCEPTED -> {
                 ApiError.TermsAcceptanceRequired(problem)
             }
 

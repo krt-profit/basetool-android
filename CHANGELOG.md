@@ -22,6 +22,11 @@
   Server es freischaltet: Einbuchen als gestohlen und Markieren oder Entfernen der Markierung, auch
   für eine Teilmenge oder eine Auswahl.
 
+- **Geänderte Nutzungsbedingungen unterbrechen nicht mehr.** Ändern sich die Nutzungsbedingungen,
+  während die App offen ist, erscheint die neue Fassung über dem aktuellen Bildschirm. Nach
+  „Bestätigen" geht es genau dort weiter – der abgelehnte Aufruf wird wiederholt, Eingaben bleiben
+  erhalten.
+
 ### Changed
 
 - **Lager: Die Filterzeile lässt sich über den Filter in der Kopfzeile einklappen**; eingeklappt

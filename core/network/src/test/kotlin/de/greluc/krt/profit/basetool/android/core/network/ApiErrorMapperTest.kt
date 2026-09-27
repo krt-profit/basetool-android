@@ -81,7 +81,7 @@ class ApiErrorMapperTest {
 
     @Test
     fun `an unaccepted terms version is its own state, not a generic forbidden`() {
-        val error = mapper.map(response(status = 403, body = problemBody(ProblemDetail.CODE_TERMS_ACCEPTANCE_REQUIRED)))
+        val error = mapper.map(response(status = 403, body = problemBody("TERMS_NOT_ACCEPTED")))
 
         assertTrue(error is ApiError.TermsAcceptanceRequired)
     }

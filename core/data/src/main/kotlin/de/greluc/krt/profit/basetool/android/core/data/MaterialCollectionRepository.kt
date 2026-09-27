@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialCollect
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateDeliveredRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import de.greluc.krt.profit.basetool.android.core.network.map
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
@@ -110,9 +111,20 @@ class MaterialCollectionRepository(
      *
      * @param httpClient the shared client.
      * @param baseUrl where the API lives.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "MaterialCollection"),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = "MaterialCollection",
+            consent = consent,
+        ),
     )
 
     override suspend fun rows(orderId: String): ApiResult<List<MaterialCollectionRow>> =

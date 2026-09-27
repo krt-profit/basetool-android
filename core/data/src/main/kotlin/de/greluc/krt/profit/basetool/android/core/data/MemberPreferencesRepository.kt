@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MyPayoutPrefere
 import de.greluc.krt.profit.basetool.android.core.contract.model.MyPayoutPreferenceResponse
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import de.greluc.krt.profit.basetool.android.core.network.map
 import okhttp3.OkHttpClient
 
@@ -113,9 +114,20 @@ class MemberPreferencesRepository(
      *
      * @param httpClient the shared client.
      * @param baseUrl the API root.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = LOG_TAG,
+            consent = consent,
+        ),
     )
 
     override suspend fun payoutPreference(): ApiResult<PayoutSetting> =

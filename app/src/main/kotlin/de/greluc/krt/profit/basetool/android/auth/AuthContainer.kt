@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import de.greluc.krt.profit.basetool.android.core.network.SystemConnectivity
 import de.greluc.krt.profit.basetool.android.notifications.SystemNotifications
 import de.greluc.krt.profit.basetool.android.notifications.SystemNotifier
+import de.greluc.krt.profit.basetool.android.terms.ReconsentBroker
 import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
@@ -175,6 +176,15 @@ class AuthContainer(
     }
 
     /**
+     * Holds every call refused for missing consent until the member answers the re-consent overlay
+     * (ADR-0025).
+     *
+     * One per process, so parallel refusals from any screen share one overlay. Handed to every
+     * repository but the two gates, which run before the overlay can be shown.
+     */
+    val reconsent: ReconsentBroker by lazy { ReconsentBroker() }
+
+    /**
      * Reads the Terms of Use and records consent.
      *
      * Shares [apiClient] with the approval gate: same host, same headers, and one warm TLS
@@ -190,7 +200,7 @@ class AuthContainer(
      * Shares [apiClient] with the gates: same host, same mandatory headers, one warm connection.
      */
     val orgUnits: OrgUnitRepository by lazy {
-        OrgUnitRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        OrgUnitRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -201,7 +211,7 @@ class AuthContainer(
      * filter, and the dashboard's seven-day window brings its own bounds.
      */
     val missions: MissionRepository by lazy {
-        MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -212,7 +222,7 @@ class AuthContainer(
      * endpoint family (the order's linked stock rows), and both writes append rather than replace.
      */
     val orderWork: JobOrderWorkRepository by lazy {
-        JobOrderWorkRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        JobOrderWorkRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -221,7 +231,7 @@ class AuthContainer(
      * Read-only: prices come from the UEX sync, and nothing in the app writes one.
      */
     val materialCatalog: MaterialCatalogRepository by lazy {
-        MaterialCatalogRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MaterialCatalogRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -231,7 +241,7 @@ class AuthContainer(
      * under an order and are read by a screen the order aggregate knows nothing about.
      */
     val orderClaims: MaterialClaimRepository by lazy {
-        MaterialClaimRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MaterialClaimRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -241,7 +251,7 @@ class AuthContainer(
      * the inventory row's own delivered flag.
      */
     val orderCollection: MaterialCollectionRepository by lazy {
-        MaterialCollectionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MaterialCollectionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -250,7 +260,7 @@ class AuthContainer(
      * Shares [apiClient] with [missions].
      */
     val missionStructure: MissionStructureRepository by lazy {
-        MissionStructureRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MissionStructureRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -260,7 +270,7 @@ class AuthContainer(
      * **list** rather than the Einsatz, so none of it shares a code path with the structure writes.
      */
     val missionTimeline: MissionTimelineRepository by lazy {
-        MissionTimelineRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MissionTimelineRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -271,7 +281,7 @@ class AuthContainer(
      * the same host.
      */
     val personalInventory: PersonalInventoryRepository by lazy {
-        PersonalInventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        PersonalInventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -281,7 +291,7 @@ class AuthContainer(
      * endpoints and fail independently, which is exactly how the screen renders them.
      */
     val personalBlueprints: PersonalBlueprintRepository by lazy {
-        PersonalBlueprintRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        PersonalBlueprintRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -298,7 +308,7 @@ class AuthContainer(
      * Takes no [serverClock], because an Operation has no start time to filter against.
      */
     val operations: OperationRepository by lazy {
-        OperationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        OperationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -309,7 +319,7 @@ class AuthContainer(
      * personal inventory will be the next.
      */
     val identity: IdentityRepository by lazy {
-        IdentityRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        IdentityRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -320,7 +330,7 @@ class AuthContainer(
      * pool follow the long-lived SSE connection without a second configuration to keep in sync.
      */
     val notifications: NotificationRepository by lazy {
-        NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -338,7 +348,7 @@ class AuthContainer(
      * a device preference store (design ch. 13, artboard 2).
      */
     val memberPreferences: MemberPreferencesRepository by lazy {
-        MemberPreferencesRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MemberPreferencesRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -348,7 +358,7 @@ class AuthContainer(
      * paths are me-scoped: there is no id to pass and no way to reach anybody else's record.
      */
     val promotion: PromotionRepository by lazy {
-        PromotionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        PromotionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -358,7 +368,7 @@ class AuthContainer(
      * id follow the long-lived connection.
      */
     val liveSync: LiveSyncRepository by lazy {
-        LiveSyncRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        LiveSyncRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -369,7 +379,7 @@ class AuthContainer(
      * other.
      */
     val announcements: AnnouncementRepository by lazy {
-        AnnouncementRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        AnnouncementRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -379,7 +389,7 @@ class AuthContainer(
      * interceptor already sets, so nothing about scope is configured here.
      */
     val hangar: HangarRepository by lazy {
-        HangarRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        HangarRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -389,7 +399,7 @@ class AuthContainer(
      * a view grant for. The staff surface is [bankStaff].
      */
     val bank: BankRepository by lazy {
-        BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -399,7 +409,7 @@ class AuthContainer(
      * `/me/capabilities` reports. `/api/v1/bank/admin` is not used by the app.
      */
     val bankStaff: BankStaffRepository by lazy {
-        BankStaffRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        BankStaffRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -409,7 +419,7 @@ class AuthContainer(
      * memberships and the active-org-unit header this client already carries.
      */
     val orders: JobOrderRepository by lazy {
-        JobOrderRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        JobOrderRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -419,12 +429,12 @@ class AuthContainer(
      * carries, so nothing about scope is configured here.
      */
     val inventory: InventoryRepository by lazy {
-        InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /** The grouped Lager reads of both scopes and the „Mein Lager" writes. */
     val lager: LagerRepository by lazy {
-        LagerRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        LagerRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -434,7 +444,7 @@ class AuthContainer(
      * answers the whole picture in one call, and is the only reader of it (design ch. 18 §1).
      */
     val materialDemand: MaterialDemandRepository by lazy {
-        MaterialDemandRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MaterialDemandRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -445,7 +455,7 @@ class AuthContainer(
      * the gate answer for a build too old to log in.
      */
     val appVersion: AppVersionRepository by lazy {
-        AppVersionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        AppVersionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -455,7 +465,7 @@ class AuthContainer(
      * scope is configured here either.
      */
     val materialBoard: MaterialBoardRepository by lazy {
-        MaterialBoardRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        MaterialBoardRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     /**
@@ -465,7 +475,7 @@ class AuthContainer(
      * Logistik view, and the app stays on the member-facing one.
      */
     val refinery: RefineryRepository by lazy {
-        RefineryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+        RefineryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

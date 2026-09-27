@@ -68,6 +68,15 @@
     <string name="terms_decline_cancel">Zurück</string>
     <string name="terms_error">Die Zustimmung konnte nicht gespeichert werden. Bitte erneut versuchen.</string>
     <string name="terms_error_offline">Keine Verbindung. Die Zustimmung konnte nicht gespeichert werden.</string>
+    <string name="reconsent_title">Nutzungsbedingungen aktualisiert</string>
+    <string name="reconsent_lead">Die Nutzungsbedingungen wurden geändert (%1$s). Um weiterzuarbeiten, bestätige die neue Fassung.</string>
+    <string name="reconsent_resume">Nach der Bestätigung geht es genau dort weiter, wo du warst — der abgelehnte Aufruf wird wiederholt.</string>
+    <string name="reconsent_confirm">Bestätigen</string>
+    <string name="reconsent_sign_out">Abmelden</string>
+    <string name="reconsent_load_failed">Die neue Fassung konnte nicht geladen werden.</string>
+    <string name="reconsent_load_offline">Keine Verbindung. Die neue Fassung konnte nicht geladen werden.</string>
+    <string name="reconsent_offline_reason">Offline — Bestätigen ist möglich, sobald die Verbindung zurück ist.</string>
+    <string name="reconsent_retry">Erneut laden</string>
     <string name="lock_title">Gesperrt</string>
     <string name="lock_body">Lokale Daten sind geschützt. Entsperren, um fortzufahren.</string>
     <string name="lock_unlock">Entsperren</string>

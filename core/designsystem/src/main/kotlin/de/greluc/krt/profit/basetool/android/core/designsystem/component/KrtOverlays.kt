@@ -87,15 +87,19 @@ enum class KrtModalTone {
  * The KRT modal: accent top edge, 13 dp brackets and the overlay glow, used instead of platform
  * dialogs.
  *
- * One filled CTA on the right with a ghost cancel to its left; back and the scrim both dismiss.
+ * One filled CTA on the right with a ghost cancel to its left; back and the scrim both dismiss
+ * unless [dismissible] is `false`, in which case the two actions are the only ways out.
  *
  * @param title the question or statement; uppercased for display.
  * @param confirmText label of the single filled action.
  * @param onConfirm invoked when the user confirms.
- * @param onDismiss invoked on cancel, back or a scrim tap.
+ * @param onDismiss invoked on cancel, and on back, a scrim tap or the close glyph while [dismissible].
  * @param modifier layout modifier applied to the modal frame.
  * @param tone whether this is a routine or a destructive confirmation.
  * @param cancelText label of the ghost cancel action.
+ * @param dismissible whether back, the scrim and a close glyph dismiss the modal.
+ * @param confirmEnabled whether the filled action reacts; a dimmed one needs its reason in the body.
+ * @param busy whether the confirmation is in flight; the filled action gives way to a spinner.
  * @param content the modal body — usually one paragraph explaining the consequence.
  */
 @Composable
@@ -107,6 +111,9 @@ fun KrtModal(
     modifier: Modifier = Modifier,
     tone: KrtModalTone = KrtModalTone.Standard,
     cancelText: String = stringResource(R.string.krt_cancel),
+    dismissible: Boolean = true,
+    confirmEnabled: Boolean = true,
+    busy: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val accent =
@@ -115,8 +122,13 @@ fun KrtModal(
         if (tone == KrtModalTone.Danger) KrtTheme.colors.glowDangerLg else KrtTheme.colors.glowPrimaryLg
 
     Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        onDismissRequest = { if (dismissible) onDismiss() },
+        properties =
+            DialogProperties(
+                dismissOnBackPress = dismissible,
+                dismissOnClickOutside = dismissible,
+                usePlatformDefaultWidth = false,
+            ),
     ) {
         Box(
             modifier = Modifier.fillMaxSize().background(KrtPalette.Black.copy(alpha = SCRIM_ALPHA)),
@@ -149,11 +161,13 @@ fun KrtModal(
                         style = MaterialTheme.typography.titleLarge,
                         color = KrtPalette.White,
                     )
-                    KrtIconButton(
-                        iconRes = R.drawable.ic_krt_close,
-                        label = stringResource(R.string.krt_close),
-                        onClick = onDismiss,
-                    )
+                    if (dismissible) {
+                        KrtIconButton(
+                            iconRes = R.drawable.ic_krt_close,
+                            label = stringResource(R.string.krt_close),
+                            onClick = onDismiss,
+                        )
+                    }
                 }
                 Column(
                     modifier = Modifier.padding(horizontal = KrtSpacing.s16),
@@ -163,11 +177,16 @@ fun KrtModal(
                     modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.End),
                 ) {
-                    KrtGhostButton(text = cancelText, onClick = onDismiss)
-                    if (tone == KrtModalTone.Danger) {
+                    KrtGhostButton(text = cancelText, onClick = onDismiss, enabled = !busy)
+                    if (busy) {
+                        Box(modifier = Modifier.size(KrtSpacing.controlHeight), contentAlignment = Alignment.Center) {
+                            KrtSpinner()
+                        }
+                    } else if (tone == KrtModalTone.Danger) {
                         KrtButton(
                             text = confirmText,
                             onClick = onConfirm,
+                            enabled = confirmEnabled,
                             style =
                                 KrtButtonStyles.cta.copy(
                                     container = KrtTheme.colors.danger,
@@ -178,7 +197,7 @@ fun KrtModal(
                                 ),
                         )
                     } else {
-                        KrtCtaButton(text = confirmText, onClick = onConfirm)
+                        KrtCtaButton(text = confirmText, onClick = onConfirm, enabled = confirmEnabled)
                     }
                 }
             }

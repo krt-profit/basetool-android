@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseTer
 import de.greluc.krt.profit.basetool.android.core.contract.model.ProfitCalculationDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.ConsentRecovery
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -231,9 +232,20 @@ class MaterialCatalogRepository(
      *
      * @param httpClient the shared client, so the bearer and the correlation id are already set.
      * @param baseUrl where the API lives.
+     * @param consent waits for consent after a terms refusal, so the call is re-issued (ADR-0025)
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
-        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "MaterialCatalog"),
+    constructor(
+        httpClient: OkHttpClient,
+        baseUrl: String,
+        consent: ConsentRecovery = ConsentRecovery.None,
+    ) : this(
+        ApiReader(
+            httpClient = httpClient,
+            baseUrl = baseUrl,
+            json = KrtJson,
+            logTag = "MaterialCatalog",
+            consent = consent,
+        ),
     )
 
     override suspend fun priceOverview(): ApiResult<List<MaterialPriceRow>> {
