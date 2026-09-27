@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
@@ -277,9 +278,13 @@ class InventoryRepositoryTest {
                 ),
             )
 
-            val body = server.takeRequest().body?.utf8().orEmpty()
-            assertTrue(body.contains("\"jobOrderAllocations\":[{\"targetId\":\"jo1\",\"amount\":250"))
-            assertTrue(body.contains("\"missionAllocations\":[{\"targetId\":\"mi1\",\"amount\":100"))
+            val body = Json.parseToJsonElement(server.takeRequest().body?.utf8().orEmpty()).jsonObject
+            val jobOrder = body.getValue("jobOrderAllocations").jsonArray.single().jsonObject
+            val mission = body.getValue("missionAllocations").jsonArray.single().jsonObject
+            assertEquals("jo1", jobOrder.getValue("targetId").jsonPrimitive.content)
+            assertEquals("250.0", jobOrder.getValue("amount").jsonPrimitive.content)
+            assertEquals("mi1", mission.getValue("targetId").jsonPrimitive.content)
+            assertEquals("100.0", mission.getValue("amount").jsonPrimitive.content)
         }
 
     @Test
