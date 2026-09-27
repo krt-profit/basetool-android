@@ -102,6 +102,8 @@ enum class KrtOrgBadgeKind {
  * @param modifier layout modifier.
  * @param kind relationship to the current context, see [KrtOrgBadgeKind].
  * @param onClick optional tap handler; supply it when the badge opens the org switcher.
+ * @param compact whether the badge labels a row rather than the top bar: the smaller label and
+ *   padding the Lager's stack rows draw (design ch. 19).
  */
 @Composable
 fun KrtOrgBadge(
@@ -109,6 +111,7 @@ fun KrtOrgBadge(
     modifier: Modifier = Modifier,
     kind: KrtOrgBadgeKind = KrtOrgBadgeKind.Own,
     onClick: (() -> Unit)? = null,
+    compact: Boolean = false,
 ) {
     val border =
         when (kind) {
@@ -130,11 +133,14 @@ fun KrtOrgBadge(
                 .then(
                     if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
                 )
-                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
+                .padding(
+                    horizontal = if (compact) KrtSpacing.s8 else KrtSpacing.s12,
+                    vertical = if (compact) COMPACT_BADGE_VERTICAL else KrtSpacing.s4,
+                ),
     ) {
         Text(
             text = text.krtUppercase(),
-            style = MaterialTheme.typography.labelMedium,
+            style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
             color = color,
         )
     }
@@ -622,3 +628,6 @@ private fun StatusPreview() {
         }
     }
 }
+
+/** Vertical padding of a compact org badge. */
+private val COMPACT_BADGE_VERTICAL = 2.dp

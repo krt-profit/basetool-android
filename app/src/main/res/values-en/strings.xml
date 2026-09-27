@@ -1872,4 +1872,106 @@
         <item quantity="one">%1$d variant</item>
         <item quantity="other">%1$d variants</item>
     </plurals>
+    <string name="lager_scope_org">Org Lager</string>
+    <string name="lager_scope_my">My Lager</string>
+    <string name="lager_filter_all">All</string>
+    <string name="lager_filter_personal_only">Personal only</string>
+    <string name="lager_filter_shared_only">Shared only</string>
+    <string name="lager_filter_location">Place: %1$s</string>
+    <string name="lager_filter_location_title">Place</string>
+    <string name="lager_filter_location_none">No places with stock yet.</string>
+    <string name="lager_filter_reset">Reset</string>
+    <string name="lager_filter_apply">Apply</string>
+    <string name="lager_filter_show">Show filters</string>
+    <string name="lager_filter_hide">Hide filters</string>
+    <plurals name="lager_filter_chosen">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="lager_count_my">
+        <item quantity="one">%1$d material · your entries only</item>
+        <item quantity="other">%1$d materials · your entries only</item>
+    </plurals>
+    <plurals name="lager_count_org">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
+    <string name="lager_no_unit">No unit</string>
+    <string name="lager_empty_my_title">You hold no stock yet.</string>
+    <string name="lager_empty_my_message">Book material in — personal or into the shared Lager.</string>
+    <string name="lager_empty_filtered_title">No match</string>
+    <string name="lager_empty_filtered_message">No stock matches the filters.</string>
+    <string name="lager_entry_more">More actions</string>
+    <string name="lager_entry_to_shared">Rebook into the shared Lager</string>
+    <string name="lager_entry_to_personal">Rebook as personal</string>
+    <string name="lager_entry_org_unit">Change unit</string>
+    <string name="lager_entry_org_unit_shared">Personal entries only — a shared entry changes its unit by rebooking.</string>
+    <string name="lager_entry_to_personal_earmarked">Stock assigned to an Auftrag or Einsatz cannot become personal.</string>
+    <string name="lager_entry_order">Auftrag %1$s — delivery status</string>
+    <string name="lager_personal_no_allocation">A personal entry carries no assignment.</string>
+    <string name="lager_personal_no_allocation_detail">Rebook it into the shared Lager first.</string>
+    <string name="lager_select_all">Select all</string>
+    <string name="lager_selection_title">My Lager</string>
+    <plurals name="lager_selection_detail">
+        <item quantity="one">%1$d selected · %2$d personal, %3$d shared</item>
+        <item quantity="other">%1$d selected · %2$d personal, %3$d shared</item>
+    </plurals>
+    <string name="lager_selection_more">More actions</string>
+    <string name="lager_booked_personal_title">Booked as personal</string>
+    <string name="lager_booked_personal_message">Find it in “My Lager”.</string>
+    <string name="stock_move_title_rebook">Rebook</string>
+    <string name="stock_move_title_bulk_rebook">Rebook selected</string>
+    <string name="stock_move_title_unit">Change unit</string>
+    <string name="stock_move_title_bulk_unit">Selected: change unit</string>
+    <plurals name="stock_move_selected">
+        <item quantity="one">%1$d entry selected</item>
+        <item quantity="other">%1$d entries selected</item>
+    </plurals>
+    <string name="stock_move_mode">Rebooking type</string>
+    <string name="stock_move_mode_personal">Rebook as personal</string>
+    <string name="stock_move_mode_shared">Rebook into the shared Lager</string>
+    <string name="stock_move_mode_location">Place / member</string>
+    <string name="stock_move_bulk_hint_personal">Every selected entry is marked personal. Entries that already are personal are skipped.</string>
+    <string name="stock_move_bulk_hint_shared">Every selected entry is rebooked into the shared Lager. Entries already there are skipped.</string>
+    <string name="stock_move_all">All</string>
+    <string name="stock_move_unit">Unit</string>
+    <string name="stock_move_units_loading">Loading units …</string>
+    <string name="stock_move_units_none">You belong to no unit — the entry stays without a pool.</string>
+    <string name="stock_move_pool_note">Pool in the shared Lager — preset to the entry\'s unit, never empty.</string>
+    <string name="stock_move_merge">Merge with existing stock (SCU only)</string>
+    <string name="stock_move_visibility">Members with edit rights in this unit can then see and change the entry. Without a unit only you see it.</string>
+    <plurals name="stock_move_shared_refusal">
+        <item quantity="one">Not possible: the selection holds %1$d shared entry. “Change unit” applies to personal entries only — take it out of the selection or rebook it.</item>
+        <item quantity="other">Not possible: the selection holds %1$d shared entries. “Change unit” applies to personal entries only — take them out of the selection or rebook them.</item>
+    </plurals>
+    <string name="stock_move_shared_refusal_kept">The selection is kept. No unit was changed.</string>
+    <string name="stock_move_drop_shared">Take shared entries out of the selection</string>
+    <string name="stock_move_changed">Changed</string>
+    <plurals name="stock_move_rebook_result">
+        <item quantity="one">%1$d entry rebooked, %2$d already were at the target — no error, nothing to do.</item>
+        <item quantity="other">%1$d entries rebooked, %2$d already were at the target — no error, nothing to do.</item>
+    </plurals>
+    <plurals name="stock_move_unit_result">
+        <item quantity="one">Unit changed on %1$d entry, %2$d already had it.</item>
+        <item quantity="other">Unit changed on %1$d entries, %2$d already had it.</item>
+    </plurals>
+    <string name="stock_move_whole_rows">Whole rows, no amounts — a part is only moved one entry at a time.</string>
+    <string name="stock_move_done">Done</string>
+    <string name="stock_move_unit_cta">Apply unit</string>
+    <string name="stock_move_rebook_failed">The rebooking was refused. Nothing was changed.</string>
+    <string name="stock_move_unit_failed">The unit could not be changed. Only your own personal entries can be moved this way.</string>
+    <string name="stock_move_personal_word">personal</string>
+    <string name="stock_move_shared_word">shared</string>
+    <string name="stock_move_kind_squadron">Staffel</string>
+    <string name="stock_move_kind_sk">SK</string>
+    <string name="stock_move_kind_bereich">Bereich</string>
+    <string name="stock_move_kind_ol">OL</string>
+    <string name="stock_move_kind_unknown">Unit</string>
+    <string name="booking_personal">Personal — only in My Lager, no Auftrag/Einsatz</string>
+    <string name="booking_personal_splits_title">Assignment to Aufträge / Einsätze</string>
+    <string name="booking_personal_splits_none">Not for personal entries — a personal entry carries no assignment.</string>
+    <plurals name="booking_personal_splits_dropped">
+        <item quantity="one">%1$d assignment will be removed</item>
+        <item quantity="other">%1$d assignments will be removed</item>
+    </plurals>
 </resources>

@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
@@ -56,6 +58,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSele
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtDashedBorder
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -90,6 +94,12 @@ const val BOOKING_SAVE_TAG: String = "booking-save"
 
 /** Test handle for the transfer's stock-merge opt-in. */
 const val BOOKING_MERGE_TAG: String = "booking-merge"
+
+/** Test handle for the book-in's „Persönlich". */
+const val BOOKING_PERSONAL_TAG: String = "booking-personal"
+
+/** Test handle for the line that replaces the earmarks of a personal book-in. */
+const val BOOKING_PERSONAL_NOTE_TAG: String = "booking-personal-note"
 
 /**
  * The Lager's booking form with the modes Ein, Aus and Notiz on one segment.
@@ -223,6 +233,7 @@ fun BookingSheet(
  * @property onMissionShare how much comes from an Einsatz earmark.
  * @property onOrgUnit an org-unit pool was picked for a transfer.
  * @property onMergeStock the stock-merge opt-in changed.
+ * @property onPersonal a book-in's „Persönlich" changed.
  * @property onSellAmount what the sale fetched changed.
  * @property onNote the entry's note changed.
  * @property onSave the save action was taken.
@@ -252,6 +263,7 @@ data class BookingCallbacks(
     val onMissionShare: (String, String) -> Unit,
     val onOrgUnit: (OrgUnitOption) -> Unit,
     val onMergeStock: (Boolean) -> Unit,
+    val onPersonal: (Boolean) -> Unit,
     val onSellAmount: (String) -> Unit,
     val onNote: (String) -> Unit,
     val onSave: () -> Unit,
@@ -383,7 +395,52 @@ private fun BookInFields(
             }
         }
         PlaceField(state = state, callbacks = callbacks)
-        BookInSplits(state = state, callbacks = callbacks)
+        KrtCheckboxRow(
+            checked = state.personal,
+            onCheckedChange = callbacks.onPersonal,
+            label = stringResource(R.string.booking_personal),
+            enabled = !state.saving,
+            modifier = Modifier.fillMaxWidth().testTag(BOOKING_PERSONAL_TAG),
+        )
+        if (state.personal) {
+            PersonalSplitsNote(state = state)
+        } else {
+            BookInSplits(state = state, callbacks = callbacks)
+        }
+    }
+}
+
+/**
+ * What stands where the earmarks were once „Persönlich" is ticked: a dashed line that says why, and
+ * how many typed earmarks the booking will drop (design ch. 19, artboard 3).
+ *
+ * @param state the form.
+ */
+@Composable
+private fun PersonalSplitsNote(state: BookingState) {
+    val dropped = state.jobOrderSplit.size + state.missionSplit.size
+    Column(
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .krtDashedBorder(KrtPalette.Gray3)
+                .padding(KrtSpacing.s12)
+                .testTag(BOOKING_PERSONAL_NOTE_TAG),
+    ) {
+        Text(
+            text = stringResource(R.string.booking_personal_splits_title).krtUppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        Muted(stringResource(R.string.booking_personal_splits_none))
+        if (dropped > 0) {
+            Text(
+                text = pluralStringResource(R.plurals.booking_personal_splits_dropped, dropped, dropped),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Warning,
+            )
+        }
     }
 }
 

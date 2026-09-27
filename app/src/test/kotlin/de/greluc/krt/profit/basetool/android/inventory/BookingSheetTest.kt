@@ -113,6 +113,7 @@ class BookingSheetTest {
                             onMissionShare = { _, _ -> },
                             onOrgUnit = {},
                             onMergeStock = {},
+                            onPersonal = {},
                             onSellAmount = {},
                             onNote = {},
                             onSave = { saved.add(Unit) },

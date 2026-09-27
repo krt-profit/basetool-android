@@ -64,6 +64,7 @@ import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
+import de.greluc.krt.profit.basetool.android.inventory.LagerSources
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
@@ -661,6 +662,7 @@ class MainActivity : AppCompatActivity() {
                         container.inventory,
                         container.connectivity,
                         container.liveSync,
+                        LagerSources(container.lager, container.lager, container.identity),
                     )
                 }
                 initializer { BookingViewModel(container.inventory, container.connectivity) }

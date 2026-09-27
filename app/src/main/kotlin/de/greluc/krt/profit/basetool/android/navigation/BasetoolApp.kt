@@ -51,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavigationRail
@@ -419,10 +420,19 @@ private fun AppTopBar(
 ) {
     detail?.selection?.let { selecting ->
         KrtSelectionTopBar(
-            label = pluralStringResource(R.plurals.inventory_selected, selecting.count, selecting.count),
+            label =
+                selecting.detail
+                    ?: pluralStringResource(R.plurals.inventory_selected, selecting.count, selecting.count),
             onClear = selecting.onClear,
             closeLabel = stringResource(R.string.inventory_selection_leave),
             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+            title = selecting.title,
+            trailing =
+                selecting.selectAll?.let { selectAll ->
+                    {
+                        KrtGhostButton(text = selecting.selectAllLabel.orEmpty(), onClick = selectAll, compact = true)
+                    }
+                },
         )
         return
     }
