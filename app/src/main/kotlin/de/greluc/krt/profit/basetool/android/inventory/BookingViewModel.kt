@@ -117,6 +117,7 @@ private const val SCU_UNIT = "SCU"
  * @property sellAmount what the sale fetched, as typed.
  * @property note the entry's note, as typed.
  * @property personal whether a book-in is the member's personal stock, which carries no earmark.
+ * @property stolen whether a book-in is marked „gestohlen", its own stack (REQ-INV-053).
  * @property online whether a booking can be sent at all.
  * @property saving whether a booking is in flight.
  * @property error what the last attempt returned, or `null`.
@@ -159,6 +160,7 @@ data class BookingState(
     val sellAmount: String = "",
     val note: String = "",
     val personal: Boolean = false,
+    val stolen: Boolean = false,
     val online: Boolean = true,
     val saving: Boolean = false,
     val error: ApiError? = null,
@@ -708,6 +710,7 @@ class BookingViewModel(
                         amount = current.amount,
                         quality = current.quality.toIntOrNull().takeUnless { item },
                         personal = current.personal,
+                        stolen = current.stolen,
                         jobOrderAllocations =
                             if (current.personal) emptyList() else current.jobOrderSplit.krtToAllocations(),
                         missionAllocations =

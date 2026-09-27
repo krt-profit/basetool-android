@@ -99,6 +99,7 @@ import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
+import de.greluc.krt.profit.basetool.android.ui.canMarkStolen
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
@@ -193,6 +194,7 @@ fun InventoryScreen(
                             onPersonal = lager.onPersonal,
                             onWithStockOnly = onWithStockOnlyChanged,
                             onLocations = lager.onLocations,
+                            onStolen = lager.onStolen,
                         ),
                 )
             }
@@ -313,6 +315,7 @@ private fun InventoryTree(
     onLoadMore: () -> Unit,
     lager: LagerScreenActions,
 ) {
+    val marking = canMarkStolen()
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
@@ -332,6 +335,7 @@ private fun InventoryTree(
                     onToggleSelected = onToggleSelected,
                     scope = state.scope,
                     lager = lager,
+                    marking = marking,
                 )
             item(key = "group-${materialId ?: group.name}") {
                 val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
@@ -548,6 +552,7 @@ private fun GroupRow(
  * @property onToggleSelected a row was long-pressed, or tapped while selecting.
  * @property scope which Lager the row is shown in.
  * @property lager the „Mein Lager" row actions.
+ * @property marking whether the caller may mark stock „gestohlen", which gives Org-Lager rows a menu.
  */
 private data class EntryRowContext(
     val unit: String?,
@@ -560,6 +565,7 @@ private data class EntryRowContext(
     val onToggleSelected: (String) -> Unit,
     val scope: LagerScope = LagerScope.ORG,
     val lager: LagerScreenActions = LagerScreenActions(),
+    val marking: Boolean = false,
 )
 
 /**
@@ -611,8 +617,15 @@ private fun LazyListScope.entryRows(
                             released = entry.id in rows.released,
                             denials = rows.denials,
                             more =
-                                if (rows.scope == LagerScope.MY) {
-                                    { EntryMoreMenu(entry = entry, online = rows.online, lager = rows.lager) }
+                                if (rows.scope == LagerScope.MY || rows.marking) {
+                                    {
+                                        EntryMoreMenu(
+                                            entry = entry,
+                                            online = rows.online,
+                                            lager = rows.lager,
+                                            scope = rows.scope,
+                                        )
+                                    }
                                 } else {
                                     null
                                 },
@@ -698,6 +711,9 @@ private fun EntryRow(
                 }
             }
             Amount(value = entry.amount, unit = entry.unit ?: unit)
+            if (entry.stolen) {
+                StolenChip(modifier = Modifier.padding(top = KrtSpacing.s4))
+            }
             entry.note?.let { note ->
                 Text(
                     text = note,
@@ -899,6 +915,9 @@ private fun StackRow(
         if (scope == LagerScope.ORG) {
             if (stack.personal) {
                 KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
+            }
+            if (stack.stolen) {
+                StolenChip()
             }
             stack.quality?.let { QualityMark(quality = it) }
         }
@@ -1158,6 +1177,8 @@ fun InventoryRoute(
                 onRebook = viewModel.moves::openRebook,
                 onOrgUnit = viewModel.moves::openOrgUnit,
                 onOpenOrder = onOpenOrder,
+                onStolen = viewModel.controls::stolen,
+                onMarkStolen = viewModel.moves::openStolen,
             ),
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
@@ -1182,6 +1203,7 @@ fun InventoryRoute(
             onCheckout = viewModel.checkoutActions::request,
             onRebook = { viewModel.moves.openBulkRebook(toPersonal = personal == 0 && shared > 0) },
             onOrgUnit = viewModel.moves::openBulkOrgUnit,
+            extra = stolenBarEntries(state = state, onMark = viewModel.moves::openBulkStolen),
         )
     } else if (state.selection.isNotEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {

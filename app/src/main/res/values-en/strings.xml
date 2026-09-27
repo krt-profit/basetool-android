@@ -1974,4 +1974,26 @@
         <item quantity="one">%1$d assignment will be removed</item>
         <item quantity="other">%1$d assignments will be removed</item>
     </plurals>
+    <string name="stolen_chip">Stolen</string>
+    <string name="stolen_filter_without">Without stolen</string>
+    <string name="stolen_filter_only">Stolen only</string>
+    <string name="stolen_mark_title">Mark as stolen</string>
+    <string name="stolen_unmark_title">Remove the “stolen” marker</string>
+    <string name="stolen_mark_cta">Mark</string>
+    <string name="stolen_unmark_cta">Remove</string>
+    <string name="stolen_bulk_hint_mark">Whole rows, no amounts: every selected entry is marked stolen. Entries already marked are skipped.</string>
+    <string name="stolen_bulk_hint_unmark">Whole rows, no amounts: the marker is removed from every selected entry. Entries without it are skipped.</string>
+    <string name="stolen_part_mark">A part: the marked part becomes an entry of its own. %1$s stay regular.</string>
+    <string name="stolen_part_unmark">A part: the unmarked part becomes an entry of its own. %1$s stay stolen.</string>
+    <string name="stolen_offer_limit">What is offered on the Materialbörse stays regular: a part may not push the rest below the offer.</string>
+    <string name="stolen_failed">The marking was refused. Nothing was changed.</string>
+    <plurals name="stolen_mark_result">
+        <item quantity="one">%1$d entry marked, %2$d already were.</item>
+        <item quantity="other">%1$d entries marked, %2$d already were.</item>
+    </plurals>
+    <plurals name="stolen_unmark_result">
+        <item quantity="one">Marker removed from %1$d entry, %2$d were not marked.</item>
+        <item quantity="other">Marker removed from %1$d entries, %2$d were not marked.</item>
+    </plurals>
+    <string name="booking_stolen">Stolen — its own stack, not sellable at regular terminals</string>
 </resources>

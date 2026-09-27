@@ -28,6 +28,9 @@ enum class StockMoveKind {
 
     /** „Einheit ändern" of personal rows (REQ-INV-052). */
     ORG_UNIT,
+
+    /** Marking stock „gestohlen" or removing the marker (REQ-INV-053). */
+    STOLEN,
 }
 
 /**
@@ -48,7 +51,8 @@ enum class StockMoveKind {
  * @property saving whether the write is in flight.
  * @property error the last refusal, or `null`.
  * @property rebooked a selection rebooking's result step, or `null`.
- * @property changed a selection org-unit change's result step, or `null`.
+ * @property changed a selection org-unit change's or marking's result step, or `null`.
+ * @property stolen the marker a [StockMoveKind.STOLEN] sheet sets.
  */
 data class StockMoveState(
     val kind: StockMoveKind,
@@ -67,6 +71,7 @@ data class StockMoveState(
     val error: ApiError? = null,
     val rebooked: BulkRebookResult? = null,
     val changed: BulkChangeResult? = null,
+    val stolen: Boolean = true,
 ) {
     /** Whether the sheet acts on a selection rather than one row. */
     val bulk: Boolean
@@ -108,6 +113,10 @@ data class StockMoveState(
                             unitId !=
                                 initialUnitId
                         }
+                    }
+
+                    StockMoveKind.STOLEN -> {
+                        bulk || amountValid
                     }
                 }
 }
@@ -208,6 +217,54 @@ class StockMoveHolder(
         )
     }
 
+    /**
+     * Opens „Als gestohlen markieren" or „Markierung entfernen" on one row (design ch. 19,
+     * artboard 8); a part is split off as its own row.
+     *
+     * @param entry the row.
+     * @param stolen the marker to set.
+     */
+    fun openStolen(
+        entry: InventoryEntry,
+        stolen: Boolean,
+    ) {
+        state.update {
+            it.copy(
+                move =
+                    StockMoveState(
+                        kind = StockMoveKind.STOLEN,
+                        entry = entry,
+                        stolen = stolen,
+                        amount = entry.amount.krtWhole(),
+                        unitsLoaded = true,
+                    ),
+            )
+        }
+    }
+
+    /**
+     * Marks or unmarks the whole selection.
+     *
+     * @param stolen the marker to set.
+     */
+    fun openBulkStolen(stolen: Boolean) {
+        val current = state.value
+        if (current.selection.isEmpty()) {
+            return
+        }
+        state.update {
+            it.copy(
+                move =
+                    StockMoveState(
+                        kind = StockMoveKind.STOLEN,
+                        ids = current.selection.toList(),
+                        stolen = stolen,
+                        unitsLoaded = true,
+                    ),
+            )
+        }
+    }
+
     /** Takes the shared rows out of the selection, the way out of the org-unit refusal (artboard 7). */
     fun dropShared() {
         state.update { current ->
@@ -272,6 +329,7 @@ class StockMoveHolder(
                 when (open.kind) {
                     StockMoveKind.REBOOK -> rebook(open, moves)
                     StockMoveKind.ORG_UNIT -> changeUnit(open, moves)
+                    StockMoveKind.STOLEN -> mark(open, moves)
                 }
             when (result) {
                 is ApiResult.Success -> {
@@ -329,6 +387,28 @@ class StockMoveHolder(
             moves.changeOrgUnit(entry, open.unitId, merge).mapTo(open)
         } else {
             when (val result = moves.bulkChangeOrgUnit(open.ids, open.unitId, merge)) {
+                is ApiResult.Success -> ApiResult.Success(open.copy(changed = result.value))
+                is ApiResult.Failure -> result
+            }
+        }
+    }
+
+    /**
+     * Sends a marking.
+     *
+     * @param open the sheet.
+     * @param moves the writes.
+     * @return the sheet with its result, or the refusal.
+     */
+    private suspend fun mark(
+        open: StockMoveState,
+        moves: de.greluc.krt.profit.basetool.android.core.data.StockMoveSource,
+    ): ApiResult<StockMoveState> {
+        val entry = open.entry
+        return if (entry != null) {
+            moves.markStolen(entry, open.stolen, open.amount).mapTo(open)
+        } else {
+            when (val result = moves.bulkMarkStolen(open.ids, open.stolen)) {
                 is ApiResult.Success -> ApiResult.Success(open.copy(changed = result.value))
                 is ApiResult.Failure -> result
             }

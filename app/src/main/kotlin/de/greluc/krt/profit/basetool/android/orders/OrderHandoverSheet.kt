@@ -34,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.inventory.StolenChip
 import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -212,12 +213,18 @@ private fun StockChoice(
 
         else -> {
             draft.stock.forEach { row ->
-                KrtRadioRow(
-                    selected = draft.stockId == row.id,
-                    onSelect = { actions.onChange { it.copy(stockId = row.id) } },
-                    label = row.krtLabel(),
-                    enabled = !draft.saving,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    KrtRadioRow(
+                        selected = draft.stockId == row.id,
+                        onSelect = { actions.onChange { it.copy(stockId = row.id) } },
+                        label = row.krtLabel(),
+                        enabled = !draft.saving,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (row.stolen) {
+                        StolenChip()
+                    }
+                }
             }
         }
     }

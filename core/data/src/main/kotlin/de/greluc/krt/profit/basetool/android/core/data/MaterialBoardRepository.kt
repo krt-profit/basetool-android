@@ -55,6 +55,8 @@ enum class BoardSide {
  * @property viewerInterested whether the caller is one of them.
  * @property mine whether the caller posted it.
  * @property version the optimistic lock, echoed on an edit.
+ * @property stolen whether an offer is backed by stock marked „gestohlen" (REQ-INV-053); a request
+ *   never is
  */
 data class BoardEntry(
     val id: String,
@@ -72,6 +74,7 @@ data class BoardEntry(
     val viewerInterested: Boolean,
     val mine: Boolean,
     val version: Long?,
+    val stolen: Boolean = false,
 ) {
     /**
      * Whether the caller may toggle „Ich kann liefern" on this row.
@@ -99,6 +102,7 @@ typealias BoardPage = Page<BoardEntry>
  * @property quality its quality, or `null`.
  * @property locationName where it is; shown to tell stacks apart, never sent to the board.
  * @property alreadyReleased whether an offer for it already exists.
+ * @property stolen whether the entry is marked „gestohlen"; it may be offered, visibly labelled
  */
 data class ReleasableStock(
     val inventoryItemId: String,
@@ -108,6 +112,7 @@ data class ReleasableStock(
     val quality: Int?,
     val locationName: String,
     val alreadyReleased: Boolean,
+    val stolen: Boolean = false,
 )
 
 /** The Materialbörse reads and writes the app offers, as a seam. */
@@ -611,6 +616,7 @@ private fun MaterialExchangeOfferDto.toModel(): BoardEntry? {
         viewerInterested = viewerInterested == true,
         mine = mine == true,
         version = version,
+        stolen = stolen == true,
     )
 }
 
@@ -680,5 +686,6 @@ private fun MaterialExchangeReleasableItemDto.toModel(): ReleasableStock? {
         quality = quality,
         locationName = locationName?.takeIf { it.isNotBlank() }.orEmpty(),
         alreadyReleased = alreadyReleased == true,
+        stolen = stolen == true,
     )
 }

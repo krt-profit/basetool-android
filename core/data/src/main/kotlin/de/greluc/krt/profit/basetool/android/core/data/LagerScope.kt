@@ -205,4 +205,32 @@ interface StockMoveSource {
         targetOrgUnitId: String?,
         mergeStock: Boolean,
     ): ApiResult<BulkChangeResult>
+
+    /**
+     * Marks a row „gestohlen" or removes the marker; a part is split off as a row of its own with the
+     * other marker (REQ-INV-053). The server refuses a part that would leave the row below what it
+     * offers on the Materialbörse or below its earmarks.
+     *
+     * @param entry the row, read at its current version.
+     * @param stolen the marker to set.
+     * @param amount how much, as typed; the whole row when it equals the row's amount.
+     * @return success, or the classified failure.
+     */
+    suspend fun markStolen(
+        entry: InventoryEntry,
+        stolen: Boolean,
+        amount: String,
+    ): ApiResult<Unit>
+
+    /**
+     * Marks or unmarks whole rows of the caller's selection.
+     *
+     * @param entryIds the rows.
+     * @param stolen the marker to set.
+     * @return how many changed and how many already carried it, or the classified failure.
+     */
+    suspend fun bulkMarkStolen(
+        entryIds: List<String>,
+        stolen: Boolean,
+    ): ApiResult<BulkChangeResult>
 }

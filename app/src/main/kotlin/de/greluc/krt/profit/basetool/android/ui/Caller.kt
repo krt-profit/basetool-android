@@ -53,6 +53,17 @@ fun mayEditRowOf(
 fun isLogistician(): Boolean? = LocalCaller.current?.logistician
 
 /**
+ * Whether the server offers marking stock „gestohlen" to this caller (REQ-INV-053).
+ *
+ * `false` while the server's switch is off or the identity is unread: the marking actions are
+ * then absent, as the server would refuse them, while the marker itself is still shown.
+ *
+ * @return whether to offer booking in as stolen and marking or unmarking stock.
+ */
+@Composable
+fun canMarkStolen(): Boolean = LocalCaller.current?.markStolen == true
+
+/**
  * Whether the caller is an administrator; decides wording, not access.
  *
  * Chooses what the org switcher's no-pin row promises: an admin sees every org unit, everyone else
