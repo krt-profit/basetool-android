@@ -7,21 +7,19 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `553600bac` (2026-09-22) — PR krt-profit/basetool#1999, **open** at the time of copying |
-| Document | OpenAPI 3.1.0 · 400 paths · 417 schemas |
+| Copied from commit | `d70aceac2` (2026-09-27) — the backend's `main` |
+| Document | OpenAPI 3.1.0 · 433 paths · 480 schemas |
 
-> The copy is ahead of the backend's `main` on purpose: it carries the **manager-only add-by-id**
-> `POST /api/v1/missions/{id}/participants/by-id/slim` (`AddParticipantByIdRequest`, basetool
-> REQ-MISSION-020), which „Teilnehmer hinzufügen" sends and which lands with basetool#1999.
-> **This repository must not release a build that sends it before that PR is merged and deployed**
-> — together with its API-vhost rule — or the manager's add fails at the edge exactly as it has
-> since 2026-09-07.
+> The copy carries what „Mein Lager" and the „gestohlen" marker read and write (basetool
+> REQ-INV-007/-036/-046/-052/-053: `stolen` on stacks and rows, `canMarkStolen` in
+> `/api/v1/me/capabilities`, the personal rebooking, the org-unit change and the marking) and the
+> profile's RSI handle (REQ-SEC-072), for krt-profit/basetool#2097.
 >
-> The copy also drops the seventeen deprecated mission endpoints the backend deleted early on
-> 2026-09-22 (basetool#1996); the app called none of them any more.
->
-> (The previous note here tracked the optional body of `POST …/join` and basetool#1765, merged
-> 2026-09-03.)
+> **Release order.** The three `…/inventory/my-inventory/…` reads reach production only once their
+> API-vhost rules are live (krt-profit/basetool#2171); every write this copy
+> adds is admitted already. A build that reads „Mein Lager" must not be released before that edge
+> change is deployed, or the screen answers „Signal Lost" exactly as the Raffinerie did on
+> 2026-09-08.
 
 ## Refreshing it
 
