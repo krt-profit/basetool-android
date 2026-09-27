@@ -199,6 +199,35 @@ class StockMoveHolderTest {
         }
 
     @Test
+    fun `a part of a row is marked stolen, the rest of it stays regular`() =
+        runTest(dispatcher) {
+            val model = myLager()
+            model.moves.openStolen(lagerEntry("p1", personal = true), stolen = true)
+            model.moves.amount("40")
+            model.moves.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf(Triple("p1", true, "40")), moves.marked)
+            assertNull(model.state.value.move)
+        }
+
+    @Test
+    fun `a selection is unmarked whole and shows its result`() =
+        runTest(dispatcher) {
+            tree.entries = listOf(lagerEntry("p1", personal = true))
+            val model = myLager()
+            model.onToggleBranch("m1")
+            advanceUntilIdle()
+
+            model.moves.openBulkStolen(stolen = false)
+            model.moves.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf(listOf("p1") to false), moves.bulkMarked)
+            assertEquals(1, model.state.value.move!!.changed!!.changed)
+        }
+
+    @Test
     fun `the merge opt-in applies to SCU rows only`() =
         runTest(dispatcher) {
             val model = myLager()

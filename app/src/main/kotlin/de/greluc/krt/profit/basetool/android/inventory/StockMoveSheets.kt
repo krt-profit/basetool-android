@@ -167,6 +167,10 @@ fun StockMoveSheet(
                     RebookFields(move = move, callbacks = callbacks)
                 }
 
+                move.kind == StockMoveKind.STOLEN -> {
+                    StolenFields(move = move, callbacks = callbacks)
+                }
+
                 else -> {
                     OrgUnitFields(move = move, callbacks = callbacks)
                 }
@@ -221,10 +225,51 @@ private fun MoveButtons(
  * @return the drawable resource.
  */
 private fun StockMoveState.ctaIconRes(): Int =
-    if (kind == StockMoveKind.REBOOK) DesignR.drawable.ic_krt_swap else DesignR.drawable.ic_krt_check
+    when (kind) {
+        StockMoveKind.REBOOK -> DesignR.drawable.ic_krt_swap
+        StockMoveKind.STOLEN -> DesignR.drawable.ic_krt_warning
+        StockMoveKind.ORG_UNIT -> DesignR.drawable.ic_krt_check
+    }
 
 /** The call to action's share of the button row — artboard 4's `flex: 1.5`. */
 private const val CTA_WEIGHT = 1.5f
+
+/**
+ * The fields of a marking (design ch. 19, artboard 8): the amount of a single row with „Alles", and
+ * what stays behind when only a part is marked; a selection marks whole rows.
+ *
+ * The Materialbörse limit is the server's to check: an offer names no Lager row the app could sum,
+ * so a part that would undercut an offer comes back as the server's refusal, which names the offer.
+ *
+ * @param move the sheet.
+ * @param callbacks what it reports.
+ */
+@Composable
+private fun StolenFields(
+    move: StockMoveState,
+    callbacks: StockMoveCallbacks,
+) {
+    val entry = move.entry
+    if (entry == null) {
+        Muted(stringResource(if (move.stolen) R.string.stolen_bulk_hint_mark else R.string.stolen_bulk_hint_unmark))
+        return
+    }
+    AmountRow(move = move, callbacks = callbacks)
+    val rest =
+        (entry.amount?.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO) -
+            (move.amount.replace(',', '.').toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO)
+    if (rest.signum() > 0) {
+        Muted(
+            stringResource(
+                if (move.stolen) R.string.stolen_part_mark else R.string.stolen_part_unmark,
+                "${formatAmount(rest.stripTrailingZeros().toPlainString())} ${entry.unit.unitWord()}".trim(),
+            ),
+        )
+    }
+    if (move.stolen) {
+        Muted(stringResource(R.string.stolen_offer_limit))
+    }
+}
 
 /**
  * The fields of a rebooking: the mode, the amount of a single row, the pool when the stock goes into
@@ -588,10 +633,27 @@ private fun MoveResult(
     }
     Text(
         text =
-            if (rebooked != null) {
-                pluralStringResource(R.plurals.stock_move_rebook_result, done, done, skipped)
-            } else {
-                pluralStringResource(R.plurals.stock_move_unit_result, done, done, skipped)
+            when {
+                rebooked != null -> {
+                    pluralStringResource(R.plurals.stock_move_rebook_result, done, done, skipped)
+                }
+
+                move.kind != StockMoveKind.STOLEN -> {
+                    pluralStringResource(
+                        R.plurals.stock_move_unit_result,
+                        done,
+                        done,
+                        skipped,
+                    )
+                }
+
+                move.stolen -> {
+                    pluralStringResource(R.plurals.stolen_mark_result, done, done, skipped)
+                }
+
+                else -> {
+                    pluralStringResource(R.plurals.stolen_unmark_result, done, done, skipped)
+                }
             },
         style = MaterialTheme.typography.bodyMedium,
         color = KrtPalette.Gray1,
@@ -691,6 +753,7 @@ private fun OrgUnitKind.labelRes(): Int =
  */
 private fun StockMoveState.titleRes(): Int =
     when {
+        kind == StockMoveKind.STOLEN -> if (stolen) R.string.stolen_mark_title else R.string.stolen_unmark_title
         kind == StockMoveKind.REBOOK && bulk -> R.string.stock_move_title_bulk_rebook
         kind == StockMoveKind.REBOOK -> R.string.stock_move_title_rebook
         bulk -> R.string.stock_move_title_bulk_unit
@@ -703,7 +766,11 @@ private fun StockMoveState.titleRes(): Int =
  * @return the string resource.
  */
 private fun StockMoveState.ctaRes(): Int =
-    if (kind == StockMoveKind.REBOOK) R.string.stock_move_title_rebook else R.string.stock_move_unit_cta
+    when (kind) {
+        StockMoveKind.REBOOK -> R.string.stock_move_title_rebook
+        StockMoveKind.STOLEN -> if (stolen) R.string.stolen_mark_cta else R.string.stolen_unmark_cta
+        StockMoveKind.ORG_UNIT -> R.string.stock_move_unit_cta
+    }
 
 /**
  * What a refusal says when the server's own sentence is not about a field.
@@ -711,4 +778,8 @@ private fun StockMoveState.ctaRes(): Int =
  * @return the string resource.
  */
 private fun StockMoveState.failureRes(): Int =
-    if (kind == StockMoveKind.REBOOK) R.string.stock_move_rebook_failed else R.string.stock_move_unit_failed
+    when (kind) {
+        StockMoveKind.REBOOK -> R.string.stock_move_rebook_failed
+        StockMoveKind.STOLEN -> R.string.stolen_failed
+        StockMoveKind.ORG_UNIT -> R.string.stock_move_unit_failed
+    }

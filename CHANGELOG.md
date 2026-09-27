@@ -19,6 +19,12 @@
   ändern oder leeren. Ein verbundenes Tool darf nur fragen, ob ein Handle zu dir gehört – den Handle
   selbst erfährt es nie. Ist er schon einem anderen Profil zugeordnet, sagt das Feld es.
 
+- **Kennzeichnung „gestohlen".** Gestohlener Bestand trägt überall, wo die App Bestand zeigt, einen
+  roten Hinweis – im Lager, bei der Übergabe eines Auftrags und in der Materialbörse – und bildet
+  einen eigenen Stapel. Filter „Ohne gestohlene" / „Nur gestohlene" in beiden Lagern. Sobald der
+  Server es freischaltet: Einbuchen als gestohlen und Markieren oder Entfernen der Markierung, auch
+  für eine Teilmenge oder eine Auswahl.
+
 ### Changed
 
 - **Lager: Die Filterzeile lässt sich über den Filter in der Kopfzeile einklappen**; eingeklappt

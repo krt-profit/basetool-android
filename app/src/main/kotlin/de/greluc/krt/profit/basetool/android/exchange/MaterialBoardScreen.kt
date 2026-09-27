@@ -73,6 +73,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.inventory.StolenChip
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -418,6 +419,9 @@ private fun BoardRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            if (entry.stolen) {
+                StolenChip()
+            }
             BoardAmount(entry)
             entry.ownerOrgUnits.take(MAX_BADGES).forEach { badge ->
                 KrtChip(text = badge, tone = KrtChipTone.Muted)
@@ -934,11 +938,19 @@ fun EditEntrySheet(
             ),
         modifier = Modifier.testTag(BOARD_EDIT_SHEET_TAG),
     ) {
-        Text(
-            text = entry.materialName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = entry.materialName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+            if (entry.stolen) {
+                StolenChip()
+            }
+        }
         Text(
             text = stringResource(R.string.board_edit_fixed),
             style = MaterialTheme.typography.bodySmall,
@@ -1066,6 +1078,9 @@ private fun StockRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        if (stock.stolen) {
+            StolenChip()
+        }
         Text(
             text = "${formatAmount(stock.amount)} $unit",
             style = MaterialTheme.typography.bodyMedium,

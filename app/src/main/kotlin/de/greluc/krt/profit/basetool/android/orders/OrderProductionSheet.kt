@@ -38,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.inventory.StolenChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the action that opens the Herstellung, on the item line it books against. */
@@ -267,6 +268,9 @@ private fun MaterialRows(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Muted(text = row.krtSourceLabel(), modifier = Modifier.weight(1f))
+                    if (row.stolen) {
+                        StolenChip()
+                    }
                     KrtTextField(
                         value = material.amounts[row.id].orEmpty(),
                         onValueChange = { actions.onDraw(material.materialId, row.id, it) },

@@ -310,6 +310,7 @@ private fun List<InventoryAllocation>.krtToInputs(): List<InventoryAllocationInp
  * @property jobOrderAllocations Auftrag earmarks for the new row, validated in the same
  *   transaction as the booking (REQ-INV-027); empty leaves the row unassigned
  * @property missionAllocations the same for Einsätze; always empty for an item row (REQ-INV-031)
+ * @property stolen whether the stock is booked in as „gestohlen", its own stack (REQ-INV-053)
  */
 data class BookInDraft(
     val materialId: String? = null,
@@ -321,6 +322,7 @@ data class BookInDraft(
     val mergeStock: Boolean = true,
     val jobOrderAllocations: List<InventoryAllocation> = emptyList(),
     val missionAllocations: List<InventoryAllocation> = emptyList(),
+    val stolen: Boolean = false,
 )
 
 /**
@@ -811,6 +813,7 @@ class InventoryRepository(
                 gameItemId = draft.gameItemId,
                 quality = draft.quality.takeIf { draft.gameItemId == null },
                 personal = draft.personal,
+                stolen = draft.stolen.takeIf { it },
                 mergeStock = draft.mergeStock,
                 jobOrderAllocations = draft.jobOrderAllocations.krtToInputs(),
                 missionAllocations = draft.missionAllocations.krtToInputs(),
