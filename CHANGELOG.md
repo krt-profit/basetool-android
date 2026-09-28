@@ -30,6 +30,10 @@
   „Bestätigen" geht es genau dort weiter – der abgelehnte Aufruf wird wiederholt, Eingaben bleiben
   erhalten.
 
+- **Vier Benachrichtigungen sagen jetzt, worum es geht**, statt nur „Neue Benachrichtigung": ein
+  Löschantrag und seine Ablehnung, eine neu verbundene Anwendung (mit dem Hinweis, sie zu trennen,
+  wenn du es nicht warst) und die Rücknahme ihrer Änderungen durch die Administration.
+
 ### Changed
 
 - **Lager: Die Filterzeile lässt sich über den Filter in der Kopfzeile einklappen**; eingeklappt

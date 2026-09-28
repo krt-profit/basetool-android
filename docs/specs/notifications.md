@@ -124,8 +124,17 @@ it.
 - [x] A renamed or blank parameter falls back to the generic wording.
 - [x] An unknown type resolves to the generic wording rather than to nothing — the server may add a
   rule at any time and the member must still be told that something happened.
-- [x] All ten types the backend raises today have their own wording, asserted as a set so a new one
-  cannot be added to the server without this list noticing.
+- [x] Every type the backend raises has its own wording — fourteen as of 2026-09-28. The test takes
+  the set from the vendored contract's rule enum (`NotificationRuleDto.NotificationType`), so a
+  refreshed `openapi.json` with a new type fails the build until the type is worded.
+
+> [!warning] Corrected 2026-09-28 — the list had fallen four types behind the server
+> This box said „all ten types", checked against a list the test itself held. The backend had since
+> added `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_DELETION_REQUEST_DECLINED` (2026-09-17, GDPR
+> rights), `EXCHANGE_INSTALLATION_CONNECTED` (2026-09-27, REQ-XCH-032) and
+> `EXCHANGE_BULK_UNDO_APPLIED` (2026-09-28, REQ-XCH-034), and the app showed all four as „Neue
+> Benachrichtigung" — including the one that says to disconnect an application the member did not
+> connect. The hand-kept list could not notice; the enum-driven test can.
 
 **Code:** `NotificationText`, `notificationTypeRes`
 

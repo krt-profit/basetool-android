@@ -39,52 +39,26 @@ private fun String.isPlaceholder(): Boolean =
  * @param type the server's type constant.
  * @return the resource id.
  */
-internal fun notificationTypeRes(type: String): Int =
-    when (type) {
-        "JOB_ORDER_CREATED" -> {
-            R.string.notifications_type_job_order_created
-        }
+internal fun notificationTypeRes(type: String): Int = TYPE_WORDING[type] ?: R.string.notifications_type_generic
 
-        "JOB_ORDER_UPDATED_BY_REQUESTER" -> {
-            R.string.notifications_type_job_order_updated
-        }
-
-        "BANK_BOOKING_REQUEST_CREATED" -> {
-            R.string.notifications_type_bank_request_created
-        }
-
-        "BANK_BOOKING_REQUEST_CONFIRMED" -> {
-            R.string.notifications_type_bank_request_confirmed
-        }
-
-        "BANK_BOOKING_REQUEST_REJECTED" -> {
-            R.string.notifications_type_bank_request_rejected
-        }
-
-        "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED" -> {
-            R.string.notifications_type_bank_responsible_confirmed
-        }
-
-        "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED" -> {
-            R.string.notifications_type_bank_responsible_rejected
-        }
-
-        "DISCORD_REGISTRATION_PENDING" -> {
-            R.string.notifications_type_registration_pending
-        }
-
-        "MATERIAL_EXCHANGE_INTEREST_REGISTERED" -> {
-            R.string.notifications_type_exchange_interest
-        }
-
-        "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" -> {
-            R.string.notifications_type_exchange_fulfilment
-        }
-
-        else -> {
-            R.string.notifications_type_generic
-        }
-    }
+/** The wording of every type the backend raises, keyed by its constant. */
+private val TYPE_WORDING: Map<String, Int> =
+    mapOf(
+        "JOB_ORDER_CREATED" to R.string.notifications_type_job_order_created,
+        "JOB_ORDER_UPDATED_BY_REQUESTER" to R.string.notifications_type_job_order_updated,
+        "BANK_BOOKING_REQUEST_CREATED" to R.string.notifications_type_bank_request_created,
+        "BANK_BOOKING_REQUEST_CONFIRMED" to R.string.notifications_type_bank_request_confirmed,
+        "BANK_BOOKING_REQUEST_REJECTED" to R.string.notifications_type_bank_request_rejected,
+        "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED" to R.string.notifications_type_bank_responsible_confirmed,
+        "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED" to R.string.notifications_type_bank_responsible_rejected,
+        "DISCORD_REGISTRATION_PENDING" to R.string.notifications_type_registration_pending,
+        "MATERIAL_EXCHANGE_INTEREST_REGISTERED" to R.string.notifications_type_exchange_interest,
+        "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED" to R.string.notifications_type_exchange_fulfilment,
+        "ACCOUNT_DELETION_REQUESTED" to R.string.notifications_type_deletion_requested,
+        "ACCOUNT_DELETION_REQUEST_DECLINED" to R.string.notifications_type_deletion_declined,
+        "EXCHANGE_INSTALLATION_CONNECTED" to R.string.notifications_type_installation_connected,
+        "EXCHANGE_BULK_UNDO_APPLIED" to R.string.notifications_type_bulk_undo_applied,
+    )
 
 /**
  * Fills a template's `{name}` placeholders with a notification's parameters.

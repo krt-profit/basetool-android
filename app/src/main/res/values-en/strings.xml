@@ -368,6 +368,10 @@
     <string name="notifications_type_registration_pending">New registration awaiting approval: {username}</string>
     <string name="notifications_type_exchange_interest">{interessent} registered interest in your listing for {material}</string>
     <string name="notifications_type_exchange_fulfilment">{lieferant} can fulfil your request for {material}</string>
+    <string name="notifications_type_deletion_requested">{handle} has requested the deletion of their own account</string>
+    <string name="notifications_type_deletion_declined">Your request to delete your account was declined. The reason is on your profile page.</string>
+    <string name="notifications_type_installation_connected">New application connected: {client}. If this was not you, disconnect it under Personal → Connected applications.</string>
+    <string name="notifications_type_bulk_undo_applied">The administration undid {count} changes {client} made to your data. Details under Personal → Connected applications.</string>
     <string name="dashboard_greeting">Welcome, %1$s</string>
     <string name="dashboard_greeting_anonymous">Welcome</string>
     <string name="dashboard_context">%1$s · %2$s</string>
