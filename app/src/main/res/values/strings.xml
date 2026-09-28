@@ -122,6 +122,7 @@
     <string name="settings_prefs_retry">Erneut versuchen</string>
     <string name="settings_blueprint_sharing">Blueprints mit Org teilen</string>
     <string name="settings_blueprint_sharing_hint">Sichtbar in der Verfügbarkeits-Übersicht</string>
+    <string name="settings_connected_apps">Verbundene Anwendungen</string>
     <string name="settings_rsi_handle">RSI-Handle</string>
     <string name="settings_rsi_handle_optional">(optional)</string>
     <string name="settings_rsi_handle_placeholder">z. B. Dein_Handle</string>

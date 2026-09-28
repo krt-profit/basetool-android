@@ -917,6 +917,7 @@ private fun PushedDestination(
                 onOpenPrivacy = settings.onOpenPrivacy,
                 onOpenImprint = settings.onOpenImprint,
                 onOpenTerms = settings.onOpenTerms,
+                onOpenConnectedApps = settings.onOpenConnectedApps,
                 onOpenLicenses = { navController.navigate(KrtDestination.Licenses.route) },
                 onLogout = onLogout,
                 versionName = version.versionName.orEmpty(),
@@ -983,6 +984,7 @@ data class BlueprintOverviewBindings(
  * @property onOpenPrivacy opens the privacy policy in a browser.
  * @property onOpenImprint opens the imprint in a browser.
  * @property onOpenTerms opens the terms of use in a browser.
+ * @property onOpenConnectedApps opens the web page „Verbundene Anwendungen" in a browser.
  * @property onOpenUrl opens an arbitrary URL in a browser; returns `false` when nothing on the
  *   device handled it, which turns the licence action into a copy (design ch. 15).
  * @property versionCode the app's build number, from `BuildConfig`.
@@ -1017,6 +1019,7 @@ data class SettingsBindings(
     val onSharing: (Boolean) -> Unit,
     val onRetryPreferences: () -> Unit,
     val rsiActions: RsiHandleActions = RsiHandleActions(),
+    val onOpenConnectedApps: () -> Unit = {},
 )
 
 /**

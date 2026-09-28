@@ -87,6 +87,7 @@ class SettingsPreviewActivity : AppCompatActivity() {
                         onOpenPrivacy = { openWebPage("/privacy") },
                         onOpenImprint = { openWebPage("/impressum") },
                         onOpenTerms = { openWebPage("/terms") },
+                        onOpenConnectedApps = { openWebPage("/connected-apps") },
                         onOpenLicenses = { licenses = true },
                         onLogout = { },
                         versionName = BuildConfig.VERSION_NAME,

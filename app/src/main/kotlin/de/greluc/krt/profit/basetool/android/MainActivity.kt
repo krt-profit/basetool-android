@@ -460,6 +460,7 @@ class MainActivity : AppCompatActivity() {
                                             onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
                                             onOpenImprint = { openWebPage(IMPRINT_PATH) },
                                             onOpenTerms = { openWebPage(TERMS_PATH) },
+                                            onOpenConnectedApps = { openWebPage(CONNECTED_APPS_PATH) },
                                             onOpenUrl = { url ->
                                                 CustomTabLauncher.launch(this@MainActivity, url)
                                             },
@@ -606,6 +607,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
+         * Registers the view models of the member's own things — the Hangar, the Fleetview import and
+         * „Mein Inventar" with its blueprints — which follow the member's own live-sync rooms.
+         *
+         * @param container the auth object graph.
+         */
+        private fun InitializerViewModelFactoryBuilder.ownStuffViewModels(container: AuthContainer) {
+            initializer {
+                HangarViewModel(container.hangar, container.connectivity, container.liveSync, container.identity)
+            }
+            initializer {
+                FleetImportViewModel(container.hangar, container.connectivity, container.liveSync, container.identity)
+            }
+            initializer { PersonalInventoryViewModel(container.personalInventory, container.connectivity) }
+            initializer {
+                PersonalBlueprintsViewModel(
+                    container.personalBlueprints,
+                    container.personalBlueprints,
+                    container.connectivity,
+                    container.liveSync,
+                    container.identity,
+                )
+            }
+        }
+
+        /**
          * Registers the bank's three view models: member list, requests and staff surface.
          *
          * @param container the auth object graph.
@@ -664,8 +690,7 @@ class MainActivity : AppCompatActivity() {
                     NotificationsViewModel(container.notifications, container.systemNotifications)
                 }
                 initializer { CallerViewModel(container.identity) }
-                initializer { HangarViewModel(container.hangar, container.connectivity) }
-                initializer { FleetImportViewModel(container.hangar, container.connectivity) }
+                ownStuffViewModels(container)
                 bankViewModels(container)
                 initializer { OrdersViewModel(container.orders, container.liveSync, container.connectivity) }
                 initializer { RefineryViewModel(container.refinery, container.identity, container.liveSync) }
@@ -688,16 +713,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 initializer { BookingViewModel(container.inventory, container.connectivity) }
                 initializer {
-                    PersonalInventoryViewModel(container.personalInventory, container.connectivity)
-                }
-                initializer {
-                    PersonalBlueprintsViewModel(
-                        container.personalBlueprints,
-                        container.personalBlueprints,
-                        container.connectivity,
-                    )
-                }
-                initializer {
                     DashboardViewModel(
                         container.missions,
                         container.announcements,
@@ -715,5 +730,8 @@ class MainActivity : AppCompatActivity() {
 
         /** Path of the terms of use. */
         const val TERMS_PATH = "/terms"
+
+        /** The web page „Verbundene Anwendungen", which stays web-only (main repo REQ-XCH-032). */
+        const val CONNECTED_APPS_PATH = "/connected-apps"
     }
 }

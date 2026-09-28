@@ -12,6 +12,10 @@ import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
 import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipDraft
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
@@ -20,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
+import de.greluc.krt.profit.basetool.android.ui.OwnLiveSyncRoom
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -177,12 +182,16 @@ data class HangarState(
  * Typing is debounced by 300 ms; switching the segment reloads that half from page 0 without delay.
  *
  * @property source where the ships come from
+ * @param liveSync the live-sync bridge, or `null` for a screen without one.
+ * @param identity reads the member's own id, which names their hangar room.
  */
 @Suppress("TooManyFunctions")
 @OptIn(FlowPreview::class)
 class HangarViewModel(
     private val source: HangarSource,
     connectivity: Connectivity,
+    liveSync: LiveSyncSource? = null,
+    identity: IdentitySource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(HangarState())
 
@@ -229,6 +238,16 @@ class HangarViewModel(
                 .collect { reload(keepRows = false) }
         }
     }
+
+    private val ownRoom =
+        OwnLiveSyncRoom(
+            scope = viewModelScope,
+            liveSync = liveSync,
+            identity = identity,
+            room = LiveSyncTopic::hangar,
+            section = LiveSyncSections.HANGAR_SHIPS,
+            onChanged = { reload(keepRows = true) },
+        )
 
     /** Loads the showing half, the first time the screen is opened. */
     fun loadOnce() {
@@ -578,6 +597,7 @@ class HangarViewModel(
             when (result) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(editor = ShipEditor.Closed) }
+                    ownRoom.announce()
                     onRefresh()
                 }
 
@@ -631,6 +651,7 @@ class HangarViewModel(
                 )
             }
             if (result is ApiResult.Success) {
+                ownRoom.announce()
                 onRefresh()
             }
         }
@@ -679,6 +700,7 @@ class HangarViewModel(
             when (val result = source.setHomeLocationForAll(place.id)) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(bulkHomeLocation = null, homeLocationSet = affected) }
+                    ownRoom.announce()
                     onRefresh()
                 }
 
@@ -709,6 +731,7 @@ class HangarViewModel(
             when (val result = source.delete(ship.id)) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(pendingDelete = null, deleting = false) }
+                    ownRoom.announce()
                     onRefresh()
                 }
 

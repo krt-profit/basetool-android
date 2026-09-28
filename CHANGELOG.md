@@ -33,6 +33,11 @@
 - **Vier Benachrichtigungen sagen jetzt, worum es geht**, statt nur „Neue Benachrichtigung": ein
   Löschantrag und seine Ablehnung, eine neu verbundene Anwendung (mit dem Hinweis, sie zu trennen,
   wenn du es nicht warst) und die Rücknahme ihrer Änderungen durch die Administration.
+- **Hangar und „Meine Blueprints" aktualisieren sich live** — auch wenn ein verbundenes Tool
+  Schiffe oder Blueprints für dich schreibt. Was du in der App änderst, sehen deine offenen
+  Browser-Tabs sofort.
+- **„Verbundene Anwendungen" unter KONTO** öffnet die Seite im Browser, auf der du verbundene Tools
+  siehst und trennst.
 
 ### Changed
 

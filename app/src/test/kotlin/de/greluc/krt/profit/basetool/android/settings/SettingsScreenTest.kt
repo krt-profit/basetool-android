@@ -35,6 +35,8 @@ class SettingsScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
+    private val openedConnectedApps = mutableListOf<Unit>()
+
     /**
      * Renders the settings screen with every callback stubbed but sign-out and the payout row.
      *
@@ -68,6 +70,7 @@ class SettingsScreenTest {
                     onOpenPrivacy = {},
                     onOpenImprint = {},
                     onOpenTerms = {},
+                    onOpenConnectedApps = { openedConnectedApps += Unit },
                     onOpenLicenses = {},
                     onLogout = { loggedOut += Unit },
                     versionName = "0.1.0",
@@ -153,5 +156,15 @@ class SettingsScreenTest {
         show(loggedOut = mutableListOf())
 
         compose.onNodeWithText("Auszahlungspräferenz").assertIsNotEnabled()
+    }
+
+    /** „Verbundene Anwendungen" stays web-only; the KONTO row opens the page (main repo REQ-XCH-032). */
+    @Test
+    fun `the connected applications row opens the web page`() {
+        show(mutableListOf())
+
+        compose.onNodeWithText("Verbundene Anwendungen").performScrollTo().performClick()
+
+        assertEquals(listOf(Unit), openedConnectedApps)
     }
 }
