@@ -103,6 +103,23 @@ class LiveSyncTopic private constructor(
         fun bankAccount(accountId: String): LiveSyncTopic = resource("bank", accountId)
 
         /**
+         * The member's own ships. The server admits only the member whose id it is (main repo
+         * REQ-FE-015); a connected application's ship write lands here too (REQ-XCH-030).
+         *
+         * @param userId the member's own id.
+         * @return their room.
+         */
+        fun hangar(userId: String): LiveSyncTopic = resource("hangar", userId)
+
+        /**
+         * The member's own blueprints, admitted and fed like [hangar].
+         *
+         * @param userId the member's own id.
+         * @return their room.
+         */
+        fun blueprints(userId: String): LiveSyncTopic = resource("blueprints", userId)
+
+        /**
          * Parses a topic string the server sent back, recognising a room by whether it carries an id.
          *
          * @param wire the topic as it arrived.
@@ -148,7 +165,7 @@ class LiveSyncTopic private constructor(
         }
 
         private val RESOURCE_PREFIXES =
-            setOf("mission", "operation", "order", "refinery-order", "bank")
+            setOf("mission", "operation", "order", "refinery-order", "bank", "hangar", "blueprints")
     }
 }
 
@@ -213,4 +230,10 @@ object LiveSyncSections {
 
     /** A bank account's balance and bookings. */
     const val BANK_ACCOUNT: String = "account"
+
+    /** The member's own ships, the one section of their hangar room. */
+    const val HANGAR_SHIPS: String = "ships"
+
+    /** The member's own blueprint list, the one section of their blueprints room. */
+    const val BLUEPRINTS_LIST: String = "list"
 }

@@ -207,6 +207,23 @@ notice. Typing again clears the field's refusal.
 
 ---
 
+### REQ-APP-SET-013 — „Verbundene Anwendungen" is the web's page, linked from KONTO
+
+Main repo REQ-XCH-032: the member's list of connected applications — which installations of which
+client may act on their data, when each was last seen, and the switch to disconnect one — is a web
+page, `/connected-apps`, and **stays web-only**; the app links to it. The link is the last row of
+KONTO, beside the account it belongs to, and opens the page in the browser like the legal rows
+(`REQ-APP-SET-005`). Two notifications point members there — a new connection and an
+administration's undo — and both name the page.
+
+**Acceptance**
+
+- [x] The KONTO row opens the page (`SettingsScreenTest`).
+
+**Code:** `SettingsScreen.AccountGroup`, `MainActivity.CONNECTED_APPS_PATH`
+
+---
+
 ### REQ-APP-SET-002 — The in-app language is the platform's per-app language
 
 The DE/EN control writes through `AppCompatDelegate.setApplicationLocales`, which is the platform

@@ -11,9 +11,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.data.FleetImportResult
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.OwnLiveSyncRoom
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,12 +92,25 @@ data class FleetImportState(
  *
  * @property source the hangar reads and writes.
  * @property connectivity whether the device has a route to the server.
+ * @param liveSync the live-sync bridge, or `null` for a screen without one.
+ * @param identity reads the member's own id, which names their hangar room.
  */
 class FleetImportViewModel(
     private val source: HangarSource,
     connectivity: Connectivity,
+    liveSync: LiveSyncSource? = null,
+    identity: IdentitySource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(FleetImportState())
+
+    private val ownRoom =
+        OwnLiveSyncRoom(
+            scope = viewModelScope,
+            liveSync = liveSync,
+            identity = identity,
+            room = LiveSyncTopic::hangar,
+            section = LiveSyncSections.HANGAR_SHIPS,
+        )
 
     /** What the screen renders. */
     val state: StateFlow<FleetImportState> = mutableState.asStateFlow()
@@ -157,6 +175,7 @@ class FleetImportViewModel(
                 is ApiResult.Success -> {
                     mutableState.value =
                         FleetImportState(online = mutableState.value.online, result = result.value)
+                    ownRoom.announce()
                 }
 
                 is ApiResult.Failure -> {

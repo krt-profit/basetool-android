@@ -15,6 +15,10 @@ import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportSource
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.OwnedBlueprint
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintSource
@@ -23,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
+import de.greluc.krt.profit.basetool.android.ui.OwnLiveSyncRoom
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -199,13 +204,27 @@ sealed interface RecipeState {
  *
  * @property repository the member's own blueprints.
  * @property connectivity whether there is a network at all.
+ * @param liveSync the live-sync bridge, or `null` for a screen without one.
+ * @param identity reads the member's own id, which names their blueprints room.
  */
 class PersonalBlueprintsViewModel(
     private val repository: PersonalBlueprintSource,
     private val imports: BlueprintImportSource,
     connectivity: Connectivity,
+    liveSync: LiveSyncSource? = null,
+    identity: IdentitySource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BlueprintsState())
+
+    private val ownRoom =
+        OwnLiveSyncRoom(
+            scope = viewModelScope,
+            liveSync = liveSync,
+            identity = identity,
+            room = LiveSyncTopic::blueprints,
+            section = LiveSyncSections.BLUEPRINTS_LIST,
+            onChanged = { reload(keepRows = true) },
+        )
 
     /** What the tab renders. */
     val state: StateFlow<BlueprintsState> = mutableState.asStateFlow()
@@ -301,6 +320,9 @@ class PersonalBlueprintsViewModel(
             mutableState.update { it.copy(selection = open.copy(deleting = true, asking = false)) }
             viewModelScope.launch {
                 val refused = if (open.everything) deleteEverything() else deleteEach(open.ids)
+                if (refused.size < open.ids.size) {
+                    ownRoom.announce()
+                }
                 mutableState.update { state ->
                     state.copy(
                         selection =
@@ -413,6 +435,7 @@ class PersonalBlueprintsViewModel(
                 when (val result = imports.importApply(entries)) {
                     is ApiResult.Success -> {
                         mutableState.update { it.copy(import = BlueprintImportStep.Done(result.value)) }
+                        ownRoom.announce()
                         reload(keepRows = false)
                     }
 
@@ -675,6 +698,7 @@ class PersonalBlueprintsViewModel(
         when (val result = repository.add(product.productKey, note)) {
             is ApiResult.Success -> {
                 mutableState.update { it.copy(editor = BlueprintEditor.Closed) }
+                ownRoom.announce()
                 reload(keepRows = true)
             }
 
@@ -710,6 +734,7 @@ class PersonalBlueprintsViewModel(
                     )
                 }
                 if (result.value.anyAdded) {
+                    ownRoom.announce()
                     reload(keepRows = true)
                 }
             }
@@ -733,6 +758,7 @@ class PersonalBlueprintsViewModel(
             when (val result = repository.updateNote(editor.entry.id, version, note)) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(editor = BlueprintEditor.Closed) }
+                    ownRoom.announce()
                     reload(keepRows = true)
                 }
 
@@ -768,6 +794,7 @@ class PersonalBlueprintsViewModel(
             when (val result = repository.remove(entry.id)) {
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(pendingDelete = null, deleting = false) }
+                    ownRoom.announce()
                     reload(keepRows = true)
                 }
 

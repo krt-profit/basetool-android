@@ -69,6 +69,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param onOpenPrivacy opens the privacy policy in a browser.
  * @param onOpenImprint opens the imprint in a browser.
  * @param onOpenTerms opens the terms of use in a browser.
+ * @param onOpenConnectedApps opens the web page „Verbundene Anwendungen" in a browser.
  * @param onOpenLicenses opens the in-app open-source notice.
  * @param onLogout ends the session; invoked only after the member confirms.
  * @param versionName the app's version name.
@@ -95,6 +96,7 @@ fun SettingsScreen(
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
     onOpenTerms: () -> Unit,
+    onOpenConnectedApps: () -> Unit,
     onOpenLicenses: () -> Unit,
     onLogout: () -> Unit,
     versionName: String,
@@ -122,6 +124,7 @@ fun SettingsScreen(
             onOpenPrivacy = onOpenPrivacy,
             onOpenImprint = onOpenImprint,
             onOpenTerms = onOpenTerms,
+            onOpenConnectedApps = onOpenConnectedApps,
             onOpenLicenses = onOpenLicenses,
             onLogout = onLogout,
             versionName = versionName,
@@ -146,6 +149,7 @@ fun SettingsScreen(
  * @param onOpenPrivacy opens the privacy policy.
  * @param onOpenImprint opens the imprint.
  * @param onOpenTerms opens the terms of use.
+ * @param onOpenConnectedApps opens the web page „Verbundene Anwendungen".
  * @param onOpenLicenses opens the open-source notice.
  * @param onLogout ends the session; invoked only after the member confirms.
  * @param versionName the app's version name.
@@ -171,6 +175,7 @@ private fun SettingsColumn(
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
     onOpenTerms: () -> Unit,
+    onOpenConnectedApps: () -> Unit,
     onOpenLicenses: () -> Unit,
     onLogout: () -> Unit,
     versionName: String,
@@ -194,6 +199,7 @@ private fun SettingsColumn(
             onSharing = onSharing,
             onRetryPreferences = onRetryPreferences,
             rsiActions = rsiActions,
+            onOpenConnectedApps = onOpenConnectedApps,
         )
 
         SettingsGroup(stringResource(R.string.settings_section_app)) {
@@ -349,6 +355,8 @@ private fun PreferencesNotice(
  * @param onSharing share or unshare the member's blueprints.
  * @param onRetryPreferences re-read the values after a failed read.
  * @param rsiActions the RSI-handle row's callbacks.
+ * @param onOpenConnectedApps opens the web page „Verbundene Anwendungen", which stays web-only
+ *   (main repo REQ-XCH-032).
  */
 @Composable
 @Suppress("LongParameterList")
@@ -361,6 +369,7 @@ private fun AccountGroup(
     onSharing: (Boolean) -> Unit,
     onRetryPreferences: () -> Unit,
     rsiActions: RsiHandleActions,
+    onOpenConnectedApps: () -> Unit,
 ) {
     if (accountName != null || preferences.readError != null || preferences.error != null) {
         SettingsGroup(stringResource(R.string.settings_section_account)) {
@@ -433,6 +442,8 @@ private fun AccountGroup(
                 actions = rsiActions,
             )
             PreferencesNotice(preferences = preferences, onRetry = onRetryPreferences)
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            ExternalRow(R.string.settings_connected_apps, DesignR.drawable.ic_krt_swap, onOpenConnectedApps)
         }
     }
 }
@@ -564,6 +575,7 @@ private fun SettingsPreview() {
                 onSharing = {},
                 onOpenImprint = {},
                 onOpenTerms = {},
+                onOpenConnectedApps = {},
                 onOpenLicenses = {},
                 onLogout = {},
                 versionName = "0.1.0",
