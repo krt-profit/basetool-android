@@ -278,17 +278,13 @@ class LagerRepository(
         const val ENTRY_PAGE_SIZE = 100
 
         /**
-         * The query parameters the Org-Lager's grouped read takes from a filter; it has no personal
-         * dimension.
+         * The query parameters the Org-Lager's grouped read takes from a filter: the stolen filter
+         * alone, the one the main repo's contract freezes for it besides `materialIds`.
          *
          * @receiver the filter.
          * @return the parameters, in a stable order.
          */
-        fun LagerFilter.orgParams(): List<Pair<String, String>> =
-            buildList {
-                locationIds.sorted().forEach { add(LOCATION_IDS_PARAM to it) }
-                stolenParam()?.let(::add)
-            }
+        fun LagerFilter.orgParams(): List<Pair<String, String>> = listOfNotNull(stolenParam())
 
         /**
          * The query parameters „Mein Lager" takes from a filter.
@@ -298,7 +294,8 @@ class LagerRepository(
          */
         fun LagerFilter.myParams(): List<Pair<String, String>> =
             buildList {
-                addAll(orgParams())
+                locationIds.sorted().forEach { add(LOCATION_IDS_PARAM to it) }
+                stolenParam()?.let(::add)
                 when (personal) {
                     PersonalFilter.ALL -> Unit
                     PersonalFilter.PERSONAL_ONLY -> add(PERSONAL_ONLY_PARAM to "true")

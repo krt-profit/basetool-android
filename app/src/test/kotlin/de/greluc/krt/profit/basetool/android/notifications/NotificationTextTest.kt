@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.notifications
 
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.contract.model.NotificationRuleDto
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -121,21 +122,13 @@ class NotificationTextTest {
         assertEquals(R.string.notifications_type_generic, notificationTypeRes(""))
     }
 
+    /**
+     * The types come from the vendored contract's rule enum, so refreshing `openapi.json` with a new
+     * type fails here until the type has a wording.
+     */
     @Test
-    fun `every type the backend raises today has its own wording`() {
-        val known =
-            listOf(
-                "JOB_ORDER_CREATED",
-                "JOB_ORDER_UPDATED_BY_REQUESTER",
-                "BANK_BOOKING_REQUEST_CREATED",
-                "BANK_BOOKING_REQUEST_CONFIRMED",
-                "BANK_BOOKING_REQUEST_REJECTED",
-                "BANK_BOOKING_REQUEST_RESPONSIBLE_CONFIRMED",
-                "BANK_BOOKING_REQUEST_RESPONSIBLE_REJECTED",
-                "DISCORD_REGISTRATION_PENDING",
-                "MATERIAL_EXCHANGE_INTEREST_REGISTERED",
-                "MATERIAL_REQUEST_FULFILLMENT_SIGNALLED",
-            )
+    fun `every type the backend raises has its own wording`() {
+        val known = NotificationRuleDto.NotificationType.entries.map { it.value }
 
         known.forEach { type ->
             assertEquals(
