@@ -38,6 +38,9 @@
   Browser-Tabs sofort.
 - **„Verbundene Anwendungen" unter KONTO** öffnet die Seite im Browser, auf der du verbundene Tools
   siehst und trennst.
+- **„Meine Blueprints" nennt die Herkunft.** Das Detail eines Blueprints sagt, woher er stammt –
+  Spiel-Log, von Hand, Datei-Import, Standard-Blueprint oder andere Quelle – und über welches
+  verbundene Tool. Ältere Einträge ohne erfasste Herkunft zeigen keine Zeile.
 
 ### Changed
 

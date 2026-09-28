@@ -60,6 +60,17 @@ class PersonalBlueprintRepositoryTest {
              "page": 0, "totalElements": 3, "totalPages": 1}
             """.trimIndent()
 
+        val SOURCES =
+            """
+            {"content": [
+               {"id": "s1", "productName": "Arclight", "source": "LOG", "sourceClientId": "versekit"},
+               {"id": "s2", "productName": "Karna", "source": "IMPORT", "sourceClientId": " "},
+               {"id": "s3", "productName": "Coda"},
+               {"id": "s4", "productName": "Pulse", "source": "SCANNER"}
+             ],
+             "page": 0, "totalElements": 4, "totalPages": 1}
+            """.trimIndent()
+
         val CRAFTABILITY =
             """
             [{"blueprintId": "b1", "recipeResolved": true, "craftable": 0,
@@ -136,6 +147,31 @@ class PersonalBlueprintRepositoryTest {
             val page = (repository.page() as ApiResult.Success).value
 
             assertFalse(page.rows.last().removable)
+        }
+
+    @Test
+    fun `a row carries its source and the client that added it`() =
+        runTest {
+            respond(SOURCES)
+
+            val rows = (repository.page() as ApiResult.Success).value.rows.associateBy { it.id }
+
+            assertEquals(BlueprintSource.LOG, rows.getValue("s1").source)
+            assertEquals("versekit", rows.getValue("s1").sourceClientId)
+            assertEquals(BlueprintSource.IMPORT, rows.getValue("s2").source)
+            assertNull(rows.getValue("s2").sourceClientId)
+        }
+
+    @Test
+    fun `a row with no recorded or an unknown source carries none`() =
+        runTest {
+            respond(SOURCES)
+
+            val rows = (repository.page() as ApiResult.Success).value.rows.associateBy { it.id }
+
+            assertNull(rows.getValue("s3").source)
+            assertNull(rows.getValue("s3").sourceClientId)
+            assertNull(rows.getValue("s4").source)
         }
 
     @Test

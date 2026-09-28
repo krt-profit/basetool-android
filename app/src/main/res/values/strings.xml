@@ -951,6 +951,13 @@
     <string name="blueprints_product_owned">Hast du schon</string>
     <string name="blueprints_add_title">Blueprint hinzufügen</string>
     <string name="blueprints_edit_title">Notiz ändern</string>
+    <string name="blueprints_source">Herkunft: %1$s</string>
+    <string name="blueprints_source_via">Herkunft: %1$s über %2$s</string>
+    <string name="blueprints_source_log">Spiel-Log</string>
+    <string name="blueprints_source_manual">Von Hand hinzugefügt</string>
+    <string name="blueprints_source_import">Datei-Import</string>
+    <string name="blueprints_source_default">Standard-Blueprint</string>
+    <string name="blueprints_source_other">Andere Quelle</string>
     <string name="blueprints_remove_title">Blueprint entfernen</string>
     <string name="blueprints_remove_body">„%1$s“ wird aus deiner Liste entfernt.</string>
     <plurals name="blueprints_missing">

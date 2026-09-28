@@ -241,6 +241,7 @@ fun BlueprintNoteSheet(
                 style = MaterialTheme.typography.titleMedium,
                 color = KrtPalette.White,
             )
+            BlueprintSourceLine(editor.entry)
             KrtTextField(
                 value = editor.note,
                 onValueChange = onNote,

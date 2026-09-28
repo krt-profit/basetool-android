@@ -376,6 +376,45 @@ and tapping again adds the rest.
 `PersonalInventoryViewModel.onToggleSelected` / `.onSelectAll` / `.onBulkDelete*`,
 `PersonalInventoryScreen.SelectionActionBar`, `PersonalBulkDeleteModal`
 
+---
+
+### REQ-APP-PI-016 — A blueprint's detail says where it came from
+
+Parity with the web's detail pane of „Meine Blueprints" (main repo `REQ-INV-054`,
+`personal-inventory-blueprints-recipe.js` `describeSource`). `PersonalBlueprintResponse` carries
+`source` — `LOG`, `MANUAL`, `IMPORT`, `DEFAULT` or `OTHER` — and, for a row an exchange client added,
+`sourceClientId`. The detail draws **one muted line** under the blueprint's name: the tablet's recipe
+pane, and on a phone, where a tap opens the note sheet, that sheet.
+
+The words are the web's `personalInventory.blueprints.source.*`, verbatim: „Herkunft: Spiel-Log",
+„Von Hand hinzugefügt", „Datei-Import", „Standard-Blueprint", „Andere Quelle"; with a client
+„Herkunft: Spiel-Log über versekit". EN: „Source", „via", „Game log", „Added by hand", „File
+import", „Default blueprint", „Other source".
+
+**No source, no line.** Rows older than the record carry none (default products excepted, which the
+server's migration marked), and a value this build does not know reads as none rather than as a
+guess. An empty line or a „unbekannt" would claim a record that does not exist.
+
+**The client is named by its id.** The web renders `sourceClientId` as it stands — its template
+binds the id, not a name — so the app does the same. The registered display name
+(`exchange_client.display_name`) exists, but the only member read that carries it,
+`GET /api/v1/connected-apps`, admits the browser session alone (`ConnectedAppsGate`: never the
+app), so the app has no read that resolves it. Both clients showing the name needs a server change
+to `PersonalBlueprintResponse`; see Known gaps.
+
+The design handoff draws no such line; it is web parity under the copy rule, with no new wording.
+
+**Acceptance**
+
+- [x] `source` and `sourceClientId` map, an absent or unknown source to `null`, a blank client to
+  `null` (`PersonalBlueprintRepositoryTest`).
+- [x] The line reads „Herkunft: Spiel-Log über versekit" with a client and „Herkunft: Datei-Import"
+  without, and is absent with no source (`PersonalBlueprintsScreenTest`).
+- [ ] Observed on a device.
+
+**Code:** `BlueprintSource`, `OwnedBlueprint.source` / `.sourceClientId`, `BlueprintSourceLine`,
+`PersonalBlueprintsScreen.RecipePane`, `BlueprintNoteSheet`
+
 ## Known gaps
 
 - ~~**The blueprint file import** (`/personal-blueprints/import/*`) and the blueprints' own „alle
@@ -389,6 +428,11 @@ and tapping again adds the rest.
   bulk delete as `REQ-APP-PI-015`.
 - **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and
   deliberately never sends it, so a save cannot rewrite a value the member cannot see.
+- **The exchange client's display name** (`REQ-APP-PI-016`). The „über …" part shows the client id,
+  as the web does. The name lives in `exchange_client.display_name`, and the only member read of it,
+  `GET /api/v1/connected-apps`, is closed to the app by design. Showing the name in both clients
+  needs the backend to add it to `PersonalBlueprintResponse` (e.g. `sourceClientName`); recorded
+  2026-09-28, not requested yet.
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.
 - **The admin surface** (`/api/v1/admin/personal-inventory/**`) stays web-only, permanently, like
   the rest of the admin area.

@@ -510,6 +510,7 @@ private fun RecipePane(
                     enabled = online,
                 )
             }
+            BlueprintSourceLine(entry)
         }
         if (recipe is RecipeState.Loading) {
             KrtLoadingIndicator(text = stringResource(R.string.blueprints_recipe_loading))
