@@ -187,6 +187,41 @@ snapshot of pseudonymous ids and callsigns).
 
 **Code:** `core/data/…/LiveSyncRepository.kt`, `LiveSyncTopic.kt`, `app/…/ui/LiveSync.kt`
 
+---
+
+### REQ-APP-SYNC-006 — The member's own hangar and blueprints follow every writer, a connected application included
+
+Main repo REQ-XCH-030 and REQ-FE-015. Two rooms belong to one member each: `hangar:{userId}`
+(section `ships`) and `blueprints:{userId}` (section `list`). The server admits only the member
+whose id it is, and publishes into them after its own pages' writes **and after a connected
+application's** — a VerseKit or extractor sync of ships or blueprints. Without them the app's
+Hangar and „Meine Blueprints" showed that sync only after a pull to refresh.
+
+`OwnLiveSyncRoom` joins the room once the member's id is read (`IdentitySource.myUserId`), re-reads
+the list in place when its section moves, and announces the screen's own writes into it, so the
+member's open browser tab follows the app as it follows the web (`REQ-APP-SYNC-004`). An id that
+cannot be read means no room: nothing is joined and nothing announced, and the screen stays what it
+was — pull-to-refresh (`REQ-APP-SYNC-005`).
+
+Wired: the Hangar re-reads on a change and announces a ship's create, edit and delete, „Hangar
+leeren" and the home location set for all; the Fleetview import announces; „Meine Blueprints"
+re-reads and announces an add, a batch add, a note, a delete, a selection's delete and the file
+import.
+
+**Acceptance**
+
+- [x] The room is named by the member's own id; a change of its section re-reads, another does not
+  (`OwnLiveSyncRoomTest`).
+- [x] An own write is announced; an arriving change never is (`OwnLiveSyncRoomTest`).
+- [x] Without the id, or without the bridge, nothing is joined or announced and the screen works
+  (`OwnLiveSyncRoomTest`).
+- [x] Both rooms parse back from the wire (`OwnLiveSyncRoomTest`).
+- [ ] Walked on a device against a connected application's write. **Open** — the test stack has no
+  approved client; the unit tests stand in until the sandbox can drive one.
+
+**Code:** `LiveSyncTopic.hangar`, `.blueprints`, `OwnLiveSyncRoom`, `HangarViewModel`,
+`FleetImportViewModel`, `PersonalBlueprintsViewModel`
+
 ## Known gaps
 
 - **The Materialbörse, the Raffinerie and Beförderung are not wired yet** — their rooms exist in the

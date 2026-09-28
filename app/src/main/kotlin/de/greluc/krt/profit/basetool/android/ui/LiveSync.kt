@@ -9,9 +9,12 @@ package de.greluc.krt.profit.basetool.android.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncEvent
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -62,4 +65,59 @@ fun ViewModel.publishLiveSync(
         return
     }
     viewModelScope.launch { liveSync.publish(topic, sections.toSet()) }
+}
+
+/**
+ * One of the member's own live-sync rooms, such as their hangar or their blueprints
+ * (REQ-APP-SYNC-006).
+ *
+ * The room is named by the member's id, which is read once; until it arrives nothing is joined and
+ * [announce] does nothing. A change that arrives here is only re-read, never announced again
+ * (REQ-APP-SYNC-004).
+ *
+ * @property scope where the subscription and the announcements run; the screen's view-model scope.
+ * @property liveSync the bridge, or `null` when the screen was built without one.
+ * @property section the one section the room carries.
+ * @param identity reads the member's own id, or `null` when the screen was built without one.
+ * @param room names the room for an id, e.g. [LiveSyncTopic.hangar].
+ * @param onChanged what to re-read when somebody else changed the room — another device, the web
+ *   or a connected application; `null` for a screen that only announces.
+ */
+class OwnLiveSyncRoom(
+    private val scope: CoroutineScope,
+    private val liveSync: LiveSyncSource?,
+    identity: IdentitySource?,
+    room: (String) -> LiveSyncTopic,
+    private val section: String,
+    onChanged: (() -> Unit)? = null,
+) {
+    @Volatile
+    private var topic: LiveSyncTopic? = null
+
+    init {
+        val bridge = liveSync
+        if (bridge != null && identity != null) {
+            scope.launch {
+                val id = identity.myUserId()
+                if (id is ApiResult.Success) {
+                    val own = room(id.value)
+                    topic = own
+                    if (onChanged != null) {
+                        bridge.observe(setOf(own)).collect { event ->
+                            if (event is LiveSyncEvent.Changed && section in event.sections) {
+                                onChanged()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Tells the member's other screens and browser tabs that this screen just wrote here. */
+    fun announce() {
+        val own = topic ?: return
+        val bridge = liveSync ?: return
+        scope.launch { bridge.publish(own, setOf(section)) }
+    }
 }
