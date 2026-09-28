@@ -25,8 +25,8 @@ const val BLUEPRINT_SOURCE_TAG: String = "blueprint-source"
 /**
  * Where an owned blueprint came from, as one muted line (REQ-APP-PI-016).
  *
- * Draws nothing when the server recorded no source. The exchange client is named by its client id,
- * as the web names it.
+ * Draws nothing when the server recorded no source. The exchange client is named by its registered
+ * display name, and by its id when the server sends no name, as the web names it.
  *
  * @param entry the blueprint.
  * @param modifier layout modifier.
@@ -38,7 +38,7 @@ fun BlueprintSourceLine(
 ) {
     val source = entry.source ?: return
     val name = stringResource(source.labelRes())
-    val client = entry.sourceClientId
+    val client = entry.sourceClientName ?: entry.sourceClientId
     Text(
         text =
             if (client == null) {

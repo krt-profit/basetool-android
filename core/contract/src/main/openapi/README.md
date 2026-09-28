@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `64a9907f0` (2026-09-28) — the backend's `main` |
+| Copied from commit | `21f031ff7` (2026-09-28) — the backend's `main` |
 | Document | OpenAPI 3.1.0 · 440 paths · 489 schemas |
 
 > The copy carries what „Mein Lager" and the „gestohlen" marker read and write (basetool
@@ -16,7 +16,8 @@
 > profile's RSI handle (REQ-SEC-072), for krt-profit/basetool#2097. The 2026-09-28 refresh adds
 > nothing the app reads beyond `source` and `sourceClientId` on its own blueprints (basetool
 > REQ-INV-054) and the two exchange notification types in the rule enum; the rest is the exchange's
-> admin and member surface, which stays web-only.
+> admin and member surface, which stays web-only. The next refresh the same day adds
+> `sourceClientName` to a personal blueprint (basetool #2231), the client's registered display name.
 >
 > **Release order.** The three `…/inventory/my-inventory/…` reads reach production only once their
 > API-vhost rules are live (krt-profit/basetool#2171); every write this copy

@@ -45,6 +45,8 @@ import okhttp3.OkHttpClient
  * @property version the optimistic lock, echoed on the next save
  * @property source where it came from, or `null` for a row older than the record (REQ-INV-054)
  * @property sourceClientId the exchange client that added it, or `null`
+ * @property sourceClientName that client's registered display name, or `null` when no client added
+ *   it, the client is no longer registered, or the server predates the field
  */
 data class OwnedBlueprint(
     val id: String,
@@ -56,6 +58,7 @@ data class OwnedBlueprint(
     val version: Long?,
     val source: BlueprintSource? = null,
     val sourceClientId: String? = null,
+    val sourceClientName: String? = null,
 )
 
 /** Where an owned blueprint came from, as the server recorded it when the row was created. */
@@ -783,6 +786,7 @@ private fun PersonalBlueprintResponse.toModel(): OwnedBlueprint =
         version = version,
         source = BlueprintSource.from(source?.value),
         sourceClientId = sourceClientId?.takeIf { it.isNotBlank() },
+        sourceClientName = sourceClientName?.takeIf { it.isNotBlank() },
     )
 
 /**
