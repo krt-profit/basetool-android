@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-29
+
 ### Added
 
 - **Lager: „Mein Lager".** Ein Umschalter „Org-Lager | Mein Lager" zeigt deinen eigenen Bestand –
@@ -18,18 +20,15 @@
 - **RSI-Handle in den Einstellungen.** Unter KONTO lässt sich optional dein RSI-Handle hinterlegen,
   ändern oder leeren. Ein verbundenes Tool darf nur fragen, ob ein Handle zu dir gehört – den Handle
   selbst erfährt es nie. Ist er schon einem anderen Profil zugeordnet, sagt das Feld es.
-
 - **Kennzeichnung „gestohlen".** Gestohlener Bestand trägt überall, wo die App Bestand zeigt, einen
   roten Hinweis – im Lager, bei der Übergabe eines Auftrags und in der Materialbörse – und bildet
   einen eigenen Stapel. Filter „Ohne gestohlene" / „Nur gestohlene" in beiden Lagern. Sobald der
   Server es freischaltet: Einbuchen als gestohlen und Markieren oder Entfernen der Markierung, auch
   für eine Teilmenge oder eine Auswahl.
-
 - **Geänderte Nutzungsbedingungen unterbrechen nicht mehr.** Ändern sich die Nutzungsbedingungen,
   während die App offen ist, erscheint die neue Fassung über dem aktuellen Bildschirm. Nach
   „Bestätigen" geht es genau dort weiter – der abgelehnte Aufruf wird wiederholt, Eingaben bleiben
   erhalten.
-
 - **Vier Benachrichtigungen sagen jetzt, worum es geht**, statt nur „Neue Benachrichtigung": ein
   Löschantrag und seine Ablehnung, eine neu verbundene Anwendung (mit dem Hinweis, sie zu trennen,
   wenn du es nicht warst) und die Rücknahme ihrer Änderungen durch die Administration.
