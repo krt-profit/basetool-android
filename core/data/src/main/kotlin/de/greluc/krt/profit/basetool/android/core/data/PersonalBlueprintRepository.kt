@@ -43,6 +43,8 @@ import okhttp3.OkHttpClient
  * @property acquiredAt when they got it, as the server wrote it, or `null`
  * @property removable whether the server allows deleting this entry
  * @property version the optimistic lock, echoed on the next save
+ * @property source where it came from, or `null` for a row older than the record (REQ-INV-054)
+ * @property sourceClientId the exchange client that added it, or `null`
  */
 data class OwnedBlueprint(
     val id: String,
@@ -52,7 +54,38 @@ data class OwnedBlueprint(
     val acquiredAt: String?,
     val removable: Boolean,
     val version: Long?,
+    val source: BlueprintSource? = null,
+    val sourceClientId: String? = null,
 )
+
+/** Where an owned blueprint came from, as the server recorded it when the row was created. */
+enum class BlueprintSource {
+    /** Read from the game log by an exchange client. */
+    LOG,
+
+    /** Added by hand in the web, the app or by an admin. */
+    MANUAL,
+
+    /** Taken over from an export file. */
+    IMPORT,
+
+    /** Granted as a default blueprint. */
+    DEFAULT,
+
+    /** Any other source an exchange client named. */
+    OTHER,
+    ;
+
+    companion object {
+        /**
+         * Maps the wire value.
+         *
+         * @param raw as the server wrote it, or `null` when it recorded none.
+         * @return the source, or `null` for none and for a value this build does not know.
+         */
+        fun from(raw: String?): BlueprintSource? = entries.firstOrNull { it.name == raw?.trim()?.uppercase() }
+    }
+}
 
 /** One page of owned blueprints.
  *
@@ -748,6 +781,8 @@ private fun PersonalBlueprintResponse.toModel(): OwnedBlueprint =
         acquiredAt = acquiredAt?.takeIf { it.isNotBlank() },
         removable = removable == true,
         version = version,
+        source = BlueprintSource.from(source?.value),
+        sourceClientId = sourceClientId?.takeIf { it.isNotBlank() },
     )
 
 /**

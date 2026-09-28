@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.personalinventory
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintSource
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
 import de.greluc.krt.profit.basetool.android.core.data.CraftabilityMaterial
 import de.greluc.krt.profit.basetool.android.core.data.OwnedBlueprint
@@ -292,6 +294,42 @@ class PersonalBlueprintsScreenTest {
         compose.onNodeWithText("F7A Hornet · Anvil").performClick()
 
         assertTrue(picked.isNotEmpty())
+    }
+
+    private fun showNoteSheet(entry: OwnedBlueprint) {
+        compose.setContent {
+            KrtTheme {
+                BlueprintNoteSheet(
+                    editor = BlueprintEditor.Editing(entry = entry, note = entry.note.orEmpty()),
+                    onNote = {},
+                    onSave = {},
+                    onDismiss = {},
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `the detail names the source and the client that added it`() {
+        showNoteSheet(entry().copy(source = BlueprintSource.LOG, sourceClientId = "versekit"))
+
+        compose.onNodeWithTag(BLUEPRINT_SOURCE_TAG)
+            .assertTextEquals("Herkunft: Spiel-Log über versekit")
+    }
+
+    @Test
+    fun `a source without a client is named alone`() {
+        showNoteSheet(entry().copy(source = BlueprintSource.IMPORT))
+
+        compose.onNodeWithTag(BLUEPRINT_SOURCE_TAG).assertTextEquals("Herkunft: Datei-Import")
+    }
+
+    @Test
+    fun `no recorded source draws no line`() {
+        showNoteSheet(entry())
+
+        compose.onNodeWithTag(BLUEPRINT_SOURCE_TAG).assertDoesNotExist()
+        compose.onNodeWithText("Herkunft", substring = true).assertDoesNotExist()
     }
 
     @Test
