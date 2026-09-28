@@ -63,8 +63,10 @@ class PersonalBlueprintRepositoryTest {
         val SOURCES =
             """
             {"content": [
-               {"id": "s1", "productName": "Arclight", "source": "LOG", "sourceClientId": "versekit"},
-               {"id": "s2", "productName": "Karna", "source": "IMPORT", "sourceClientId": " "},
+               {"id": "s1", "productName": "Arclight", "source": "LOG", "sourceClientId": "versekit",
+                "sourceClientName": "VerseKit"},
+               {"id": "s2", "productName": "Karna", "source": "IMPORT", "sourceClientId": " ",
+                "sourceClientName": " "},
                {"id": "s3", "productName": "Coda"},
                {"id": "s4", "productName": "Pulse", "source": "SCANNER"}
              ],
@@ -158,8 +160,10 @@ class PersonalBlueprintRepositoryTest {
 
             assertEquals(BlueprintSource.LOG, rows.getValue("s1").source)
             assertEquals("versekit", rows.getValue("s1").sourceClientId)
+            assertEquals("VerseKit", rows.getValue("s1").sourceClientName)
             assertEquals(BlueprintSource.IMPORT, rows.getValue("s2").source)
             assertNull(rows.getValue("s2").sourceClientId)
+            assertNull(rows.getValue("s2").sourceClientName)
         }
 
     @Test
@@ -171,6 +175,7 @@ class PersonalBlueprintRepositoryTest {
 
             assertNull(rows.getValue("s3").source)
             assertNull(rows.getValue("s3").sourceClientId)
+            assertNull("an older server sends no name", rows.getValue("s3").sourceClientName)
             assertNull(rows.getValue("s4").source)
         }
 

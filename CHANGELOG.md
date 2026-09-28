@@ -40,7 +40,8 @@
   siehst und trennst.
 - **„Meine Blueprints" nennt die Herkunft.** Das Detail eines Blueprints sagt, woher er stammt –
   Spiel-Log, von Hand, Datei-Import, Standard-Blueprint oder andere Quelle – und über welches
-  verbundene Tool. Ältere Einträge ohne erfasste Herkunft zeigen keine Zeile.
+  verbundene Tool, mit dem Namen, unter dem es registriert ist. Ältere Einträge ohne erfasste
+  Herkunft zeigen keine Zeile.
 
 ### Changed
 

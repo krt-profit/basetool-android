@@ -310,7 +310,18 @@ class PersonalBlueprintsScreenTest {
     }
 
     @Test
-    fun `the detail names the source and the client that added it`() {
+    fun `the detail names the source and the client by its display name`() {
+        showNoteSheet(
+            entry().copy(source = BlueprintSource.LOG, sourceClientId = "versekit", sourceClientName = "VerseKit"),
+        )
+
+        compose.onNodeWithTag(BLUEPRINT_SOURCE_TAG)
+            .assertTextEquals("Herkunft: Spiel-Log über VerseKit")
+    }
+
+    /** A client that is no longer registered, or an older server, sends no name; the id stands in. */
+    @Test
+    fun `a client without a name is named by its id`() {
         showNoteSheet(entry().copy(source = BlueprintSource.LOG, sourceClientId = "versekit"))
 
         compose.onNodeWithTag(BLUEPRINT_SOURCE_TAG)
