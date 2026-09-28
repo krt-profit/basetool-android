@@ -61,6 +61,8 @@ import kotlin.time.Duration.Companion.seconds
  * @property reconnectCeiling the longest a client waits before trying again.
  * @property unionSettle how long the room union has to hold still before the connection follows
  *   it.
+ * @property jitteredWindows whether a coalescing window is drawn at random up to its ceiling, as
+ *   ADR-0094 wants; `false` makes every window its ceiling, for a test that must know when one closes.
  */
 data class LiveSyncTiming(
     val resourceWindow: Duration = 400.milliseconds,
@@ -69,6 +71,7 @@ data class LiveSyncTiming(
     val reconnectBase: Duration = 1.seconds,
     val reconnectCeiling: Duration = 30.seconds,
     val unionSettle: Duration = 250.milliseconds,
+    val jitteredWindows: Boolean = true,
 )
 
 /** What the live-sync stream tells a screen. */
@@ -295,27 +298,23 @@ class LiveSyncRepository(
         guard: Mutex,
         emit: (LiveSyncEvent) -> Unit,
     ) = coroutineScope {
-        val start =
-            guard.withLock {
-                pending.getOrPut(event.topic) { mutableSetOf() }.addAll(event.sections)
-                if (timers.containsKey(event.topic)) {
-                    return@withLock false
-                }
-                true
+        guard.withLock {
+            pending.getOrPut(event.topic) { mutableSetOf() }.addAll(event.sections)
+            if (!timers.containsKey(event.topic)) {
+                timers[event.topic] =
+                    launch {
+                        delay(window(event.topic))
+                        val sections =
+                            guard.withLock {
+                                timers.remove(event.topic)
+                                pending.remove(event.topic).orEmpty()
+                            }
+                        if (sections.isNotEmpty()) {
+                            emit(LiveSyncEvent.Changed(event.topic, sections))
+                        }
+                    }
             }
-        if (!start) {
-            return@coroutineScope
         }
-        val timer =
-            launch {
-                delay(window(event.topic))
-                val sections = guard.withLock { pending.remove(event.topic).orEmpty() }
-                guard.withLock { timers.remove(event.topic) }
-                if (sections.isNotEmpty()) {
-                    emit(LiveSyncEvent.Changed(event.topic, sections))
-                }
-            }
-        guard.withLock { timers[event.topic] = timer }
     }
 
     /**
@@ -327,6 +326,9 @@ class LiveSyncRepository(
      */
     private fun window(topic: LiveSyncTopic): Duration {
         val ceiling = if (topic.global) timing.globalWindow else timing.resourceWindow
+        if (!timing.jitteredWindows) {
+            return ceiling
+        }
         return Random.nextLong(1L, ceiling.inWholeMilliseconds + 1).milliseconds
     }
 

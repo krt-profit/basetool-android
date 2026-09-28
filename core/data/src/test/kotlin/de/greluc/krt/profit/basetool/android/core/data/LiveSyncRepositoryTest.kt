@@ -34,6 +34,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -49,14 +50,17 @@ class LiveSyncRepositoryTest {
     fun setUp() {
         server = MockWebServer()
         server.start()
+        repository = repositoryAt(collapsedTiming())
+    }
+
+    private fun repositoryAt(timing: LiveSyncTiming): LiveSyncRepository {
         val baseUrl = server.url("/").toString().removeSuffix("/")
         val client = OkHttpClient()
-        repository =
-            LiveSyncRepository(
-                stream = SseStream(httpClient = client, baseUrl = baseUrl),
-                reader = ApiReader(httpClient = client, baseUrl = baseUrl, json = KrtJson, logTag = "test"),
-                timing = collapsedTiming(),
-            )
+        return LiveSyncRepository(
+            stream = SseStream(httpClient = client, baseUrl = baseUrl),
+            reader = ApiReader(httpClient = client, baseUrl = baseUrl, json = KrtJson, logTag = "test"),
+            timing = timing,
+        )
     }
 
     @After
@@ -100,14 +104,20 @@ class LiveSyncRepositoryTest {
             assertEquals(setOf("stock"), change.sections)
         }
 
+    /**
+     * The frames arrive spread out, as on a busy runner, inside one fixed one-second window: a
+     * jittered window can be drawn as short as 1 ms and close between two of them.
+     */
     @Test
     fun `folds frames inside one window into a single event carrying the union`() =
         runBlocking {
+            repository = repositoryAt(collapsedTiming().copy(resourceWindow = 1.seconds, jitteredWindows = false))
             enqueueStream(
                 subscribed("mission:$MISSION_ID") +
                     changed("mission:$MISSION_ID", "crew") +
                     changed("mission:$MISSION_ID", "finance") +
                     changed("mission:$MISSION_ID", "crew"),
+                spread = true,
             )
 
             val change =
@@ -389,12 +399,16 @@ class LiveSyncRepositoryTest {
      *
      * @param body the frames, already framed.
      */
-    private fun enqueueStream(body: String) {
+    private fun enqueueStream(
+        body: String,
+        spread: Boolean = false,
+    ) {
         server.enqueue(
             MockResponse.Builder()
                 .code(HTTP_OK)
                 .setHeader("Content-Type", "text/event-stream")
                 .body(body)
+                .apply { if (spread) throttleBody(FRAME_BYTES, FRAME_GAP_MS, TimeUnit.MILLISECONDS) }
                 .build(),
         )
     }
@@ -415,6 +429,12 @@ class LiveSyncRepositoryTest {
     private companion object {
         const val MISSION_ID = "8f14e45f-ceea-467a-9c5b-5f1f52a3a1c2"
         const val HTTP_OK = 200
+
+        /** Bytes of the stream the server writes per step when frames are spread out. */
+        const val FRAME_BYTES = 40L
+
+        /** The pause between two such steps. */
+        const val FRAME_GAP_MS = 30L
         const val HTTP_FORBIDDEN = 403
 
         /** Long enough for the loop to have retried if it were going to. */
