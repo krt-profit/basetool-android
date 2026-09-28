@@ -431,8 +431,8 @@ The design handoff draws no such line; it is web parity under the copy rule, wit
 - **The exchange client's display name** (`REQ-APP-PI-016`). The „über …" part shows the client id,
   as the web does. The name lives in `exchange_client.display_name`, and the only member read of it,
   `GET /api/v1/connected-apps`, is closed to the app by design. Showing the name in both clients
-  needs the backend to add it to `PersonalBlueprintResponse` (e.g. `sourceClientName`); recorded
-  2026-09-28, not requested yet.
+  needs the backend to add it to `PersonalBlueprintResponse` (e.g. `sourceClientName`); requested
+  as `krt-profit/basetool#2231` (2026-09-28).
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.
 - **The admin surface** (`/api/v1/admin/personal-inventory/**`) stays web-only, permanently, like
   the rest of the admin area.
