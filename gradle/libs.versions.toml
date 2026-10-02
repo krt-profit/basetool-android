@@ -168,7 +168,7 @@ pin-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version = "0.9.7" }
 pin-jdom2 = { group = "org.jdom", name = "jdom2", version = "2.0.6.1" }
 pin-plexus-utils = { group = "org.codehaus.plexus", name = "plexus-utils", version = "4.1.0" }
 pin-plexus-xml = { group = "org.codehaus.plexus", name = "plexus-xml", version = "4.2.0" }
-pin-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version = "3.20.0" }
+pin-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version = "3.21.0" }
 pin-httpclient = { group = "org.apache.httpcomponents", name = "httpclient", version = "4.5.14" }
 pin-httpmime = { group = "org.apache.httpcomponents", name = "httpmime", version = "4.5.14" }
 pin-handlebars = { group = "com.github.jknack", name = "handlebars", version = "4.5.5" }
