@@ -48,13 +48,13 @@ compileSdk = "37"
 minSdk = "31"
 targetSdk = "37"
 
-androidxCore = "1.19.0"
+androidxCore = "1.19.1"
 androidxActivity = "1.13.0"
 androidxLifecycle = "2.11.0"
 composeBom = "2026.09.00"
 # Adaptive layout + navigation are versioned outside the Compose BOM.
 composeAdaptive = "1.3.0"
-androidxNavigation = "2.10.1"
+androidxNavigation = "2.10.2"
 
 junit = "4.13.2"
 robolectric = "4.17"
@@ -91,7 +91,7 @@ licensee = "1.14.1"
 openapiGenerator = "7.25.0"
 
 detekt = "2.0.0-alpha.6"
-spotless = "8.10.2"
+spotless = "8.10.3"
 ktlint = "1.8.0"
 
 # Security floor for the BUILD-TIME transitives pinned from the root build script (ADR-0019).
