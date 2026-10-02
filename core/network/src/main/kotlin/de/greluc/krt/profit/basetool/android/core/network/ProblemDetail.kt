@@ -85,5 +85,11 @@ data class ProblemDetail(
 
         /** The backend is reachable but a dependency is not; retryable. */
         const val CODE_SERVICE_UNAVAILABLE: String = "SERVICE_UNAVAILABLE"
+
+        /** Nothing answers at this path for this caller, a missing row and a retired route alike (404). */
+        const val CODE_NOT_FOUND: String = "NOT_FOUND"
+
+        /** The server retired the called path, so this build must be updated (REQ-APP-API-010). */
+        const val CODE_APP_UPDATE_REQUIRED: String = "APP_UPDATE_REQUIRED"
     }
 }

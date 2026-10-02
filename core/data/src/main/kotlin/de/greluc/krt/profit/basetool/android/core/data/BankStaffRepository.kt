@@ -185,15 +185,15 @@ class BankStaffRepository(
         val note = booking.note?.takeIf { it.isNotBlank() }
         return when (booking.kind) {
             DirectBookingKind.DEPOSIT -> {
-                reader.krtDeposit(booking, amount, note)
+                krtDeposit(reader, booking, amount, note)
             }
 
             DirectBookingKind.WITHDRAWAL -> {
-                reader.krtWithdraw(booking, amount, note)
+                krtWithdraw(reader, booking, amount, note)
             }
 
             DirectBookingKind.TRANSFER -> {
-                reader.krtTransfer(booking, amount, note, target, targetHolder)
+                krtTransfer(reader, booking, amount, note, target, targetHolder)
             }
         }
     }
@@ -817,17 +817,19 @@ private fun ApiResult<Unit>.krtBooked(): ApiResult<BankDirectOutcome> =
 /**
  * Books money in; a deposit is fee-free and carries no `feeInclusive`.
  *
+ * @param reader performs the call.
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
  * @return what the server answered.
  */
-private suspend fun ApiReader.krtDeposit(
+private suspend fun krtDeposit(
+    reader: ApiReader,
     booking: DirectBooking,
     amount: KrtDecimal,
     note: String?,
 ): ApiResult<BankDirectOutcome> =
-    postAccepted(
+    reader.postAccepted(
         BankStaffRepository.DEPOSITS_PATH,
         BankDepositRequest(
             accountId = booking.accountId,
@@ -855,17 +857,19 @@ private suspend fun ApiReader.krtDeposit(
  * Over the ceiling the server answers `202` with a `pendingRequest` instead of a `transaction`
  * (REQ-BANK-047).
  *
+ * @param reader performs the call.
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
  * @return whether it was booked or filed, or the classified failure.
  */
-private suspend fun ApiReader.krtWithdraw(
+private suspend fun krtWithdraw(
+    reader: ApiReader,
     booking: DirectBooking,
     amount: KrtDecimal,
     note: String?,
 ): ApiResult<BankDirectOutcome> =
-    post(
+    reader.post(
         BankStaffRepository.WITHDRAWALS_PATH,
         BankWithdrawalRequest(
             accountId = booking.accountId,
@@ -888,6 +892,7 @@ private suspend fun ApiReader.krtWithdraw(
  * Moves money between two accounts of the unit, or files it as an approval request when it exceeds
  * the KRT employee ceiling.
  *
+ * @param reader performs the call.
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
@@ -895,14 +900,15 @@ private suspend fun ApiReader.krtWithdraw(
  * @param targetHolder its holder, already checked for presence.
  * @return whether it was booked or filed, or the classified failure.
  */
-private suspend fun ApiReader.krtTransfer(
+private suspend fun krtTransfer(
+    reader: ApiReader,
     booking: DirectBooking,
     amount: KrtDecimal,
     note: String?,
     target: String?,
     targetHolder: String?,
 ): ApiResult<BankDirectOutcome> =
-    post(
+    reader.post(
         BankStaffRepository.TRANSFERS_PATH,
         BankTransferRequest(
             sourceAccountId = booking.accountId,

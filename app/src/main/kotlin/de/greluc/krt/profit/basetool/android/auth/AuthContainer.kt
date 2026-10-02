@@ -59,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import de.greluc.krt.profit.basetool.android.core.network.SystemConnectivity
+import de.greluc.krt.profit.basetool.android.gate.UpdateSignalBus
 import de.greluc.krt.profit.basetool.android.notifications.SystemNotifications
 import de.greluc.krt.profit.basetool.android.notifications.SystemNotifier
 import de.greluc.krt.profit.basetool.android.terms.ReconsentBroker
@@ -147,6 +148,12 @@ class AuthContainer(
     val configuration by lazy { AppOidc.configuration() }
 
     /**
+     * Carries the API client's `404` and `APP_UPDATE_REQUIRED` answers to the update gate
+     * (REQ-APP-API-010); one per process, like the client that feeds it.
+     */
+    val updateSignals: UpdateSignalBus by lazy { UpdateSignalBus() }
+
+    /**
      * The API client.
      *
      * Its `AccessTokenProvider` is [session], which is why this is lazy and why the two do not form
@@ -161,6 +168,7 @@ class AuthContainer(
             activeOrgUnitProvider = { activeOrgUnit.current() },
             refreshIfSpent = { runBlocking { session.refreshIfNeeded() } },
             refreshAfterRejection = { refused -> runBlocking { session.refreshFor(refused) } },
+            updateSignals = updateSignals,
         )
     }
 

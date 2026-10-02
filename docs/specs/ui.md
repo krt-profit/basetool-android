@@ -153,9 +153,18 @@ it takes the whole tool away.
   problem is a train tunnel.
 - A **zero floor** allows everything. That is what an unconfigured server answers, and any other
   reading of it would refuse every installed build the first time the code shipped.
-- The policy is read **once per process**, not on a loop. A wall appearing mid-session over work in
-  progress is worse than one that waits for the next start, and the floor does not move often
-  enough to justify polling.
+- A **failed re-read keeps the last verdict**. Once a read has answered, a train tunnel neither
+  raises a wall nor lifts one.
+
+> [!note] Changed 2026-10-02 — the policy is no longer read once per process
+> This bullet read: „The policy is read **once per process**, not on a loop. A wall appearing
+> mid-session over work in progress is worse than one that waits for the next start." The owner's
+> decision D-11 of the main repo's domain modularisation plan (2026-10-01) reverses it: under the hard
+> cut, an app left running after a deploy calls retired paths, and a wall on return is better than
+> screens that fail one by one. The gate now reads the policy on every resume and after a `404`, at
+> most once a minute, and walls off at once on `APP_UPDATE_REQUIRED` — `REQ-APP-API-010`. It still
+> never polls, and a resume is the only moment a wall can appear unprompted: the member was away,
+> not mid-edit.
 
 **Nothing is wiped.** The chapter is explicit that cached data survives, so the gate composes over
 the app rather than signing anybody out. Back **exits** — there is nothing behind the screen, and a
@@ -168,7 +177,8 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
 
 - [x] Above the floor runs; below it walls off and carries the release URL (`UpdateGateTest`).
 - [x] A zero floor and a failed read both run the app.
-- [x] The policy is read once however often the gate is composed.
+- [x] The policy is read at most once per interval however often the gate is composed or resumed
+  (`REQ-APP-API-010`, which carries the re-read's own acceptance).
 - [x] A newer build being available is not treated as a refusal — the two numbers stay apart, or
   every release would be a forced one.
 - [x] **Walked on a device** (2026-08-24): with the floor set above the installed build the wall
@@ -176,7 +186,7 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
   Setting the floor at all needed a compose passthrough that did not exist — REQ-API-010 promised
   an env var and a restart, and the variable reached nothing.
 
-**Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`
+**Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`, `UpdateSignalBus`
 
 ---
 

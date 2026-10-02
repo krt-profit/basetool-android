@@ -35,6 +35,15 @@ data class AppVersionPolicy(
      */
     fun allows(versionCode: Int): Boolean =
         minimumVersionCode <= 0 || versionCode >= minimumVersionCode
+
+    /** Defaults. */
+    companion object {
+        /**
+         * Where to send a member when the server named no URL: the release page the app is
+         * distributed from (plan Q1), because a wall with no way off it is worse than a wrong link.
+         */
+        const val DEFAULT_RELEASES_URL: String = "https://github.com/krt-profit/basetool-android/releases/latest"
+    }
 }
 
 /** The served-version policy, as a seam. */
@@ -103,19 +112,11 @@ class AppVersionRepository(
          */
         fun safeReleasesUrl(raw: String?): String =
             raw?.takeIf { it.isNotBlank() }?.toHttpUrlOrNull()?.takeIf { it.isHttps }?.toString()
-                ?: RELEASES_FALLBACK
+                ?: AppVersionPolicy.DEFAULT_RELEASES_URL
 
         /** Log subsystem. Nothing about a member passes through here. */
         const val LOG_TAG = "app-version"
 
         const val PATH = "/api/v1/app/version-policy"
-
-        /**
-         * Where to send a member when the server named no URL.
-         *
-         * A wall with no way off it is worse than a wrong link, and this is the release page the
-         * app is distributed from anyway (plan Q1).
-         */
-        const val RELEASES_FALLBACK = "https://github.com/krt-profit/basetool-android/releases/latest"
     }
 }

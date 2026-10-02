@@ -14,7 +14,7 @@ import java.time.Duration
  * Builds the one [OkHttpClient] the app talks to the Basetool API with.
  *
  * - No HTTP cache, so no member data persists outside the wipeable read cache.
- * - Interceptor order: [ServerTimeInterceptor], [TokenRefreshInterceptor],
+ * - Interceptor order: [ServerTimeInterceptor], [UpdateSignalInterceptor], [TokenRefreshInterceptor],
  *   [MandatoryHeadersInterceptor], then [OneShotWriteInterceptor].
  * - `retryOnConnectionFailure` stays on, but never replays a write that may have been sent
  *   (REQ-APP-API-009).
@@ -42,7 +42,9 @@ object KrtHttpClient {
      *   nothing
      * @param refreshAfterRejection renews the token the server answered `401` to, or returns `null`
      *   when the session is over; the default gives up
-     * @return a client with no cache, the four app interceptors and the configured timeouts
+     * @param updateSignals told about answers that may mean this build is outdated (REQ-APP-API-010);
+     *   the default discards them
+     * @return a client with no cache, the five app interceptors and the configured timeouts
      */
     fun create(
         serverClock: ServerClock,
@@ -52,6 +54,7 @@ object KrtHttpClient {
         activeOrgUnitProvider: ActiveOrgUnitProvider,
         refreshIfSpent: () -> Unit = {},
         refreshAfterRejection: (String?) -> String? = { null },
+        updateSignals: UpdateSignalListener = UpdateSignalListener.None,
     ): OkHttpClient =
         OkHttpClient
             .Builder()
@@ -60,6 +63,7 @@ object KrtHttpClient {
             .writeTimeout(WRITE_TIMEOUT)
             .retryOnConnectionFailure(true)
             .addInterceptor(ServerTimeInterceptor(serverClock))
+            .addInterceptor(UpdateSignalInterceptor(updateSignals))
             .addInterceptor(
                 TokenRefreshInterceptor(
                     currentToken = { accessTokenProvider.currentAccessToken() },

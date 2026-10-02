@@ -1,4 +1,4 @@
-> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-09-22.
+> **Doc type:** Living spec — kept in sync with `main`. Last reviewed: 2026-10-02.
 > **Owner area:** API · **Related:** [`../ANDROID_APP_SECURITY.md`](../ANDROID_APP_SECURITY.md),
 > main repo `REQ-API-004`, `REQ-API-009`, `REQ-OBS-002`, `REQ-ORG-*`, `REQ-SEC-031`,
 > ADR-0001 (this repo)
@@ -174,8 +174,10 @@ organisation does name Spezialkommandos „SK Nebelkraehe", and an unconditional
 - [x] The pin is readable synchronously **from a fresh instance with no priming** — the way the
   interceptor reads it on the first request of a cold start — survives a restart and is cleared by
   a wipe (`ActiveOrgUnitStoreTest`).
-- [x] The options come from `GET /api/v1/users/me/memberships` — me-scoped by construction, so the
+- [x] The options come from `GET /api/v1/me/org-units` — me-scoped by construction, so the
   public vhost never has to allow-list a path able to name another member (main repo `REQ-API-009`).
+  Corrected 2026-10-02: this line named `GET /api/v1/users/me/memberships`; `OrgUnitRepository` has
+  read `/api/v1/me/org-units` since 2026-09-02 (#122), as the call list (`REQ-APP-API-011`) shows.
 - [x] An org unit whose `kind` this build does not know is still offered; only its grouping is
   unknown (`OrgUnitRepositoryTest`).
 - [x] Verified on a device against the test stack, with two real memberships in the throwaway DB
@@ -244,7 +246,9 @@ recorded in `core/contract/src/main/openapi/README.md`.
   somebody refreshes that copy, and not before. A check that compares the committed document
   against the main repo's is the next step; both repositories are public, so it is reachable.
 - [ ] Only the operations in the `REQ-API-009` contract set are consumed. **Open** — nothing
-  enforces it on this side; the generated surface is every schema in the document.
+  enforces it on this side; the generated surface is every schema in the document. The call list
+  (`REQ-APP-API-011`) now names every operation consumed, so the main repo can check it against its
+  frozen set; on 2026-10-02 eleven listed operations were missing from that set.
 
 ---
 
@@ -344,3 +348,133 @@ server refused before doing anything, and the wrapped body still writes the same
 - [x] The tests fail with the interceptor removed (checked 2026-09-22: four of eight red).
 
 **Code:** `core/network/OneShotWriteInterceptor.kt`, `core/network/KrtHttpClient.kt` · ADR-0023
+
+---
+
+### REQ-APP-API-010 — The version policy is read again on every return to the app and after a `404`
+
+The backend cuts its API per domain with a hard cut and a forced update (main repo plan D-04, D-11):
+each wave retires paths the previous app release calls and raises the minimum `versionCode` the
+policy names (main repo REQ-API-010). A policy read once per process left every app already open,
+and every app started during the deploy, running against retired paths until its next cold start —
+each screen showing „Signal Lost" for a call that will never answer again.
+
+So the gate (`UpdateGateViewModel`) reads `GET /api/v1/app/version-policy` again:
+
+- **on every resume** of the activity — `LifecycleResumeEffect` in `UpdateGate`, so a member who
+  comes back to the app after a deploy meets the wall instead of broken screens;
+- **after a `404` on an API path** — any `404`, or a problem body with code `NOT_FOUND`. A retired
+  route and a missing row answer the same `NOT_FOUND`, and the edge answers an unadmitted path with
+  a bare `404`, so the app cannot tell an expected `404` from an unexpected one; it does not try.
+  The policy path itself never triggers a read;
+- **at once, ignoring the interval, on `APP_UPDATE_REQUIRED`** — the problem code the backend gives
+  retired paths (main repo plan D-11 (c)). The wall goes up before the read answers, carrying the last
+  known release link or the published fallback, and **no later read lifts it** for the life of the
+  gate: the server has said that this build calls something it no longer serves, whatever the floor
+  says.
+
+**At most one read per minute** (`UpdateGateViewModel.MINIMUM_INTERVAL`, 60 s) unless forced, and
+never two at once. Rotation, the login browser round trip and a burst of `404`s from one screen
+would otherwise each cost a read.
+
+**Fail-open stays.** A failed first read runs the app; a failed later read keeps the last verdict —
+a wall stays up, a running app keeps running; a zero floor allows every build. A read that finds the
+floor lowered lifts a floor wall. Back still exits, and nothing is wiped.
+
+**The signal path.** `UpdateSignalInterceptor` (`core:network`, on the API client only) peeks at
+every unsuccessful answer and reports `NOT_FOUND` or `UPDATE_REQUIRED` to an `UpdateSignalListener`;
+`UpdateSignalBus`, one per process in `AuthContainer`, hands them to whichever gate is alive. The
+response itself is untouched, so the screen still shows its own error until the wall replaces it.
+`APP_UPDATE_REQUIRED` adds no `ApiError` state: the wall, not the screen, is the answer to it.
+
+**Acceptance**
+
+- [x] A resume inside the interval reads nothing; a resume after it reads, and walls off a floor
+  raised meanwhile; a storm of resumes reads once per interval (`UpdateGateTest`, test clock).
+- [x] Pause and resume of a real lifecycle drive the reads, and the wall replaces the content
+  (`UpdateGateLifecycleTest`, a hand-moved `LifecycleRegistry`).
+- [x] A `404` reads again once the interval has passed; a burst inside it does not.
+- [x] `APP_UPDATE_REQUIRED` walls off at once, forces a read inside the interval, survives a
+  policy that still serves the build, and walls off with the fallback link when no read answers.
+- [x] A failed re-read keeps the wall standing and keeps a running app running; a read in flight is
+  never doubled.
+- [x] The interceptor reports a `NOT_FOUND` problem, a bare edge `404` and `APP_UPDATE_REQUIRED`
+  under any status; nothing else; never the policy path or a path outside `/api/`; and leaves the
+  body readable (`UpdateSignalInterceptorTest`).
+- [ ] Walked on a device against the test stack with the floor raised while the app is in the
+  background. **Open.**
+
+**Code:** `gate/UpdateGate.kt`, `gate/UpdateSignalBus.kt`, `core/network/UpdateSignalInterceptor.kt`,
+`core/network/UpdateSignal.kt` · ADR-0026
+
+---
+
+### REQ-APP-API-011 — Every backend call the app makes is in a committed list, and the list is exact
+
+The backend freezes the operations a released app depends on and may break them only in a declared
+wave (main repo REQ-API-009, plan G-23). It can only protect what it knows about: its frozen set was
+assembled by hand and missed operations the app calls. The app therefore publishes, with every
+release, the calls it makes — **[`core/contract/app-calls.txt`](../../core/contract/app-calls.txt)**
+— and a test keeps that file equal to the code.
+
+**The format.** One line per operation, sorted by path, then verb; fields separated by one space;
+no comment lines:
+
+```text
+<VERB> <path> q=<names>|- f=<names>|- s=<sites>
+```
+
+- `VERB` — `GET`, `POST`, `PUT`, `PATCH` or `DELETE`.
+- `path` — the path template **exactly as the vendored `openapi.json` writes it**, parameter names
+  included (`/api/v1/missions/{id}/participants/{participantId}/slim`), so a line is compared with
+  the document by string equality.
+- `q=` — the query parameters the app sends, comma-separated and sorted; `-` for none. Names only;
+  the types are the document's.
+- `f=` — the response fields the app may read, comma-separated and sorted; `-` when no call site
+  decodes the body. Flat names down to two levels below the response schema, the notation and depth
+  of the backend's `ExternalContractTest` `responseFields`. A field is listed when its name occurs
+  anywhere in `core:data`'s code, so the list **may name a field the app does not read and never
+  omits one it does**; wire models are read nowhere else, which the test also enforces.
+- `s=` — the call sites that issue it, `<File>.<function>.<fingerprint>`. App-internal; a consumer
+  ignores it.
+
+A consumer splits each line on single spaces, takes the first two tokens, and reads `q=` and `f=` by
+prefix. Server-sent event streams are listed as their `GET`; downloads (`getBytes`) list no fields.
+Keycloak's token, revocation and logout endpoints are not the Basetool API and are not listed.
+
+**The test (`AppCallListTest`, in `check`).** It finds every `ApiReader` and `SseStream` call in
+`core:data`'s sources and fingerprints it: the enclosing function up to the call, every call of that
+function in the same file, and every constant and `…Path` / `…Params` helper they reach, transitively.
+A call added, removed, moved to another path, verb, constant or parameter therefore changes the set
+of fingerprints. Then it requires:
+
+- every call site is named by exactly the lines it issues, and no line names a site that is gone;
+- every listed operation exists in the vendored `openapi.json` with the verb its sites use (`send`
+  and `execute` resolve the verb they are given);
+- every listed query parameter is documented for its operation;
+- a site that names a generated model decodes the model the operation documents;
+- `f=` equals what the scan derives;
+- the file is sorted and names each operation once;
+- the API is reached only in the shapes the scan reads — the reader is called `reader`, the stream
+  `stream`, no extension on `ApiReader`, no `newCall` and no wire model outside `core:data` and the
+  transport.
+
+The failure messages name the site and print the expected value, so updating the list is copying
+what the test says, after checking that the change was meant.
+
+> [!note] The id — 2026-10-02
+> The main repo's domain modularisation plan (`docs/modularisation/rest-api-cut.md`, *Contract
+> machinery*) names this requirement `REQ-APP-API-005`. That id was already taken here by „DTOs are
+> generated"; the call list is `REQ-APP-API-011`.
+
+**Acceptance**
+
+- [x] The list exists and the test passes on it (243 operations, 247 call sites, 2026-10-02).
+- [x] Removing a line, dropping a field and changing a path constant each fail the test (checked by
+  hand, 2026-10-02).
+- [x] The one hand-written response model it found — the Fleetview import answer — was replaced by
+  the generated `FleetviewImportResponseDto` (`HangarRepositoryTest`).
+- [ ] The main repo commits the list per app release and asserts its frozen set covers it (plan G-23).
+  **Open — server side.**
+
+**Code:** `core/contract/app-calls.txt`, `core/data/src/test/.../AppCallListTest.kt` · ADR-0026

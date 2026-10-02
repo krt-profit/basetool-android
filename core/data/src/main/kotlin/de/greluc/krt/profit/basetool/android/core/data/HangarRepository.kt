@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.FleetviewImportResponseDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.LocationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipTypeDto
@@ -349,7 +350,7 @@ class HangarRepository(
             fileName = fileName,
             bytes = bytes,
             mediaType = JSON_MEDIA_TYPE,
-            deserializer = FleetImportResponse.serializer(),
+            deserializer = FleetviewImportResponseDto.serializer(),
         )
             .map { it.toModel() }
 
@@ -580,36 +581,19 @@ data class FleetImportResult(
 )
 
 /**
- * The wire shape of a Fleetview import answer.
+ * Maps a Fleetview import answer onto the model; an absent count is zero and an absent list empty.
  *
- * @property importedCount how many ships were created.
- * @property skippedCount how many rows were not recognised.
- * @property duplicateCount how many rows were already present.
- * @property skippedShips the names behind [skippedCount].
- * @property duplicateShips the names behind [duplicateCount].
+ * @receiver what the server sent.
+ * @return the result as the screen reads it.
  */
-@Serializable
-internal data class FleetImportResponse(
-    val importedCount: Int = 0,
-    val skippedCount: Int = 0,
-    val duplicateCount: Int = 0,
-    val skippedShips: List<String> = emptyList(),
-    val duplicateShips: List<String> = emptyList(),
-) {
-    /**
-     * Maps the wire shape onto the model.
-     *
-     * @return the result as the screen reads it.
-     */
-    fun toModel(): FleetImportResult =
-        FleetImportResult(
-            imported = importedCount,
-            skipped = skippedCount,
-            duplicates = duplicateCount,
-            skippedShips = skippedShips,
-            duplicateShips = duplicateShips,
-        )
-}
+internal fun FleetviewImportResponseDto.toModel(): FleetImportResult =
+    FleetImportResult(
+        imported = importedCount ?: 0,
+        skipped = skippedCount ?: 0,
+        duplicates = duplicateCount ?: 0,
+        skippedShips = skippedShips.orEmpty(),
+        duplicateShips = duplicateShips.orEmpty(),
+    )
 
 /**
  * The wire shape of the bulk home-location write.
