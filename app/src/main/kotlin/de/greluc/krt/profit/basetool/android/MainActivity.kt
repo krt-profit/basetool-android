@@ -676,7 +676,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { LoginViewModel(container) }
                 initializer { AccountGateViewModel(container.accountGate) }
                 initializer {
-                    UpdateGateViewModel(container.appVersion, BuildConfig.VERSION_CODE)
+                    UpdateGateViewModel(container.appVersion, BuildConfig.VERSION_CODE, container.updateSignals.signals)
                 }
                 initializer { AppLockViewModel(container.appLock) }
                 termsViewModels(container)

@@ -356,4 +356,17 @@ class HangarRepositoryTest {
             )
             assertEquals(listOf("ARC-L1"), places.map { it.name })
         }
+
+    @Test
+    fun `a Fleetview import answer is read from the generated model`() =
+        runTest {
+            respond(
+                """{"importedCount": 2, "duplicateCount": 1, "skippedShips": ["Unbekannt"], "extra": true}""",
+            )
+
+            val result = (repository.importFleetview("fleet.json", "[]".toByteArray()) as ApiResult.Success).value
+
+            assertEquals("/api/v1/hangar/import/fleetview", server.takeRequest().target)
+            assertEquals(FleetImportResult(2, 0, 1, listOf("Unbekannt"), emptyList()), result)
+        }
 }

@@ -50,6 +50,25 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    inputs
+        .file(layout.projectDirectory.file("../contract/app-calls.txt"))
+        .withPropertyName("appCallList")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .file(layout.projectDirectory.file("../contract/src/main/openapi/openapi.json"))
+        .withPropertyName("openApiDocument")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .dir(layout.projectDirectory.dir("src/main/kotlin"))
+        .withPropertyName("callSiteSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .dir(layout.projectDirectory.dir("../../app/src/main/kotlin"))
+        .withPropertyName("appSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 dependencies {
     api(project(":core:network"))
     api(project(":core:contract"))

@@ -192,7 +192,9 @@ APP_ANDROID_LATEST_VERSION_CODE=<the newest published versionCode>
 ```
 
 then restart the backend. Nothing else changes; the app reads the new floor on its next start and
-shows „Update erforderlich" below it.
+shows „Update erforderlich" below it. From the release after v0.4.0 it also reads the floor whenever
+a member returns to it and after a `404`, at most once a minute (`REQ-APP-API-010`), so an app left
+open meets the wall on return rather than at its next cold start.
 
 **Set the floor to a version that already exists as a release.** A floor above every published
 build locks out everybody, including you, and the only way back is another restart — which is fine,

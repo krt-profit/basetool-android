@@ -45,6 +45,11 @@ and remains the record of *why* each family was admitted, but its copy of the bl
 the list. **Check a path against `api-allowlist.conf` before making the app depend on it**, not
 before releasing — by then the choice has shaped the screen.
 
+What the app calls is itself a committed list: [`core/contract/app-calls.txt`](core/contract/app-calls.txt)
+names every backend operation with its query parameters and the response fields it may read, and a
+test in `check` fails when a call changes without it (`REQ-APP-API-011`). The main repository reads
+it to know which operations a released build depends on.
+
 The owner-approved concept lives in [`docs/`](docs/):
 
 | Document | Content |
@@ -85,7 +90,8 @@ core/common/          logging facade
 core/designsystem/    KRT Compose theme, components, icon set, Lato fonts
 core/network/         OkHttp client, mandatory headers, problem+json → app states, SSE
                       (DTOs live in core/contract, no Retrofit — ADR-0008)
-core/contract/        the backend's committed openapi.json + the models generated from it
+core/contract/        the backend's committed openapi.json + the models generated from it,
+                      and app-calls.txt, the list of every call the app makes
 core/auth/            Keystore token store, DPoP, token client, PKCE login + session
 core/data/            repositories and the org-unit context
 docs/                 concept docs, binding design spec, ADRs, specs

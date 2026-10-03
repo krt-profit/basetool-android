@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **„Update erforderlich" erscheint auch, während die App läuft.** Kehrst du zur App zurück oder
+  kennt der Server einen Aufruf nicht mehr, prüft sie höchstens einmal pro Minute, ob deine Version
+  noch bedient wird. Nach einer Server-Umstellung landest du so bei der Download-Seite statt bei
+  „Signal Lost".
+
 ## [0.4.0] — 2026-09-28
 
 ### Added
