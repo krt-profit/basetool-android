@@ -52,8 +52,8 @@ android {
             libs.versions.targetSdk
                 .get()
                 .toInt()
-        versionCode = 17
-        versionName = "0.4.0"
+        versionCode = 18
+        versionName = "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "LICENSEE_VERSION", "\"${libs.versions.licensee.get()}\"")
     }

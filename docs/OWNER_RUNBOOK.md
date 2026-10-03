@@ -134,7 +134,7 @@ safety net, not the plan.
 
 ## 4. Cutting a release
 
-**Status:** repeatable; done for every release from v0.1.0 (2026-08-25) to v0.3.1 (2026-09-25).
+**Status:** repeatable; done for every release from v0.1.0 (2026-08-25) to v0.4.0 (2026-09-28).
 §§ 2, 3 and 8 are prerequisites and are
 in place; nothing below needs them redone.
 
@@ -192,7 +192,7 @@ APP_ANDROID_LATEST_VERSION_CODE=<the newest published versionCode>
 ```
 
 then restart the backend. Nothing else changes; the app reads the new floor on its next start and
-shows „Update erforderlich" below it. From the release after v0.4.0 it also reads the floor whenever
+shows „Update erforderlich" below it. From v0.5.0 (`versionCode` 18) it also reads the floor whenever
 a member returns to it and after a `404`, at most once a minute (`REQ-APP-API-010`), so an app left
 open meets the wall on return rather than at its next cold start.
 

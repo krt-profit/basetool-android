@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-03
+
 ### Changed
 
 - **„Update erforderlich" erscheint auch, während die App läuft.** Kehrst du zur App zurück oder
