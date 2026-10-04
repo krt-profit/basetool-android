@@ -17,9 +17,6 @@ updates:
     ignore:
       - dependency-name: "org.robolectric:android-all-instrumented"
 
-      - dependency-name: "org.jetbrains.kotlin.plugin.*"
-        versions: [">= 2.4.20"]
-
   - package-ecosystem: github-actions
     directories:
       - /
