@@ -42,11 +42,11 @@ runs:
         packages: ''
 
     - name: Validate the Gradle wrapper
-      uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+      uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6
 
     - name: Set up Gradle
       if: inputs.cache-mode != 'skip'
-      uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+      uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
       with:
         cache-disabled: ${{ inputs.cache-mode == 'disabled' }}
         cache-read-only: ${{ inputs.cache-mode == 'read-only' || (inputs.cache-mode == 'write-on-main' && github.ref != 'refs/heads/main') }}
