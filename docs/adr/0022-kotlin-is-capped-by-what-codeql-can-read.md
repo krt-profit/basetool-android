@@ -1,6 +1,6 @@
 # ADR-0022 — Kotlin is capped by what the CodeQL extractor can read
 
-- **Status:** Accepted
+- **Status:** Accepted; the hold was lifted on 2026-10-04 (see the last update below)
 - **Date:** 2026-09-13
 - **Deciders:** @greluc
 - **Related:** ADR-0020 (one CodeQL query is filtered out), ADR-0019 (pinning build-time
@@ -82,7 +82,20 @@ two each red on both `Analyze` legs. `.github/dependabot.yml` now **groups** `gi
 so the proposal arrives whole. The group is the mechanism rather than a reminder: nothing in CI
 detects a split pin, because the halves only conflict once they run together.
 
-Both the catalog and `dependabot.yml` carry that procedure inline, because a pin whose reasoning
+**Update 2026-10-04 — the exit condition is met and the hold is lifted.** Step 1 was re-run
+against the newest CLI tag: `codeql-cli/v2.27.1` (2026-09-22) has `versions.bzl` ending
+`"2.4.0", "2.4.20"`, while `v2.27.0` still ends at 2.4.0 — so the 2.4.20 support (47cc7d81) shipped
+in 2.27.1. Step 2 needed no change: the pinned `github/codeql-action` SHA `2892aa5e` is the peeled
+commit of v4.38.2, whose `src/defaults.json` names bundle `codeql-bundle-v2.27.1`, and the last
+`Analyze (java-kotlin)` run on `main` (37128277954, 2026-10-03) logged `Using CodeQL CLI version
+2.27.1 from toolcache at /opt/hostedtoolcache/CodeQL/2.27.1/x64`, i.e. the runner serves the same
+bundle. Step 3 was done: `kotlin` is 2.4.20 in the catalog and the Dependabot ignore of
+`org.jetbrains.kotlin.plugin.*` at `>= 2.4.20` is deleted, together with the hold comment in the
+catalog. The KGP/Gradle pairing gap noted under Consequences closes again (2.4.20 tests up to Gradle
+9.7.0). The ceiling mechanism itself still stands: a Kotlin release above the newest extractor list
+fails the job the same way, so the next minor bump is checked against `versions.bzl` first.
+
+Both the catalog and `dependabot.yml` carried that procedure inline until then, because a pin whose reasoning
 lives only in an ADR is a pin nobody re-checks — the same argument ADR-0020 made for putting the
 query filter's justification in the config file.
 

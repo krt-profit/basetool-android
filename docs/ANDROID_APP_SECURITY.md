@@ -474,7 +474,10 @@ sources: the pins change what CI runs, and nothing about what members install.
   outsider can feed;
 - this project starting to apply **KAPT** — see the Kotlin alert below.
 
-#### The one alert deliberately left open: kotlin-gradle-plugin
+#### The one alert that was deliberately left open: kotlin-gradle-plugin
+
+Closed by the bump to Kotlin 2.4.20 on 2026-10-04, which is the fix version; the reasoning below is
+kept as the record of why it was open.
 
 GHSA-r937-wjx7-w2jp / CVE-2026-53914 flags `org.jetbrains.kotlin:kotlin-gradle-plugin < 2.4.20-Beta1`.
 It is left open on purpose, and the generic argument above does **not** cover it — the Kotlin Gradle
