@@ -179,7 +179,7 @@ Baseline posture (all from GitHub's current security docs):
 - **zizmor** (v1.30.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
   `cache-poisoning`, `template-injection`, `artipacked`, `unpinned-uses`, `excessive-permissions`
   audits are the checklist.
-- Caches: `gradle/actions/setup-gradle` (v6.3.0) with default branch-scoped cache semantics
+- Caches: `gradle/actions/setup-gradle` (v6.4.0) with default branch-scoped cache semantics
   (writes only on the default branch); **the release/signing job restores no caches at all**
   (poisoned-cache → poisoned-artifact vector).
 - **Robolectric's `android-all` runtime is a declared dependency, not a runtime download.**
