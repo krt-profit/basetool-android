@@ -179,7 +179,7 @@ Baseline posture (all from GitHub's current security docs):
 - **zizmor** (v1.30.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
   `cache-poisoning`, `template-injection`, `artipacked`, `unpinned-uses`, `excessive-permissions`
   audits are the checklist.
-- Caches: `gradle/actions/setup-gradle` (v6.3.0) with default branch-scoped cache semantics
+- Caches: `gradle/actions/setup-gradle` (v6.4.0) with default branch-scoped cache semantics
   (writes only on the default branch); **the release/signing job restores no caches at all**
   (poisoned-cache → poisoned-artifact vector).
 - **Robolectric's `android-all` runtime is a declared dependency, not a runtime download.**
@@ -397,7 +397,7 @@ unnecessary gift); QA against staging happens via the dev flavor.
 
 ## 7. Version sources (all fetched live 2026-08-17)
 
-gradle/actions v6.3.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 2.0.0-alpha.6
+gradle/actions v6.4.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 2.0.0-alpha.6
 (the 1.23 line's embedded IntelliJ library cannot parse the JDK 25 version string and dies with a
 bare `> 25`, so the alpha is the only usable line — this entry said "pinned to 1.23.x" until
 2026-09-04), ktlint 1.8.0, zizmor v1.30.0, actionlint v1.7.12,
