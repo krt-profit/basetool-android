@@ -224,7 +224,7 @@ Baseline posture (all from GitHub's current security docs):
 | Workflow | Trigger | Jobs | State |
 |---|---|---|---|
 | `ci.yml` | PR + push to main | `./gradlew build` (assemble the three enabled variants — `devRelease` is disabled since 2026-09-22 because nothing ships it — unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor over `.github/workflows` **and** `.github/actions` | **built** |
-| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real `assembleDevDebug --no-build-cache` over a **read-only** dependency cache, then an assertion that fails the job, before anything is uploaded, when the database holds fewer Kotlin files than the build compiles; see the file header for why `none` was abandoned and why the cache is safe) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020. **The extractor also caps the repo's Kotlin version**: it hooks the compiler, so a Kotlin above its `versions.bzl` list fails this job at the Gradle step rather than degrading the scan — the catalog holds `kotlin` one release back and Dependabot ignores the bump, ADR-0022 | **built** |
+| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real `assembleDevDebug --no-build-cache` over a **read-only** dependency cache, then an assertion that fails the job, before anything is uploaded, when the database holds fewer Kotlin files than the build compiles; see the file header for why `none` was abandoned and why the cache is safe) and on `actions` (`build-mode: none`), wrapper validation. One query, `java/local-variable-is-never-read`, is excluded via `.github/codeql/codeql-config.yml` — ADR-0020. **The extractor also caps the repo's Kotlin version**: it hooks the compiler, so a Kotlin above its `versions.bzl` list fails this job at the Gradle step rather than degrading the scan — check the newest CodeQL CLI's list before a Kotlin minor lands (the hold of ADR-0022 ended 2026-10-04 at Kotlin 2.4.20 on CodeQL 2.27.1) | **built** |
 | `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
 | `gitleaks.yml` | PR + dispatch | checksum-verified gitleaks binary, range-scoped to `base..head` on a PR | **built** |
 | `supply-chain.yml` | dependency review on PR; Scorecard daily + dispatch | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning. Scorecard deliberately does **not** run on push: its Binary-Artifacts check excludes the wrapper jar only once `ci.yml` has succeeded for that commit, and a 40 s scan racing a 15 min build never sees that. Daily rather than weekly because the exclusion only looks at the 30 newest `ci.yml` runs | **built** |
@@ -397,7 +397,7 @@ unnecessary gift); QA against staging happens via the dev flavor.
 
 ## 7. Version sources (all fetched live 2026-08-17)
 
-gradle/actions v6.3.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 2.0.0-alpha.6
+gradle/actions v6.4.0, android-emulator-runner v2.38.0, Robolectric 4.16.1, detekt 2.0.0-alpha.6
 (the 1.23 line's embedded IntelliJ library cannot parse the JDK 25 version string and dies with a
 bare `> 25`, so the alpha is the only usable line — this entry said "pinned to 1.23.x" until
 2026-09-04), ktlint 1.8.0, zizmor v1.30.0, actionlint v1.7.12,
