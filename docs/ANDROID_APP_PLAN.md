@@ -45,7 +45,7 @@ goal is therefore **raise cost → detect → throttle → revoke**, layered as 
 | minSdk | **31** (Android 12) — 29 → 30 removed a second app-lock key path that had shipped a total failure (ADR-0006); 30 → 31 followed because an API-30 emulator cannot sign in, so the floor was one nothing could test (ADR-0015) | apilevels.com (Statcounter 04/2026) |
 | targetSdk | **37** (Android 17, owner decision 2026-08-17) — exceeds the Play floor (≥ 36 for new apps/updates by 2026-08-31); the API-37 behavior changes below apply from day one | developer.android.com/google/play/requirements/target-sdk |
 | compileSdk | **37** (Android 17; stable-since-June-2026 date via secondary source, officially corroborated by the Android 17 QPR beta cycle) | developer.android.com/about/versions |
-| Kotlin | **2.4.10** (K2 default) | kotlinlang.org/docs/releases.html |
+| Kotlin | **2.4.20** (K2 default) | kotlinlang.org/docs/releases.html |
 | KSP | **2.3.11** (KSP2-only line, standalone versioning) | github.com/google/ksp/releases |
 | AGP / Gradle / JDK | **9.3.0 / 9.5 / JDK 17+** | developer.android.com/build/releases/gradle-plugin |
 | Compose BOM | **2026.08.00** → compose-ui 1.12.0, **Material 3 1.4.0**, **material3-adaptive 1.3.0** | developer.android.com/develop/ui/compose/bom/bom-mapping |
