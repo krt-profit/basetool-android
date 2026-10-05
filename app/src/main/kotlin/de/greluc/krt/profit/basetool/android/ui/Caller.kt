@@ -42,6 +42,22 @@ fun mayEditRowOf(
 }
 
 /**
+ * Whether the caller may run a bulk write — Sammel-Ausbuchen or „Markierte umbuchen" — on a selection.
+ *
+ * `POST /inventory/bulk-checkout` and `POST /inventory/bulk-rebook` admit only the caller's own rows,
+ * for every role, so the per-row `canEdit` of [mayEditRowOf] cannot answer this (REQ-APP-INV-013).
+ *
+ * @param holderIds the selected rows' holders; a `null` holder is not the caller's own.
+ * @return whether every row is the caller's own; `true` while the identity is unread, leaving the
+ *   decision to the server as [mayEditRowOf] does.
+ */
+@Composable
+fun mayBulkWriteRowsOf(holderIds: List<String?>): Boolean {
+    val caller = LocalCaller.current ?: return true
+    return holderIds.all { it == caller.userId }
+}
+
+/**
  * Whether the caller reaches the Logistiker role: Logistician, Officer or Admin.
  *
  * A role check rather than a row-ownership check; backed by the server's `isLogisticianOrAbove`.

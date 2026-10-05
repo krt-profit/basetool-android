@@ -290,6 +290,18 @@ keeps counting them too — otherwise rows in play would silently vanish with th
 disabled-style-but-tappable form an individual row uses (`REQ-APP-AUTH-013`); the refusal names the
 rule and **the selection survives it**.
 
+**"The caller's" means the row's holder is the caller, for every role.** `POST
+/inventory/bulk-rebook` and `POST /inventory/bulk-checkout` refuse any row of another member —
+a Logistician's and an admin's included (`InventoryCheckoutService.bulkRebook` / `.bulkCheckout`).
+The row's own `canEdit` cannot say this: it is `true` for a Logistician on another member's row in
+scope, because a *single* write admits that. So the bulk gate compares each selected row's
+`holderId` with the caller's id (`mayBulkWriteRowsOf`), and a row naming no holder does not count
+as the caller's. While the identity is unread the action stays open and the server decides, as the
+per-row gate does. The bulk „gestohlen" mark and the bulk org-unit change are reached only from
+„Mein Lager" (`REQ-APP-INV-028`, `-033`), whose rows are the caller's by construction, so they need
+no such gate. (Corrected 2026-10-05: the gate read `mayEditRowOf(canEdit, holderId)` per row and
+let a Logistician's mixed selection through to a `403`.)
+
 **Acceptance**
 
 - [x] Long-pressing a group or stack selects all its leaves, and again clears them; an unopened
@@ -298,6 +310,10 @@ rule and **the selection survives it**.
 - [x] Verified on a device against the test stack: the head becomes „✕ 1 gewählt", the group wears
   „1/1 GEWÄHLT", the row wears its checkbox, the FAB and the navigation are gone, and „Umbuchen"
   renders locked over somebody else's row.
+- [x] The bulk gate admits only the caller's own rows for every role — a Logistician's or an
+  admin's selection holding another member's row is locked, a holderless row does not count as
+  the caller's, an unread identity leaves it to the server (`BulkWritePermissionTest`).
+- [ ] Observed on a device as a Logistician over a mixed selection.
 
 ### REQ-APP-INV-014 — The batch reports what it did, in the sheet, before anything closes
 
@@ -604,7 +620,9 @@ the single book-out, which is the call that takes an amount.
 
 - [x] A bulk checkout sends every selected row and ends the selection (`InventoryViewModelTest`).
 - [x] A refused one keeps the selection and does not claim success (`InventoryViewModelTest`).
-- [x] The action wears the same own-row lock as the bulk rebooking (`InventoryScreen`).
+- [x] The action wears the same own-row lock as the bulk rebooking, by holder rather than by the
+  row's `canEdit`, so a Logistician's selection holding another member's row is locked
+  (`InventoryScreen`, `BulkWritePermissionTest`).
 - [ ] Observed on a device.
 
 **Code:** `InventoryRepository.bulkCheckout`, `InventoryViewModel.BulkCheckoutActions`,

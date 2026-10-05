@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Lager: Sammelaktionen nur über eigene Zeilen.** „Markierte umbuchen" und das Sammel-Ausbuchen
+  sind gesperrt, sobald die Auswahl einen fremden Eintrag enthält – auch für Logistiker, denn der
+  Server bucht in einer Auswahl nur eigene Einträge. Vorher führte das zu „Access Denied".
+
 ## [0.5.0] — 2026-10-03
 
 ### Changed
