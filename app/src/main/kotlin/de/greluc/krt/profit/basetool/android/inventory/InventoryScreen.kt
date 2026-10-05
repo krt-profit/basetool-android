@@ -102,6 +102,7 @@ import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.ui.canMarkStolen
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
+import de.greluc.krt.profit.basetool.android.ui.mayBulkWriteRowsOf
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
@@ -1233,13 +1234,11 @@ fun InventoryRoute(
                         text = stringResource(R.string.inventory_selection_clear),
                         onClick = viewModel::onSelectionCleared,
                     )
-                    val ownsEveryRow =
-                        state.selectedEntries().all { mayEditRowOf(it.canEdit, it.holderId) }
                     val bulkGate =
                         Gate(
-                            allowed = ownsEveryRow,
-                            reason = stringResource(R.string.gate_own_row),
-                            detail = stringResource(R.string.gate_own_row_detail),
+                            allowed = mayBulkWriteRowsOf(state.selectedEntries().map { it.holderId }),
+                            reason = stringResource(R.string.gate_bulk_own_rows),
+                            detail = stringResource(R.string.gate_bulk_own_rows_detail),
                         )
                     val (bulkDim, bulkClick) =
                         rememberGated(bulkGate, viewModel::onBulkMoveRequested, denials)
