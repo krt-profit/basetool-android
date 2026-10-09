@@ -39,6 +39,12 @@ class NotificationDestinationsTest {
     }
 
     @Test
+    fun `a lager transfer opens the lager`() {
+        assertEquals("inventory", notificationDestination(notification("INVENTORY_ITEM")))
+        assertNull(notificationDestination(notification("INVENTORY_ITEM", entityId = null)))
+    }
+
+    @Test
     fun `a booking request leads nowhere, because this build has no approvals screen`() {
         assertNull(notificationDestination(notification("BANK_BOOKING_REQUEST")))
     }

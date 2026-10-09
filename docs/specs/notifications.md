@@ -124,9 +124,11 @@ it.
 - [x] A renamed or blank parameter falls back to the generic wording.
 - [x] An unknown type resolves to the generic wording rather than to nothing — the server may add a
   rule at any time and the member must still be told that something happened.
-- [x] Every type the backend raises has its own wording — fourteen as of 2026-09-28. The test takes
-  the set from the vendored contract's rule enum (`NotificationRuleDto.NotificationType`), so a
-  refreshed `openapi.json` with a new type fails the build until the type is worded.
+- [x] Every type the backend raises has its own wording — sixteen as of 2026-10-09, the two Lager
+  transfer notices (`INVENTORY_TRANSFERRED_TO_USER`, `INVENTORY_TRANSFERRED_FROM_USER`, main repo
+  REQ-INV-055) included. The test takes the set from the vendored contract's rule enum
+  (`NotificationRuleDto.NotificationType`), so a refreshed `openapi.json` with a new type fails the
+  build until the type is worded.
 
 > [!warning] Corrected 2026-09-28 — the list had fallen four types behind the server
 > This box said „all ten types", checked against a list the test itself held. The backend had since
@@ -162,8 +164,12 @@ classification. An unclassifiable type is `SYSTEM`, which is not a failure.
 
 ### REQ-APP-NOTIF-007 — A row that leads nowhere does not pretend otherwise
 
-The backend raises notifications for five entity types. **`JOB_ORDER` opens the order** since the
-Aufträge slice gave it a screen (`REQ-APP-ORDERS-007`). The other four lead nowhere: a
+**`INVENTORY_ITEM` opens the Lager** (2026-10-09): the two Lager transfer notices (main repo
+REQ-INV-055) are about the member's own stock. The web opens „Mein Lager" directly; the app opens
+the Lager screen, where „Mein Lager" is one tap away on the scope segment.
+
+The backend raises notifications for five further entity types. **`JOB_ORDER` opens the order**
+since the Aufträge slice gave it a screen (`REQ-APP-ORDERS-007`). The other four lead nowhere: a
 `BANK_BOOKING_REQUEST` is about the approvals surface this build does not have — sending a member to
 the account instead would answer a question they did not ask — the Materialbörse arrives in phase 4,
 and the registration queue is admin work that stays on the web permanently.
@@ -415,9 +421,9 @@ correctly, documented next to the fix — and repeated in a different file.
   true on 2026-08-24.)
 - **The unread preview on the dashboard is gone**, not pending: the dashboard showed one until
   2026-08-31 and now leaves unread notifications to the bell (`REQ-APP-DASH-006`, withdrawn).
-- **Only `JOB_ORDER` rows open anything.** The Aufträge slice gave that entity type a screen; the
-  other four still lead nowhere and their rows stay unclickable (`REQ-APP-ORDERS-007`,
-  `REQ-APP-NOTIF-007`).
+- **Only `JOB_ORDER` and `INVENTORY_ITEM` rows open anything.** The order opens its detail, a Lager
+  transfer the Lager; the other four entity types still lead nowhere and their rows stay
+  unclickable (`REQ-APP-ORDERS-007`, `REQ-APP-NOTIF-007`).
 - **A member with five browser tabs open can evict the app's stream**, because the server caps
   concurrent streams at five per user and drops the oldest. The poll covers it, which is one of the
   reasons the poll is unconditional.
