@@ -7,6 +7,9 @@
 - **Benachrichtigungen zu Lager-Umbuchungen.** Bucht jemand Bestand auf dich um oder deinen Bestand
   weg, zeigt die App den Text mit Material, Qualität, Menge und Ort statt „Neue Benachrichtigung";
   ein Tipp öffnet das Lager.
+- **Zwei neue Bank-Benachrichtigungen mit eigenem Text.** Ein geänderter Buchungsantrag nennt den
+  neuen Betrag, und wer neu für ein Konto verantwortlich wird, erfährt, wie viele Anträge auf die
+  eigene Freigabe warten.
 
 ### Fixed
 

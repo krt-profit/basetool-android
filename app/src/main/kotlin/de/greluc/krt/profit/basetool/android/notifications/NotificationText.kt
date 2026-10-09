@@ -60,6 +60,8 @@ private val TYPE_WORDING: Map<String, Int> =
         "EXCHANGE_BULK_UNDO_APPLIED" to R.string.notifications_type_bulk_undo_applied,
         "INVENTORY_TRANSFERRED_TO_USER" to R.string.notifications_type_inventory_transferred_to_user,
         "INVENTORY_TRANSFERRED_FROM_USER" to R.string.notifications_type_inventory_transferred_from_user,
+        "BANK_BOOKING_REQUEST_UPDATED" to R.string.notifications_type_bank_request_updated,
+        "BANK_ACCOUNT_RESPONSIBLE_ASSIGNED" to R.string.notifications_type_bank_responsible_assigned,
     )
 
 /**

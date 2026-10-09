@@ -88,4 +88,12 @@ class NotificationChannelRoutingTest {
             )
         }
     }
+
+    /** A corrected request and a new account responsibility are bank notices. */
+    @Test
+    fun `the new bank notices land on the bank kind`() {
+        listOf("BANK_BOOKING_REQUEST_UPDATED", "BANK_ACCOUNT_RESPONSIBLE_ASSIGNED").forEach { type ->
+            assertEquals(type, NotificationKind.BANK, NotificationKind.from(type))
+        }
+    }
 }
