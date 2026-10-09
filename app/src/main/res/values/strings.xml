@@ -375,6 +375,8 @@
     <string name="notifications_type_deletion_declined">Dein Antrag auf Löschung deines Kontos wurde abgelehnt. Die Begründung steht auf deiner Profilseite.</string>
     <string name="notifications_type_installation_connected">Neue Anwendung verbunden: {client}. Warst du das nicht, trenne sie unter Persönlich → Verbundene Anwendungen.</string>
     <string name="notifications_type_bulk_undo_applied">Die Administration hat {count} Änderungen von {client} an deinen Daten zurückgenommen. Einzelheiten unter Persönlich → Verbundene Anwendungen.</string>
+    <string name="notifications_type_inventory_transferred_to_user">{actor} hat {count} Posten auf dich umgebucht: {lots}</string>
+    <string name="notifications_type_inventory_transferred_from_user">{actor} hat {count} Posten aus deinem Lager auf {newOwner} umgebucht: {lots}</string>
     <string name="dashboard_greeting">Willkommen, %1$s</string>
     <string name="dashboard_greeting_anonymous">Willkommen</string>
     <string name="dashboard_context">%1$s · %2$s</string>

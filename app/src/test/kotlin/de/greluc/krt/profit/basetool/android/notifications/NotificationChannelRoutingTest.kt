@@ -76,4 +76,16 @@ class NotificationChannelRoutingTest {
             notificationDestination(entityType = "DISCORD_REGISTRATION", entityId = id),
         )
     }
+
+    /** The design names no Lager channel, so a Lager transfer is filed under the system one. */
+    @Test
+    fun `a lager transfer lands on the system channel`() {
+        listOf("INVENTORY_TRANSFERRED_TO_USER", "INVENTORY_TRANSFERRED_FROM_USER").forEach { type ->
+            assertEquals(
+                type,
+                KrtNotificationChannels.CHANNEL_SYSTEM,
+                KrtNotificationChannels.channelFor(NotificationKind.from(type)),
+            )
+        }
+    }
 }

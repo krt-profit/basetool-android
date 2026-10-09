@@ -58,6 +58,8 @@ private val TYPE_WORDING: Map<String, Int> =
         "ACCOUNT_DELETION_REQUEST_DECLINED" to R.string.notifications_type_deletion_declined,
         "EXCHANGE_INSTALLATION_CONNECTED" to R.string.notifications_type_installation_connected,
         "EXCHANGE_BULK_UNDO_APPLIED" to R.string.notifications_type_bulk_undo_applied,
+        "INVENTORY_TRANSFERRED_TO_USER" to R.string.notifications_type_inventory_transferred_to_user,
+        "INVENTORY_TRANSFERRED_FROM_USER" to R.string.notifications_type_inventory_transferred_from_user,
     )
 
 /**

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Benachrichtigungen zu Lager-Umbuchungen.** Bucht jemand Bestand auf dich um oder deinen Bestand
+  weg, zeigt die App den Text mit Material, Qualität, Menge und Ort statt „Neue Benachrichtigung";
+  ein Tipp öffnet das Lager.
+
 ### Fixed
 
 - **Lager: Sammelaktionen nur über eigene Zeilen.** „Markierte umbuchen" und das Sammel-Ausbuchen

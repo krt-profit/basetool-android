@@ -138,4 +138,39 @@ class NotificationTextTest {
             )
         }
     }
+
+    /** A Lager transfer names the actor, the count and every lot the server worded. */
+    @Test
+    fun `a lager transfer sentence carries the actor, the count and the lots`() {
+        val sentence =
+            notificationSentence(
+                notification =
+                    notification(
+                        type = "INVENTORY_TRANSFERRED_FROM_USER",
+                        params =
+                            mapOf(
+                                "actor" to "Carol",
+                                "newOwner" to "Bob",
+                                "count" to "2",
+                                "lots" to "12.5 SCU Laranite (Q800) in Area18; 3× Medpen (Q500) in Area18",
+                            ),
+                    ),
+                template = "{actor} hat {count} Posten aus deinem Lager auf {newOwner} umgebucht: {lots}",
+                generic = GENERIC,
+            )
+
+        assertEquals(
+            "Carol hat 2 Posten aus deinem Lager auf Bob umgebucht: " +
+                "12.5 SCU Laranite (Q800) in Area18; 3× Medpen (Q500) in Area18",
+            sentence,
+        )
+        assertEquals(
+            R.string.notifications_type_inventory_transferred_from_user,
+            notificationTypeRes("INVENTORY_TRANSFERRED_FROM_USER"),
+        )
+        assertEquals(
+            R.string.notifications_type_inventory_transferred_to_user,
+            notificationTypeRes("INVENTORY_TRANSFERRED_TO_USER"),
+        )
+    }
 }
