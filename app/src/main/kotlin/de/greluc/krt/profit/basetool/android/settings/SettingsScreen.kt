@@ -61,6 +61,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * and asks first via [SignOutConfirmModal].
  *
  * @param accountName the signed-in member's username, from the ID token; `null` while unknown.
+ * @param notificationPreferences the per-type notification switches.
+ * @param notificationActions the notification group's callbacks.
  * @param language the language currently on screen.
  * @param onLanguageChange pins a language; the activity is recreated by the platform.
  * @param appLockEnabled whether a lock is armed.
@@ -102,6 +104,8 @@ fun SettingsScreen(
     versionName: String,
     versionCode: Int,
     modifier: Modifier = Modifier,
+    notificationPreferences: NotificationPreferencesState = NotificationPreferencesState(),
+    notificationActions: NotificationPreferenceActions = NotificationPreferenceActions(),
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         RsiHandleSavedToast(shown = preferences.rsi.saved, onShown = rsiActions.onSavedShown)
@@ -129,6 +133,8 @@ fun SettingsScreen(
             onLogout = onLogout,
             versionName = versionName,
             versionCode = versionCode,
+            notificationPreferences = notificationPreferences,
+            notificationActions = notificationActions,
         )
     }
 }
@@ -139,6 +145,8 @@ fun SettingsScreen(
  * On a tablet it is the only column; the Beförderung column beside it is not built.
  *
  * @param accountName the signed-in member's username, or `null` while unknown.
+ * @param notificationPreferences the per-type notification switches.
+ * @param notificationActions the notification group's callbacks.
  * @param language the language currently on screen.
  * @param onLanguageChange pins a language.
  * @param appLockEnabled whether a lock is armed.
@@ -180,6 +188,8 @@ private fun SettingsColumn(
     onLogout: () -> Unit,
     versionName: String,
     versionCode: Int,
+    notificationPreferences: NotificationPreferencesState,
+    notificationActions: NotificationPreferenceActions,
 ) {
     Column(
         modifier =
@@ -247,6 +257,8 @@ private fun SettingsColumn(
                 KrtToggle(checked = screenCaptureAllowed)
             }
         }
+
+        NotificationPreferencesGroup(preferences = notificationPreferences, actions = notificationActions)
 
         SettingsGroup(stringResource(R.string.settings_section_legal)) {
             ExternalRow(R.string.settings_privacy, DesignR.drawable.ic_krt_shield, onOpenPrivacy)
@@ -455,7 +467,7 @@ private fun AccountGroup(
  * @param content the rows, separated by hairlines by the caller.
  */
 @Composable
-private fun SettingsGroup(
+internal fun SettingsGroup(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {

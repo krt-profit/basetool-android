@@ -2,7 +2,7 @@
 
 > **Doc type:** Living spec · **Area:** `REQ-APP-NOTIF-*` · **Design:** `docs/design/android/07 Benachrichtigungen.dc.html`
 > **Server contract:** main repo `REQ-API-009`, `REQ-NOTIF-010` (the stream), `REQ-NOTIF-019` (newest 50)
-> **Related:** [`api-contract.md`](api-contract.md)
+> **Related:** [`api-contract.md`](api-contract.md), [`settings.md`](settings.md) (the switches live in Einstellungen)
 
 The inbox, the bell badge and the push channel behind both. **Fully interactive** since 2026-08-24:
 marking read, deleting, „Alle als gelesen markieren", „Gelesene löschen" and the two swipe gestures.
@@ -500,3 +500,68 @@ this order; the code did not deliver it).
       2560×1600) both open the inbox on 26.08. 20:32 and run strictly down to 11:00.
 
 **Code:** `core/data/NotificationRepository.kt`
+
+
+### REQ-APP-NOTIF-017 — A member chooses which notification types they receive
+
+Einstellungen carries a group **BENACHRICHTIGUNGEN**, between APP and RECHTLICHES & DATEN: one
+square switch per notification type, grouped by area, as the „Benachrichtigungen" card on the web
+profile does (main repo `REQ-NOTIF-027`, ADR-0245). The switch says what the member **receives**, so
+it is on unless the type is muted. A muted type is neither stored in the inbox nor pushed, so the
+app raises no system notification for it either; notices already received stay.
+
+**The call.** `GET /api/v1/notifications/preferences` lists `{type, mutable, muted}` for every type;
+`PUT …/preferences/{type}` with `{muted}` answers the stored entry. A write is idempotent and has
+**no version**: a boolean toggle, last writer wins. It is therefore not part of the versioned
+account rows of `REQ-APP-SET-011` and has a view model of its own, so a write to one switch never
+waits on, or disturbs, another switch or those rows.
+
+**The areas** are taken from the type name's prefix, as the web does: `JOB_ORDER_` Aufträge,
+`BANK_` Kartellbank, `MATERIAL_` Materialbörse, `INVENTORY_` Lager, `EXCHANGE_` Verbundene
+Anwendungen, `DISCORD_` and `ACCOUNT_DELETION_` Konto & Verwaltung; anything else **Weitere**. The
+areas are listed in that fixed order, a type keeps the server's order within its area, and an area
+with no type is not drawn. The wording of area and type is the web's
+(`profile.notifications.group.*`, `.type.*`), in the app's bundles; domain terms stay German in
+English.
+
+**A type this build has no label for is still shown**, under Weitere with the label „Neue
+Benachrichtigungsart", and can be switched: the server may add a type at any time. The contract
+declares `type` as an enum, and `KrtJson` decodes a constant it does not know as `null`, which would
+drop the row and its name. The repository therefore reads each row's `type` as text next to the
+generated `NotificationPreferenceDto` for its flags.
+
+**A type with `mutable = false`** (a legal deadline or a security notice) is shown on, disabled,
+with the web's hint „Kann nicht abbestellt werden (gesetzliche Frist bzw. Sicherheitshinweis)."; a
+tap does nothing and nothing is sent.
+
+**A tap flips the switch at once** and writes that one type. While its write is in flight a second
+tap on it is ignored; other types stay free. A refused write puts the row back as it was, says so
+under the rows („Die Einstellung konnte nicht gespeichert werden …"), and re-reads the list so the
+screen adopts what the server holds — including a type that turned out not to be mutable. A read
+that lands during a write leaves the pending row alone.
+
+**States.** Before the first read the group shows a loading line; a failed first read shows its
+message with „Erneut versuchen"; a read that returned no type says so. Nothing is drawn from
+placeholder data.
+
+**Acceptance**
+
+- [x] Every type of the vendored contract's `NotificationPreferenceDto` enum has an area other than
+  Weitere and its own label; a type added by the next contract refresh fails the build until it is
+  worded (`NotificationPreferenceLabelsTest`).
+- [x] The list keeps a type the contract does not list, drops a row without a type, reads an absent
+  flag as locked and not muted; a write names the type in the path and sends only `muted`; a 400
+  arrives as a validation refusal (`NotificationPreferencesRepositoryTest`).
+- [x] Optimistic flip, rollback with the follow-up read, locked and unknown types, one in-flight
+  write per type, independent types, a read during a write (`NotificationPreferencesViewModelTest`).
+- [x] Grouping, on/off state, the direction a tap reports, the locked row, and the loading, failed,
+  empty and write-failed states (`NotificationPreferencesGroupTest`, `SettingsScreenTest`).
+- [ ] **Not walked on a device**, and not reachable from a released build: the two operations are
+  `T2` in the main repo's contract tiers and are not in the API vhost's admission list, so the edge
+  refuses them until they join the frozen set (main repo `REQ-API-009`). Open until that PR lands.
+- [ ] The design handoff draws no notification switches (chapter 13); this group follows the
+  chapter's row and square-toggle rules and still needs a drawing (filed for the design side).
+
+**Code:** `core/data/NotificationPreferencesRepository.kt`,
+`settings/NotificationPreferencesViewModel.kt`, `settings/NotificationPreferencesGroup.kt`,
+`settings/NotificationPreferenceLabels.kt`

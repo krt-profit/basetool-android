@@ -47,6 +47,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesReposito
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineRepository
+import de.greluc.krt.profit.basetool.android.core.data.NotificationPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
@@ -357,6 +358,20 @@ class AuthContainer(
      */
     val memberPreferences: MemberPreferencesRepository by lazy {
         MemberPreferencesRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL, consent = reconsent)
+    }
+
+    /**
+     * The member's per-type notification switches (REQ-APP-NOTIF-017).
+     *
+     * A repository of its own: the switches carry no version and share no row with the standing
+     * choices above, so a write to one never waits on, or disturbs, the other.
+     */
+    val notificationPreferences: NotificationPreferencesRepository by lazy {
+        NotificationPreferencesRepository(
+            httpClient = apiClient,
+            baseUrl = BuildConfig.API_BASE_URL,
+            consent = reconsent,
+        )
     }
 
     /**

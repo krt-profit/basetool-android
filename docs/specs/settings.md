@@ -13,7 +13,9 @@ here; Beförderung reads evaluations from the backend and lands with the live-pa
 ### REQ-APP-SET-001 — The screen shows only what the app itself decides
 
 Einstellungen carries the settings the **app** owns: the language, the app lock, the legal texts,
-the open-source notice, the version, and sign-out. The chapter also draws the member's rank and
+the open-source notice, the version, and sign-out — and, since the notification switches of
+`REQ-APP-NOTIF-017`, the group BENACHRICHTIGUNGEN, whose values the backend owns but which have no
+version and no row in common with the account rows below. The chapter also draws the member's rank and
 squadron, the active org unit, the payout preference and a blueprint-sharing switch — every one of
 those is a value the **backend** owns.
 

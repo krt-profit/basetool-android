@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Benachrichtigungen abbestellen.** In den Einstellungen wählst du pro Art, ob du sie erhalten
+  möchtest, gruppiert wie im Web. Abbestellte Arten erscheinen weder im Posteingang noch als
+  Meldung; gesetzliche und Sicherheitshinweise bleiben gesperrt. Setzt voraus, dass der Server die
+  Einstellung für die App freigibt.
 - **Benachrichtigungen zu Lager-Umbuchungen.** Bucht jemand Bestand auf dich um oder deinen Bestand
   weg, zeigt die App den Text mit Material, Qualität, Menge und Ort statt „Neue Benachrichtigung";
   ein Tipp öffnet das Lager.

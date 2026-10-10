@@ -101,6 +101,8 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
+import de.greluc.krt.profit.basetool.android.settings.NotificationPreferenceActions
+import de.greluc.krt.profit.basetool.android.settings.NotificationPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
@@ -922,6 +924,8 @@ private fun PushedDestination(
                 onLogout = onLogout,
                 versionName = version.versionName.orEmpty(),
                 versionCode = settings.versionCode,
+                notificationPreferences = settings.notificationPreferences,
+                notificationActions = settings.notificationActions,
             )
         }
 
@@ -996,6 +1000,8 @@ data class BlueprintOverviewBindings(
  * @property onSharing shares or unshares the member's blueprints with the organisation.
  * @property onRetryPreferences re-reads the account values after a failed read.
  * @property rsiActions the RSI-handle row's callbacks.
+ * @property notificationPreferences the per-type notification switches.
+ * @property notificationActions the notification group's callbacks.
  */
 @Immutable
 data class SettingsBindings(
@@ -1020,6 +1026,8 @@ data class SettingsBindings(
     val onRetryPreferences: () -> Unit,
     val rsiActions: RsiHandleActions = RsiHandleActions(),
     val onOpenConnectedApps: () -> Unit = {},
+    val notificationPreferences: NotificationPreferencesState = NotificationPreferencesState(),
+    val notificationActions: NotificationPreferenceActions = NotificationPreferenceActions(),
 )
 
 /**

@@ -23,6 +23,9 @@ app since v0.2.0. Two file imports work from the phone: the **Fleetview import**
 Mein Inventar, both with a preview before anything is written.
 The Lager has a „Mein Lager" mode for your own stock: filter it by kind and place, move rows between
 personal and the shared Lager, and give a personal row a unit or none.
+Einstellungen holds a switch per notification type, grouped as on the web profile: a type you turn
+off reaches neither the inbox nor the app (`REQ-APP-NOTIF-017`). The two operations behind it are
+not admitted by the API vhost yet, so a build that ships this waits for the main repository's change.
 Data updates live while the app is in front; on a tablet the list sits beside its detail.
 
 **What it deliberately does not do.** The administration stays in the browser, permanently and by
