@@ -50,6 +50,11 @@ class NotificationDestinationsTest {
     }
 
     @Test
+    fun `an account responsibility notice leads nowhere, like every bank notice on the web`() {
+        assertNull(notificationDestination(notification("BANK_ACCOUNT")))
+    }
+
+    @Test
     fun `the areas this build does not have lead nowhere`() {
         listOf("MATERIAL_EXCHANGE_OFFER", "MATERIAL_EXCHANGE_REQUEST", "DISCORD_REGISTRATION")
             .forEach { assertNull(it, notificationDestination(notification(it))) }

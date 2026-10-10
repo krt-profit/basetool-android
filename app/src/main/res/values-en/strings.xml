@@ -375,6 +375,8 @@
     <string name="notifications_type_bulk_undo_applied">The administration undid {count} changes {client} made to your data. Details under Personal → Connected applications.</string>
     <string name="notifications_type_inventory_transferred_to_user">{actor} transferred {count} lot(s) onto you: {lots}</string>
     <string name="notifications_type_inventory_transferred_from_user">{actor} transferred {count} lot(s) from your stock to {newOwner}: {lots}</string>
+    <string name="notifications_type_bank_request_updated">Booking request changed: {accountNo} now for {amount} aUEC by {requester}</string>
+    <string name="notifications_type_bank_responsible_assigned">You are now responsible for account {accountNo}. Requests awaiting your approval: {pending}</string>
     <string name="dashboard_greeting">Welcome, %1$s</string>
     <string name="dashboard_greeting_anonymous">Welcome</string>
     <string name="dashboard_context">%1$s · %2$s</string>

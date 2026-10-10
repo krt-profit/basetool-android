@@ -377,6 +377,8 @@
     <string name="notifications_type_bulk_undo_applied">Die Administration hat {count} Änderungen von {client} an deinen Daten zurückgenommen. Einzelheiten unter Persönlich → Verbundene Anwendungen.</string>
     <string name="notifications_type_inventory_transferred_to_user">{actor} hat {count} Posten auf dich umgebucht: {lots}</string>
     <string name="notifications_type_inventory_transferred_from_user">{actor} hat {count} Posten aus deinem Lager auf {newOwner} umgebucht: {lots}</string>
+    <string name="notifications_type_bank_request_updated">Buchungsantrag geändert: {accountNo} jetzt über {amount} aUEC von {requester}</string>
+    <string name="notifications_type_bank_responsible_assigned">Du bist jetzt für Konto {accountNo} verantwortlich. Anträge, die auf deine Freigabe warten: {pending}</string>
     <string name="dashboard_greeting">Willkommen, %1$s</string>
     <string name="dashboard_greeting_anonymous">Willkommen</string>
     <string name="dashboard_context">%1$s · %2$s</string>

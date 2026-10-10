@@ -124,9 +124,12 @@ it.
 - [x] A renamed or blank parameter falls back to the generic wording.
 - [x] An unknown type resolves to the generic wording rather than to nothing — the server may add a
   rule at any time and the member must still be told that something happened.
-- [x] Every type the backend raises has its own wording — sixteen as of 2026-10-09, the two Lager
+- [x] Every type the backend raises has its own wording — eighteen as of 2026-10-10: the two Lager
   transfer notices (`INVENTORY_TRANSFERRED_TO_USER`, `INVENTORY_TRANSFERRED_FROM_USER`, main repo
-  REQ-INV-055) included. The test takes the set from the vendored contract's rule enum
+  REQ-INV-055), a corrected booking request (`BANK_BOOKING_REQUEST_UPDATED`, REQ-BANK-056) and a new
+  account responsibility (`BANK_ACCOUNT_RESPONSIBLE_ASSIGNED`, REQ-BANK-034) included. The last two
+  are bank notices and, like every bank notice, lead nowhere (`BANK_ACCOUNT` has no screen here and
+  no link on the web). The test takes the set from the vendored contract's rule enum
   (`NotificationRuleDto.NotificationType`), so a refreshed `openapi.json` with a new type fails the
   build until the type is worded.
 
