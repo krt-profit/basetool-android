@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.NotificationPreference
 import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import org.junit.Assert.assertEquals
@@ -43,11 +44,15 @@ class SettingsScreenTest {
      * @param loggedOut collects the sign-out invocations.
      * @param preferences the server-side rows' state.
      * @param payouts collects the payout writes the row asks for.
+     * @param notificationPreferences the notification switches' state.
+     * @param notificationToggles collects the notification switches the member taps.
      */
     private fun show(
         loggedOut: MutableList<Unit>,
         preferences: MemberPreferencesState = MemberPreferencesState(),
         payouts: MutableList<PayoutPreference> = mutableListOf(),
+        notificationPreferences: NotificationPreferencesState = NotificationPreferencesState(),
+        notificationToggles: MutableList<Pair<String, Boolean>> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -75,6 +80,12 @@ class SettingsScreenTest {
                     onLogout = { loggedOut += Unit },
                     versionName = "0.1.0",
                     versionCode = 1,
+                    notificationPreferences = notificationPreferences,
+                    notificationActions =
+                        NotificationPreferenceActions(onToggle = { type, receive ->
+                            notificationToggles +=
+                                type to receive
+                        }),
                 )
             }
         }
@@ -156,6 +167,25 @@ class SettingsScreenTest {
         show(loggedOut = mutableListOf())
 
         compose.onNodeWithText("Auszahlungspräferenz").assertIsNotEnabled()
+    }
+
+    /** The notification switches sit in Einstellungen between APP and RECHTLICHES, one tap from the screen. */
+    @Test
+    fun `the notification group is part of the screen and reports a tap`() {
+        val toggles = mutableListOf<Pair<String, Boolean>>()
+        show(
+            loggedOut = mutableListOf(),
+            notificationPreferences =
+                NotificationPreferencesState(
+                    read = true,
+                    rows = listOf(NotificationPreference("JOB_ORDER_CREATED", mutable = true, muted = false)),
+                ),
+            notificationToggles = toggles,
+        )
+
+        compose.onNodeWithText("Neuer Auftrag für deine Einheit").performScrollTo().performClick()
+
+        assertEquals(listOf("JOB_ORDER_CREATED" to false), toggles)
     }
 
     /** „Verbundene Anwendungen" stays web-only; the KONTO row opens the page (main repo REQ-XCH-032). */

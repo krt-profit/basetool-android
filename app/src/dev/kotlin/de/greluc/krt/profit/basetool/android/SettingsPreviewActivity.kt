@@ -22,10 +22,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
+import de.greluc.krt.profit.basetool.android.core.data.NotificationPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
+import de.greluc.krt.profit.basetool.android.settings.NotificationPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -92,6 +94,7 @@ class SettingsPreviewActivity : AppCompatActivity() {
                         onLogout = { },
                         versionName = BuildConfig.VERSION_NAME,
                         versionCode = BuildConfig.VERSION_CODE,
+                        notificationPreferences = SAMPLE_NOTIFICATIONS,
                     )
                 }
             }
@@ -131,3 +134,15 @@ class SettingsPreviewActivity : AppCompatActivity() {
         CustomTabLauncher.launch(this, BuildConfig.WEB_BASE_URL + path)
     }
 }
+
+/** Sample switches for the preview: one on, one off, one that cannot be turned off. */
+private val SAMPLE_NOTIFICATIONS =
+    NotificationPreferencesState(
+        read = true,
+        rows =
+            listOf(
+                NotificationPreference("JOB_ORDER_CREATED", mutable = true, muted = false),
+                NotificationPreference("BANK_BOOKING_REQUEST_CREATED", mutable = true, muted = true),
+                NotificationPreference("ACCOUNT_DELETION_REQUESTED", mutable = false, muted = false),
+            ),
+    )

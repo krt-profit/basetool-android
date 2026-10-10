@@ -39,6 +39,19 @@ class NotificationDestinationsTest {
     }
 
     @Test
+    fun `an Einsatz, an Operation and a Raffinerie order open their screens`() {
+        assertEquals("mission/e1", notificationDestination(notification("MISSION")))
+        assertEquals("operation/e1", notificationDestination(notification("OPERATION")))
+        assertEquals("refinery-order/e1", notificationDestination(notification("REFINERY_ORDER")))
+    }
+
+    @Test
+    fun `a hangar notice opens the hangar and a unit notice leads nowhere`() {
+        assertEquals("hangar", notificationDestination(notification("HANGAR")))
+        assertNull(notificationDestination(notification("MISSION_UNIT")))
+    }
+
+    @Test
     fun `a lager transfer opens the lager`() {
         assertEquals("inventory", notificationDestination(notification("INVENTORY_ITEM")))
         assertNull(notificationDestination(notification("INVENTORY_ITEM", entityId = null)))

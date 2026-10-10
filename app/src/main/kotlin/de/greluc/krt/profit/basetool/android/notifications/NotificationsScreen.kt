@@ -370,6 +370,7 @@ private fun Notification.sentence(): String =
         notification = this,
         template = stringResource(notificationTypeRes(type)),
         generic = stringResource(R.string.notifications_type_generic),
+        words = rememberValueWords(),
     )
 
 /**

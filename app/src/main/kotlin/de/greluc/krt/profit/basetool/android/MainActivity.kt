@@ -100,6 +100,8 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
+import de.greluc.krt.profit.basetool.android.settings.NotificationPreferenceActions
+import de.greluc.krt.profit.basetool.android.settings.NotificationPreferencesViewModel
 import de.greluc.krt.profit.basetool.android.settings.RsiHandleActions
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.ReconsentOverlay
@@ -156,6 +158,11 @@ class MainActivity : AppCompatActivity() {
 
     /** The two Einstellungen rows that live on the server (design ch. 13, artboard 2). */
     private val memberPreferencesViewModel: MemberPreferencesViewModel by viewModels {
+        authViewModels(container)
+    }
+
+    /** The per-type notification switches (REQ-APP-NOTIF-017). */
+    private val notificationPreferencesViewModel: NotificationPreferencesViewModel by viewModels {
         authViewModels(container)
     }
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
@@ -276,6 +283,9 @@ class MainActivity : AppCompatActivity() {
                                 val memberPreferences by
                                     memberPreferencesViewModel.state.collectAsState()
                                 LaunchedEffect(Unit) { memberPreferencesViewModel.loadOnce() }
+                                val notificationPreferences by
+                                    notificationPreferencesViewModel.state.collectAsState()
+                                LaunchedEffect(Unit) { notificationPreferencesViewModel.loadOnce() }
                                 BasetoolApp(
                                     orgUnit = orgUnit,
                                     missions = missionsViewModel,
@@ -474,6 +484,12 @@ class MainActivity : AppCompatActivity() {
                                                     onDraft = memberPreferencesViewModel::onRsiDraft,
                                                     onSave = memberPreferencesViewModel::onRsiSave,
                                                     onSavedShown = memberPreferencesViewModel::onRsiSavedShown,
+                                                ),
+                                            notificationPreferences = notificationPreferences,
+                                            notificationActions =
+                                                NotificationPreferenceActions(
+                                                    onToggle = notificationPreferencesViewModel::onToggle,
+                                                    onRetry = notificationPreferencesViewModel::refresh,
                                                 ),
                                         ),
                                 )
@@ -684,6 +700,7 @@ class MainActivity : AppCompatActivity() {
                     OrgUnitViewModel(container.orgUnits, container.activeOrgUnit, container.identity)
                 }
                 initializer { MemberPreferencesViewModel(container.memberPreferences) }
+                initializer { NotificationPreferencesViewModel(container.notificationPreferences) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer {
