@@ -518,7 +518,8 @@ waits on, or disturbs, another switch or those rows.
 
 **The areas** are taken from the type name's prefix, as the web does: `JOB_ORDER_` Aufträge,
 `BANK_` Kartellbank, `MATERIAL_` Materialbörse, `INVENTORY_` Lager, `EXCHANGE_` Verbundene
-Anwendungen, `DISCORD_` and `ACCOUNT_DELETION_` Konto & Verwaltung; anything else **Weitere**. The
+Anwendungen, `DISCORD_` and `ACCOUNT_DELETION_` Konto & Verwaltung; anything else **Weitere**
+(six more areas joined in `REQ-APP-NOTIF-018`). The
 areas are listed in that fixed order, a type keeps the server's order within its area, and an area
 with no type is not drawn. The wording of area and type is the web's
 (`profile.notifications.group.*`, `.type.*`), in the app's bundles; domain terms stay German in
@@ -565,3 +566,44 @@ placeholder data.
 **Code:** `core/data/NotificationPreferencesRepository.kt`,
 `settings/NotificationPreferencesViewModel.kt`, `settings/NotificationPreferencesGroup.kt`,
 `settings/NotificationPreferenceLabels.kt`
+
+### REQ-APP-NOTIF-018 — Every notification type the server raises has its own wording, and a coded word is resolved on the device
+
+Issue krt-profit/basetool#2414 adds 41 notification types (Einsätze, Operationen, Aufträge,
+Raffinerie, Materialbörse, Lager, Bank, Organisation, Hangar, Blueprints, Verbundene Anwendungen).
+Each has a sentence in `notifications.type.<TYPE>` and a switch label, mirroring the web's keys
+(`notifications.type.*`, `profile.notifications.type.*`), in German and English; domain terms stay
+German in English as elsewhere in the app.
+
+**Coded parameters.** The server sends a closed set of words as a code beside the plain name — a
+parameter `changeCode = UPDATED` stands for `{change}` in the template (main repo `REQ-NOTIF-028`).
+The app resolves it on the device: `withValueWords` adds `{change}` from
+`notifications_value_<name>_<value>`, a value this build has no word for is shown as sent, and a
+name the server already sent is never overwritten. The 51 words mirror the web's
+`notifications.value.*` keys. Both the inbox and the system notification use it, so the two never
+word one notice differently.
+
+**Areas.** The Einstellungen card gains Einsätze (`MISSION_`), Operationen (`OPERATION_`),
+Raffinerie (`REFINERY_`), Hangar (`HANGAR_`), Blueprints (`BLUEPRINT_`) and Organisation (`ORG_`).
+The order is fixed: Einsätze, Operationen, Aufträge, Raffinerie, Kartellbank, Materialbörse, Lager,
+Hangar, Blueprints, Organisation, Verbundene Anwendungen, Konto & Verwaltung, Weitere.
+
+**Where a row leads.** A notice about an Einsatz opens it, an Operation and a Raffinerie order
+likewise, a hangar notice opens the Hangar. A notice about a mission unit, a bank record, a blueprint
+set or a connected application leads nowhere in this build, as every bank notice does
+(`REQ-APP-NOTIF-007`).
+
+**The vendored contract** carries the 41 new constants in the notification enums and nothing else of
+the backend's newer document; the quality-tier schemas stay a separate change
+(`core/contract/src/main/openapi/README.md`).
+
+**Acceptance**
+
+- [x] Every type of the contract's enum has a sentence, an area and a label
+  (`NotificationTextTest`, `NotificationPreferenceLabelsTest`).
+- [x] A coded parameter gives the plain name its word, an unknown value is shown as sent, a server-sent
+  name is kept, a missing code falls back to the generic wording (`NotificationValueWordsTest`).
+- [x] The new areas follow the prefixes, and the new entity types lead where they should
+  (`NotificationPreferenceLabelsTest`, `NotificationDestinationsTest`).
+- [ ] **Not walked on a device**, and the preference operations are not yet in the API vhost's
+  admission list (`REQ-APP-NOTIF-017`).

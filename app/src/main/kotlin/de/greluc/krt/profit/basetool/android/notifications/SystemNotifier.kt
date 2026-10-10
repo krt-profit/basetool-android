@@ -93,7 +93,7 @@ class SystemNotifier(
         }
         return fillTemplate(
             template = context.getString(notificationTypeRes(type)),
-            params = signal.params,
+            params = withValueWords(signal.params, valueWords(context)),
             fallback = context.getString(R.string.notifications_type_generic),
         )
     }

@@ -73,6 +73,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.krtIconRes
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
+import de.greluc.krt.profit.basetool.android.notifications.rememberValueWords
 import de.greluc.krt.profit.basetool.android.ui.carriesClock
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -706,6 +707,7 @@ private fun UnreadRow(
                     notification = notification,
                     template = stringResource(notificationTypeRes(notification.type)),
                     generic = stringResource(R.string.notifications_type_generic),
+                    words = rememberValueWords(),
                 ),
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.White,

@@ -9,7 +9,10 @@ package de.greluc.krt.profit.basetool.android.notifications
 
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.navigation.KrtDestination
+import de.greluc.krt.profit.basetool.android.navigation.missionDetailRoute
+import de.greluc.krt.profit.basetool.android.navigation.operationDetailRoute
 import de.greluc.krt.profit.basetool.android.navigation.orderDetailRoute
+import de.greluc.krt.profit.basetool.android.navigation.refineryOrderRoute
 
 /**
  * Where a notification's subject lives in the app.
@@ -41,6 +44,10 @@ fun notificationDestination(
     val id = entityId ?: return null
     return when (entityType) {
         "JOB_ORDER" -> orderDetailRoute(id)
+        "MISSION" -> missionDetailRoute(id)
+        "OPERATION" -> operationDetailRoute(id)
+        "REFINERY_ORDER" -> refineryOrderRoute(id)
+        "HANGAR" -> KrtDestination.Hangar.route
         "INVENTORY_ITEM" -> KrtDestination.Inventory.route
         "BANK_BOOKING_REQUEST" -> null
         "MATERIAL_EXCHANGE_OFFER", "MATERIAL_EXCHANGE_REQUEST" -> null
