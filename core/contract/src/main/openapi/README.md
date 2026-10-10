@@ -31,6 +31,11 @@
 > operations the vendored copy carries. That is a separate change in the app; until it lands, the
 > next refresh has to start by adopting those, and this splice is replaced by a plain `cp`.
 >
+> **The second splice of the same day** replaces the five notification enum lists
+> (`NotificationPreferenceDto.type`, `NotificationRuleDto` and `NotificationRuleWriteRequest`
+> `eventType` / `notificationType`) with the 41 constants basetool#2414 added, taken from the head of its
+> branch `claude/notif-2414-p11-connected-apps`; nothing else changes.
+>
 > Both spliced operations are `T2` (web-only) in the main repository's contract tiers and absent
 > from its API-vhost admission list, so the edge refuses them. A build that calls them must not be
 > released before they join the frozen set.

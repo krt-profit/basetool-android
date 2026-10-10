@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Texte für alle neuen Benachrichtigungen.** Einsätze, Operationen, Aufträge, Raffinerie,
+  Materialbörse, Lager, Bank, Organisation, Hangar, Blueprints und verbundene Anwendungen haben
+  eigene Sätze und Schalter in den Einstellungen; feste Wörter wie „geändert" oder „eingelagert"
+  stellt die App selbst in der Sprache des Geräts ein. Ein Tipp öffnet den Einsatz, die Operation, den
+  Raffinerieauftrag oder den Hangar.
 - **Benachrichtigungen abbestellen.** In den Einstellungen wählst du pro Art, ob du sie erhalten
   möchtest, gruppiert wie im Web. Abbestellte Arten erscheinen weder im Posteingang noch als
   Meldung; gesetzliche und Sicherheitshinweise bleiben gesperrt. Setzt voraus, dass der Server die

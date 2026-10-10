@@ -60,6 +60,12 @@ class NotificationPreferenceLabelsTest {
                 "EXCHANGE_INSTALLATION_CONNECTED" to NotificationArea.CONNECTED_APPS,
                 "EXCHANGE_BULK_UNDO_APPLIED" to NotificationArea.CONNECTED_APPS,
                 "DISCORD_REGISTRATION_PENDING" to NotificationArea.ACCOUNT,
+                "MISSION_REMINDER" to NotificationArea.MISSIONS,
+                "OPERATION_COMPLETED" to NotificationArea.OPERATIONS,
+                "REFINERY_ORDER_READY" to NotificationArea.REFINERY,
+                "ORG_MEMBER_DEPARTED" to NotificationArea.ORGANISATION,
+                "HANGAR_SHIP_ASSIGNED" to NotificationArea.HANGAR,
+                "BLUEPRINT_PURGED_BY_ADMIN" to NotificationArea.BLUEPRINTS,
                 "ACCOUNT_DELETION_REQUESTED" to NotificationArea.ACCOUNT,
                 "ACCOUNT_DELETION_REQUEST_DECLINED" to NotificationArea.ACCOUNT,
             )

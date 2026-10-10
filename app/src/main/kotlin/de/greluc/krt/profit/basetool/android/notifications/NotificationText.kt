@@ -62,6 +62,47 @@ private val TYPE_WORDING: Map<String, Int> =
         "INVENTORY_TRANSFERRED_FROM_USER" to R.string.notifications_type_inventory_transferred_from_user,
         "BANK_BOOKING_REQUEST_UPDATED" to R.string.notifications_type_bank_request_updated,
         "BANK_ACCOUNT_RESPONSIBLE_ASSIGNED" to R.string.notifications_type_bank_responsible_assigned,
+        "MISSION_RESCHEDULED" to R.string.notifications_type_mission_rescheduled,
+        "MISSION_CANCELLED" to R.string.notifications_type_mission_cancelled,
+        "MISSION_DELETED" to R.string.notifications_type_mission_deleted,
+        "MISSION_REMINDER" to R.string.notifications_type_mission_reminder,
+        "MISSION_CHECKIN_OPEN" to R.string.notifications_type_mission_checkin_open,
+        "MISSION_PARTICIPANT_ADDED_BY_OTHER" to R.string.notifications_type_mission_participant_added_by_other,
+        "MISSION_PARTICIPANT_REMOVED_BY_OTHER" to R.string.notifications_type_mission_participant_removed_by_other,
+        "MISSION_PARTICIPANT_LEFT" to R.string.notifications_type_mission_participant_left,
+        "MISSION_NEVER_ENDED" to R.string.notifications_type_mission_never_ended,
+        "MISSION_RESPONSIBILITY_ASSIGNED" to R.string.notifications_type_mission_responsibility_assigned,
+        "OPERATION_PAYOUT_PAID_OUT" to R.string.notifications_type_operation_payout_paid_out,
+        "OPERATION_COMPLETED" to R.string.notifications_type_operation_completed,
+        "JOB_ORDER_REASSIGNED" to R.string.notifications_type_job_order_reassigned,
+        "JOB_ORDER_FINISHED" to R.string.notifications_type_job_order_finished,
+        "JOB_ORDER_ASSIGNED" to R.string.notifications_type_job_order_assigned,
+        "JOB_ORDER_CLAIM_WITHDRAWN" to R.string.notifications_type_job_order_claim_withdrawn,
+        "REFINERY_ORDER_READY" to R.string.notifications_type_refinery_order_ready,
+        "REFINERY_ORDER_CHANGED_BY_OTHER" to R.string.notifications_type_refinery_order_changed_by_other,
+        "MATERIAL_EXCHANGE_OFFER_UNAVAILABLE" to R.string.notifications_type_material_exchange_offer_unavailable,
+        "MATERIAL_REQUEST_UNAVAILABLE" to R.string.notifications_type_material_request_unavailable,
+        "INVENTORY_BOOKED_OUT_BY_OTHER" to R.string.notifications_type_inventory_booked_out_by_other,
+        "BANK_BOOKING_REQUEST_APPROVED" to R.string.notifications_type_bank_booking_request_approved,
+        "BANK_GRANT_CHANGED" to R.string.notifications_type_bank_grant_changed,
+        "BANK_GRANT_REVOKED" to R.string.notifications_type_bank_grant_revoked,
+        "BANK_PAYOUT_RECEIVED" to R.string.notifications_type_bank_payout_received,
+        "BANK_HOLDER_TRANSFER_RECEIVED" to R.string.notifications_type_bank_holder_transfer_received,
+        "BANK_ACCOUNT_DEBITED" to R.string.notifications_type_bank_account_debited,
+        "BANK_HOLDER_DEACTIVATED_WITH_BALANCE" to R.string.notifications_type_bank_holder_deactivated_with_balance,
+        "ORG_LEADERSHIP_ROLE_MISMATCH" to R.string.notifications_type_org_leadership_role_mismatch,
+        "ORG_MEMBER_DEPARTED" to R.string.notifications_type_org_member_departed,
+        "HANGAR_SHIP_ASSIGNED" to R.string.notifications_type_hangar_ship_assigned,
+        "HANGAR_SHIP_REMOVED_FROM_UNIT" to R.string.notifications_type_hangar_ship_removed_from_unit,
+        "HANGAR_FITTED_RESET" to R.string.notifications_type_hangar_fitted_reset,
+        "HANGAR_CHANGED_BY_ADMIN" to R.string.notifications_type_hangar_changed_by_admin,
+        "BLUEPRINT_CHANGED_BY_ADMIN" to R.string.notifications_type_blueprint_changed_by_admin,
+        "BLUEPRINT_PURGED_BY_ADMIN" to R.string.notifications_type_blueprint_purged_by_admin,
+        "EXCHANGE_CLIENT_SUSPENDED" to R.string.notifications_type_exchange_client_suspended,
+        "EXCHANGE_CLIENT_ACTIVATED" to R.string.notifications_type_exchange_client_activated,
+        "EXCHANGE_CLIENT_UPDATE_REQUIRED" to R.string.notifications_type_exchange_client_update_required,
+        "EXCHANGE_CLIENT_CAPABILITY_REMOVED" to R.string.notifications_type_exchange_client_capability_removed,
+        "EXCHANGE_SWITCHED_OFF" to R.string.notifications_type_exchange_switched_off,
     )
 
 /**
@@ -108,10 +149,12 @@ internal fun fillTemplate(
  * @param notification the notification.
  * @param template the already-resolved template text for its type.
  * @param generic the already-resolved generic wording.
+ * @param words the localized words of the coded parameters, keyed `name.VALUE`.
  * @return the sentence a member reads.
  */
 internal fun notificationSentence(
     notification: Notification,
     template: String,
     generic: String,
-): String = fillTemplate(template, notification.params, generic)
+    words: Map<String, String> = emptyMap(),
+): String = fillTemplate(template, withValueWords(notification.params, words), generic)
