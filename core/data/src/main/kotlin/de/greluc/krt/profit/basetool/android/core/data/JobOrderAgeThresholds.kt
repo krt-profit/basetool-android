@@ -12,7 +12,7 @@ import java.time.Instant
 
 /**
  * The ages in days at which an unfinished order is coloured as old, taken from the operator's
- * `job_order.age_yellow_days` and `job_order.age_red_days` system settings.
+ * `ageYellowDays` and `ageRedDays` job-order settings (`GET /api/v1/orders/settings`).
  *
  * The defaults match the values the migration seeds and the web app falls back to.
  *
@@ -48,12 +48,6 @@ data class JobOrderAgeThresholds(
 
         /** `job_order.age_red_days` as the schema seeds it. */
         const val DEFAULT_RED_DAYS: Long = 90
-
-        /** Settings key for [yellowDays]. */
-        const val KEY_YELLOW_DAYS: String = "job_order.age_yellow_days"
-
-        /** Settings key for [redDays]. */
-        const val KEY_RED_DAYS: String = "job_order.age_red_days"
     }
 }
 
