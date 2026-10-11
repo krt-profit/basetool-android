@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-11
+
 ### Added
 
 - **Texte für alle neuen Benachrichtigungen.** Einsätze, Operationen, Aufträge, Raffinerie,
