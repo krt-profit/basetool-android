@@ -95,9 +95,6 @@ enum class KrtDestination(
      */
     NotFound("not-found", R.string.route_not_found_title, DesignR.drawable.ic_krt_warning),
 
-    /** The Fleetview import, pushed from the Hangar's overflow. */
-    FleetImport("hangar-import", R.string.fleet_import_title, DesignR.drawable.ic_krt_upload),
-
     /**
      * One Einsatz in full, pushed from the Einsatz list.
      *
@@ -332,7 +329,6 @@ val MORE_DESTINATIONS =
 val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
     mapOf(
         KrtDestination.Licenses to KrtDestination.Settings,
-        KrtDestination.FleetImport to KrtDestination.Hangar,
         KrtDestination.MissionDetail to KrtDestination.Missions,
         KrtDestination.MaterialDetail to KrtDestination.Materials,
         KrtDestination.OrderEdit to KrtDestination.Orders,

@@ -108,6 +108,29 @@ class AnnouncementRepositoryTest {
         }
 
     @Test
+    fun `the current announcement is read from the announcements root`() =
+        runTest {
+            respond(HTTP_NO_CONTENT)
+
+            repository.current()
+
+            val request = server.takeRequest()
+            assertEquals("GET /api/v1/announcements/current", "${request.method} ${request.target}")
+        }
+
+    @Test
+    fun `marking read puts the id under the announcement`() =
+        runTest {
+            respond(HTTP_OK, """{"lastReadAnnouncementId": "a1"}""")
+
+            val result = repository.markRead("a1")
+
+            val request = server.takeRequest()
+            assertEquals("PUT /api/v1/announcements/a1/read", "${request.method} ${request.target}")
+            assertEquals("a1", (result as ApiResult.Success).value)
+        }
+
+    @Test
     fun `an outage is still an outage`() =
         runTest {
             respond(HTTP_SERVER_ERROR, "{}")

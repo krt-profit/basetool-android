@@ -117,7 +117,7 @@ class AnnouncementRepository(
      * @return the id the server now holds.
      */
     override suspend fun markRead(id: String): ApiResult<String?> =
-        reader.put("$READ_PATH/$id", UserDto.serializer())
+        reader.put("$ANNOUNCEMENTS_PATH/$id/read", UserDto.serializer())
             .map { it.lastReadAnnouncementId }
 
     private companion object {
@@ -127,16 +127,16 @@ class AnnouncementRepository(
         /** The caller's own record, read for `lastReadAnnouncementId` alone. */
         const val ME_PATH = "/api/v1/users/me"
 
-        /** The bodyless mark-read edge; the announcement id is appended. */
-        const val READ_PATH = "/api/v1/users/me/read-announcement"
+        /** The announcements root; the bodyless mark-read edge is `{id}/read` below it. */
+        const val ANNOUNCEMENTS_PATH = "/api/v1/announcements"
 
         /**
          * The public announcement.
          *
-         * Not `/api/v1/announcement/admin`, which is the same row read by an admin form and would
-         * return the last saved text even when it has been blanked.
+         * Not `/api/v1/announcements/current/admin`, which is the same row read by an admin form and
+         * would return the last saved text even when it has been blanked.
          */
-        const val ANNOUNCEMENT_PATH = "/api/v1/announcement"
+        const val ANNOUNCEMENT_PATH = "$ANNOUNCEMENTS_PATH/current"
     }
 }
 

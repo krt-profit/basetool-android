@@ -18,9 +18,8 @@ Materialbörse, book a refining yield into the Lager, and clear the inbox. The R
 **unit's** runs rather than only your own, and names each one's owner, as the web has always done.
 Bank employees get the bank's Verwaltung view (a „Mitglied | Verwaltung" switch: every account of
 the unit, confirming and rejecting requests, direct bookings, Storno, holders and grants) — in the
-app since v0.2.0. Two file imports work from the phone: the **Fleetview import** in the Hangar
-(CCU-Game Fleetview, HangarXPLOR shiplist, Fleetyards JSON) and the **blueprint JSON import** in
-Mein Inventar, both with a preview before anything is written.
+app since v0.2.0. The **blueprint JSON import** in Mein Inventar works from the phone, with a
+preview before anything is written; the Hangar's Fleetview import is gone (the server removed it).
 The Lager has a „Mein Lager" mode for your own stock: filter it by kind and place, move rows between
 personal and the shared Lager, and give a personal row a unit or none.
 Einstellungen holds a switch per notification type, grouped as on the web profile: a type you turn

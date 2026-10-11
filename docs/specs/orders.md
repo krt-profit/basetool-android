@@ -730,7 +730,7 @@ row rather than drawn as an empty field.
 
 - **Lieferstatus** — `PATCH /inventory/{id}/delivered`, echoing the **row's own** version, so a
   concurrent stock change is a 409 rather than a silent overwrite.
-- **Verknüpfung lösen** — `DELETE /orders/{id}/inventory/{entryId}/unlink` for a stock row, and
+- **Verknüpfung lösen** — `DELETE /orders/{id}/allocations/{entryId}` for a stock row, and
   `DELETE /orders/{id}/materials/{materialId}` for a required material nothing covers.
 
 `JobOrderDto.canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`, resolved server-side per

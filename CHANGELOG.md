@@ -32,6 +32,11 @@
   sind gesperrt, sobald die Auswahl einen fremden Eintrag enthält – auch für Logistiker, denn der
   Server bucht in einer Auswahl nur eigene Einträge. Vorher führte das zu „Access Denied".
 
+### Removed
+
+- **Fleetview-Import aus dem Hangar entfernt.** Der Server bietet den Import nicht mehr an; der
+  Eintrag im Menü des Hangars und der Import-Bildschirm entfallen.
+
 ## [0.5.0] — 2026-10-03
 
 ### Changed

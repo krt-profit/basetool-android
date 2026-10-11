@@ -38,6 +38,18 @@ import java.time.OffsetDateTime
 class RefineryRepositoryTest {
     private companion object {
         const val HTTP_OK = 200
+        const val HTTP_NO_CONTENT = 204
+
+        /** A line the wire accepts: both materials named, both quantities in units. */
+        val ONE_GOOD =
+            RefineryGoodDraft(
+                inputMaterialId = "raw-agr",
+                inputMaterialName = "Agricium (Raw)",
+                inputQuantity = "62000",
+                outputMaterialId = "ref-agr",
+                outputMaterialName = "Agricium",
+                outputQuantity = "44200",
+            )
 
         /** The fixture's refined output, in SCU. The wire carries a hundred times this. */
         const val YIELD_SCU = 622.0
@@ -393,6 +405,62 @@ class RefineryRepositoryTest {
             assertFalse("the read-only bonus must not be sent, was: ${'$'}body", body.contains("yieldBonusPercent\":1"))
             assertTrue(body.contains("\"inputMaterial\":{\"id\":\"raw-agr\""))
             assertTrue(body.contains("\"outputQuantity\":44200"))
+        }
+
+    @Test
+    fun `a new order sends the create record, with no status, version or owner`() =
+        runTest {
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(HTTP_OK)
+                    .setHeader("Content-Type", "application/json")
+                    .body("""{"id": "r9", "location": {"id": "loc1"}, "goods": []}""")
+                    .build(),
+            )
+
+            repository.createOrder(
+                RefineryOrderDraft(
+                    locationId = "loc1",
+                    methodId = "met1",
+                    goods = listOf(ONE_GOOD),
+                    version = 5,
+                    status = "COMPLETED",
+                ),
+            )
+
+            val request = server.takeRequest()
+            val body = request.body?.utf8().orEmpty()
+            assertEquals("POST /api/v1/refinery-orders", "${request.method} ${request.target}")
+            assertTrue(body, body.contains("\"location\":{\"id\":\"loc1\""))
+            listOf("status", "version", "owner", "profit", "owningSquadron", "\"id\":\"r9\"").forEach {
+                assertFalse("$it must not be sent on a create, was: $body", body.contains(it))
+            }
+        }
+
+    @Test
+    fun `an edited order sends the update record with its status and version`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_NO_CONTENT).build())
+
+            repository.updateOrder(
+                "r1",
+                RefineryOrderDraft(
+                    locationId = "loc1",
+                    methodId = "met1",
+                    goods = listOf(ONE_GOOD),
+                    version = 5,
+                    status = "IN_PROGRESS",
+                ),
+            )
+
+            val request = server.takeRequest()
+            val body = request.body?.utf8().orEmpty()
+            assertEquals("PUT /api/v1/refinery-orders/r1", "${request.method} ${request.target}")
+            assertTrue(body, body.contains("\"status\":\"IN_PROGRESS\""))
+            assertTrue(body, body.contains("\"version\":5"))
+            listOf("owner", "profit", "owningSquadron").forEach {
+                assertFalse("$it must not be sent on an update, was: $body", body.contains(it))
+            }
         }
 
     @Test
