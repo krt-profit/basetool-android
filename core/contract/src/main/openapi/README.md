@@ -7,8 +7,8 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `21f031ff7` (2026-09-28) — the backend's `main`, plus the notification-switch operations spliced in from `c1828e3ec` (2026-10-10) — see below |
-| Document | OpenAPI 3.1.0 · 442 paths · 491 schemas |
+| Copied from commit | `4996db77c` (2026-10-11), branch `claude/api-cut` of the main repository: the REST API cut (draft PR krt-profit/basetool#2475), the document the app 19 is built against |
+| Document | OpenAPI 3.1.0 · 427 paths · 455 schemas once the transition below has ended |
 
 > The copy carries what „Mein Lager" and the „gestohlen" marker read and write (basetool
 > REQ-INV-007/-036/-046/-052/-053: `stolen` on stacks and rows, `canMarkStolen` in
@@ -19,26 +19,19 @@
 > admin and member surface, which stays web-only. The next refresh the same day adds
 > `sourceClientName` to a personal blueprint (basetool #2231), the client's registered display name.
 >
-> **The 2026-10-10 refresh is a splice, not a copy.** The per-type notification switches
-> (`GET /api/v1/notifications/preferences`, `PUT …/preferences/{type}`, their two schemas
-> `NotificationPreferenceDto` and `NotificationPreferenceWriteRequest`, and the four rate-limit
-> header components the 429 responses reference) were taken verbatim from basetool `c1828e3ec`
-> (branch `claude/notif-2414-p3-mute`, krt-profit/basetool#2456) and inserted at their sorted
-> places; everything else is unchanged. A full copy of that backend document does not compile
-> against the app: it replaces the `qualityRequirement` enums (`GOOD` / `NONE`) of the claim and
-> demand schemas with plain strings and adds `qualityTier` objects beside them
-> (`MaterialClaimRepository`, `MaterialDemandRepository`), and it no longer lists the exchange
-> operations the vendored copy carries. That is a separate change in the app; until it lands, the
-> next refresh has to start by adopting those, and this splice is replaced by a plain `cp`.
+> **A full copy, since the REST API cut.** The earlier splices (notification switches and enum lists of
+> 2026-10-10) are part of the backend document now, and so are the quality tiers (ADR-0241): the claim
+> and demand schemas carry `qualityRequirement` as a plain string beside a `qualityTier` object,
+> which `MaterialClaimRepository` and `MaterialDemandRepository` read as the string. The document no longer
+> lists the exchange relay operations; the app never called them.
 >
-> **The second splice of the same day** replaces the five notification enum lists
-> (`NotificationPreferenceDto.type`, `NotificationRuleDto` and `NotificationRuleWriteRequest`
-> `eventType` / `notificationType`) with the 41 constants basetool#2414 added, taken from the head of its
-> branch `claude/notif-2414-p11-connected-apps`; nothing else changes.
->
-> Both spliced operations are `T2` (web-only) in the main repository's contract tiers and absent
-> from its API-vhost admission list, so the edge refuses them. A build that calls them must not be
-> released before they join the frozen set.
+> **Transition.** The cut retires 74 operations the app called (`410 APP_UPDATE_REQUIRED` on the old
+> paths) and the app moves to the new ones one repository class at a time. `AppCallListTest` requires
+> every listed operation to exist in the document, so while classes are still on the old paths the file is the
+> backend document **plus** those old operations (and the schemas only they use). Each class pull request
+> deletes the old operations it stops calling; the last one leaves the plain copy. The splice is a script of
+> the cut's handover (`and-splice.py`); it keeps the backend's formatting and, given nothing pending,
+> reproduces the backend file byte for byte.
 >
 > **Release order.** The three `…/inventory/my-inventory/…` reads reach production only once their
 > API-vhost rules are live (krt-profit/basetool#2171); every write this copy

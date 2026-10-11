@@ -165,7 +165,7 @@ private fun MaterialDemandRowDto.toModel(): MaterialDemandRow? {
         materialId = id,
         materialName = material?.name.orEmpty().ifEmpty { id },
         unit = material?.quantityType.orEmpty(),
-        qualityRequirement = qualityRequirement?.value?.takeIf { it != "NONE" },
+        qualityRequirement = qualityRequirement?.takeIf { it != "NONE" },
         required = requiredAmount ?: 0.0,
         booked = bookedAmount ?: 0.0,
         claimed = claimedAmount ?: 0.0,
