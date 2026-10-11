@@ -62,7 +62,6 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopB
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
-import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
@@ -144,7 +143,6 @@ fun BasetoolApp(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
-    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
@@ -294,7 +292,6 @@ fun BasetoolApp(
                         notifications = notifications,
                         dashboard = dashboard,
                         hangar = hangar,
-                        fleetImport = fleetImport,
                         bank = bank,
                         bankRequests = bankRequests,
                         bankStaff = bankStaff,
