@@ -1,4 +1,5 @@
-GET /api/v1/announcement q=- f=content,id,updatedAt,version s=AnnouncementRepository.current.b2a624e7
+GET /api/v1/announcements/current q=- f=content,id,updatedAt,version s=AnnouncementRepository.current.510230d4
+PUT /api/v1/announcements/{id}/read q=- f=description,displayName,effectiveName,id,lastReadAnnouncementId,name,permissions,roles,shorthand,squadron,username,version s=AnnouncementRepository.markRead.331ba73e
 GET /api/v1/app/version-policy q=- f=latestVersionCode,minimumVersionCode,releasesUrl s=AppVersionRepository.versionPolicy.4dee217b
 GET /api/v1/bank/accounts q=page,size f=accountNo,balance,balanceTarget,content,createdAt,id,kind,name,orgUnit,page,shorthand,size,sort,status,totalElements,totalPages,type,version s=BankStaffRepository.managedAccounts.9d91ec1a
 POST /api/v1/bank/accounts q=- f=accountNo,balance,balanceTarget,createdAt,id,kind,name,orgUnit,shorthand,status,type,version s=BankStaffRepository.createAccount.f81d0349
@@ -238,7 +239,6 @@ GET /api/v1/terms/document q=- f=bullets,clauses,heading,intro,lastUpdated,secti
 GET /api/v1/terms/status q=- f=accepted,currentVersion s=TermsRepository.status.7e74e2fb
 GET /api/v1/uex/locations/search q=limit,q f=name,parentName,starSystemName,type,uexId s=PersonalInventoryRepository.locations.cd53c714
 GET /api/v1/users/me q=- f=description,displayName,effectiveName,id,lastReadAnnouncementId,name,permissions,roles,shorthand,squadron,username,version s=AnnouncementRepository.lastRead.9445449b,IdentityRepository.me.5dba6c4f
-PUT /api/v1/users/me/read-announcement/{announcementId} q=- f=description,displayName,effectiveName,id,lastReadAnnouncementId,name,permissions,roles,shorthand,squadron,username,version s=AnnouncementRepository.markRead.92e6092a
 GET /api/v1/users/me/registration-status q=- f=approvalStatus s=AccountGateRepository.registrationStatus.73808665
 GET /api/v1/users/me/rsi-handle q=- f=rsiHandle,version s=MemberPreferencesRepository.rsiHandle.1585ab37
 PUT /api/v1/users/me/rsi-handle q=- f=rsiHandle,version s=MemberPreferencesRepository.setRsiHandle.a9ea852c
