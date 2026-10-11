@@ -707,7 +707,7 @@ class MissionDetailViewModelTest {
             model.onSaveEntry()
             advanceUntilIdle()
 
-            assertEquals(listOf("e1", true, "40", "Erlös", ENTRY_VERSION), source.rewritten.single())
+            assertEquals(listOf("m1", "e1", true, "40", "Erlös", ENTRY_VERSION), source.rewritten.single())
         }
 
     @Test
@@ -756,7 +756,7 @@ class MissionDetailViewModelTest {
             model.onDeleteEntry(entry())
             advanceUntilIdle()
 
-            assertEquals(listOf("e1"), source.removed)
+            assertEquals(listOf("m1/e1"), source.removed)
             assertEquals(before + 1, source.financeCalls)
         }
 }

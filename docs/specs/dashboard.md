@@ -1,7 +1,7 @@
 # Übersicht — the dashboard
 
 > **Doc type:** Living spec · **Area:** `REQ-APP-DASH-*` · **Design:** `docs/design/android/05 Dashboard.dc.html`
-> **Server contract:** main repo `REQ-API-009` (`/announcement`, `/missions/search`)
+> **Server contract:** main repo `REQ-API-009` (`/announcement`, `/missions`)
 > **Related:** [`missions.md`](missions.md), [`notifications.md`](notifications.md)
 
 The app's home screen: greeting, announcement, the Einsätze of the next seven days and a preview of
@@ -256,7 +256,7 @@ freshness on the device; if that is wrong it is wrong in the backend, for the we
 
 `GET /api/v1/announcement` is in the `REQ-API-009` contract set and the vhost allow-list, **including
 its 204**: a client that reads the empty body as a failure shows an error where "no banner" is
-correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions/search`,
+correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions`,
 which was frozen with the Einsatz list.
 
 ---

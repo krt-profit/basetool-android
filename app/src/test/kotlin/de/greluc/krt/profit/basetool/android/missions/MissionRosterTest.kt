@@ -264,6 +264,7 @@ class MissionRosterTest {
         ): ApiResult<Unit> = error("the roster does not touch the books")
 
         override suspend fun updateFinanceEntry(
+            missionId: String,
             entryId: String,
             income: Boolean,
             amount: String,
@@ -271,7 +272,10 @@ class MissionRosterTest {
             version: Long?,
         ): ApiResult<Unit> = error("the roster does not touch the books")
 
-        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+        override suspend fun deleteFinanceEntry(
+            missionId: String,
+            entryId: String,
+        ): ApiResult<Unit> =
             error("the roster does not touch the books")
 
         override suspend fun jobTypes(): ApiResult<List<MissionJobType>> {
