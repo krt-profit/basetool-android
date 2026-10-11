@@ -53,7 +53,7 @@ data class OrgUnitState(
  * Decides which org unit the app acts in, and remembers it.
  *
  * Resolution order: a pin on this device, else the server's default
- * (`GET /api/v1/me/active-org-unit`), else the first membership; an administrator without a pin
+ * (`GET /api/v1/org-units/me/active`), else the first membership; an administrator without a pin
  * defaults to „Alle Org-Einheiten" instead. „Alle Org-Einheiten" is stored as an explicit choice
  * and sends no header. A pin for a unit the member no longer belongs to is dropped. Read failures
  * keep the previous state and are logged.

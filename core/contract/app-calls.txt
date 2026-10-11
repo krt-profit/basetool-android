@@ -116,9 +116,7 @@ GET /api/v1/materials/search q=jobOrderOnly,page,rawOnly,search,size f=category,
 GET /api/v1/materials/{id} q=- f=category,description,id,isIllegal,name,quantityType,refinedMaterial,type,version s=MaterialCatalogRepository.material.b45f7f9b
 GET /api/v1/materials/{id}/prices q=page,size,sort f=content,id,page,priceBuy,priceSell,size,sort,terminalName,totalElements,totalPages s=MaterialCatalogRepository.prices.5f460e60
 GET /api/v1/materials/{id}/terminals q=- f=priceSell,terminalId,terminalName s=InventoryRepository.terminals.a623d50a
-GET /api/v1/me/active-org-unit q=- f=orgUnitId s=OrgUnitRepository.serverDefault.d44cc43c
 GET /api/v1/me/capabilities q=- f=canManageBank,canMarkStolen,canSeeBlueprintOverview,canViewBankStaff,isAdmin,isLogisticianOrAbove,isMissionManagerOrAbove s=IdentityRepository.readCapabilities.36c50a3f
-GET /api/v1/me/org-units q=- f=isProfitEligible,kind,orgUnitId,orgUnitName,orgUnitShorthand s=OrgUnitRepository.memberships.93ce60df
 GET /api/v1/missions/lookup q=- f=id,name,plannedStartTime,status s=InventoryRepository.missionTargets.d5fa50c3
 GET /api/v1/missions/me/payout-preference q=- f=defaultPayoutPreference,version s=MemberPreferencesRepository.payoutPreference.168dbc80
 PUT /api/v1/missions/me/payout-preference q=- f=defaultPayoutPreference,version s=MemberPreferencesRepository.setPayoutPreference.2843a5d4
@@ -203,6 +201,8 @@ GET /api/v1/orders/{jobOrderId}/item-stock q=- f=allocatedQuantity,allocatedTota
 GET /api/v1/orders/{jobOrderId}/material-collection q=- f=allocatedQuantity,delivered,inventoryEntryId,location,locationId,materialName,ownerId,ownerName,quality,quantity,version s=MaterialCollectionRepository.rows.4b64946c
 DELETE /api/v1/orders/{jobOrderId}/materials/{materialId} q=- f=- s=MaterialCollectionRepository.unlinkMaterial.a315a0d3
 GET /api/v1/org-units/active-all-kinds q=- f=isProfitEligible,kind,orgUnitId,orgUnitName,orgUnitShorthand s=OrgUnitRepository.activeAllKinds.c2410d49
+GET /api/v1/org-units/me/active q=- f=orgUnitId s=OrgUnitRepository.serverDefault.a71006d2
+GET /api/v1/org-units/me/switchable q=- f=isProfitEligible,kind,orgUnitId,orgUnitName,orgUnitShorthand s=OrgUnitRepository.memberships.60fb329f
 DELETE /api/v1/personal-blueprints q=- f=deleted s=PersonalBlueprintRepository.removeAll.0280781b
 GET /api/v1/personal-blueprints q=page,q,size f=acquiredAt,content,createdAt,id,note,page,productKey,productName,removable,size,sort,source,sourceClientId,sourceClientName,totalElements,totalPages,updatedAt,version s=PersonalBlueprintRepository.page.acd9bc77
 POST /api/v1/personal-blueprints q=- f=acquiredAt,createdAt,id,note,productKey,productName,removable,source,sourceClientId,sourceClientName,updatedAt,version s=PersonalBlueprintRepository.add.8ba699b6

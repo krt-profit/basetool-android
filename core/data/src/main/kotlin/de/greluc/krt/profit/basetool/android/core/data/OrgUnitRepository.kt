@@ -49,7 +49,7 @@ interface OrgUnitSource {
 }
 
 /**
- * Reads the org units the member may work in through the me-scoped `/me/org-units`, which answers
+ * Reads the org units the member may work in through the me-scoped `/org-units/me/switchable`, which answers
  * what may be pinned, including for an admin (REQ-SEC-048).
  *
  * Nothing is cached.
@@ -147,10 +147,10 @@ class OrgUnitRepository(
         /**
          * The org units the caller may pin, not their memberships (REQ-SEC-048).
          */
-        const val MEMBERSHIPS_PATH = "/api/v1/me/org-units"
+        const val MEMBERSHIPS_PATH = "/api/v1/org-units/me/switchable"
 
         /** The server's own idea of the caller's active unit. */
-        const val ACTIVE_ORG_UNIT_PATH = "/api/v1/me/active-org-unit"
+        const val ACTIVE_ORG_UNIT_PATH = "/api/v1/org-units/me/active"
 
         /**
          * Every active unit, of all four kinds — the order form's two pickers.
