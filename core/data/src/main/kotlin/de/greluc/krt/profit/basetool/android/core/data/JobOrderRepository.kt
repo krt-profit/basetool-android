@@ -21,10 +21,10 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemStockGroupDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
-import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderSettingsDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
-import de.greluc.krt.profit.basetool.android.core.contract.model.SystemSettingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -758,11 +758,12 @@ class JobOrderRepository(
                 reader.get(
                     ITEM_CATALOG_PATH,
                     listOf(
-                        SEARCH_PARAM to query.trim(),
+                        QUERY_PARAM to query.trim(),
+                        ORDERABLE_PARAM to "true",
                         PAGE_PARAM to "0",
                         SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
                     ),
-                    PageResponseGameItemReferenceDto.serializer(),
+                    PageResponseInventoryGameItemReferenceDto.serializer(),
                 )
         ) {
             is ApiResult.Failure -> {
@@ -838,36 +839,26 @@ class JobOrderRepository(
     override suspend fun ageThresholds(): JobOrderAgeThresholds {
         cachedThresholds?.let { return it }
         val resolved =
-            JobOrderAgeThresholds(
-                yellowDays =
-                    settingDays(JobOrderAgeThresholds.KEY_YELLOW_DAYS)
-                        ?: JobOrderAgeThresholds.DEFAULT_YELLOW_DAYS,
-                redDays =
-                    settingDays(JobOrderAgeThresholds.KEY_RED_DAYS)
-                        ?: JobOrderAgeThresholds.DEFAULT_RED_DAYS,
-            )
+            when (val result = reader.get(SETTINGS_PATH, JobOrderSettingsDto.serializer())) {
+                is ApiResult.Failure -> {
+                    KrtLog.d(LOG_TAG) { "age thresholds unreadable, using the defaults" }
+                    JobOrderAgeThresholds()
+                }
+
+                is ApiResult.Success -> {
+                    JobOrderAgeThresholds(
+                        yellowDays =
+                            result.value.ageYellowDays?.toLong()?.takeIf { it > 0 }
+                                ?: JobOrderAgeThresholds.DEFAULT_YELLOW_DAYS,
+                        redDays =
+                            result.value.ageRedDays?.toLong()?.takeIf { it > 0 }
+                                ?: JobOrderAgeThresholds.DEFAULT_RED_DAYS,
+                    )
+                }
+            }
         cachedThresholds = resolved
         return resolved
     }
-
-    /**
-     * Reads one system setting as a day count.
-     *
-     * @param key the setting key.
-     * @return the value, or `null` when the read failed or the value is not a positive number —
-     *   both of which the caller answers with the default rather than with an error.
-     */
-    private suspend fun settingDays(key: String): Long? =
-        when (val result = reader.get(settingPath(key), SystemSettingDto.serializer())) {
-            is ApiResult.Failure -> {
-                KrtLog.d(LOG_TAG) { "age threshold $key unreadable, using the default" }
-                null
-            }
-
-            is ApiResult.Success -> {
-                result.value.value.trim().toLongOrNull()?.takeIf { it > 0 }
-            }
-        }
 
     /**
      * Reads one order.
@@ -1022,6 +1013,8 @@ class JobOrderRepository(
          */
         private const val MATERIALS_PATH = "/api/v1/materials/search"
         private const val SEARCH_PARAM = "search"
+        private const val QUERY_PARAM = "q"
+        private const val ORDERABLE_PARAM = "orderable"
         private const val JOB_ORDER_ONLY_PARAM = "jobOrderOnly"
 
         /** How many matches one search offers before it says there are more. */
@@ -1031,7 +1024,10 @@ class JobOrderRepository(
         private const val HTTP_CREATED = 201
 
         /** The finished items that may be ordered, and each one's blueprints. */
-        private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
+        private const val ITEM_CATALOG_PATH = "/api/v1/game-items"
+
+        /** The two age thresholds of the queue, read in one call. */
+        private const val SETTINGS_PATH = "/api/v1/orders/settings"
 
         /** Where an item order is raised. */
         private const val ITEMS_PATH = "/api/v1/orders/items"
@@ -1056,14 +1052,6 @@ class JobOrderRepository(
          * @return the path.
          */
         private fun orderPath(id: String) = "/api/v1/orders/$id"
-
-        /**
-         * Path of one system setting.
-         *
-         * @param key the setting key.
-         * @return the endpoint path.
-         */
-        private fun settingPath(key: String) = "/api/v1/settings/$key"
 
         /**
          * One member's edge on one order.
