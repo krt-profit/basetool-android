@@ -866,7 +866,7 @@ Every permission the app gates on comes from the server:
 | May write **this** Lager row | `InventoryItemDto.canEdit` |
 | May edit **this** Auftrag | `JobOrderDto.canEdit` |
 | May manage **this** Einsatz | `MissionDto.canEdit` (already did) |
-| May pin **which** org units | `GET /me/org-units` (see the correction below) |
+| May pin **which** org units | `GET /org-units/me/switchable` (see the correction below) |
 
 **Because the fields it used to read answer a different question.** `/users/me` reports
 `isLogistician` and `isMissionManager`, and both mean *"does a Staffel membership row carry this
@@ -896,14 +896,14 @@ the app refuses in place where it knows, and lets the server answer where it doe
 - [x] A failed capabilities read locks both grants rather than guessing (`IdentityCapabilitiesTest`).
 - [x] The server's `canEdit = true` wins over a caller who neither owns the row nor holds a grant;
       `canEdit = false` wins over a caller who does hold one (`RowWritePermissionTest`).
-- [x] The org picker reads `/me/org-units` (`OrgUnitRepositoryTest`).
+- [x] The org picker reads `/org-units/me/switchable` (`OrgUnitRepositoryTest`).
 - [x] It renders whatever kinds that endpoint returns — `switcherLabel()` already covers all four
       („Bereich PROFIT", the OL by its plain name), so the 2026-09-01 widening of REQ-SEC-048 needed
       no client change. A member seated on a Bereich or the Organisationsleitung and on nothing else
       now has something to pin here for the first time.
 - [x] **Walked on a device (2026-09-01):** against a backend built from the branch (Flyway 234–236
       applied, the published image stands at 233), the app calls `GET /me/capabilities` and
-      `GET /me/org-units` and both answer `200`. A Lager row belonging to another member renders its
+      `GET /org-units/me/switchable` and both answer `200`. A Lager row belonging to another member renders its
       Zuordnung control **enabled** for a caller holding `Officer` and **no** membership flag —
       the combination the previous membership-derived gate refused.
 - [x] Walked on a device with an admin account (2026-09-02, `Pixel_10a` against the test stack,
@@ -930,7 +930,7 @@ the app refuses in place where it knows, and lets the server answer where it doe
       untappable — starting with the row that had been emitted last (`BasetoolApp.kt`).
 
 > **Correction, 2026-09-01 — what the org picker does *not* fix.** The reported symptom was an
-> admin seeing only „Alle Org-Einheiten". Reading `/me/org-units` does **not** change that, and it
+> admin seeing only „Alle Org-Einheiten". Reading `/org-units/me/switchable` does **not** change that, and it
 > was wrong of an earlier revision to imply it would. The main repo's REQ-SEC-035 withholds `Admin`
 > from the mobile client's Keycloak scope **on purpose** — its rationale is that admin-wide scope is
 > a rule "the app has no screen designed around" — and REQ-SEC-036 stops a partial-scope client's

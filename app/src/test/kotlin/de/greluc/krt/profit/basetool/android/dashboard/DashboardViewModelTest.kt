@@ -131,6 +131,7 @@ class DashboardViewModelTest {
         ): ApiResult<Unit> = error("this fake books nothing")
 
         override suspend fun updateFinanceEntry(
+            missionId: String,
             entryId: String,
             income: Boolean,
             amount: String,
@@ -138,7 +139,10 @@ class DashboardViewModelTest {
             version: Long?,
         ): ApiResult<Unit> = error("this fake books nothing")
 
-        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+        override suspend fun deleteFinanceEntry(
+            missionId: String,
+            entryId: String,
+        ): ApiResult<Unit> =
             error("this fake books nothing")
     }
 

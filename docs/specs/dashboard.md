@@ -260,7 +260,7 @@ freshness on the device; if that is wrong it is wrong in the backend, for the we
 
 `GET /api/v1/announcements/current` is in the `REQ-API-009` contract set and the vhost allow-list, **including
 its 204**: a client that reads the empty body as a failure shows an error where "no banner" is
-correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions/search`,
+correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions`,
 which was frozen with the Einsatz list.
 
 ---

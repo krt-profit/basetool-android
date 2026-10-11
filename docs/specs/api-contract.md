@@ -105,7 +105,7 @@ header is advisory, and one odd response must not poison it.
 
 Every request carries `X-Active-Org-Unit-Id` (`REQ-APP-API-001`); this requirement says where the
 value comes from. The backend does not store a "current" org unit for a client — it answers what it
-would pick (`GET /api/v1/me/active-org-unit`) and otherwise honours whatever the client pins. So the
+would pick (`GET /api/v1/org-units/me/active`) and otherwise honours whatever the client pins. So the
 pin is the app's, and getting it wrong has no error message: it shows a member the wrong scope's
 data, or an empty screen, with nothing on it explaining why.
 
@@ -174,10 +174,10 @@ organisation does name Spezialkommandos „SK Nebelkraehe", and an unconditional
 - [x] The pin is readable synchronously **from a fresh instance with no priming** — the way the
   interceptor reads it on the first request of a cold start — survives a restart and is cleared by
   a wipe (`ActiveOrgUnitStoreTest`).
-- [x] The options come from `GET /api/v1/me/org-units` — me-scoped by construction, so the
+- [x] The options come from `GET /api/v1/org-units/me/switchable` — me-scoped by construction, so the
   public vhost never has to allow-list a path able to name another member (main repo `REQ-API-009`).
   Corrected 2026-10-02: this line named `GET /api/v1/users/me/memberships`; `OrgUnitRepository` has
-  read `/api/v1/me/org-units` since 2026-09-02 (#122), as the call list (`REQ-APP-API-011`) shows.
+  read the me-scoped list since 2026-09-02 (#122), as the call list (`REQ-APP-API-011`) shows; the path was `/api/v1/me/org-units` until app 19.
 - [x] An org unit whose `kind` this build does not know is still offered; only its grouping is
   unknown (`OrgUnitRepositoryTest`).
 - [x] Verified on a device against the test stack, with two real memberships in the throwaway DB
@@ -428,7 +428,7 @@ no comment lines:
 
 - `VERB` — `GET`, `POST`, `PUT`, `PATCH` or `DELETE`.
 - `path` — the path template **exactly as the vendored `openapi.json` writes it**, parameter names
-  included (`/api/v1/missions/{id}/participants/{participantId}/slim`), so a line is compared with
+  included (`/api/v1/missions/{id}/participants/{participantId}`), so a line is compared with
   the document by string equality.
 - `q=` — the query parameters the app sends, comma-separated and sorted; `-` for none. Names only;
   the types are the document's.

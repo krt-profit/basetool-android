@@ -505,7 +505,7 @@ earns `409 DUPLICATE_ENTITY`. `BankGrant.exists` carries the fact instead.
 reads as a broken app rather than a server that said no.
 
 **„+ Grant hinzufügen" opens a sheet with a member picker and the three flags.** The picker is
-`GET /api/v1/users/search-bank`, **not** `/users/search`: the two run the same query over the same
+`GET /api/v1/bank/members/search`, **not** `/users/search`: the two run the same query over the same
 scope with the same peer-redacted projection and differ only in the role gate, which the bank twin
 widens to `BANK_EMPLOYEE` — a bank manager who holds no org role gets 403 on the ordinary one and
 would have no picker at all.
@@ -544,7 +544,7 @@ horizontally scrollable so a unit with many accounts does not lose its last one 
   (`test-admin`) gets the locked-tappable tab and the role toast; Bank Management
   (`test-bank-management`) gets the KPI band, the matrix, a `PATCH` that lands (`200`, version
   bumped, both directions) and the danger modal.
-- [x] The picker uses `/users/search-bank`, and a search answer whose query has moved on is
+- [x] The picker uses `/bank/members/search`, and a search answer whose query has moved on is
   dropped rather than shown (`BankLifecycleViewModelTest`).
 - [x] A creation is sent as a creation, on the account that is showing, and a creation with nobody
   picked is not sent at all (`BankLifecycleViewModelTest`).
@@ -585,7 +585,7 @@ again. `bankConflictMessage` now answers `BANK_SELF_TRANSFER`, `BANK_HOLDER_INAC
 
 **Registration is the register's first action, not an afterthought.** Without a holder there is no
 custody to look at and no booking confirmation can name one. The picker is the same
-`/users/search-bank` the grants sheet uses.
+`/bank/members/search` the grants sheet uses.
 
 **Reads are the employee's, the transfer is Bank-Management's**, drawn locked rather than hidden.
 
@@ -880,7 +880,7 @@ sent none of the others; it now carries all of them.
   readers.
 - **Einzahler / Empfänger** — deposit and withdrawal only; `BankTransferRequest` carries no
   counterparty, because both sides of a transfer are accounts of the same unit and the account
-  fields already name them. Either a member picked from `/users/search-bank` — the same list the
+  fields already name them. Either a member picked from `/bank/members/search` — the same list the
   web's picker uses, and **not** `/users/search`, whose role gate would 403 a bank manager holding
   no org role — or, behind „Kein Tool-Account", a typed name. Switching clears the other, because
   sending both leaves the server to guess which one was meant.
