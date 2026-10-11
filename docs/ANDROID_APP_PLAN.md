@@ -209,7 +209,7 @@ startup with a friendly "server too old/new" screen).
 | Raffinerie | my orders, detail, store yield | `/refinery-orders/**` |
 | Bank (member surface) | org-unit balances, account detail, booking requests, approvals | `/org-units/bank/**` |
 | Beförderung | my evaluations + eligibility | `/promotion/**` |
-| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/me/**`, `/terms/*` |
+| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/missions/me/**`, `/blueprints/me/**`, `/org-units/me/**`, `/me/**`, `/terms/*` |
 | Onboarding states | login (Custom Tab), `PENDING_APPROVAL` screen, terms-acceptance screen (in-app via `/api/v1/terms/*`), guest mode (optional) | — |
 
 Anonymous/guest surface (browse redacted missions, guest signup, master data) exists server-side
