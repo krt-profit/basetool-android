@@ -428,7 +428,7 @@ no comment lines:
 
 - `VERB` — `GET`, `POST`, `PUT`, `PATCH` or `DELETE`.
 - `path` — the path template **exactly as the vendored `openapi.json` writes it**, parameter names
-  included (`/api/v1/missions/{id}/participants/{participantId}/slim`), so a line is compared with
+  included (`/api/v1/missions/{id}/participants/{participantId}`), so a line is compared with
   the document by string equality.
 - `q=` — the query parameters the app sends, comma-separated and sorted; `-` for none. Names only;
   the types are the document's.
@@ -475,7 +475,7 @@ what the test says, after checking that the change was meant.
 - [x] Removing a line, dropping a field and changing a path constant each fail the test (checked by
   hand, 2026-10-02).
 - [x] The one hand-written response model it found — the Fleetview import answer — was replaced by
-  the generated `FleetviewImportResponseDto` (`HangarRepositoryTest`).
+  the generated `FleetviewImportResponseDto`; the import itself left the app with app 19.
 - [ ] The main repo commits the list per app release and asserts its frozen set covers it (plan G-23).
   **Open — server side.**
 

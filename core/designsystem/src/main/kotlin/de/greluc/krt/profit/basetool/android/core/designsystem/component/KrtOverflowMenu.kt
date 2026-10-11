@@ -216,7 +216,6 @@ private fun KrtOverflowMenuPreview() {
             items =
                 listOf(
                     KrtMenuItem(label = "Home-Location setzen", iconRes = R.drawable.ic_krt_map_pin) {},
-                    KrtMenuItem(label = "Fleetview-Import", iconRes = R.drawable.ic_krt_upload) {},
                     KrtMenuItem(label = "Hangar leeren", iconRes = R.drawable.ic_krt_trash, danger = true) {},
                 ),
             contentDescription = "Weitere Aktionen",

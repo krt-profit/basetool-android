@@ -8,7 +8,6 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
-import de.greluc.krt.profit.basetool.android.core.contract.model.FleetviewImportResponseDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.LocationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipTypeDto
@@ -211,18 +210,6 @@ interface HangarSource {
     suspend fun homeLocations(): ApiResult<List<HomeLocation>>
 
     /**
-     * Imports ships from a CCU-Game Fleetview export.
-     *
-     * @param fileName the export's file name, sent with the part for the server's log.
-     * @param bytes the export's content, picked as a file or pasted.
-     * @return what the server made of it, or the classified failure.
-     */
-    suspend fun importFleetview(
-        fileName: String,
-        bytes: ByteArray,
-    ): ApiResult<FleetImportResult>
-
-    /**
      * Deletes every ship the caller owns.
      *
      * @return success, or the classified failure.
@@ -340,20 +327,6 @@ class HangarRepository(
 
     override suspend fun delete(id: String): ApiResult<Unit> = reader.delete("$SHIPS_PATH/$id")
 
-    override suspend fun importFleetview(
-        fileName: String,
-        bytes: ByteArray,
-    ): ApiResult<FleetImportResult> =
-        reader.postFile(
-            path = FLEETVIEW_IMPORT_PATH,
-            partName = "file",
-            fileName = fileName,
-            bytes = bytes,
-            mediaType = JSON_MEDIA_TYPE,
-            deserializer = FleetviewImportResponseDto.serializer(),
-        )
-            .map { it.toModel() }
-
     override suspend fun clearHangar(): ApiResult<Unit> = reader.delete(SHIPS_PATH)
 
     override suspend fun setHomeLocationForAll(locationId: String): ApiResult<Unit> =
@@ -428,9 +401,7 @@ class HangarRepository(
         private const val MY_SHIPS_PATH = "/api/v1/hangar/my-ships"
         private const val SHIPS_PATH = "/api/v1/hangar/ships"
         private const val SHIP_TYPES_PATH = "/api/v1/ship-types"
-        private const val FLEETVIEW_IMPORT_PATH = "/api/v1/hangar/import/fleetview"
         private const val BULK_HOME_LOCATION_PATH = "/api/v1/hangar/ships/home-location"
-        private const val JSON_MEDIA_TYPE = "application/json"
         private const val HOME_LOCATIONS_PATH = "/api/v1/locations/home-locations"
         private const val SORT_PARAM = "sort"
         private const val TYPE_SORT = "name,asc"
@@ -561,39 +532,6 @@ private fun LocationDto.toModel(): HomeLocation? {
     val placeId = id ?: return null
     return HomeLocation(id = placeId, name = name.orEmpty())
 }
-
-/**
- * What the server made of a Fleetview export, with imported, duplicate and unrecognised rows
- * counted separately.
- *
- * @property imported how many ships were created.
- * @property skipped how many rows the server could not match to a hull.
- * @property duplicates how many rows the hangar already held.
- * @property skippedShips the names behind [skipped].
- * @property duplicateShips the names behind [duplicates].
- */
-data class FleetImportResult(
-    val imported: Int,
-    val skipped: Int,
-    val duplicates: Int,
-    val skippedShips: List<String>,
-    val duplicateShips: List<String>,
-)
-
-/**
- * Maps a Fleetview import answer onto the model; an absent count is zero and an absent list empty.
- *
- * @receiver what the server sent.
- * @return the result as the screen reads it.
- */
-internal fun FleetviewImportResponseDto.toModel(): FleetImportResult =
-    FleetImportResult(
-        imported = importedCount ?: 0,
-        skipped = skippedCount ?: 0,
-        duplicates = duplicateCount ?: 0,
-        skippedShips = skippedShips.orEmpty(),
-        duplicateShips = duplicateShips.orEmpty(),
-    )
 
 /**
  * The wire shape of the bulk home-location write.

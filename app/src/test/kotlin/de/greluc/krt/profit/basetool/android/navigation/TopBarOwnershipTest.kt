@@ -28,7 +28,6 @@ class TopBarOwnershipTest {
             KrtDestination.Notifications,
             KrtDestination.Settings,
             KrtDestination.Licenses,
-            KrtDestination.FleetImport,
             KrtDestination.MissionDetail,
             KrtDestination.OperationDetail,
             KrtDestination.BankAccount,

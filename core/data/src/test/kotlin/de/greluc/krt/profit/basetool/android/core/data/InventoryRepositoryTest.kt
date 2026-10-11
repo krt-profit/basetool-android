@@ -332,9 +332,25 @@ class InventoryRepositoryTest {
 
             val page = (repository.gameItems("station") as ApiResult.Success).value
 
-            assertTrue(requestedUrl().encodedPath.endsWith("/api/v1/orders/item-catalog"))
+            val url = requestedUrl()
+            assertEquals("/api/v1/game-items", url.encodedPath)
+            assertEquals("station", url.queryParameter("q"))
+            assertEquals("true", url.queryParameter("orderable"))
+            assertNull(url.queryParameter("search"))
             assertEquals("Medizinische Station T2", page.rows.single().name)
             assertTrue(page.more)
+        }
+
+    @Test
+    fun `the transfer targets are the destination member's memberships of every kind`() =
+        runTest {
+            respond("[]")
+
+            repository.orgUnitsFor("u7")
+
+            val url = requestedUrl()
+            assertEquals("/api/v1/org-units/members/u7/memberships", url.encodedPath)
+            assertEquals("true", url.queryParameter("allKinds"))
         }
 
     @Test
