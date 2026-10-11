@@ -550,7 +550,7 @@ class BankStaffRepository(
          * The bank twin of `/users/search`, not that path: the two are identical but for the role
          * gate, and only this one admits a bank manager who holds no org role.
          */
-        const val GRANTEE_SEARCH_PATH = "/api/v1/users/search-bank"
+        const val GRANTEE_SEARCH_PATH = "/api/v1/bank/members/search"
 
         /**
          * The org-wide in-game transfer-fee rate.

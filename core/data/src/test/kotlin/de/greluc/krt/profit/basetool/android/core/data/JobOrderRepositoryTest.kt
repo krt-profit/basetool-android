@@ -36,6 +36,7 @@ import org.robolectric.annotation.Config
 class JobOrderRepositoryTest {
     private companion object {
         const val HTTP_OK = 200
+        const val HTTP_SERVER_ERROR = 500
 
         /** A quarter of the need is in stock in the fixture. */
         const val QUARTER = 0.25f
@@ -355,8 +356,10 @@ class JobOrderRepositoryTest {
             assertEquals(1, rows.size)
             assertEquals("gi1" to "Medizinische Station T2", rows.single())
             val url = requestedUrl()
-            assertEquals("/api/v1/orders/item-catalog", url.encodedPath)
-            assertEquals("Medizin", url.queryParameter("search"))
+            assertEquals("/api/v1/game-items", url.encodedPath)
+            assertEquals("Medizin", url.queryParameter("q"))
+            assertEquals("only what an order can name", "true", url.queryParameter("orderable"))
+            assertNull(url.queryParameter("search"))
         }
 
     @Test
@@ -369,7 +372,46 @@ class JobOrderRepositoryTest {
             assertEquals(2, rows.size)
             assertEquals("bp1" to "Medizinische Station T2", rows[0])
             assertEquals("bp2" to "med_t2_alt", rows[1])
-            assertEquals("/api/v1/orders/item-catalog/gi1/blueprints", requestedUrl().encodedPath)
+            assertEquals("/api/v1/game-items/gi1/blueprints", requestedUrl().encodedPath)
+        }
+
+    @Test
+    fun `both age thresholds come from one typed read, once`() =
+        runTest {
+            respond("""{"ageYellowDays": 14, "ageRedDays": 45}""")
+
+            val thresholds = repository.ageThresholds()
+            repository.ageThresholds()
+
+            assertEquals(JobOrderAgeThresholds(yellowDays = 14, redDays = 45), thresholds)
+            val request = server.takeRequest()
+            assertEquals("GET /api/v1/orders/settings", "${request.method} ${request.target}")
+            assertEquals("the second call is answered from memory", 1, server.requestCount)
+        }
+
+    @Test
+    fun `an unreadable or non-positive threshold falls back to its default`() =
+        runTest {
+            respond("""{"ageYellowDays": 0, "ageRedDays": 45}""")
+
+            val thresholds = repository.ageThresholds()
+
+            assertEquals(
+                JobOrderAgeThresholds(yellowDays = JobOrderAgeThresholds.DEFAULT_YELLOW_DAYS, redDays = 45),
+                thresholds,
+            )
+        }
+
+    @Test
+    fun `a failed threshold read uses the defaults and is not repeated`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_SERVER_ERROR).body("{}").build())
+
+            val thresholds = repository.ageThresholds()
+            repository.ageThresholds()
+
+            assertEquals(JobOrderAgeThresholds(), thresholds)
+            assertEquals(1, server.requestCount)
         }
 
     @Test

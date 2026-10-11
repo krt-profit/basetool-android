@@ -436,7 +436,7 @@ class BankStaffViewModel(
         }
 
         /**
-         * Searches the counterparty picker through `/users/search-bank`, which is gated on `BANK_EMPLOYEE`.
+         * Searches the counterparty picker through `/bank/members/search`, which is gated on `BANK_EMPLOYEE`.
          *
          * A refused search keeps the previous options rather than emptying the list.
          *
