@@ -20,6 +20,12 @@
   neuen Betrag, und wer neu für ein Konto verantwortlich wird, erfährt, wie viele Anträge auf die
   eigene Freigabe warten.
 
+### Changed
+
+- **Neue Server-Schnittstelle, Update nötig.** Die App spricht die neuen Pfade des Servers (Einsätze,
+  Bank, Materialbörse, Aufträge, Einstellungen, Raffinerie). Ältere Versionen zeigen nach der
+  Umstellung des Servers „Update erforderlich". Für dich ändert sich sonst nichts.
+
 ### Fixed
 
 - **Lager: Sammelaktionen nur über eigene Zeilen.** „Markierte umbuchen" und das Sammel-Ausbuchen
