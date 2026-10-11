@@ -59,7 +59,6 @@ PUT /api/v1/blueprints/me/sharing q=- f=shareBlueprintsGlobally,version s=Member
 GET /api/v1/blueprints/products/search q=limit,q f=manufacturerName,name,ownedByCurrentUser,productKey,variantCount s=MaterialBoardRepository.searchProducts.31b39a16,PersonalBlueprintRepository.products.7138f6c8
 GET /api/v1/game-items q=orderable,page,q,size f=content,id,kind,manufacturer,name,page,size,sort,totalElements,totalPages s=InventoryRepository.gameItems.81926938,JobOrderRepository.searchItems.be513f59
 GET /api/v1/game-items/{gameItemId}/blueprints q=- f=id,outputName,scwikiKey s=JobOrderRepository.blueprintsFor.e58e9995
-POST /api/v1/hangar/import/fleetview q=- f=duplicateCount,duplicateShips,importedCount,skippedCount,skippedShips s=HangarRepository.importFleetview.e77f0669
 GET /api/v1/hangar/my-ships q=page,search,size f=content,description,displayName,effectiveName,fitted,id,insurance,lastReadAnnouncementId,location,manufacturer,name,owner,owningSquadron,page,permissions,roles,scu,shipType,shorthand,size,sort,squadron,totalElements,totalPages,username,version s=HangarRepository.myShips.bf35e14b
 DELETE /api/v1/hangar/ships q=- f=- s=HangarRepository.clearHangar.2a3169e3
 POST /api/v1/hangar/ships q=- f=abbreviation,description,displayName,effectiveName,fitted,id,insurance,lastReadAnnouncementId,location,manufacturer,name,owner,owningSquadron,permissions,roles,scu,shipType,shorthand,squadron,username,version s=HangarRepository.save.b3f7540c

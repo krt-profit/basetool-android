@@ -475,7 +475,7 @@ what the test says, after checking that the change was meant.
 - [x] Removing a line, dropping a field and changing a path constant each fail the test (checked by
   hand, 2026-10-02).
 - [x] The one hand-written response model it found — the Fleetview import answer — was replaced by
-  the generated `FleetviewImportResponseDto` (`HangarRepositoryTest`).
+  the generated `FleetviewImportResponseDto`; the import itself left the app with app 19.
 - [ ] The main repo commits the list per app release and asserts its frozen set covers it (plan G-23).
   **Open — server side.**
 

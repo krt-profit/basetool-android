@@ -696,7 +696,6 @@ private fun HangarEmpty(
 @Composable
 fun HangarRoute(
     viewModel: HangarViewModel,
-    onOpenImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -707,7 +706,6 @@ fun HangarRoute(
         offlineReason
             ?: stringResource(R.string.hangar_menu_reason_empty).takeIf { state.ships.isEmpty() }
     val bulkLabel = stringResource(R.string.hangar_bulk_home_location)
-    val importLabel = stringResource(R.string.fleet_import_title)
     val clearLabel = stringResource(R.string.hangar_clear)
     ProvideScreenTopBar(
         actions = {
@@ -731,13 +729,6 @@ fun HangarRoute(
                             reason = fleetReason,
                             enabled = state.online && state.ships.isNotEmpty(),
                             onClick = viewModel::onClearRequested,
-                        ),
-                        KrtMenuItem(
-                            label = importLabel,
-                            iconRes = DesignR.drawable.ic_krt_upload,
-                            reason = offlineReason,
-                            enabled = state.online,
-                            onClick = onOpenImport,
                         ),
                     ),
             )

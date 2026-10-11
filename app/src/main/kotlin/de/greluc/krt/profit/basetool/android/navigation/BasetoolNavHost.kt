@@ -43,8 +43,6 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.dashboard.QuickAction
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
-import de.greluc.krt.profit.basetool.android.hangar.FleetImportRoute
-import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
@@ -158,7 +156,6 @@ fun BasetoolNavHost(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
-    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
@@ -266,7 +263,6 @@ fun BasetoolNavHost(
                             blueprints = blueprints,
                             gameItems = gameItems,
                             materialDemand = materialDemand,
-                            fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
                             settings = settings,
@@ -388,10 +384,7 @@ private fun listDestination(
 
         KrtDestination.Hangar -> {
             LaunchedEffect(Unit) { hangar.loadOnce() }
-            HangarRoute(
-                viewModel = hangar,
-                onOpenImport = { navController.navigate(KrtDestination.FleetImport.route) },
-            )
+            HangarRoute(viewModel = hangar)
         }
 
         KrtDestination.PersonalInventory -> {
@@ -809,7 +802,6 @@ private fun PushedDestination(
     blueprints: BlueprintOverviewBindings,
     gameItems: () -> GameItemStockViewModel,
     materialDemand: () -> MaterialDemandViewModel,
-    fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     settings: SettingsBindings,
@@ -932,12 +924,10 @@ private fun PushedDestination(
         KrtDestination.BlueprintOverview,
         KrtDestination.GameItems,
         KrtDestination.Licenses,
-        KrtDestination.FleetImport,
         -> {
             LeafDestination(
                 destination = destination,
                 blueprints = blueprints,
-                fleetImport = fleetImport,
                 onOpenUrl = settings.onOpenUrl,
                 gameItems = gameItems,
                 materialDemand = materialDemand,
@@ -1098,7 +1088,6 @@ private fun CreateFormDestination(
  *
  * @param destination which of the three.
  * @param blueprints the org-wide blueprint availability.
- * @param fleetImport the Fleetview import.
  * @param onOpenUrl opens a licence's URL.
  * @param gameItems builds the game-item stock's view model.
  * @param materialDemand builds the cross-order material demand's view model.
@@ -1109,7 +1098,6 @@ private fun LeafDestination(
     blueprints: BlueprintOverviewBindings,
     gameItems: () -> GameItemStockViewModel,
     materialDemand: () -> MaterialDemandViewModel,
-    fleetImport: FleetImportViewModel,
     onOpenUrl: (String) -> Boolean,
 ) {
     when (destination) {
@@ -1123,10 +1111,6 @@ private fun LeafDestination(
 
         KrtDestination.MaterialDemand -> {
             MaterialDemandRoute(viewModel = remember { materialDemand() })
-        }
-
-        KrtDestination.FleetImport -> {
-            FleetImportRoute(viewModel = fleetImport)
         }
 
         else -> {

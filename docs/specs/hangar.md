@@ -5,8 +5,12 @@
 > **Related:** [`api-contract.md`](api-contract.md)
 
 The member's own ships and the aggregate over their active org unit — and, on the own half, adding,
-editing and deleting ships, the overflow's bulk actions and the Fleetview import
-(`REQ-APP-HANGAR-006`…`012`).
+editing and deleting ships and the overflow's bulk actions (`REQ-APP-HANGAR-006`…`012`).
+
+> [!note] Changed 2026-10-11 (REST API cut, app 19) — the Fleetview import is gone
+> The server removed `POST /api/v1/hangar/import/fleetview` and the owner decided that the import
+> feature goes with it: no screen, no destination, no overflow entry, no strings. The dated notes
+> below keep the text of what shipped until then.
 
 > [!note] Corrected 2026-09-22 — this paragraph still called the screen read-only
 > It read „**Read-only**: adding, editing, deleting, the Fleetview import and the overflow's bulk
@@ -184,8 +188,9 @@ line saying how many more there are.
 ### REQ-APP-HANGAR-010 — The overflow says what each entry does, and why one cannot be used
 
 The `⋮` opens a 268 dp dropdown right-aligned under the bar — on the phone as on the tablet, because
-three entries do not justify a bottom sheet. The order is the artboards' own: **Home-Location
-setzen, Hangar leeren, Import** (design ch. 08, artboards 4 and 5).
+two entries do not justify a bottom sheet. The order is the artboards' own: **Home-Location
+setzen, Hangar leeren** (design ch. 08, artboards 4 and 5; the artboards' third entry, Import, went
+with the Fleetview import).
 
 Every entry leads with an 18 dp glyph in its own tint. **„Hangar leeren" is red in the menu**, not
 only in the modal it opens: the colour is the warning and the modal is the confirmation, and red
@@ -206,14 +211,12 @@ with the role's name (`REQ-APP-AUTH-013`) — never hidden.
 
 Design ch. 08, artboard 6 resolves the contradiction between 08.1 („type-safe") and 08.3: the danger
 modal names the **count**, and there is **no** typing hurdle. Chapter 02 §7 reserves that hurdle for
-irreversible admin actions on organisation-wide data; a personal hangar is the member's own and
-comes back from another Fleetview import, so spending the hurdle here would blunt it where it is
-meant to bite.
+irreversible admin actions on organisation-wide data; a personal hangar is the member's own and can
+be rebuilt ship by ship, so spending the hurdle here would blunt it where it is meant to bite.
 
 What guards it instead is three things in a row: the menu entry is already red, the modal names the
-count **and** the consequence **and** the way back („Wiederherstellung nur über erneuten
-Fleetview-Import. Einsätze, Aufträge und Lager bleiben unberührt."), and the confirm repeats the
-count („Alle 4 Schiffe löschen").
+count **and** the consequence **and** what stays („Kein Undo in der App. Einsätze, Aufträge und Lager
+bleiben unberührt."), and the confirm repeats the count („Alle 4 Schiffe löschen").
 
 The `DELETE` waits for the server. On success the app says **how many went** — an emptied hangar and
 a hangar that was always empty look identical, so the count is the only thing that distinguishes "it
@@ -269,14 +272,8 @@ missing today. It needs a field on the aggregate in the main repo before it can 
 ## Known gaps, stated rather than omitted
 
 - ~~**No FAB, no overflow, no import.**~~ Closed: adding, editing, deleting, „Home-Location
-  setzen", „Hangar leeren" and the Fleetview import all shipped (`REQ-APP-HANGAR-006`…`012`; the
-  import as the `FleetImport` destination behind the `⋮`, CHANGELOG 0.2.0). Struck through
-  2026-09-22.
-- **The Fleetview import has no requirement of its own.** It is reachable from the overflow that
-  `REQ-APP-HANGAR-010` specifies, and `FleetImportScreen` / `FleetImportViewModel` implement it —
-  JSON file or pasted text, CCU-Game Fleetview, HangarXPLOR shiplist and Fleetyards JSON, and a
-  result naming how many ships were imported, already present and not recognised — but no
-  `REQ-APP-HANGAR-*` states what it must do. Owed; found 2026-09-22.
+  setzen" and „Hangar leeren" shipped (`REQ-APP-HANGAR-006`…`012`). Struck through 2026-09-22. The
+  Fleetview import shipped with 0.2.0 and was removed with app 19 (see the note at the top).
 - **Manufacturer marks are text, not logos.** The design says so itself: the repo ships white SVGs
   for three makers only and they embed raster data, so the lettermark *is* the spec until clean
   vectors are re-exported.
