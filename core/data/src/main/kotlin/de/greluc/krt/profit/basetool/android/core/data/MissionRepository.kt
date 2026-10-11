@@ -113,6 +113,7 @@ interface MissionFinanceSource {
     /**
      * Rewrites one booking.
      *
+     * @param missionId the Einsatz the entry belongs to; another Einsatz's entry answers `404`.
      * @param entryId the entry.
      * @param income whether it is money in rather than money out.
      * @param amount the magnitude.
@@ -121,6 +122,7 @@ interface MissionFinanceSource {
      * @return success, or the classified failure.
      */
     suspend fun updateFinanceEntry(
+        missionId: String,
         entryId: String,
         income: Boolean,
         amount: String,
@@ -131,10 +133,14 @@ interface MissionFinanceSource {
     /**
      * Removes one booking.
      *
+     * @param missionId the Einsatz the entry belongs to; another Einsatz's entry answers `404`.
      * @param entryId the entry.
      * @return success, or the classified failure.
      */
-    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+    suspend fun deleteFinanceEntry(
+        missionId: String,
+        entryId: String,
+    ): ApiResult<Unit>
 }
 
 /**
@@ -287,10 +293,10 @@ interface MissionStructureSource {
     /**
      * Adds a frequency the catalogue does not hold, invented for this Einsatz.
      *
-     * The `/slim` endpoint answers with the frequency list only, which is spliced onto [current].
+     * The endpoint answers with the frequency list only, which is spliced onto [current].
      *
      * @param missionId the Einsatz.
-     * @param current the Einsatz as last read, for everything the slim answer does not carry.
+     * @param current the Einsatz as last read, for everything the answer does not carry.
      * @param name what to call it.
      * @param value the frequency itself.
      * @return the Einsatz as it now stands, or the classified failure.
@@ -550,7 +556,7 @@ interface MissionSource : MissionFinanceSource {
 
 /**
  * Reads and writes Einsätze through the backend, filtering the list server-side via
- * `/missions/search`.
+ * `GET /missions`.
  *
  * The org scope is not sent; it follows from memberships and the `X-Active-Org-Unit-Id` header.
  * Nothing is cached.
@@ -860,17 +866,17 @@ class MissionRepository(
         missionId: String,
         userId: String,
     ): ApiResult<MissionDetail> =
-        rereadMission(reader, missionId, reader.postAccepted("${missionPath(missionId)}/managers/$userId/slim"))
+        rereadMission(reader, missionId, reader.postAccepted("${missionPath(missionId)}/managers/$userId"))
 
     override suspend fun removeManager(
         missionId: String,
         userId: String,
     ): ApiResult<MissionDetail> =
-        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId/slim"))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/managers/$userId"))
 
     /**
      * Lets a manager put a registered member on the roster by user id via
-     * `POST …/participants/by-id/slim` (REQ-MISSION-020).
+     * `POST …/participants/by-id` (REQ-MISSION-020).
      *
      * The answer is the participant list, so the Einsatz is re-read afterwards.
      */
@@ -882,7 +888,7 @@ class MissionRepository(
             reader,
             missionId,
             reader.post(
-                "${missionPath(missionId)}/participants/by-id/slim",
+                "${missionPath(missionId)}/participants/by-id",
                 AddParticipantByIdRequest(userId = userId),
                 AddParticipantByIdRequest.serializer(),
                 ListSerializer(MissionParticipantDto.serializer()),
@@ -952,7 +958,7 @@ class MissionRepository(
     ): ApiResult<Unit> =
         discarding(
             reader.post(
-                FINANCE_ENTRIES_PATH,
+                financeEntriesPath(missionId),
                 MissionFinanceEntryCreateDto(
                     missionId = missionId,
                     participantId = participantId,
@@ -971,6 +977,7 @@ class MissionRepository(
         )
 
     override suspend fun updateFinanceEntry(
+        missionId: String,
         entryId: String,
         income: Boolean,
         amount: String,
@@ -979,7 +986,7 @@ class MissionRepository(
     ): ApiResult<Unit> =
         discarding(
             reader.put(
-                "$FINANCE_ENTRIES_PATH/$entryId",
+                "${financeEntriesPath(missionId)}/$entryId",
                 MissionFinanceEntryUpdateDto(
                     type =
                         if (income) {
@@ -996,8 +1003,10 @@ class MissionRepository(
             ),
         )
 
-    override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
-        reader.delete("$FINANCE_ENTRIES_PATH/$entryId")
+    override suspend fun deleteFinanceEntry(
+        missionId: String,
+        entryId: String,
+    ): ApiResult<Unit> = reader.delete("${financeEntriesPath(missionId)}/$entryId")
 
     /**
      * Keeps a finance write's outcome and discards its body; the tab is re-read afterwards.
@@ -1010,7 +1019,7 @@ class MissionRepository(
             .map { }
 
     /**
-     * Turns a slim write's answer, the participant alone, into the row.
+     * Turns a write's answer, the participant alone, into the row.
      *
      * @param result what the write returned.
      * @return the row, or the failure, including an answer with no id.
@@ -1103,7 +1112,7 @@ class MissionRepository(
         /** The verb the three section edits use; [ApiReader] has no dedicated `patch`. */
         private const val PATCH = "PATCH"
 
-        private const val SEARCH_PATH = "/api/v1/missions/search"
+        private const val SEARCH_PATH = "/api/v1/missions"
 
         /** The Operations the Kern section may attach an Einsatz to. */
         private const val OPERATIONS_LOOKUP_PATH = "/api/v1/operations/lookup"
@@ -1115,16 +1124,7 @@ class MissionRepository(
         private const val JOB_TYPES_PATH = "/api/v1/job-types?archetype=MISSION&page=0&size=200"
 
         /**
-         * Where a booking is written.
-         *
-         * NOT under `/missions`: the write paths of the money live at the API root, which is why
-         * they are their own family on the vhost rather than an exception to the read-only guard
-         * on the Einsatz prefix.
-         */
-        private const val FINANCE_ENTRIES_PATH = "/api/v1/finance-entries"
-
-        /**
-         * One participant row's slim path.
+         * One participant row's path.
          *
          * @param missionId the Einsatz's id.
          * @param participantId the row's id.
@@ -1137,11 +1137,11 @@ class MissionRepository(
             action: String? = null,
         ): String {
             val row = "${missionPath(missionId)}/participants/$participantId"
-            return if (action == null) "$row/slim" else "$row/$action/slim"
+            return if (action == null) row else "$row/$action"
         }
 
         /**
-         * The finance-entries path for one Einsatz.
+         * The finance-entries path for one Einsatz; bookings are written under it.
          *
          * @param id the Einsatz's id.
          * @return the path.
@@ -1156,7 +1156,7 @@ class MissionRepository(
          */
         private fun financeSummaryPath(id: String) = "/api/v1/missions/$id/finance-entries/summary"
 
-        private const val QUERY_PARAM = "query"
+        private const val QUERY_PARAM = "q"
 
         /**
          * What "Vergangene aus" asks for.
@@ -1365,7 +1365,7 @@ class MissionStructureRepository(
         when (
             val result =
                 reader.post(
-                    "${missionPath(missionId)}/frequencies/custom/slim",
+                    "${missionPath(missionId)}/frequencies/custom",
                     AddCustomFrequencyRequest(name = name, value = KrtDecimal(BigDecimal(value))),
                     AddCustomFrequencyRequest.serializer(),
                     ListSerializer(MissionFrequencyDto.serializer()),
@@ -1388,7 +1388,7 @@ class MissionStructureRepository(
         missionId: String,
         frequencyId: String,
     ): ApiResult<MissionDetail> =
-        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/frequencies/$frequencyId/slim"))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/frequencies/$frequencyId"))
 
     override suspend fun addUnit(
         missionId: String,
@@ -1400,7 +1400,7 @@ class MissionStructureRepository(
             reader,
             missionId,
             reader.postAccepted(
-                "${missionPath(missionId)}/units/slim",
+                "${missionPath(missionId)}/units",
                 AddUnitRequest(
                     name = name,
                     highValueUnit = highValue,
@@ -1426,7 +1426,7 @@ class MissionStructureRepository(
             reader,
             missionId,
             reader.putAccepted(
-                "${missionPath(missionId)}/units/$unitId/slim",
+                "${missionPath(missionId)}/units/$unitId",
                 UpdateUnitRequest(
                     name = name,
                     highValueUnit = highValue,
@@ -1452,7 +1452,7 @@ class MissionStructureRepository(
             reader,
             missionId,
             reader.putAccepted(
-                "${missionPath(missionId)}/units/$unitId/crew/$crewId/slim",
+                "${missionPath(missionId)}/units/$unitId/crew/$crewId",
                 UpdateCrewRequest(jobTypeIds = jobTypeIds, version = version),
                 UpdateCrewRequest.serializer(),
             ),
@@ -1462,7 +1462,7 @@ class MissionStructureRepository(
         missionId: String,
         unitId: String,
     ): ApiResult<MissionDetail> =
-        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId/slim"))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId"))
 
     override suspend fun addCrew(
         missionId: String,
@@ -1474,7 +1474,7 @@ class MissionStructureRepository(
             reader,
             missionId,
             reader.postAccepted(
-                "${missionPath(missionId)}/units/$unitId/crew/slim",
+                "${missionPath(missionId)}/units/$unitId/crew",
                 AddCrewRequest(participantId = participantId, jobTypeIds = jobTypeIds),
                 AddCrewRequest.serializer(),
             ),
@@ -1485,7 +1485,7 @@ class MissionStructureRepository(
         unitId: String,
         crewId: String,
     ): ApiResult<MissionDetail> =
-        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId/slim"))
+        rereadMission(reader, missionId, reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId"))
 }
 
 /**
@@ -1503,7 +1503,7 @@ private fun oneMission(
         .map { it.toModel(missionId) }
 
 /**
- * Re-reads the Einsatz after a `/slim` write that answered with only the part it touched.
+ * Re-reads the Einsatz after a write that answered with only the part it touched.
  *
  * @param reader the API seam to re-read through.
  * @param missionId the Einsatz.

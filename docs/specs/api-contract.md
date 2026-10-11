@@ -428,7 +428,7 @@ no comment lines:
 
 - `VERB` — `GET`, `POST`, `PUT`, `PATCH` or `DELETE`.
 - `path` — the path template **exactly as the vendored `openapi.json` writes it**, parameter names
-  included (`/api/v1/missions/{id}/participants/{participantId}/slim`), so a line is compared with
+  included (`/api/v1/missions/{id}/participants/{participantId}`), so a line is compared with
   the document by string equality.
 - `q=` — the query parameters the app sends, comma-separated and sorted; `-` for none. Names only;
   the types are the document's.

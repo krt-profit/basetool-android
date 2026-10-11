@@ -198,7 +198,7 @@ startup with a friendly "server too old/new" screen).
 | Area | App surface (member view) | Backing endpoints (exist today) |
 |---|---|---|
 | Dashboard | next missions, unread count, org context, announcements | `/missions/next`, `/notifications/unread-count`, `/announcement`, `/me/*` |
-| Missionen | list/search/detail (sections: overview, participants, units/crew, steps, objectives, frequencies, finance), signup, check-in/out, payout preference, finance entries | `/missions/**` incl. `/slim` mutation variants, `/finance-entries` |
+| Missionen | list/search/detail (sections: overview, participants, units/crew, steps, objectives, frequencies, finance), signup, check-in/out, payout preference, finance entries | `/missions/**` incl. `/missions/{id}/finance-entries` |
 | Operationen | list/search/detail, per-mission finances, finance summary, **payout status** (member daily-driver: "was I paid out?"); edit/payout toggles for MM+ | `/operations/**` |
 | Benachrichtigungen | inbox (paged), mark read, delete, unread badge, live via SSE (the rule engine behind delivery is admin-only server config — no app surface) | `/notifications/**` |
 | Hangar | my ships CRUD, squadron overview, imports (JSON paste/file) | `/hangar/**` |

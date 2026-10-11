@@ -17,10 +17,12 @@ Verwaltung tab and the roster (`REQ-APP-MIS-013` onwards).
 
 ### REQ-APP-MIS-001 — The list is filtered on the server, never on the device
 
-The list reads `GET /api/v1/missions/search`, not `GET /api/v1/missions`. The plain list takes only
-paging, so every filter the design puts in the chip row — text, status, date range, "Vergangene aus"
-— would have to be applied to a page the server had already truncated. The result would be a screen
-that says "3 Einsätze" because the other 22 were on page 2.
+The list reads `GET /api/v1/missions` with the free text as `q`, the statuses as `status`, the
+planned-start window as `start` / `end`, plus `sort` and paging. Every filter the design puts in the
+chip row — text, status, date range, "Vergangene aus" — is applied by the server; filtering a page the
+server had already truncated would give a screen that says "3 Einsätze" because the other 22 were on
+page 2. Until app 19 the same read was `GET /api/v1/missions/search` with the text as `query`; the
+server folded it into the list (REST API cut).
 
 The sort is named explicitly as `plannedStartTime,asc`. The backend answers an unlisted sort field
 with `400`, so this is not a free-form string: getting it wrong does not reorder the list, it fails
@@ -428,18 +430,17 @@ than by relaxing the no-`Double` rule that kept the raw string in the first plac
 
 ## Contract-set dependency (main repo)
 
-`GET /api/v1/missions/search` must be added to the `REQ-API-009` contract set, its
-`ExternalContractTest` entry, and the API vhost's default-deny allow-list before the app can reach
-it in production — the allow-list grows one app phase at a time, and opening a family to the app and
-freezing its shape are the same decision seen from two sides (main repo ADR-0135). Until then the
-list works against the test stack only. *(Done — the path is in the main repo's
-`docker/edge/include/api-allowlist.conf`; re-checked 2026-09-22.)*
+`GET /api/v1/missions` must be in the `REQ-API-009` contract set, its `ExternalContractTest` entry,
+and the API vhost's default-deny allow-list before the app can reach it in production — opening a
+family to the app and freezing its shape are the same decision seen from two sides (main repo
+ADR-0135). *(Done — the operation is T1 in the main repo's contract set and in the generated edge
+admission list; re-checked 2026-10-11 against the REST API cut.)*
 
 ---
 
 ### REQ-APP-MIS-013 — A member signs themselves up, and finds themselves in the roster
 
-`POST /api/v1/missions/{id}/join` and the **slim** `DELETE …/participants/{pid}/slim`. The band
+`POST /api/v1/missions/{id}/join` and `DELETE …/participants/{pid}`. The band
 sits under the head rather than inside the Teilnehmer tab: it is about the caller and not about the
 list, and a member opening an Einsatz to sign up should not have to find the right tab first.
 
@@ -473,7 +474,7 @@ and `actualStartTime` is the same fact that refusal is about. The control is the
 the Einsatz is running, and a muted line says why rather than leaving a member wondering where the
 action went.
 
-**The slim endpoints answer with the row alone, and the screen patches that row in place.** The
+**The participant writes answer with the row alone, and the screen patches that row in place.** The
 count above the roster is recomputed from the patched list, not taken from the answer: re-reading
 the whole Einsatz for one timestamp would make a check-in cost what opening the screen costs, and
 a stale header would contradict the list right under it.
@@ -493,7 +494,7 @@ a stale header would contradict the list right under it.
 
 ### REQ-APP-MIS-015 — The payout preference is a toggle, and it says what the other option is
 
-`PUT …/payout-preference/slim` with `PAYOUT` / `DONATE`. The button names the **other** state —
+`PUT …/participants/{pid}/payout-preference` with `PAYOUT` / `DONATE`. The button names the **other** state —
 „Spenden" while the share is being paid out, „Auszahlen" while it is being donated — because a
 two-state control labelled with its current state is one a member has to press to find out what it
 does.
@@ -527,8 +528,9 @@ Same rule and the same shared band as [`REQ-APP-INV-010`](inventory.md),
 
 ### REQ-APP-MIS-017 — A booking needs a sign-up to book against, and only its owner may change it
 
-`POST /api/v1/finance-entries` names a participant, and the only one the app may name is the
-caller's own sign-up. A member who has not signed up is told that — *"Buchen geht, sobald du für
+`POST /api/v1/missions/{id}/finance-entries` names a participant, and the only one the app may name
+is the caller's own sign-up; the body's `missionId` equals the path's, and the edit and delete
+(`PUT`/`DELETE …/finance-entries/{entryId}`) sit under the same Einsatz. A member who has not signed up is told that — *"Buchen geht, sobald du für
 den Einsatz angemeldet bist."* — rather than shown a button that answers `403`.
 
 **Edit and delete are offered on the caller's own bookings alone.** The server refuses either by
@@ -859,27 +861,30 @@ clears the other. The app therefore always sends both, and echoes the unit's own
 > Omitting it turns a concurrent rename into a silent overwrite rather than the `409` the counter
 > exists to raise. It MUST be sent.
 
-`PUT …/units/{unitId}/crew/{crewId}/slim` is the same shape for the roles: the whole `jobTypeIds`
+`PUT …/units/{unitId}/crew/{crewId}` is the same shape for the roles: the whole `jobTypeIds`
 set goes over the wire, so dropping one id revokes exactly that role, and the crew row's own
 `version` is echoed.
 
-**Every Einheiten and Verwaltung write goes to its `/slim` twin.** Eight of them did not, until
-2026-09-06, and a ninth until 2026-09-07. Each answers with the part it touched — one unit, one crew row, a manager list, or
-`204` and nothing at all — rather than the whole Einsatz, so there is nothing to fold out of the
-answer and the screen **re-reads** the Einsatz instead: one extra GET on a path the member has just
-been reading, in exchange for a write that is not on a clock and no longer ships every participant,
-step and objective back over a mobile connection.
+**Every Einheiten and Verwaltung write answers with the part it touched.** One unit, one crew row, a
+manager list, or `204` and nothing at all — rather than the whole Einsatz, so there is nothing to fold
+out of the answer and the screen **re-reads** the Einsatz instead: one extra GET on a path the member
+has just been reading, in exchange for a write that is not on a clock and no longer ships every
+participant, step and objective back over a mobile connection.
 
 |                What                 |                    Path                     |
 |-------------------------------------|---------------------------------------------|
-| Einheit anlegen                     | `POST …/units/slim`                          |
-| Einheit bearbeiten / entfernen      | `PUT`/`DELETE …/units/{unitId}/slim`         |
-| Jemanden an Bord nehmen             | `POST …/units/{unitId}/crew/slim`            |
-| Funktionen an einem Crew-Slot       | `PUT …/crew/{crewId}/slim`                   |
-| Jemanden von Bord nehmen            | `DELETE …/crew/{crewId}/slim`                |
-| Frequenz entfernen                  | `DELETE …/frequencies/{frequencyId}/slim`    |
-| Verwalter hinzufügen / entfernen    | `POST`/`DELETE …/managers/{userId}/slim`     |
-| Teilnehmer hinzufügen               | `POST …/participants/by-id/slim`             |
+| Einheit anlegen                     | `POST …/units`                               |
+| Einheit bearbeiten / entfernen      | `PUT`/`DELETE …/units/{unitId}`              |
+| Jemanden an Bord nehmen             | `POST …/units/{unitId}/crew`                 |
+| Funktionen an einem Crew-Slot       | `PUT …/crew/{crewId}`                        |
+| Jemanden von Bord nehmen            | `DELETE …/crew/{crewId}`                     |
+| Frequenz entfernen                  | `DELETE …/frequencies/{frequencyId}`         |
+| Verwalter hinzufügen / entfernen    | `POST`/`DELETE …/managers/{userId}`          |
+| Teilnehmer hinzufügen               | `POST …/participants/by-id`                  |
+
+> [!note] Changed 2026-10-11 (REST API cut, app 19)
+> The `/slim` suffix of these paths is gone: the server dropped the twin and kept the slim behaviour
+> under the plain path. The dated corrections below name the paths as they were then.
 
 > [!danger] Corrected 2026-09-03 and again 2026-09-06 — the app had been sending deprecated paths
 > the API vhost did not admit either
@@ -931,9 +936,9 @@ the tab says so in a sentence.
 
 - [ ] A rename sends the name, the HVU flag and the unit's version.
 - [ ] Toggling one role sends the whole remaining set plus the crew row's version.
-- [x] A removal sends `DELETE …/crew/{crewId}/slim` and re-reads the Einsatz afterwards.
-- [x] Every other Einheiten/Verwaltung write sends its `/slim` twin and re-reads the Einsatz.
-- [x] Putting a member on the roster sends `POST …/participants/by-id/slim` with only the user id
+- [x] A removal sends `DELETE …/crew/{crewId}` and re-reads the Einsatz afterwards.
+- [x] Every other Einheiten/Verwaltung write sends the paths of the table above and re-reads the Einsatz.
+- [x] Putting a member on the roster sends `POST …/participants/by-id` with only the user id
   and re-reads the Einsatz — the answer is the participant list, and `registeredParticipants` is the
   server's count.
 - [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
