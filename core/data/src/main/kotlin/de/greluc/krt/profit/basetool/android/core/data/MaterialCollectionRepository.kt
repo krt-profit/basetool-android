@@ -162,7 +162,7 @@ class MaterialCollectionRepository(
     override suspend fun unlinkEntry(
         orderId: String,
         entryId: String,
-    ): ApiResult<Unit> = reader.delete("/api/v1/orders/$orderId/inventory/$entryId/unlink")
+    ): ApiResult<Unit> = reader.delete("/api/v1/orders/$orderId/allocations/$entryId")
 
     override suspend fun unlinkMaterial(
         orderId: String,

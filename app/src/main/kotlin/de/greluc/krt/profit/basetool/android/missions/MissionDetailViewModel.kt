@@ -793,6 +793,7 @@ class MissionDetailViewModel(
                 seams.read.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
             } else {
                 seams.read.updateFinanceEntry(
+                    missionId,
                     draft.entryId,
                     draft.income,
                     draft.amount,
@@ -812,7 +813,7 @@ class MissionDetailViewModel(
         if (!mutableState.value.writable) {
             return
         }
-        bookkeeping { seams.read.deleteFinanceEntry(entry.id) }
+        bookkeeping { seams.read.deleteFinanceEntry(missionId, entry.id) }
     }
 
     /**

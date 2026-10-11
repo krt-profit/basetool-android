@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 /**
  * The optional-body read.
  *
- * It exists for one endpoint's honest answer: `GET /api/v1/announcement` says `204 No Content` when
+ * It exists for one endpoint's honest answer: `GET /api/v1/announcements/current` says `204 No Content` when
  * there is nothing to announce. Read through the ordinary path that empty body fails to parse and
  * becomes a server error — an error banner where the correct rendering is no banner.
  */
