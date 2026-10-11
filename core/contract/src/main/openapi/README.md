@@ -8,7 +8,8 @@
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
 | Copied from commit | `4996db77c` (2026-10-11), branch `claude/api-cut` of the main repository: the REST API cut (draft PR krt-profit/basetool#2475), the document the app 19 is built against |
-| Document | OpenAPI 3.1.0 · 427 paths · 455 schemas once the transition below has ended |
+| Document | OpenAPI 3.1.0 · 427 paths · 455 schemas (byte-identical to the source file) |
+| Vendored beside it | `../../../retired-operations.txt` and `../../../declared-breaks.txt` from the same commit: the operations the cut retires and its ledger (`RetiredOperationsTest`, `REQ-APP-API-012`) |
 
 > The copy carries what „Mein Lager" and the „gestohlen" marker read and write (basetool
 > REQ-INV-007/-036/-046/-052/-053: `stolen` on stacks and rows, `canMarkStolen` in
@@ -25,13 +26,10 @@
 > which `MaterialClaimRepository` and `MaterialDemandRepository` read as the string. The document no longer
 > lists the exchange relay operations; the app never called them.
 >
-> **Transition.** The cut retires 74 operations the app called (`410 APP_UPDATE_REQUIRED` on the old
-> paths) and the app moves to the new ones one repository class at a time. `AppCallListTest` requires
-> every listed operation to exist in the document, so while classes are still on the old paths the file is the
-> backend document **plus** those old operations (and the schemas only they use). Each class pull request
-> deletes the old operations it stops calling; the last one leaves the plain copy. The splice is a script of
-> the cut's handover (`and-splice.py`); it keeps the backend's formatting and, given nothing pending,
-> reproduces the backend file byte for byte.
+> **The 74 operations the cut retires** (`410 APP_UPDATE_REQUIRED` on the old paths) are no longer
+> called and no longer documented here. While the app moved to the new paths one repository class at a
+> time, this file also carried the old operations of the classes not yet moved (ADR-0027); that
+> transition ended with the last class.
 >
 > **Release order.** The three `…/inventory/my-inventory/…` reads reach production only once their
 > API-vhost rules are live (krt-profit/basetool#2171); every write this copy

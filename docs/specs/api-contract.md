@@ -477,6 +477,30 @@ what the test says, after checking that the change was meant.
 - [x] The one hand-written response model it found — the Fleetview import answer — was replaced by
   the generated `FleetviewImportResponseDto` (`HangarRepositoryTest`).
 - [ ] The main repo commits the list per app release and asserts its frozen set covers it (plan G-23).
-  **Open — server side.**
+  **Open — server side.** For app 19 the list is the file this repository commits, copied as `19.txt`.
+
+### REQ-APP-API-012 — The app calls nothing the REST API cut retired
+
+The cut (main repo `docs/modularisation/api-cut-waves.md`) removes 74 operations the app called and
+answers their old paths with `410 APP_UPDATE_REQUIRED` ahead of authentication, so a call to one is
+the update wall, not a missing feature. The app 19 calls the new paths only and has no fallback to an
+old one (ADR-0027).
+
+`core/contract/retired-operations.txt` (the operations answered `410`) and `declared-breaks.txt` (the
+ledger: every frozen operation the cut removes, and the two refinery writes whose request records it
+changes) are vendored unchanged from the main repository, and `RetiredOperationsTest` fails the build
+when the call list names a retired or ledger operation, when the vendored `openapi.json` still
+documents a retired one, or when the ledger gains a changed shape the tests do not know.
+
+**Acceptance**
+
+- [x] No line of `app-calls.txt` is a retired or ledger operation (`RetiredOperationsTest`).
+- [x] The vendored document documents no retired operation, so it is the cut's document as published
+  (`RetiredOperationsTest`).
+- [x] The two changed request shapes — `POST /refinery-orders` and `PUT /refinery-orders/{id}` — send
+  their own records (`RefineryRepositoryTest`).
+- [x] The `GET /missions` list takes `q` (`MissionRepositoryTest`), the item pickers send
+  `orderable=true` (`JobOrderRepositoryTest`, `InventoryRepositoryTest`) and the age thresholds are
+  one typed read (`JobOrderRepositoryTest`).
 
 **Code:** `core/contract/app-calls.txt`, `core/data/src/test/.../AppCallListTest.kt` · ADR-0026
