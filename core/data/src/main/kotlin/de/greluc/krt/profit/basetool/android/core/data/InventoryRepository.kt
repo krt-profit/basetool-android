@@ -29,7 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialSelling
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitMembershipOptionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseAggregatedInventoryDto
-import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseLocationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
@@ -1061,13 +1061,14 @@ class InventoryRepository(
     override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> {
         val params =
             listOf(
-                SEARCH_PARAM to query.trim(),
+                TERM_PARAM to query.trim(),
+                ORDERABLE_PARAM to "true",
                 PAGE_PARAM to "0",
                 SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
             )
         return when (
             val result =
-                reader.get(ITEM_CATALOG_PATH, params, PageResponseGameItemReferenceDto.serializer())
+                reader.get(ITEM_CATALOG_PATH, params, PageResponseInventoryGameItemReferenceDto.serializer())
         ) {
             is ApiResult.Failure -> {
                 result
@@ -1153,7 +1154,7 @@ class InventoryRepository(
 
     override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
         reader.get(
-            path = "/api/v1/users/$userId/memberships",
+            path = "/api/v1/org-units/members/$userId/memberships",
             query = listOf(ALL_KINDS_PARAM to "true"),
             deserializer = ListSerializer(OrgUnitMembershipOptionDto.serializer()),
         )
@@ -1212,7 +1213,7 @@ class InventoryRepository(
         private const val MEMBERS_PATH = "/api/v1/users/search"
 
         /** The item catalogue behind the book-in's item picker — the order form's own search. */
-        private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
+        private const val ITEM_CATALOG_PATH = "/api/v1/game-items"
 
         /** Which rows on screen are already offered on the Materialbörse. */
         private const val RELEASED_IDS_PATH = "/api/v1/material-exchange/released-item-ids"
@@ -1231,6 +1232,8 @@ class InventoryRepository(
         /** Widens the membership lookup from Staffel/SK to all four org-unit kinds. */
         private const val ALL_KINDS_PARAM = "allKinds"
         private const val SEARCH_PARAM = "search"
+        private const val TERM_PARAM = "q"
+        private const val ORDERABLE_PARAM = "orderable"
         private const val QUERY_PARAM = "query"
 
         /** How many entries one stack may hold before the screen has to page. */

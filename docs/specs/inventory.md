@@ -364,7 +364,7 @@ offers all three, because the web frontend's Umbuchen dialog does:
 choice against the destination user's own memberships
 (`OwnerScopeService.resolveOrgUnitForPickerOutputNullable`), so a picker filled from anyone else
 would offer units the write then refuses. It reads
-`GET /api/v1/users/{id}/memberships?allKinds=true` — **all four** org-unit kinds, Staffel and SK
+`GET /api/v1/org-units/members/{id}/memberships?allKinds=true` — **all four** org-unit kinds, Staffel and SK
 and Bereich and Organisationsleitung. The default (`allKinds=false`) returns Staffel and SK only
 and would hide a Bereich or OL member's own pool from a picker the server accepts it in.
 
@@ -734,8 +734,8 @@ the two forms.
 - [x] A material and a grade picked before the switch reach neither the state nor the wire
   (`BookingViewModelTest`, `InventoryRepositoryTest` — asserted as an absence).
 - [x] The item side draws the switch, no grade field, and „Menge (Stück)" (`BookingSheetTest`).
-- [x] The item picker searches `/api/v1/orders/item-catalog` and reports its overflow
-  (`InventoryRepositoryTest`).
+- [x] The item picker searches `/api/v1/game-items?orderable=true` (the order form's own subset;
+  until app 19 `/api/v1/orders/item-catalog`) and reports its overflow (`InventoryRepositoryTest`).
 - [ ] Walked on a device: outstanding.
 
 **Code:** `InventoryRepository` (`BookInDraft.gameItemId`, `gameItems`, `GameItemOption`),
