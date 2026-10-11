@@ -230,7 +230,9 @@ found by decoding them:
 
 **The document is a vendored copy**, refreshed by hand from the main repo together with the
 `REQ-API-009` contract-set change that opens new endpoints to the app. The commit it came from is
-recorded in `core/contract/src/main/openapi/README.md`.
+recorded in `core/contract/src/main/openapi/README.md`. Since the REST API cut the copy is the cut's
+document; while the cut's pull requests land one repository class at a time, it also carries the old
+operations of the classes not yet moved (that README, section *Transition*).
 
 **Acceptance**
 

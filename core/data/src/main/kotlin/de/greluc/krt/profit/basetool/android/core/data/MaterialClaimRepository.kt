@@ -195,7 +195,7 @@ class MaterialClaimRepository(
             "/api/v1/orders/$orderId/claims",
             CreateClaimDto(
                 materialId = materialId,
-                qualityRequirement = CreateClaimDto.QualityRequirement.valueOf(quality.name),
+                qualityRequirement = quality.name,
                 claimingOrgUnitId = orgUnitId,
                 amount = amount,
             ),
@@ -220,7 +220,7 @@ private fun ClaimBucketDto.krtToModel(): ClaimBucket? {
         materialId = id,
         materialName = material?.name.orEmpty(),
         unit = material?.quantityType,
-        quality = ClaimQuality.from(qualityRequirement?.value),
+        quality = ClaimQuality.from(qualityRequirement),
         required = requiredAmount?.toBigDecimal(),
         claimed = claimedAmount?.toBigDecimal(),
         open = openRemaining?.toBigDecimal(),
