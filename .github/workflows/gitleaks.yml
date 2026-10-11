@@ -2,7 +2,7 @@ name: Secret Scan
 
 on:
   pull_request:
-    branches: [main, claude/api-cut]
+    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
