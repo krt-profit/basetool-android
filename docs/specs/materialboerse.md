@@ -43,8 +43,11 @@ the same id.
 
 **Acceptance**
 
-- [x] A request's withdraw addresses `/api/v1/material-requests/{id}/deactivate`
+- [x] A request's withdraw addresses `/api/v1/material-exchange/requests/{id}/deactivate`
   (`MaterialBoardRepositoryTest`).
+- [x] The request half (list, create, item create, edit, interest, withdraw) sits under
+  `/api/v1/material-exchange/requests` (`MaterialBoardRequestPathTest`); until app 19 it was
+  `/api/v1/material-requests`.
 - [x] Both halves render through the same row composable.
 
 **Code:** `MaterialBoardRepository`, `BoardEntry`

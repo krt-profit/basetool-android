@@ -205,7 +205,7 @@ startup with a friendly "server too old/new" screen).
 | Lager/Inventar | aggregated + my inventory, book in/out, rebook, allocations | `/inventory/**` |
 | Mein Inventar / Blueprints | personal inventory CRUD, blueprints + craftability | `/personal-inventory`, `/personal-blueprints/**` |
 | Aufträge | queue (org-public SK / private Staffel), detail incl. items/material demand, status/priority (Logistician), assignees + notes, claims (Logistician) | `/orders/**` |
-| Materialbörse | offers + requests, interest toggles | `/material-exchange/**`, `/material-requests/**` |
+| Materialbörse | offers + requests, interest toggles | `/material-exchange/**` |
 | Raffinerie | my orders, detail, store yield | `/refinery-orders/**` |
 | Bank (member surface) | org-unit balances, account detail, booking requests, approvals | `/org-units/bank/**` |
 | Beförderung | my evaluations + eligibility | `/promotion/**` |
