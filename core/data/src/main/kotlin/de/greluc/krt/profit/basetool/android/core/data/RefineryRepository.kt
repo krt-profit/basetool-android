@@ -16,10 +16,12 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMat
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefineryOrderListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefiningMethodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryGoodDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreItemDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefiningMethodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -712,13 +714,13 @@ class RefineryRepository(
         }
 
     override suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String> {
-        val body = draft.toWire() ?: return ApiResult.Failure(ApiError.Validation())
+        val body = draft.toCreateWire() ?: return ApiResult.Failure(ApiError.Validation())
         return when (
             val result =
                 reader.post(
                     path = ORDERS_PATH,
                     body = body,
-                    bodySerializer = RefineryOrderDto.serializer(),
+                    bodySerializer = RefineryOrderCreateRequest.serializer(),
                     deserializer = RefineryOrderDto.serializer(),
                 )
         ) {
@@ -741,11 +743,11 @@ class RefineryRepository(
         orderId: String,
         draft: RefineryOrderDraft,
     ): ApiResult<Unit> {
-        val body = draft.toWire() ?: return ApiResult.Failure(ApiError.Validation())
+        val body = draft.toUpdateWire() ?: return ApiResult.Failure(ApiError.Validation())
         return reader.putAccepted(
             path = orderPath(orderId),
             body = body,
-            bodySerializer = RefineryOrderDto.serializer(),
+            bodySerializer = RefineryOrderUpdateRequest.serializer(),
         )
     }
 
@@ -874,19 +876,44 @@ class RefineryRepository(
 }
 
 /**
- * The form as the wire takes it, for both writes.
+ * The form as the create takes it: the fields the member sets, and neither a status nor a version.
  *
  * @receiver the form.
  * @return the body, or `null` when the form names no refinery or no method — which the caller
  *   reports as a validation failure rather than sending a request the server will refuse.
  */
-private fun RefineryOrderDraft.toWire(): RefineryOrderDto? {
+private fun RefineryOrderDraft.toCreateWire(): RefineryOrderCreateRequest? {
     val where = locationId
     val method = methodId
     if (where == null || method == null) {
         return null
     }
-    return RefineryOrderDto(
+    return RefineryOrderCreateRequest(
+        location = LocationDto(id = where, name = locationName),
+        refiningMethod = RefiningMethodDto(id = method, name = methodName),
+        goods = goods.mapNotNull { it.toDto() },
+        startedAt = startedAt?.toString(),
+        durationMinutes = totalMinutes()?.toLong(),
+        expenses = parseTypedAmount(expenses),
+        otherExpenses = parseTypedAmount(otherExpenses),
+        oreSales = parseTypedAmount(oreSales),
+        mission = missionId?.let { MissionReferenceDto(id = it, name = missionName) },
+    )
+}
+
+/**
+ * The form as the update takes it: the create's fields plus the status and the version it echoes.
+ *
+ * @receiver the form.
+ * @return the body, or `null` when the form names no refinery or no method.
+ */
+private fun RefineryOrderDraft.toUpdateWire(): RefineryOrderUpdateRequest? {
+    val where = locationId
+    val method = methodId
+    if (where == null || method == null) {
+        return null
+    }
+    return RefineryOrderUpdateRequest(
         location = LocationDto(id = where, name = locationName),
         refiningMethod = RefiningMethodDto(id = method, name = methodName),
         goods = goods.mapNotNull { it.toDto() },
