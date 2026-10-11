@@ -1,7 +1,7 @@
 # Übersicht — the dashboard
 
 > **Doc type:** Living spec · **Area:** `REQ-APP-DASH-*` · **Design:** `docs/design/android/05 Dashboard.dc.html`
-> **Server contract:** main repo `REQ-API-009` (`/announcement`, `/missions/search`)
+> **Server contract:** main repo `REQ-API-009` (`/announcements/current`, `/missions`)
 > **Related:** [`missions.md`](missions.md), [`notifications.md`](notifications.md)
 
 The app's home screen: greeting, announcement, the Einsätze of the next seven days and a preview of
@@ -45,7 +45,7 @@ starting tonight, and a member whose Einsatz band fails still needs to read the 
 
 ### REQ-APP-DASH-003 — No announcement is a result, and renders as nothing
 
-`GET /api/v1/announcement` answers `204 No Content` when there is nothing to announce. The correct
+`GET /api/v1/announcements/current` answers `204 No Content` when there is nothing to announce. The correct
 rendering is **no band at all** — an "Information" heading over an empty space reads as a notice
 that failed to load.
 
@@ -213,6 +213,10 @@ field. It is asked in the announcement repository rather than through `IdentityR
 caches its answer for the process on the explicit grounds that a member's id cannot change while
 the app runs — this value can, on the very next tap.
 
+**Marking is `PUT /api/v1/announcements/{id}/read`**, bodyless; its answer is the member record, whose
+`lastReadAnnouncementId` the app takes as the server's word. Until app 19 the same edge was
+`PUT /api/v1/users/me/read-announcement/{id}`.
+
 **Unread defaults to false, and the marker only appears once the flag lands.** The marker is an
 invitation to act; showing one for the frames before the answer arrives and then taking it back
 teaches a member that it means nothing. A failed read leaves it counted as read for the same
@@ -254,7 +258,7 @@ freshness on the device; if that is wrong it is wrong in the backend, for the we
 
 ## Contract-set dependency (main repo)
 
-`GET /api/v1/announcement` is in the `REQ-API-009` contract set and the vhost allow-list, **including
+`GET /api/v1/announcements/current` is in the `REQ-API-009` contract set and the vhost allow-list, **including
 its 204**: a client that reads the empty body as a failure shows an error where "no banner" is
 correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions/search`,
 which was frozen with the Einsatz list.

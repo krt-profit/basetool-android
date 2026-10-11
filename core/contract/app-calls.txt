@@ -1,4 +1,5 @@
-GET /api/v1/announcement q=- f=content,id,updatedAt,version s=AnnouncementRepository.current.b2a624e7
+GET /api/v1/announcements/current q=- f=content,id,updatedAt,version s=AnnouncementRepository.current.510230d4
+PUT /api/v1/announcements/{id}/read q=- f=description,displayName,effectiveName,id,lastReadAnnouncementId,name,permissions,roles,shorthand,squadron,username,version s=AnnouncementRepository.markRead.331ba73e
 GET /api/v1/app/version-policy q=- f=latestVersionCode,minimumVersionCode,releasesUrl s=AppVersionRepository.versionPolicy.4dee217b
 GET /api/v1/bank/accounts q=page,size f=accountNo,balance,balanceTarget,content,createdAt,id,kind,name,orgUnit,page,shorthand,size,sort,status,totalElements,totalPages,type,version s=BankStaffRepository.managedAccounts.9d91ec1a
 POST /api/v1/bank/accounts q=- f=accountNo,balance,balanceTarget,createdAt,id,kind,name,orgUnit,shorthand,status,type,version s=BankStaffRepository.createAccount.f81d0349
@@ -236,7 +237,6 @@ GET /api/v1/users/me/blueprint-sharing q=- f=shareBlueprintsGlobally,version s=M
 PUT /api/v1/users/me/blueprint-sharing q=- f=shareBlueprintsGlobally,version s=MemberPreferencesRepository.setBlueprintSharing.5736e95c
 GET /api/v1/users/me/payout-preference q=- f=defaultPayoutPreference,version s=MemberPreferencesRepository.payoutPreference.a8ffd28e
 PUT /api/v1/users/me/payout-preference q=- f=defaultPayoutPreference,version s=MemberPreferencesRepository.setPayoutPreference.a5c8955b
-PUT /api/v1/users/me/read-announcement/{announcementId} q=- f=description,displayName,effectiveName,id,lastReadAnnouncementId,name,permissions,roles,shorthand,squadron,username,version s=AnnouncementRepository.markRead.92e6092a
 GET /api/v1/users/me/registration-status q=- f=approvalStatus s=AccountGateRepository.registrationStatus.73808665
 GET /api/v1/users/me/rsi-handle q=- f=rsiHandle,version s=MemberPreferencesRepository.rsiHandle.1585ab37
 PUT /api/v1/users/me/rsi-handle q=- f=rsiHandle,version s=MemberPreferencesRepository.setRsiHandle.a9ea852c
