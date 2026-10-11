@@ -788,13 +788,13 @@ destination.
 
 ### REQ-APP-MIS-025 — The Ablauf and the Ziele own their section counters, because the answer does not
 
-`PUT/POST/PATCH/DELETE …/steps/…` and `…/objectives/…` exist **only** as `/slim` variants, and every
-one of them answers with the **list** — never with the Einsatz. Two consequences follow and the
-client must handle both.
+`PUT/POST/PATCH/DELETE …/steps/…` and `…/objectives/…` answer with the **list** — never with the
+Einsatz. (Until app 19 they were reached as `/slim` variants; the suffix is gone, the answers are
+the same.) Two consequences follow and the client must handle both.
 
-**The answer is spliced onto the Einsatz as last read.** There is no plain variant to fall back on,
-so the repository takes `current: MissionDetail`, replaces the one list, and returns the whole
-object. Callers therefore see the same contract as every structure write.
+**The answer is spliced onto the Einsatz as last read.** There is no whole-Einsatz variant to fall
+back on, so the repository takes `current: MissionDetail`, replaces the one list, and returns the
+whole object. Callers therefore see the same contract as every structure write.
 
 **The section counter is advanced by the client.** The answer carries no new `stepsVersion` or
 `objectivesVersion`. The server bumps by exactly one per accepted write — `bumpStepsVersionIfMatches`

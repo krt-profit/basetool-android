@@ -60,7 +60,7 @@ interface MissionTimelineSource {
      * Appends one Ablauf step.
      *
      * @param missionId the Einsatz.
-     * @param current the Einsatz as last read, for its `stepsVersion` and everything the slim answer
+     * @param current the Einsatz as last read, for its `stepsVersion` and everything the answer
      *   does not carry.
      * @param title what happens.
      * @param meta the time-and-place line beneath it, or `null`.
@@ -265,7 +265,7 @@ class MissionTimelineRepository(
         withSteps(
             current,
             reader.post(
-                "${missionPath(missionId)}/steps/slim",
+                "${missionPath(missionId)}/steps",
                 AddMissionStepRequest(title = title, stepsVersion = current.stepsVersion, meta = meta),
                 AddMissionStepRequest.serializer(),
                 ListSerializer(MissionStepDto.serializer()),
@@ -282,7 +282,7 @@ class MissionTimelineRepository(
         withSteps(
             current,
             reader.put(
-                "${missionPath(missionId)}/steps/$stepId/slim",
+                "${missionPath(missionId)}/steps/$stepId",
                 UpdateMissionStepRequest(title = title, stepsVersion = current.stepsVersion, meta = meta),
                 UpdateMissionStepRequest.serializer(),
                 ListSerializer(MissionStepDto.serializer()),
@@ -298,7 +298,7 @@ class MissionTimelineRepository(
         withSteps(
             current,
             reader.send(
-                "${missionPath(missionId)}/steps/$stepId/done/slim",
+                "${missionPath(missionId)}/steps/$stepId/done",
                 "PATCH",
                 ToggleMissionStepRequest(done = done, stepsVersion = current.stepsVersion),
                 ToggleMissionStepRequest.serializer(),
@@ -314,7 +314,7 @@ class MissionTimelineRepository(
         withSteps(
             current,
             reader.delete(
-                "${missionPath(missionId)}/steps/$stepId/slim",
+                "${missionPath(missionId)}/steps/$stepId",
                 listOf("stepsVersion" to current.stepsVersion.toString()),
                 ListSerializer(MissionStepDto.serializer()),
             ),
@@ -328,7 +328,7 @@ class MissionTimelineRepository(
         withSteps(
             current,
             reader.put(
-                "${missionPath(missionId)}/steps/reorder/slim",
+                "${missionPath(missionId)}/steps/reorder",
                 ReorderMissionStepsRequest(stepIds = stepIds, stepsVersion = current.stepsVersion),
                 ReorderMissionStepsRequest.serializer(),
                 ListSerializer(MissionStepDto.serializer()),
@@ -343,7 +343,7 @@ class MissionTimelineRepository(
         withObjectives(
             current,
             reader.put(
-                "${missionPath(missionId)}/objectives/reorder/slim",
+                "${missionPath(missionId)}/objectives/reorder",
                 ReorderMissionObjectivesRequest(
                     objectiveIds = objectiveIds,
                     objectivesVersion = current.objectivesVersion,
@@ -362,7 +362,7 @@ class MissionTimelineRepository(
         withObjectives(
             current,
             reader.post(
-                "${missionPath(missionId)}/objectives/slim",
+                "${missionPath(missionId)}/objectives",
                 AddMissionObjectiveRequest(
                     title = title,
                     kind = AddMissionObjectiveRequest.Kind.valueOf(kind.name),
@@ -383,7 +383,7 @@ class MissionTimelineRepository(
         withObjectives(
             current,
             reader.put(
-                "${missionPath(missionId)}/objectives/$objectiveId/slim",
+                "${missionPath(missionId)}/objectives/$objectiveId",
                 UpdateMissionObjectiveRequest(
                     title = title,
                     kind = UpdateMissionObjectiveRequest.Kind.valueOf(kind.name),
@@ -402,7 +402,7 @@ class MissionTimelineRepository(
         withObjectives(
             current,
             reader.delete(
-                "${missionPath(missionId)}/objectives/$objectiveId/slim",
+                "${missionPath(missionId)}/objectives/$objectiveId",
                 listOf("objectivesVersion" to current.objectivesVersion.toString()),
                 ListSerializer(MissionObjectiveDto.serializer()),
             ),
