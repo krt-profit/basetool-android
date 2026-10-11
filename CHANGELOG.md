@@ -20,11 +20,22 @@
   neuen Betrag, und wer neu für ein Konto verantwortlich wird, erfährt, wie viele Anträge auf die
   eigene Freigabe warten.
 
+### Changed
+
+- **Neue Server-Schnittstelle, Update nötig.** Die App spricht die neuen Pfade des Servers (Einsätze,
+  Bank, Materialbörse, Aufträge, Einstellungen, Raffinerie). Ältere Versionen zeigen nach der
+  Umstellung des Servers „Update erforderlich". Für dich ändert sich sonst nichts.
+
 ### Fixed
 
 - **Lager: Sammelaktionen nur über eigene Zeilen.** „Markierte umbuchen" und das Sammel-Ausbuchen
   sind gesperrt, sobald die Auswahl einen fremden Eintrag enthält – auch für Logistiker, denn der
   Server bucht in einer Auswahl nur eigene Einträge. Vorher führte das zu „Access Denied".
+
+### Removed
+
+- **Fleetview-Import aus dem Hangar entfernt.** Der Server bietet den Import nicht mehr an; der
+  Eintrag im Menü des Hangars und der Import-Bildschirm entfallen.
 
 ## [0.5.0] — 2026-10-03
 

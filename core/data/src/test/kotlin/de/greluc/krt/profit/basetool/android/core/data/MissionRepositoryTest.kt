@@ -176,7 +176,7 @@ class MissionRepositoryTest {
 
             repository.search(MissionQuery(text = "Abbau & Eskorte = 2"))
 
-            assertEquals("Abbau & Eskorte = 2", requestedUrl().queryParameter("query"))
+            assertEquals("Abbau & Eskorte = 2", requestedUrl().queryParameter("q"))
         }
 
     @Test
@@ -186,7 +186,7 @@ class MissionRepositoryTest {
 
             repository.search(MissionQuery(text = "   "))
 
-            assertNull(requestedUrl().queryParameter("query"))
+            assertNull(requestedUrl().queryParameter("q"))
         }
 
     @Test
@@ -615,7 +615,7 @@ class MissionRepositoryTest {
                 )
 
             val request = server.takeRequest()
-            assertTrue("a custom frequency has only a slim endpoint", request.target.endsWith("/custom/slim"))
+            assertEquals("/api/v1/missions/m1/frequencies/custom", request.target)
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einsatz-1""""))
             assertTrue(body.contains("121.5"))
@@ -625,7 +625,7 @@ class MissionRepositoryTest {
         }
 
     @Test
-    fun `adding an Einheit sends its name and its HVU mark on the slim path`() =
+    fun `adding an Einheit sends its name and its HVU mark`() =
         runTest {
             respond("""[]""")
             respond("""{"id":"m1","name":"Lyria"}""")
@@ -635,10 +635,7 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue(
-                "the deprecated twin was deleted server-side on 2026-09-22",
-                request.target.endsWith("/units/slim"),
-            )
+            assertEquals("/api/v1/missions/m1/units", request.target)
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einheit Alpha""""))
             assertTrue(body.contains(""""highValueUnit":true"""))
@@ -659,17 +656,17 @@ class MissionRepositoryTest {
             structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
 
             val request = server.takeRequest()
-            assertTrue(request.target.endsWith("/units/u1/crew/slim"))
+            assertEquals("/api/v1/missions/m1/units/u1/crew", request.target)
             assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
             assertEquals("GET", server.takeRequest().method)
         }
 
     /**
-     * Removing a member from an Einheit uses the `/slim` delete path and, since it answers `204`,
-     * re-reads the Einsatz.
+     * Removing a member from an Einheit deletes the crew row and, since it answers `204`, re-reads
+     * the Einsatz.
      */
     @Test
-    fun `taking somebody off an Einheit deletes the slim path and re-reads the Einsatz`() =
+    fun `taking somebody off an Einheit deletes the crew row and re-reads the Einsatz`() =
         runTest {
             respond("", status = HTTP_NO_CONTENT)
             respond("""{"id":"m1","name":"Lyria"}""")
@@ -679,10 +676,7 @@ class MissionRepositoryTest {
 
             val deletion = server.takeRequest()
             assertEquals("DELETE", deletion.method)
-            assertTrue(
-                "the deprecated path is the one the edge refuses",
-                deletion.target.endsWith("/units/u1/crew/c1/slim"),
-            )
+            assertEquals("/api/v1/missions/m1/units/u1/crew/c1", deletion.target)
             val reread = server.takeRequest()
             assertEquals("GET", reread.method)
             assertTrue("the screen swaps the whole Einsatz", reread.target.endsWith("/api/v1/missions/m1"))
@@ -713,13 +707,13 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue(request.target.endsWith("/managers/u9/slim"))
+            assertEquals("/api/v1/missions/m1/managers/u9", request.target)
             assertEquals("no body: the member is named in the path", "", request.body?.utf8().orEmpty())
             assertEquals("GET", server.takeRequest().method)
         }
 
     /**
-     * The manager's add goes to `POST …/participants/by-id/slim` (REQ-MISSION-020) with only the user
+     * The manager's add goes to `POST …/participants/by-id` (REQ-MISSION-020) with only the user
      * id, then re-reads the Einsatz for the server-counted `registeredParticipants`.
      */
     @Test
@@ -732,19 +726,16 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue(
-                "only …/participants/by-id/slim is admitted at the edge",
-                request.target.endsWith("/missions/m1/participants/by-id/slim"),
-            )
+            assertEquals("/api/v1/missions/m1/participants/by-id", request.target)
             assertEquals("""{"userId":"u9"}""", request.body?.utf8())
             assertEquals("GET", server.takeRequest().method)
         }
 
     /**
-     * Setting the Funktionen on a Crew-Slot uses the `/slim` path the API vhost admits.
+     * Setting the Funktionen on a Crew-Slot puts the crew row.
      */
     @Test
-    fun `setting the Funktionen on a Crew-Slot uses the admitted slim path`() =
+    fun `setting the Funktionen on a Crew-Slot puts the crew row`() =
         runTest {
             respond("""{}""")
             respond("""{"id":"m1","name":"Lyria"}""")
@@ -754,11 +745,74 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("PUT", request.method)
-            assertTrue(request.target.endsWith("/units/u1/crew/c1/slim"))
+            assertEquals("/api/v1/missions/m1/units/u1/crew/c1", request.target)
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""jobTypeIds":["j1"]"""))
             assertTrue(body.contains(""""version":3"""))
             assertEquals("GET", server.takeRequest().method)
+        }
+
+    /**
+     * The next recorded request as `METHOD target`.
+     *
+     * @return the verb and the request target, space-separated.
+     */
+    private fun nextCall(): String = server.takeRequest().let { "${it.method} ${it.target}" }
+
+    /** The list is the collection itself and the free text is named `q`, not `query`. */
+    @Test
+    fun `the Einsatz list is read from the collection with the term as q`() =
+        runTest {
+            respond(ONE_PAGE)
+
+            repository.search(MissionQuery(text = "Abbau"))
+
+            val url = requestedUrl()
+            assertEquals("/api/v1/missions", url.encodedPath)
+            assertEquals("Abbau", url.queryParameter("q"))
+            assertNull(url.queryParameter("query"))
+        }
+
+    /** A participant's row and its three actions sit under the Einsatz without a suffix. */
+    @Test
+    fun `participant rows are addressed under their Einsatz`() =
+        runTest {
+            respond("", status = HTTP_NO_CONTENT)
+            respond("""{"id":"p1"}""")
+            respond("""{"id":"p1"}""")
+            respond("""{"id":"p1"}""")
+
+            repository.leave("m1", "p1")
+            repository.setCheckedIn("m1", "p1", checkedIn = true)
+            repository.setCheckedIn("m1", "p1", checkedIn = false)
+            repository.setDonating("m1", "p1", donating = true)
+
+            assertEquals("DELETE /api/v1/missions/m1/participants/p1", nextCall())
+            assertEquals("POST /api/v1/missions/m1/participants/p1/check-in", nextCall())
+            assertEquals("POST /api/v1/missions/m1/participants/p1/check-out", nextCall())
+            assertEquals("PUT /api/v1/missions/m1/participants/p1/payout-preference", nextCall())
+        }
+
+    /** A booking is created, rewritten and removed under the Einsatz it belongs to. */
+    @Test
+    fun `bookings are written under their Einsatz`() =
+        runTest {
+            respond("""{"id":"e1"}""")
+            respond("""{"id":"e1"}""")
+            respond("", status = HTTP_NO_CONTENT)
+
+            repository.addFinanceEntry("m1", participantId = "p1", income = true, amount = "10", note = null)
+            repository.updateFinanceEntry("m1", entryId = "e1", income = false, amount = "5", note = null, version = 2)
+            repository.deleteFinanceEntry("m1", entryId = "e1")
+
+            val created = server.takeRequest()
+            assertEquals("POST /api/v1/missions/m1/finance-entries", "${created.method} ${created.target}")
+            assertTrue(
+                "the body names the same Einsatz as the path",
+                created.body?.utf8().orEmpty().contains(""""missionId":"m1""""),
+            )
+            assertEquals("PUT /api/v1/missions/m1/finance-entries/e1", nextCall())
+            assertEquals("DELETE /api/v1/missions/m1/finance-entries/e1", nextCall())
         }
 
     /**

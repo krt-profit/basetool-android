@@ -328,7 +328,8 @@ dropped connection.
 ### REQ-APP-ORDERS-014 — The queue counts an order's age in days
 
 An order's age is the queue's signal, and the two thresholds are the operator's
-(`job_order.age_yellow_days` = 30, `job_order.age_red_days` = 90). The row renders it as a day
+(`ageYellowDays` = 30, `ageRedDays` = 90, both read in one call from `GET /api/v1/orders/settings`).
+The row renders it as a day
 count — „vor 94 Tagen" — rather than through the app's shared relative-time helper, which switches
 to „26.05., 11:19" from two days out and makes the reader do the arithmetic the colour beside it
 has already done. Today and yesterday keep their words.
@@ -384,7 +385,7 @@ The web's `/orders/create` raises two kinds of order behind one radio pair, and 
 behind the segmented control. The head is shared — the two units, the contact handle, the comment —
 and only the lines differ: a material line is *Material · Menge · Min. Qualität*, an item line is
 *Item · Blueprint · Anzahl*. `POST /api/v1/orders/items`, with the pickers on
-`GET /api/v1/orders/item-catalog` and `…/{gameItemId}/blueprints`.
+`GET /api/v1/game-items?orderable=true` and `GET /api/v1/game-items/{gameItemId}/blueprints`.
 
 **Both line sets survive the switch.** A member who typed three materials, looked at the item form
 and came back finds their three materials still there; only `kind` decides what is submitted. The
@@ -729,7 +730,7 @@ row rather than drawn as an empty field.
 
 - **Lieferstatus** — `PATCH /inventory/{id}/delivered`, echoing the **row's own** version, so a
   concurrent stock change is a 409 rather than a silent overwrite.
-- **Verknüpfung lösen** — `DELETE /orders/{id}/inventory/{entryId}/unlink` for a stock row, and
+- **Verknüpfung lösen** — `DELETE /orders/{id}/allocations/{entryId}` for a stock row, and
   `DELETE /orders/{id}/materials/{materialId}` for a required material nothing covers.
 
 `JobOrderDto.canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`, resolved server-side per

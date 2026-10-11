@@ -15,7 +15,7 @@ never sees.
 ### REQ-APP-BANK-001 — The member surface reads the member paths
 
 `/api/v1/bank/accounts/…` lists **every** account in the organisation and is gated on a bank role.
-The member surface reads `/api/v1/org-units/bank/…`, which answers with the accounts this caller
+The member surface reads `/api/v1/bank/org-units/…`, which answers with the accounts this caller
 may actually see: the ones public to everyone (`REQ-BANK-037`) plus those they hold a view grant
 for.
 
@@ -121,7 +121,7 @@ read the same figure. `BigDecimal` throughout; no `Double` ever touches money.
   would invite a member to try.
 - **"Buchung beantragen" is absent** for the same reason.
 - **The holders breakdown of the design's account detail** — "Verwahrung, summiert auf den
-  Kontostand" — is not shown: `/org-units/bank/accounts/{id}` carries the account and its counters,
+  Kontostand" — is not shown: `/bank/org-units/accounts/{id}` carries the account and its counters,
   not the per-holder split, and the app does not add money up.
 - **No date filter on the ledger.** The endpoint takes `from`/`to`; no control offers them yet, and
   they ship with the shared date-range picker.
@@ -134,7 +134,7 @@ read the same figure. `BigDecimal` throughout; no `Double` ever touches money.
 
 ## Contract-set dependency (main repo)
 
-`GET /api/v1/org-units/bank/balances`, `/accounts/{id}` and `/accounts/{id}/transactions` are in the
+`GET /api/v1/bank/org-units/balances`, `/accounts/{id}` and `/accounts/{id}/transactions` are in the
 `REQ-API-009` contract set and the vhost allow-list. `sparkline` is frozen because the design draws
 it and there is no chart framework to fall back on; `holderHandle` because it is the ledger row's
 "who".
@@ -143,7 +143,7 @@ it and there is no chart framework to fall back on; `holderHandle` because it is
 
 ### REQ-APP-BANK-006 — The account's own settings, and the server decides who sees them
 
-`GET …/org-units/bank/accounts/{id}/settings` answers with **what the caller may change**:
+`GET …/bank/org-units/accounts/{id}/settings` answers with **what the caller may change**:
 `canSetTarget` and `canConfigureVisibility`. The app offers exactly those controls and works out no
 role of its own — which member is responsible for an account is a per-account fact (the
 `STAFFELLEITER` of the owning Staffel, the SK lead of a Spezialkommando, the `BEREICHSLEITER` of an
@@ -250,7 +250,7 @@ what the lifecycle and grants writes need. The safety comes from the allow-list 
 
 The Anträge tab and the request sheet — design chapter 12, artboards 1 and 3.
 
-**What the member can do.** Raise a request (`POST /org-units/bank/requests`), correct their own
+**What the member can do.** Raise a request (`POST /bank/org-units/requests`), correct their own
 while it is still pending and unapproved (`PUT …/{id}`), withdraw it (`POST …/{id}/cancel`), and —
 on an account they are responsible for — grant or revoke the owner approval
 (`POST` / `DELETE …/{id}/owner-approval`). That is the whole member surface, and it is the whole
@@ -505,7 +505,7 @@ earns `409 DUPLICATE_ENTITY`. `BankGrant.exists` carries the fact instead.
 reads as a broken app rather than a server that said no.
 
 **„+ Grant hinzufügen" opens a sheet with a member picker and the three flags.** The picker is
-`GET /api/v1/users/search-bank`, **not** `/users/search`: the two run the same query over the same
+`GET /api/v1/bank/members/search`, **not** `/users/search`: the two run the same query over the same
 scope with the same peer-redacted projection and differ only in the role gate, which the bank twin
 widens to `BANK_EMPLOYEE` — a bank manager who holds no org role gets 403 on the ordinary one and
 would have no picker at all.
@@ -544,7 +544,7 @@ horizontally scrollable so a unit with many accounts does not lose its last one 
   (`test-admin`) gets the locked-tappable tab and the role toast; Bank Management
   (`test-bank-management`) gets the KPI band, the matrix, a `PATCH` that lands (`200`, version
   bumped, both directions) and the danger modal.
-- [x] The picker uses `/users/search-bank`, and a search answer whose query has moved on is
+- [x] The picker uses `/bank/members/search`, and a search answer whose query has moved on is
   dropped rather than shown (`BankLifecycleViewModelTest`).
 - [x] A creation is sent as a creation, on the account that is showing, and a creation with nobody
   picked is not sent at all (`BankLifecycleViewModelTest`).
@@ -585,7 +585,7 @@ again. `bankConflictMessage` now answers `BANK_SELF_TRANSFER`, `BANK_HOLDER_INAC
 
 **Registration is the register's first action, not an afterthought.** Without a holder there is no
 custody to look at and no booking confirmation can name one. The picker is the same
-`/users/search-bank` the grants sheet uses.
+`/bank/members/search` the grants sheet uses.
 
 **Reads are the employee's, the transfer is Bank-Management's**, drawn locked rather than hidden.
 
@@ -621,7 +621,7 @@ as the member's, with two things added and one thing changed underneath it.
 
 **It reads the staff paths, not the member ones.** Found on a device: opening an account from the
 Verwaltung scope answered „Access Denied — Dieses Konto ist für dich nicht einsehbar." A bank
-manager holding no view grant cannot see the account through `/org-units/bank/accounts/{id}` — that
+manager holding no view grant cannot see the account through `/bank/org-units/accounts/{id}` — that
 path answers with what the *member* may see, which is the whole point of it — while
 `/api/v1/bank/accounts/{id}` answers for every account of the organisation, closed ones included.
 The screen picks by what `/me/capabilities` said about the caller, not by which list they arrived
@@ -880,7 +880,7 @@ sent none of the others; it now carries all of them.
   readers.
 - **Einzahler / Empfänger** — deposit and withdrawal only; `BankTransferRequest` carries no
   counterparty, because both sides of a transfer are accounts of the same unit and the account
-  fields already name them. Either a member picked from `/users/search-bank` — the same list the
+  fields already name them. Either a member picked from `/bank/members/search` — the same list the
   web's picker uses, and **not** `/users/search`, whose role gate would 403 a bank manager holding
   no org role — or, behind „Kein Tool-Account", a typed name. Switching clears the other, because
   sending both leaves the server to guess which one was meant.

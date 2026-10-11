@@ -196,6 +196,13 @@ shows „Update erforderlich" below it. From v0.5.0 (`versionCode` 18) it also r
 a member returns to it and after a `404`, at most once a minute (`REQ-APP-API-010`), so an app left
 open meets the wall on return rather than at its next cold start.
 
+**The REST API cut (`versionCode` 19).** The backend release that retires the old paths and this
+build ship together: the backend's own `application.yml` carries the floor and the latest number,
+both 19, and the paths the app 18 and older call then answer `410 APP_UPDATE_REQUIRED`. Publish the
+release first, then promote the backend; a build 19 against the old backend meets `404`s
+(`ADR-0027`). The cut also removes the Hangar's Fleetview import, so the German handbook page
+`Bereiche` changes with the release, not before.
+
 **Set the floor to a version that already exists as a release.** A floor above every published
 build locks out everybody, including you, and the only way back is another restart — which is fine,
 but the members who tried in between saw a wall for no reason.

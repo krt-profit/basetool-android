@@ -105,7 +105,7 @@ header is advisory, and one odd response must not poison it.
 
 Every request carries `X-Active-Org-Unit-Id` (`REQ-APP-API-001`); this requirement says where the
 value comes from. The backend does not store a "current" org unit for a client — it answers what it
-would pick (`GET /api/v1/me/active-org-unit`) and otherwise honours whatever the client pins. So the
+would pick (`GET /api/v1/org-units/me/active`) and otherwise honours whatever the client pins. So the
 pin is the app's, and getting it wrong has no error message: it shows a member the wrong scope's
 data, or an empty screen, with nothing on it explaining why.
 
@@ -174,10 +174,10 @@ organisation does name Spezialkommandos „SK Nebelkraehe", and an unconditional
 - [x] The pin is readable synchronously **from a fresh instance with no priming** — the way the
   interceptor reads it on the first request of a cold start — survives a restart and is cleared by
   a wipe (`ActiveOrgUnitStoreTest`).
-- [x] The options come from `GET /api/v1/me/org-units` — me-scoped by construction, so the
+- [x] The options come from `GET /api/v1/org-units/me/switchable` — me-scoped by construction, so the
   public vhost never has to allow-list a path able to name another member (main repo `REQ-API-009`).
   Corrected 2026-10-02: this line named `GET /api/v1/users/me/memberships`; `OrgUnitRepository` has
-  read `/api/v1/me/org-units` since 2026-09-02 (#122), as the call list (`REQ-APP-API-011`) shows.
+  read the me-scoped list since 2026-09-02 (#122), as the call list (`REQ-APP-API-011`) shows; the path was `/api/v1/me/org-units` until app 19.
 - [x] An org unit whose `kind` this build does not know is still offered; only its grouping is
   unknown (`OrgUnitRepositoryTest`).
 - [x] Verified on a device against the test stack, with two real memberships in the throwaway DB
@@ -230,7 +230,9 @@ found by decoding them:
 
 **The document is a vendored copy**, refreshed by hand from the main repo together with the
 `REQ-API-009` contract-set change that opens new endpoints to the app. The commit it came from is
-recorded in `core/contract/src/main/openapi/README.md`.
+recorded in `core/contract/src/main/openapi/README.md`. Since the REST API cut the copy is the cut's
+document; while the cut's pull requests land one repository class at a time, it also carries the old
+operations of the classes not yet moved (that README, section *Transition*).
 
 **Acceptance**
 
@@ -426,7 +428,7 @@ no comment lines:
 
 - `VERB` — `GET`, `POST`, `PUT`, `PATCH` or `DELETE`.
 - `path` — the path template **exactly as the vendored `openapi.json` writes it**, parameter names
-  included (`/api/v1/missions/{id}/participants/{participantId}/slim`), so a line is compared with
+  included (`/api/v1/missions/{id}/participants/{participantId}`), so a line is compared with
   the document by string equality.
 - `q=` — the query parameters the app sends, comma-separated and sorted; `-` for none. Names only;
   the types are the document's.
@@ -473,8 +475,32 @@ what the test says, after checking that the change was meant.
 - [x] Removing a line, dropping a field and changing a path constant each fail the test (checked by
   hand, 2026-10-02).
 - [x] The one hand-written response model it found — the Fleetview import answer — was replaced by
-  the generated `FleetviewImportResponseDto` (`HangarRepositoryTest`).
+  the generated `FleetviewImportResponseDto`; the import itself left the app with app 19.
 - [ ] The main repo commits the list per app release and asserts its frozen set covers it (plan G-23).
-  **Open — server side.**
+  **Open — server side.** For app 19 the list is the file this repository commits, copied as `19.txt`.
+
+### REQ-APP-API-012 — The app calls nothing the REST API cut retired
+
+The cut (main repo `docs/modularisation/api-cut-waves.md`) removes 74 operations the app called and
+answers their old paths with `410 APP_UPDATE_REQUIRED` ahead of authentication, so a call to one is
+the update wall, not a missing feature. The app 19 calls the new paths only and has no fallback to an
+old one (ADR-0027).
+
+`core/contract/retired-operations.txt` (the operations answered `410`) and `declared-breaks.txt` (the
+ledger: every frozen operation the cut removes, and the two refinery writes whose request records it
+changes) are vendored unchanged from the main repository, and `RetiredOperationsTest` fails the build
+when the call list names a retired or ledger operation, when the vendored `openapi.json` still
+documents a retired one, or when the ledger gains a changed shape the tests do not know.
+
+**Acceptance**
+
+- [x] No line of `app-calls.txt` is a retired or ledger operation (`RetiredOperationsTest`).
+- [x] The vendored document documents no retired operation, so it is the cut's document as published
+  (`RetiredOperationsTest`).
+- [x] The two changed request shapes — `POST /refinery-orders` and `PUT /refinery-orders/{id}` — send
+  their own records (`RefineryRepositoryTest`).
+- [x] The `GET /missions` list takes `q` (`MissionRepositoryTest`), the item pickers send
+  `orderable=true` (`JobOrderRepositoryTest`, `InventoryRepositoryTest`) and the age thresholds are
+  one typed read (`JobOrderRepositoryTest`).
 
 **Code:** `core/contract/app-calls.txt`, `core/data/src/test/.../AppCallListTest.kt` · ADR-0026

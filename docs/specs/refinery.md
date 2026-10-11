@@ -388,9 +388,14 @@ is silently unsendable, which is exactly how it presented on a device.
 ### REQ-APP-REF-010 — The edit is the create form, pre-filled
 
 Design ch. 11 artboard 6 is explicit: „Dasselbe Formular wie das Anlegen (Artboards 4–5),
-vorbefüllt — kein zweites Layout." `PUT /api/v1/refinery-orders/{id}` takes the same
-`RefineryOrderDto` the `POST` takes, so the app has one screen and one view model; only the presence
-of an id decides which of the two writes the CTA performs.
+vorbefüllt — kein zweites Layout." `PUT /api/v1/refinery-orders/{id}` takes the create's fields plus
+the `status` and the `version` it echoes, so the app has one screen and one view model; only the
+presence of an id decides which of the two writes the CTA performs.
+
+The two writes bind their own request records: `RefineryOrderCreateRequest` (no `id`, `status`,
+`version`, owner, profit or squadron — the server forces a new order open) and
+`RefineryOrderUpdateRequest` (the same fields plus `status` and `version`). Until app 19 both took the
+response record `RefineryOrderDto`, and a create sent `status` and `version` along (`RefineryRepositoryTest`).
 
 It is reached from the order detail's `⋮`, beside „Löschen".
 

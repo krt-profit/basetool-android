@@ -72,7 +72,7 @@ data class RsiHandle(
 
 /**
  * The caller's payout preference, blueprint sharing and RSI handle, read and written through
- * `/users/me/…`.
+ * `/missions/me/…`, `/blueprints/me/…` and `/users/me/…`.
  *
  * All three are columns of one server row and optimistically locked: each read carries the row's
  * version and each write echoes it.
@@ -234,10 +234,10 @@ class MemberPreferencesRepository(
         const val LOG_TAG = "member-prefs"
 
         /** The standing payout choice. */
-        const val PAYOUT_PATH = "/api/v1/users/me/payout-preference"
+        const val PAYOUT_PATH = "/api/v1/missions/me/payout-preference"
 
         /** The blueprint-sharing flag. */
-        const val SHARING_PATH = "/api/v1/users/me/blueprint-sharing"
+        const val SHARING_PATH = "/api/v1/blueprints/me/sharing"
 
         /** The member's own RSI handle. */
         const val RSI_HANDLE_PATH = "/api/v1/users/me/rsi-handle"

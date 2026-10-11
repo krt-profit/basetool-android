@@ -107,7 +107,7 @@ private fun FeeBlock(
 /**
  * Who the money came from or went to (REQ-BANK-044); not shown on a transfer.
  *
- * A counterparty is either a registered member picked from `/users/search-bank` or a typed external
+ * A counterparty is either a registered member picked from `/bank/members/search` or a typed external
  * name; only the one the toggle selects is sent. The org unit is chosen independently.
  *
  * @param state the form.

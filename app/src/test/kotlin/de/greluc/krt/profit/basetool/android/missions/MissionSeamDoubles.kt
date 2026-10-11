@@ -409,18 +409,22 @@ internal class RecordingSource(
     }
 
     override suspend fun updateFinanceEntry(
+        missionId: String,
         entryId: String,
         income: Boolean,
         amount: String,
         note: String?,
         version: Long?,
     ): ApiResult<Unit> {
-        rewritten.add(listOf(entryId, income, amount, note, version))
+        rewritten.add(listOf(missionId, entryId, income, amount, note, version))
         return bookAnswer
     }
 
-    override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> {
-        removed.add(entryId)
+    override suspend fun deleteFinanceEntry(
+        missionId: String,
+        entryId: String,
+    ): ApiResult<Unit> {
+        removed.add("$missionId/$entryId")
         return bookAnswer
     }
 }

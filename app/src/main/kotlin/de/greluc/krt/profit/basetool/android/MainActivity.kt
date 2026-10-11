@@ -59,7 +59,6 @@ import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.gate.UpdateGate
 import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
-import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
@@ -176,7 +175,6 @@ class MainActivity : AppCompatActivity() {
 
     private val callerViewModel: CallerViewModel by viewModels { authViewModels(container) }
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
-    private val fleetImportViewModel: FleetImportViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
     private val bankRequestsViewModel: BankRequestsViewModel by viewModels {
@@ -309,7 +307,6 @@ class MainActivity : AppCompatActivity() {
                                     dashboard = dashboardViewModel,
                                     caller = callerViewModel,
                                     hangar = hangarViewModel,
-                                    fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
                                     bankRequests = bankRequestsViewModel,
                                     bankStaff = bankStaffViewModel,
@@ -623,7 +620,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Registers the view models of the member's own things — the Hangar, the Fleetview import and
+         * Registers the view models of the member's own things — the Hangar and
          * „Mein Inventar" with its blueprints — which follow the member's own live-sync rooms.
          *
          * @param container the auth object graph.
@@ -631,9 +628,6 @@ class MainActivity : AppCompatActivity() {
         private fun InitializerViewModelFactoryBuilder.ownStuffViewModels(container: AuthContainer) {
             initializer {
                 HangarViewModel(container.hangar, container.connectivity, container.liveSync, container.identity)
-            }
-            initializer {
-                FleetImportViewModel(container.hangar, container.connectivity, container.liveSync, container.identity)
             }
             initializer { PersonalInventoryViewModel(container.personalInventory, container.connectivity) }
             initializer {

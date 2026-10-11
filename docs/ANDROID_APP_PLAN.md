@@ -198,18 +198,18 @@ startup with a friendly "server too old/new" screen).
 | Area | App surface (member view) | Backing endpoints (exist today) |
 |---|---|---|
 | Dashboard | next missions, unread count, org context, announcements | `/missions/next`, `/notifications/unread-count`, `/announcement`, `/me/*` |
-| Missionen | list/search/detail (sections: overview, participants, units/crew, steps, objectives, frequencies, finance), signup, check-in/out, payout preference, finance entries | `/missions/**` incl. `/slim` mutation variants, `/finance-entries` |
+| Missionen | list/search/detail (sections: overview, participants, units/crew, steps, objectives, frequencies, finance), signup, check-in/out, payout preference, finance entries | `/missions/**` incl. `/missions/{id}/finance-entries` |
 | Operationen | list/search/detail, per-mission finances, finance summary, **payout status** (member daily-driver: "was I paid out?"); edit/payout toggles for MM+ | `/operations/**` |
 | Benachrichtigungen | inbox (paged), mark read, delete, unread badge, live via SSE (the rule engine behind delivery is admin-only server config — no app surface) | `/notifications/**` |
 | Hangar | my ships CRUD, squadron overview, imports (JSON paste/file) | `/hangar/**` |
 | Lager/Inventar | aggregated + my inventory, book in/out, rebook, allocations | `/inventory/**` |
 | Mein Inventar / Blueprints | personal inventory CRUD, blueprints + craftability | `/personal-inventory`, `/personal-blueprints/**` |
 | Aufträge | queue (org-public SK / private Staffel), detail incl. items/material demand, status/priority (Logistician), assignees + notes, claims (Logistician) | `/orders/**` |
-| Materialbörse | offers + requests, interest toggles | `/material-exchange/**`, `/material-requests/**` |
+| Materialbörse | offers + requests, interest toggles | `/material-exchange/**` |
 | Raffinerie | my orders, detail, store yield | `/refinery-orders/**` |
-| Bank (member surface) | org-unit balances, account detail, booking requests, approvals | `/org-units/bank/**` |
+| Bank (member surface) | org-unit balances, account detail, booking requests, approvals | `/bank/org-units/**` |
 | Beförderung | my evaluations + eligibility | `/promotion/**` |
-| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/me/**`, `/terms/*` |
+| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/missions/me/**`, `/blueprints/me/**`, `/org-units/me/**`, `/me/**`, `/terms/*` |
 | Onboarding states | login (Custom Tab), `PENDING_APPROVAL` screen, terms-acceptance screen (in-app via `/api/v1/terms/*`), guest mode (optional) | — |
 
 Anonymous/guest surface (browse redacted missions, guest signup, master data) exists server-side
