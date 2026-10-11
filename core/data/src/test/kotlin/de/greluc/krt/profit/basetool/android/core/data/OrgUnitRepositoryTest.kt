@@ -102,7 +102,7 @@ class OrgUnitRepositoryTest {
                 ),
                 units,
             )
-            assertEquals("/api/v1/me/org-units", server.takeRequest().target)
+            assertEquals("/api/v1/org-units/me/switchable", server.takeRequest().target)
         }
 
     @Test
@@ -161,7 +161,7 @@ class OrgUnitRepositoryTest {
         runTest {
             respond("""{"orgUnitId":"a1"}""")
             assertEquals("a1", (repository.serverDefault() as ApiResult.Success).value)
-            assertEquals("/api/v1/me/active-org-unit", server.takeRequest().target)
+            assertEquals("/api/v1/org-units/me/active", server.takeRequest().target)
 
             respond("{}")
             assertNull((repository.serverDefault() as ApiResult.Success).value)

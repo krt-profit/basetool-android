@@ -85,7 +85,7 @@ class MandatoryHeadersInterceptorTest {
         server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
         val client = clientWith(token = "jwt-value", orgUnit = null)
 
-        client.newCall(Request.Builder().url(server.url("/api/v1/me/active-org-unit")).build()).execute().use { }
+        client.newCall(Request.Builder().url(server.url("/api/v1/org-units/me/active")).build()).execute().use { }
 
         assertNull(server.takeRequest().headers[MandatoryHeadersInterceptor.HEADER_ACTIVE_ORG_UNIT])
     }

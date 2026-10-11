@@ -499,10 +499,10 @@ class MaterialBoardRepository(
         private const val LOG_TAG = "materialboard"
 
         private const val OFFERS_PATH = "/api/v1/material-exchange/offers"
-        private const val REQUESTS_PATH = "/api/v1/material-requests"
+        private const val REQUESTS_PATH = "/api/v1/material-exchange/requests"
         private const val RELEASABLE_PATH = "/api/v1/material-exchange/releasable-items"
         private const val ITEM_OFFERS_PATH = "/api/v1/material-exchange/item-offers"
-        private const val ITEM_REQUESTS_PATH = "/api/v1/material-requests/item"
+        private const val ITEM_REQUESTS_PATH = "$REQUESTS_PATH/item"
         private const val PRODUCTS_PATH = "/api/v1/blueprints/products/search"
         private const val QUERY_PARAM = "q"
         private const val LIMIT_PARAM = "limit"

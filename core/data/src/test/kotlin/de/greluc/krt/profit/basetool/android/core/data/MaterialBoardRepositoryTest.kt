@@ -218,7 +218,7 @@ class MaterialBoardRepositoryTest {
 
             repository.withdraw(entry)
 
-            assertTrue(server.takeRequest().target.endsWith("/api/v1/material-requests/q1/deactivate"))
+            assertTrue(server.takeRequest().target.endsWith("/api/v1/material-exchange/requests/q1/deactivate"))
         }
 
     @Test

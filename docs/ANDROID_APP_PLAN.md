@@ -205,11 +205,11 @@ startup with a friendly "server too old/new" screen).
 | Lager/Inventar | aggregated + my inventory, book in/out, rebook, allocations | `/inventory/**` |
 | Mein Inventar / Blueprints | personal inventory CRUD, blueprints + craftability | `/personal-inventory`, `/personal-blueprints/**` |
 | Aufträge | queue (org-public SK / private Staffel), detail incl. items/material demand, status/priority (Logistician), assignees + notes, claims (Logistician) | `/orders/**` |
-| Materialbörse | offers + requests, interest toggles | `/material-exchange/**`, `/material-requests/**` |
+| Materialbörse | offers + requests, interest toggles | `/material-exchange/**` |
 | Raffinerie | my orders, detail, store yield | `/refinery-orders/**` |
 | Bank (member surface) | org-unit balances, account detail, booking requests, approvals | `/bank/org-units/**` |
 | Beförderung | my evaluations + eligibility | `/promotion/**` |
-| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/me/**`, `/terms/*` |
+| Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/missions/me/**`, `/blueprints/me/**`, `/org-units/me/**`, `/me/**`, `/terms/*` |
 | Onboarding states | login (Custom Tab), `PENDING_APPROVAL` screen, terms-acceptance screen (in-app via `/api/v1/terms/*`), guest mode (optional) | — |
 
 Anonymous/guest surface (browse redacted missions, guest signup, master data) exists server-side
