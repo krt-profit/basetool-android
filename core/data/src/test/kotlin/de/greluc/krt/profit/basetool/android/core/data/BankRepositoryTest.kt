@@ -344,6 +344,6 @@ class BankRepositoryTest {
             respond(BALANCES)
             repository.balances()
 
-            assertEquals("/api/v1/org-units/bank/balances", requestedUrl().encodedPath)
+            assertEquals("/api/v1/bank/org-units/balances", requestedUrl().encodedPath)
         }
 }

@@ -1216,7 +1216,7 @@ interface BankStaffSource {
 const val QUEUE_PAGE_SIZE: Int = 50
 
 /**
- * Reads the org bank's member surface: `/org-units/bank/…` answers with the accounts this caller may see.
+ * Reads the org bank's member surface: `/bank/org-units/…` answers with the accounts this caller may see.
  *
  * Staff paths belong to [BankStaffRepository]; `/api/v1/bank/admin` is never reached.
  *
@@ -1506,14 +1506,14 @@ class BankRepository(
         private const val LOG_TAG = "bank"
 
         /** The member surface's prefix; the staff bank lives under `/api/v1/bank`. */
-        private const val ORG_UNIT_BANK = "/api/v1/org-units/bank"
+        private const val ORG_UNIT_BANK = "/api/v1/bank/org-units"
 
         private const val REQUESTS_PATH = "$ORG_UNIT_BANK/requests"
 
         /** What a successful call that returned nothing usable is reported as. */
         private const val HTTP_OK = 200
 
-        private const val BALANCES_PATH = "/api/v1/org-units/bank/balances"
+        private const val BALANCES_PATH = "$ORG_UNIT_BANK/balances"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
 
@@ -1523,7 +1523,7 @@ class BankRepository(
          * @param id the account's id.
          * @return the path.
          */
-        private fun accountPath(id: String) = "/api/v1/org-units/bank/accounts/$id"
+        private fun accountPath(id: String) = "$ORG_UNIT_BANK/accounts/$id"
 
         /**
          * One limit's path.
@@ -1552,7 +1552,7 @@ class BankRepository(
          * @param id the account's id.
          * @return the path.
          */
-        private fun bookingsPath(id: String) = "/api/v1/org-units/bank/accounts/$id/transactions"
+        private fun bookingsPath(id: String) = "${accountPath(id)}/transactions"
     }
 }
 
