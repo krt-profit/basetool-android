@@ -203,9 +203,8 @@ with `com.android.application` and `com.android.library`**. Shared modules must 
 - **`java.time` (87 imports).** `kotlinx-datetime` covers instants, arithmetic and ISO parsing.
   What it does not cover is **locale-aware display formatting** — which is what 17 of those imports
   (`java.time.format`) and `android.text.format.DateUtils` do, for German-first output. That becomes
-  `expect`/`actual` over `NSDateFormatter`, and the vault already records one defect in exactly this
-  area (*„`DateUtils` ignores the zone it was handed"*), so it is a place to be careful rather than
-  quick.
+  `expect`/`actual` over `NSDateFormatter`, and time-zone handling is easy to get subtly wrong in
+  exactly this area, so it is a place to be careful rather than quick.
 - **`java.math.BigDecimal` (24 imports).** `KrtDecimal` exists precisely so call sites do not name
   the JVM type — but 24 files name it anyway. Kotlin/Native has no `BigDecimal`; the usual KMP
   replacement is `com.ionspin.kotlin:bignum`. This is the **bank's money type**: the class's own
@@ -406,8 +405,6 @@ as tabulated in § 3 and § 4, measured with `find` / `grep` over `src/main` and
 4.5, 12; `core/designsystem/fankit/README.md`; `docs/adr/0001`, `0007`, `0010`, `0013`.
 **`basetool`** (main repo, § 6): `frontend/src/main/resources/templates/fragments/head.html`,
 `frontend/src/main/resources/static/css/*.css`, and the absence of any manifest or service worker.
-**Knowledge base:** `10 Systems/Android App.md`, `App Security.md`, `SC Extractor.md`,
-`Live Sync.md`.
 
 **Apple:** [Changes for apps in the European Union](https://developer.apple.com/support/dma-and-apps-in-the-eu/)
 — the seven Web Distribution eligibility criteria effective 2026-10-01, and notarization;
