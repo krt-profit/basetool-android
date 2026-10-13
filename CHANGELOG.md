@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-10-13
+
 ### Fixed
 
 - **Einstellungen: Auszahlungspräferenz, Blueprint-Freigabe und RSI-Handle sind unabhängig.** Der
