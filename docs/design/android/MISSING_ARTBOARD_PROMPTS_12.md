@@ -7,8 +7,7 @@ lost.
 
 Round 11's chapters arrived and are **all built** — ch. 06 ab. 12 and 15–17, ch. 09 ab. 20–21,
 ch. 11 ab. 6–7, ch. 12 ab. 9–10, ch. 17 ab. 1–6 — and with them the
-[Web Parity Programme](https://github.com/krt-profit/basetool-knowledge) has no drawn item left
-open. So this register is what remains when the building stops.
+Web Parity Programme has no drawn item left open. So this register is what remains when the building stops.
 
 > [!important] Everything here ships today
 > Nothing is blocked. Each item names what the app does **now**, so the design side is ratifying or
