@@ -68,14 +68,17 @@ data class RsiHandleActions(
 /**
  * The Einstellungen rows that live on the server rather than on the device.
  *
- * All three are columns of the backend's `User` entity, so they share one optimistic-lock version.
+ * Each row has its own optimistic-lock version: set by that row's read, echoed by that row's write,
+ * replaced by the answer to that write, and never touched by another row.
  *
  * @property payout the standing payout choice, or `null` while unread or never chosen.
  * @property payoutRead whether a read of [payout] has landed; `null` with this set means the member
  *   has not chosen yet, and the row is writable.
  * @property sharing whether blueprints are shared, or `null` until the read lands.
  * @property rsi the RSI-handle row.
- * @property version the entity's version as the last read or write left it; every write echoes it.
+ * @property payoutVersion the payout row's version as its last read or write left it.
+ * @property sharingVersion the sharing row's version as its last read or write left it.
+ * @property rsiVersion the RSI-handle row's version as its last read or write left it.
  * @property saving whether a write is in flight; every row is disabled meanwhile.
  * @property error the last refusal of a write, kept until the next attempt.
  * @property readError why the values could not be read, or `null` when they arrived; while set,
@@ -87,7 +90,9 @@ data class MemberPreferencesState(
     val payoutRead: Boolean = false,
     val sharing: Boolean? = null,
     val rsi: RsiHandleState = RsiHandleState(),
-    val version: Long = 0L,
+    val payoutVersion: Long = 0L,
+    val sharingVersion: Long = 0L,
+    val rsiVersion: Long = 0L,
     val saving: Boolean = false,
     val error: ApiError? = null,
     val readError: ApiError? = null,
@@ -97,7 +102,7 @@ data class MemberPreferencesState(
 /**
  * Reads and writes the member's own server-side choices for Einstellungen.
  *
- * Every write echoes the version; after a refusal the row keeps the last server-confirmed value. A
+ * Every write echoes its own row's version; after a refusal the row keeps the last server-confirmed value. A
  * value not yet read renders as unset, and a failed read is shown with a retry.
  *
  * @property source the me-scoped preference endpoints.
@@ -148,7 +153,7 @@ class MemberPreferencesViewModel(
                     it.copy(
                         payout = result.value.preference,
                         payoutRead = true,
-                        version = result.value.version,
+                        payoutVersion = result.value.version,
                     )
                 }
                 null
@@ -164,7 +169,7 @@ class MemberPreferencesViewModel(
         when (val result = source.blueprintSharing()) {
             is ApiResult.Success -> {
                 mutableState.update {
-                    it.copy(sharing = result.value.sharing, version = result.value.version)
+                    it.copy(sharing = result.value.sharing, sharingVersion = result.value.version)
                 }
                 null
             }
@@ -182,7 +187,7 @@ class MemberPreferencesViewModel(
                 mutableState.update {
                     it.copy(
                         rsi = RsiHandleState(confirmed = handle, read = true, draft = handle.orEmpty()),
-                        version = result.value.version,
+                        rsiVersion = result.value.version,
                     )
                 }
                 null
@@ -206,12 +211,12 @@ class MemberPreferencesViewModel(
         }
         mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
-            when (val result = source.setPayoutPreference(preference, current.version)) {
+            when (val result = source.setPayoutPreference(preference, current.payoutVersion)) {
                 is ApiResult.Success -> {
                     mutableState.update {
                         it.copy(
                             payout = result.value.preference,
-                            version = result.value.version,
+                            payoutVersion = result.value.version,
                             saving = false,
                         )
                     }
@@ -236,12 +241,12 @@ class MemberPreferencesViewModel(
         }
         mutableState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
-            when (val result = source.setBlueprintSharing(sharing, current.version)) {
+            when (val result = source.setBlueprintSharing(sharing, current.sharingVersion)) {
                 is ApiResult.Success -> {
                     mutableState.update {
                         it.copy(
                             sharing = result.value.sharing,
-                            version = result.value.version,
+                            sharingVersion = result.value.version,
                             saving = false,
                         )
                     }
@@ -279,13 +284,13 @@ class MemberPreferencesViewModel(
             it.copy(saving = true, error = null, rsi = it.rsi.copy(saving = true, refusal = null))
         }
         viewModelScope.launch {
-            val result = source.setRsiHandle(current.rsi.draft.trim(), current.version)
+            val result = source.setRsiHandle(current.rsi.draft.trim(), current.rsiVersion)
             mutableState.update { state ->
                 when (result) {
                     is ApiResult.Success -> {
                         val handle = result.value.handle
                         state.copy(
-                            version = result.value.version,
+                            rsiVersion = result.value.version,
                             saving = false,
                             rsi =
                                 RsiHandleState(

@@ -60,7 +60,25 @@ here" is worth answering.
   to the backend, and the app has no health signal to read them from. An always-green dot would be
   decoration that reads as a diagnosis.
 
-### REQ-APP-SET-011 — Three account rows, and the one version two of them share
+### REQ-APP-SET-011 — Three account rows, each with its own version
+
+> [!danger] Corrected 2026-10-13 — the payout preference and the blueprint sharing no longer share a version
+> This requirement was titled „Three account rows, and the one version two of them share", and this
+> section, ADR-0021 and REQ-APP-SET-012 said all three rows are columns of the backend's `User`
+> entity with one optimistic-lock counter. That held until the backend moved the payout preference
+> and the blueprint sharing into their own tables (`member_payout_setting`, `member_blueprint_sharing`;
+> main repo PR #2552, D-17). Paths, field names and `openapi.json` did not change, but the `version`
+> of `GET`/`PUT /api/v1/missions/me/payout-preference` and `GET`/`PUT /api/v1/blueprints/me/sharing`
+> is now that setting's own counter — `0` while the member has no row, which the first `PUT` echoes
+> and the server answers `409 OPTIMISTIC_LOCK` to on any other mismatch. `GET`/`PUT
+> /api/v1/users/me/rsi-handle` still carries the user row's version. The app kept one `version` for
+> all three, so against the new backend a payout or sharing write sent the user row's number and was
+> refused unless the numbers happened to coincide, and a successful payout or sharing write poisoned
+> the next RSI-handle write. The state now keeps one version per row (`payoutVersion`,
+> `sharingVersion`, `rsiVersion`): each is set only by its own row's read, echoed only by its own
+> row's write, and replaced only by the answer to that write. Against a backend from before that
+> change, which still answers one counter for all three, a successful write to one row leaves the
+> other two rows' versions behind until they are read again.
 
 > [!note] Renumbered 2026-09-05 — this requirement was written as `REQ-APP-SET-010`, which was
 > already taken
@@ -83,7 +101,9 @@ server values; the third is the scope the top bar already shows.
 > **APP holds what lives on the device and survives a logout; KONTO holds what lives on the
 > account.** Blueprint sharing is written to the server, is visible to the organisation and follows
 > the member to any device — and it shares its optimistic-lock version with the row directly above,
-> so the two fail together and their retry is one action. Filed for the design side as round 17 § D1.
+> so the two fail together and their retry is one action (*corrected 2026-10-13: it does not, since
+> the backend gave each its own version — see the correction at the top of this requirement*). Filed
+> for the design side as round 17 § D1.
 > The sentence is dated here rather than rewritten, because it was never true of the drawing.
 
 **„Aktive Org-Einheit" opens the switcher the chip opens.** It shows the same value the chip shows
@@ -94,13 +114,23 @@ disagree about the scope every request carries.
 unusual for settings rows and is why they are a repository rather than a preference store: the same
 member can change either in a browser, and the server is entitled to refuse the second write.
 
-**They share one version, because they share one row.** Both are columns of the backend's `User`
-entity, so writing either bumps the same counter. A version per setting compiles, passes a test
-suite whose fakes make the same assumption, and fails on a device the moment a member touches both:
-setting the payout preference took the entity from 1 to 2, and every later blueprint-sharing write
-was refused with `expected=1 persisted=2` — **permanently**, because the row kept re-sending the
-number it read at start-up. The state therefore keeps one version, every read updates it and every
-successful write adopts the one it gets back.
+**Each row echoes its own version and no other.** The state keeps `payoutVersion`, `sharingVersion`
+and `rsiVersion`. A read sets only its own row's version, a write echoes only its own row's version,
+and a successful write replaces only that version with the one in its answer; another row's read or
+write never touches it. A member who has never written a payout or sharing setting has no row, reads
+version `0`, and the first write echoes that `0`. A version taken from another row's response is
+refused with `409 OPTIMISTIC_LOCK` unless the numbers coincide, and a row that was refused keeps
+re-sending the number it read until it is read again.
+
+> [!note] History: until 2026-10-13 the rule was one version for all three
+> The backend stored the payout preference and the blueprint sharing as columns of the `User` entity,
+> next to the RSI handle, so writing any of them bumped the same counter and the app kept one
+> `version`. A version per setting then compiled, passed a test suite whose fakes made the same
+> assumption, and failed on a device the moment a member touched two rows: setting the payout
+> preference took the entity from 1 to 2, and every later blueprint-sharing write was refused with
+> `expected=1 persisted=2` — **permanently**, because the row kept re-sending the number it read at
+> start-up. The backend's move to a counter per setting reversed that (see the correction at the top
+> of this requirement).
 
 **A refused write leaves the row showing what the server confirmed**, not what was tapped. A
 settings row that displays the member's rejected choice is lying about the state of their account.
@@ -136,8 +166,9 @@ that succeeds by accident. But a failed read rendered *identically* to an unset 
 > nobody: the rows sat disabled on „Noch nicht gewählt", which is exactly what a never-set value
 > looks like. Not a defect a member can report — two settings simply appeared to have no value and
 > no way to acquire one. Admitted by the main repo's runbook **phase Q**, which had to open the
-> `GET` and the `PUT` **together**: they share one version, so a client that could write but not
-> read would echo `0`.
+> `GET` and the `PUT` **together**: the write echoes the version the read returned, so a client that
+> could write but not read would echo `0` (the two then shared one version; each has its own since
+> 2026-10-13).
 
 The failure is now carried in the state (`readError`, distinct from a `null` value) and said on the
 screen, below the two rows, with a **„Erneut versuchen"**. A refused **write** is shown there too —
@@ -145,8 +176,9 @@ it had no place on the screen either.
 
 **Acceptance**
 
-- [x] Writing one setting leaves the other writable — the regression above, pinned by a fake that
-  models one version for both (`MemberPreferencesViewModelTest`).
+- [x] Writing one setting leaves the other writable, and every write echoes the version its own row
+  was read at: pinned by a fake that keeps an independent version per setting, with three different
+  starting versions and a member without stored rows (`MemberPreferencesViewModelTest`).
 - [x] „Blueprints mit Org teilen" sits under **KONTO**, below „Auszahlungspräferenz" (ADR-0021).
 - [x] A failed read is distinguishable from an unset value: both rows stay shut, and the screen says
   why and offers a retry (`MemberPreferencesViewModelTest`).
@@ -170,9 +202,10 @@ server answers yes, no or unknown and never hands the handle out.
 app want my handle" before anyone asks. Empty is a valid state and carries no „missing" hint.
 Clearing the field and saving removes the handle, without a confirmation: it is reversible.
 
-**It shares the `User` row's version with the two rows above** (`REQ-APP-SET-011`): the handle is
-read in the same pass, its write echoes the one version and adopts the one it gets back, and every
-row is shut while any of them writes. „Speichern" is offered only when the trimmed field differs
+**It carries the `User` row's version, which the two rows above no longer share** (`REQ-APP-SET-011`,
+corrected 2026-10-13): the handle is read in the same pass as they are, its write echoes the version
+its own read returned and adopts the one it gets back, and every row is shut while any of them
+writes. „Speichern" is offered only when the trimmed field differs
 from what the server confirmed, and gives way to the spinner while the write runs; success says
 „RSI-Handle gespeichert." as a toast.
 
@@ -191,8 +224,9 @@ notice. Typing again clears the field's refusal.
 
 **Acceptance**
 
-- [x] The handle is read with the other two and saved with the shared version; a payout write after
-  it is not refused (`MemberPreferencesViewModelTest`).
+- [x] The handle is read with the other two and saved with its own version; a payout write after it
+  is not refused, and neither is a handle save after a payout or sharing write
+  (`MemberPreferencesViewModelTest`).
 - [x] A taken handle is refused at the field and the input stays; a malformed one likewise; typing
   clears it (`MemberPreferencesViewModelTest`).
 - [x] An emptied field clears the handle; an unchanged one writes nothing

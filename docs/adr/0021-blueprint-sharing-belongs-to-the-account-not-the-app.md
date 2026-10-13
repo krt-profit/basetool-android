@@ -50,6 +50,14 @@ optimistic-lock counter, they fail together, and their retry is one action; a me
 refuse has an immediate reason to look at the other. Separated by a section boundary, that
 relationship was invisible.
 
+> [!important] Corrected 2026-10-13 — the two rows no longer share a version
+> The backend moved the payout preference and the blueprint sharing out of the `User` entity into
+> tables of their own (main repo PR #2552), each with its own optimistic-lock counter, so the context
+> sentence „sharing one optimistic-lock version" and the paragraph above describe the backend as it was
+> until then. The decision stands on its other, first reason — KONTO holds what lives on the account
+> — and no longer on the shared counter. The app keeps one version per row since the same date
+> (`REQ-APP-SET-011`).
+
 **One row moves out of APP, and APP loses nothing else.** The trailing hairline moves with it.
 
 **KONTO no longer hinges on the member's name, and that had to change with the move.** The group was

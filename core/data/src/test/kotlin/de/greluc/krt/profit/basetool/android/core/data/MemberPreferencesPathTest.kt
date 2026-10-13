@@ -22,7 +22,7 @@ import org.robolectric.annotation.Config
 
 /**
  * The payout preference and the blueprint sharing: the verb and path each of the four operations
- * sends, with the version of the shared row echoed on both writes.
+ * sends, with the version each read returned echoed on the matching write.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

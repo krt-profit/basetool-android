@@ -151,7 +151,7 @@ class SettingsScreenTest {
         val payouts = mutableListOf<PayoutPreference>()
         show(
             loggedOut = mutableListOf(),
-            preferences = MemberPreferencesState(payout = null, payoutRead = true, sharing = false, version = 1),
+            preferences = MemberPreferencesState(payout = null, payoutRead = true, sharing = false, payoutVersion = 1),
             payouts = payouts,
         )
 

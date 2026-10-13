@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Einstellungen: Auszahlungspräferenz, Blueprint-Freigabe und RSI-Handle sind unabhängig.** Der
+  Server führt für jede dieser Einstellungen eine eigene Versionsnummer; die App verwendete eine für
+  alle drei und bekam beim Speichern einen Konflikt. Jede Einstellung nutzt jetzt ihre eigene Nummer.
+
 ## [0.6.0] — 2026-10-11
 
 ### Added
