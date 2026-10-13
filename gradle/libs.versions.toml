@@ -6,7 +6,7 @@
 [versions]
 agp = "9.4.1"
 
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 
 # SDK levels — owner decisions, see docs/ANDROID_APP_PLAN.md
 compileSdk = "37"
