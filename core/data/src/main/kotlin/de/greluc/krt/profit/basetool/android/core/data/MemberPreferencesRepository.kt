@@ -74,8 +74,8 @@ data class RsiHandle(
  * The caller's payout preference, blueprint sharing and RSI handle, read and written through
  * `/missions/me/…`, `/blueprints/me/…` and `/users/me/…`.
  *
- * All three are columns of one server row and optimistically locked: each read carries the row's
- * version and each write echoes it.
+ * Each setting is optimistically locked by its own version: a read carries the setting's version and
+ * only that setting's write echoes it. A version is not comparable across settings.
  */
 interface MemberPreferencesSource {
     /**

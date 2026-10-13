@@ -43,7 +43,8 @@ design side can weigh it rather than just receive it:
   visible to the organisation, and it follows them to any device they sign in on.
 - **It shares one optimistic-lock version with „Auszahlungspräferenz"** directly above it. The two
   fail together, their retry is one action, and a member who sees one refuse has an immediate
-  reason to look at the other. A section boundary hid that.
+  reason to look at the other. A section boundary hid that. *(Corrected 2026-10-13: the backend gave
+  each row its own version, so this second reason no longer holds; the first one stands alone.)*
 
 > **What would settle it:** artboard 2 redrawn with three rows under KONTO — or a decision that the
 > drawing was right and the requirement's sentence is what should change. If you keep it in APP,
