@@ -53,7 +53,7 @@ androidxBiometric = "1.1.0"
 nimbusJose = "10.10"
 
 licensee = "1.14.1"
-openapiGenerator = "7.25.0"
+openapiGenerator = "7.26.0"
 
 detekt = "2.0.0-alpha.6"
 spotless = "8.10.3"
