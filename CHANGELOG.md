@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Die App wird eingestellt.** 0.6.1 bleibt die letzte Version; weitere kommen nicht. Das Basetool
+  gibt es für Handy und Tablet weiterhin als Web-App, die du wie eine App auf den Startbildschirm
+  legst — sie kann alles, was auch der Browser kann. Die Schnittstelle, über die die App mit dem
+  Server spricht, wird abgeschaltet; danach kann sich eine installierte App nicht mehr verbinden.
+  Ein Datum dafür steht noch nicht fest. Bis dahin läuft sie wie bisher.
+
 ## [0.6.1] — 2026-10-13
 
 ### Fixed

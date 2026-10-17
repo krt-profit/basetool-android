@@ -1,5 +1,13 @@
 # Contributing to Basetool Android
 
+> [!IMPORTANT]
+> **The app is discontinued and this repository is archived**
+> ([ADR-0028](docs/adr/0028-the-app-is-discontinued-and-the-repository-is-archived.md)). Issues,
+> discussions and pull requests are read-only, so there is nothing to contribute to here. Members
+> looking for the Basetool on a phone want the installable web app:
+> [Web-App installieren](https://github.com/krt-profit/basetool/wiki/Web-App-installieren).
+> This guide is kept because it governed every commit in the history.
+
 Thank you for considering a contribution! This is the native Android companion app of the
 Profit Basetool. It is released (see the [README](README.md) for the current version) and built
 with Gradle; the [README](README.md#build) says how to build it and what CI checks.
