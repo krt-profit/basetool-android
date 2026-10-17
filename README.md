@@ -1,13 +1,35 @@
 # Basetool Android
 
+> [!IMPORTANT]
+> **Discontinued on 2026-10-17. This repository is archived: nothing here is developed, released or
+> supported any more.**
+>
+> **Use the Basetool as an installable web app instead.** It goes on the home screen with its own
+> icon and window, it is the same application the browser serves — the administration included —
+> and it is the way onto a phone or tablet from now on:
+> [Web-App installieren](https://github.com/krt-profit/basetool/wiki/Web-App-installieren).
+>
+> An installed APK keeps working until the backend REST API it calls is switched off, which is
+> happening: `/api/v1` becomes internal-only again
+> ([krt-profit/basetool#2638](https://github.com/krt-profit/basetool/issues/2638)), and after that
+> the app can no longer reach anything. There is no store listing to withdraw — distribution was
+> GitHub Releases plus Obtainium, never Play.
+>
+> The releases, their SHA-256 sums, the signing certificate's fingerprint and the build attestations
+> stay published, so what was installed stays checkable. Why, and what it costs:
+> [ADR-0028](docs/adr/0028-the-app-is-discontinued-and-the-repository-is-archived.md).
+>
+> **Everything below describes the app as it was built and is kept as that record.**
+
 Native Android companion app for the **Profit Basetool** — the squadron-management tool of
 the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 31 (Android 12), dark-only DAS KARTELL
 design. The floor is 31 rather than 30 so that the lowest version we support is one the
 emulator can actually sign in on ([ADR-0015](docs/adr/0015-minsdk-31-so-the-floor-is-testable.md)).
 
-**Released: [v0.6.1](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
-through Obtainium or straight from the release page — and check what you installed before you do
+**Last release: [v0.6.1](https://github.com/krt-profit/basetool-android/releases/tag/v0.6.1)**
+(2026-10-13), and the last one there will be. The release page stays up as a record; what it
+publishes alongside the APK is still what an installed file is checked against
 (see [Installing, and checking what you installed](#installing-and-checking-what-you-installed)).
 
 A member can do everything the plan set as the bar for a first release: read Übersicht, Einsätze,
@@ -126,8 +148,12 @@ third-party action is pinned to a full commit SHA. Details and the deliberately-
 
 ## Installing, and checking what you installed
 
-Distribution is **GitHub Releases plus [Obtainium](https://github.com/ImranR98/Obtainium)**. There
-is no Play Store listing, which means none of the checks a store would perform happen — so the
+> The app is discontinued, so this is no longer an invitation to install it — it is how to check a
+> file that already is. Nothing here was withdrawn: the sums, the fingerprint and the attestations
+> stay published.
+
+Distribution was **GitHub Releases plus [Obtainium](https://github.com/ImranR98/Obtainium)**. There
+was no Play Store listing, which means none of the checks a store would perform happened — so the
 release publishes everything needed to make them yourself.
 
 **Three things travel with every release**, and each answers a different question:
@@ -165,6 +191,9 @@ and do not protect against, and how to rotate them, is in
 [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) § 5.1.
 
 ## Contributing
+
+**Closed.** The repository is archived, so issues, discussions and pull requests are read-only. The
+rules below are kept because they governed every commit in the history.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) — one-time [CLA](CLA.md) signature
 (roster: [`docs/cla-signatures.md`](docs/cla-signatures.md)), per-commit DCO sign-off

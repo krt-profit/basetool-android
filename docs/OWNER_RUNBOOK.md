@@ -6,6 +6,15 @@
 > main repo [`docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md`](https://github.com/krt-profit/basetool/blob/main/docs/archive/API_VHOST_ROLLOUT_RUNBOOK.md)
 > (Phase J; archived 2026-09-22 — the live allow-list is `docker/edge/include/api-allowlist.conf`)
 
+> [!IMPORTANT]
+> **Spent.** The app is discontinued and the repository is archived
+> ([ADR-0028](adr/0028-the-app-is-discontinued-and-the-repository-is-archived.md)): no release is
+> cut from here again and the signing key signs nothing further — it stays in the offline backup so
+> the published certificate fingerprint remains the one every installed APK is checked against.
+> What is left for the owner is the archive itself and the backend half,
+> [krt-profit/basetool#2638](https://github.com/krt-profit/basetool/issues/2638). Kept as the record
+> of how the releases in the field were made.
+
 Everything else in this project is automated, reviewed or testable. What is left here needs
 production access, a secret, a repository setting, or a decision — and each of those is yours by
 rule, not by convention.
